@@ -63,7 +63,7 @@ internal static unsafe class IthmbCodecPlugin
 
     private static readonly object _bufLock = new();
     private static readonly object _initLock = new();
-    private static readonly Dictionary<nint, nint> _liveBuffers = new();
+    private static readonly HashSet<nint> _liveBuffers = new();
 
     // ------------------------------ Entry point ------------------------------
     [UnmanagedCallersOnly(EntryPoint = IGNativeAbi.ENTRY_POINT_NAME, CallConvs = [typeof(CallConvCdecl)])]
@@ -134,25 +134,16 @@ internal static unsafe class IthmbCodecPlugin
     private static int CodecCanHandleSignature(byte* signature, int length)
     {
         if (signature == null || length < 8) return 0;
+        var span = new ReadOnlySpan<byte>(signature, length);
         int scanLen = Math.Min(length, 256);
         for (int i = 0; i < scanLen - 4; i++)
         {
-            if (signature[i] != 0xFF || signature[i + 1] != 0xD8) continue;
-            int window = Math.Min(i + 128, scanLen);
-            for (int j = i + 2; j <= window - JfifMarker.Length; j++)
-            {
-                bool match = true;
-                for (int m = 0; m < JfifMarker.Length; m++)
-                    if (signature[j + m] != JfifMarker[m]) { match = false; break; }
-                if (match) return 1;
-            }
-            for (int j = i + 2; j <= window - ExifMarker.Length; j++)
-            {
-                bool match = true;
-                for (int m = 0; m < ExifMarker.Length; m++)
-                    if (signature[j + m] != ExifMarker[m]) { match = false; break; }
-                if (match) return 1;
-            }
+            if (span[i] != 0xFF || span[i + 1] != 0xD8) continue;
+            int sliceStart = i + 2;
+            int sliceLen = Math.Min(i + 128, scanLen) - sliceStart;
+            var probe = span.Slice(sliceStart, sliceLen);
+            if (probe.IndexOf(JfifMarker) >= 0) return 1;
+            if (probe.IndexOf(ExifMarker) >= 0) return 1;
         }
         return 0;
     }
@@ -181,9 +172,8 @@ internal static unsafe class IthmbCodecPlugin
     {
         if (buf == null || buf->Data == null) return;
         nint key = (nint)buf->Data;
-        nint pixels;
-        lock (_bufLock) { if (!_liveBuffers.Remove(key, out pixels)) return; }
-        NativeMemory.Free((void*)pixels);
+        lock (_bufLock) { if (!_liveBuffers.Remove(key)) return; }
+        NativeMemory.Free((void*)key);
         buf->Data = null;
         buf->ReleaseContext = null;
     }
@@ -237,7 +227,7 @@ internal static unsafe class IthmbCodecPlugin
             // Find JPEG EOI marker (FF D9), checking cancellation every 64KB
             for (int k = i + 2; k < data.Length - 1; k++)
             {
-                if ((k & 0xFFFF) == 0 && IsCanceled(null)) return false;
+                if ((k & 0xFFFF) == 0 && IsCanceled(cancellation)) return false;
                 if (data[k] == 0xFF && data[k + 1] == 0xD9)
                 {
                     length = (k + 2) - i;
@@ -255,6 +245,9 @@ internal static unsafe class IthmbCodecPlugin
         void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf)
     {
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
+
+        if (offset < 0 || length <= 0 || offset + length > data.Length)
+            return IGStatus.DecodeFailed;
 
         byte[] jpegBytes;
         if (offset == 0 && length == data.Length)
@@ -340,7 +333,7 @@ internal static unsafe class IthmbCodecPlugin
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
         outBuf->ReleaseContext = pixels;
-        lock (_bufLock) { _liveBuffers[(nint)pixels] = (nint)pixels; }
+        lock (_bufLock) { _liveBuffers.Add((nint)pixels); }
         return IGStatus.OK;
     }
 
@@ -447,14 +440,32 @@ internal static unsafe class IthmbCodecPlugin
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
         outBuf->ReleaseContext = pixels;
-        lock (_bufLock) { _liveBuffers[(nint)pixels] = (nint)pixels; }
+        lock (_bufLock) { _liveBuffers.Add((nint)pixels); }
         return IGStatus.OK;
     }
 
     // ------------------------------ Helpers ------------------------------
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ushort ReadU16LE(byte[] data, int offset) =>
+        (ushort)(data[offset] | (data[offset + 1] << 8));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ushort ReadU16BE(byte[] data, int offset) =>
+        (ushort)((data[offset] << 8) | data[offset + 1]);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint ReadU32LE(byte[] data, int offset) =>
+        (uint)(data[offset] | (data[offset + 1] << 8) |
+               (data[offset + 2] << 16) | (data[offset + 3] << 24));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint ReadU32BE(byte[] data, int offset) =>
+        (uint)((data[offset] << 24) | (data[offset + 1] << 16) |
+               (data[offset + 2] << 8) | data[offset + 3]);
+
     private static int ReadInt32BigEndian(byte[] data, int offset) =>
-        (data[offset] << 24) | (data[offset + 1] << 16) |
-        (data[offset + 2] << 8) | data[offset + 3];
+        (int)ReadU32BE(data, offset);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int IndexOf(byte[] haystack, byte[] needle, int start, int end)
@@ -471,73 +482,51 @@ internal static unsafe class IthmbCodecPlugin
     /// </summary>
     private static int ReadExifOrientation(byte[] data, int jpegOffset, int jpegLength)
     {
-        // EXIF data lives in APP1 marker (FF E1)
         int end = jpegOffset + jpegLength;
         for (int i = jpegOffset + 2; i < end - 4; i++)
         {
             if (data[i] != 0xFF || data[i + 1] != 0xE1) continue;
             // APP1 segment: FF E1 len_len (big-endian 16-bit length including self)
             if (i + 4 >= end) break;
-            int segLen = (data[i + 2] << 8) | data[i + 3];
-            int segStart = i + 2;  // start of length field
-            int segEnd = segStart + segLen;
+            int segEnd = i + 2 + ReadU16BE(data, i + 2);
             if (segEnd > end) break;
             // Look for "Exif\0\0" header within APP1
-            int exifOff = i + 4; // after length
+            int exifOff = i + 4;
             if (exifOff + 6 > end) break;
-            bool isExif = data[exifOff] == 'E' && data[exifOff + 1] == 'x' &&
-                          data[exifOff + 2] == 'i' && data[exifOff + 3] == 'f' &&
-                          data[exifOff + 4] == 0 && data[exifOff + 5] == 0;
-            if (!isExif) continue;
+            if (data[exifOff] != 'E' || data[exifOff + 1] != 'x' ||
+                data[exifOff + 2] != 'i' || data[exifOff + 3] != 'f' ||
+                data[exifOff + 4] != 0 || data[exifOff + 5] != 0) continue;
             // TIFF header: "II" (little-endian) or "MM" (big-endian)
             int tiffStart = exifOff + 6;
             if (tiffStart + 8 > end) break;
-            bool littleEndian = data[tiffStart] == 'I' && data[tiffStart + 1] == 'I';
-            bool bigEndian = data[tiffStart] == 'M' && data[tiffStart + 1] == 'M';
-            if (!littleEndian && !bigEndian) continue;
+            bool le = data[tiffStart] == 'I' && data[tiffStart + 1] == 'I';
+            bool be = data[tiffStart] == 'M' && data[tiffStart + 1] == 'M';
+            if (!le && !be) continue;
             // TIFF magic: 0x002A
-            int magic = littleEndian
-                ? data[tiffStart + 2] | (data[tiffStart + 3] << 8)
-                : (data[tiffStart + 2] << 8) | data[tiffStart + 3];
-            if (magic != 0x002A) continue;
+            if ((le ? ReadU16LE(data, tiffStart + 2) : ReadU16BE(data, tiffStart + 2)) != 0x002A) continue;
             // IFD0 offset
             int ifdOff = tiffStart + 4;
-            int ifdOffset = littleEndian
-                ? data[ifdOff] | (data[ifdOff + 1] << 8) | (data[ifdOff + 2] << 16) | (data[ifdOff + 3] << 24)
-                : (data[ifdOff] << 24) | (data[ifdOff + 1] << 16) | (data[ifdOff + 2] << 8) | data[ifdOff + 3];
-            if (ifdOffset <= 0) continue;
-            int ifdPos = tiffStart + ifdOffset;
-            if (ifdPos + 2 > end) continue;
+            int ifdPos = tiffStart + (int)(le ? ReadU32LE(data, ifdOff) : ReadU32BE(data, ifdOff));
+            if (ifdPos <= tiffStart || ifdPos + 2 > end) continue;
             // Number of IFD entries (16-bit)
-            int numEntries = littleEndian
-                ? data[ifdPos] | (data[ifdPos + 1] << 8)
-                : (data[ifdPos] << 8) | data[ifdPos + 1];
+            int numEntries = le ? ReadU16LE(data, ifdPos) : ReadU16BE(data, ifdPos);
             // Scan IFD for Orientation tag (0x0112)
             int entryStart = ifdPos + 2;
             for (int e = 0; e < numEntries && entryStart + 12 <= end; e++, entryStart += 12)
             {
-                int tag = littleEndian
-                    ? data[entryStart] | (data[entryStart + 1] << 8)
-                    : (data[entryStart] << 8) | data[entryStart + 1];
+                int tag = le ? ReadU16LE(data, entryStart) : ReadU16BE(data, entryStart);
                 if (tag != 0x0112) continue;
-                // Type should be SHORT (3), count 1
-                int type = littleEndian
-                    ? data[entryStart + 2] | (data[entryStart + 3] << 8)
-                    : (data[entryStart + 2] << 8) | data[entryStart + 3];
-                int count = littleEndian
-                    ? data[entryStart + 4] | (data[entryStart + 5] << 8) | (data[entryStart + 6] << 16) | (data[entryStart + 7] << 24)
-                    : (data[entryStart + 4] << 24) | (data[entryStart + 5] << 16) | (data[entryStart + 6] << 8) | data[entryStart + 7];
+                // Type must be SHORT (3), count 1
+                int type = le ? ReadU16LE(data, entryStart + 2) : ReadU16BE(data, entryStart + 2);
+                int count = (int)(le ? ReadU32LE(data, entryStart + 4) : ReadU32BE(data, entryStart + 4));
                 if (type != 3 || count != 1) continue;
-                // Value is in the last 2 bytes of the entry (SHORT fits in 2 bytes)
-                int orient = littleEndian
-                    ? data[entryStart + 8] | (data[entryStart + 9] << 8)
-                    : (data[entryStart + 8] << 8) | data[entryStart + 9];
-                // Valid orientations: 1-8
+                // Orientation value is in the last 2 bytes (SHORT fits in 2 bytes)
+                int orient = le ? ReadU16LE(data, entryStart + 8) : ReadU16BE(data, entryStart + 8);
                 return orient is >= 1 and <= 8 ? orient : 1;
             }
-            return 1; // APP1 found but no orientation tag
+            return 1;
         }
-        return 1; // No EXIF APP1 found
+        return 1;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
