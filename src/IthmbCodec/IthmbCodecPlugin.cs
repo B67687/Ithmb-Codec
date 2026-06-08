@@ -37,18 +37,18 @@ internal static unsafe class IthmbCodecPlugin
 
     private sealed record IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
-        int FrameByteLength, int MinimumDecodeByteLength,
+        int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true);
 
     private static readonly IReadOnlyDictionary<int, IthmbVariantProfile> KnownProfiles =
         new Dictionary<int, IthmbVariantProfile>
         {
-            [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2, 480 * 864 * 2),
-            [1009] = new(1009, 42, 30, IthmbEncoding.Rgb565, 42 * 30 * 2, 42 * 30 * 2),
-            [1015] = new(1015, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2, 130 * 88 * 2),
-            [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2, 720 * 480 * 2),
-            [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, 176 * 220 * 2, SwapsDimensions: true),
-            [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2, 176 * 132 * 2),
+            [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2),
+            [1009] = new(1009, 42, 30, IthmbEncoding.Rgb565, 42 * 30 * 2),
+            [1015] = new(1015, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
+            [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2),
+            [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true),
+            [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2),
         };
 
     // ------------------------------ Static plugin state ------------------------------
@@ -263,17 +263,8 @@ internal static unsafe class IthmbCodecPlugin
         int w = srcInfo.Width, h = srcInfo.Height;
         if (w <= 0 || h <= 0) return IGStatus.DecodeFailed;
 
-        outInfo->Width = w;
-        outInfo->Height = h;
-        outInfo->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        outInfo->HasAlpha = srcInfo.AlphaType == SKAlphaType.Opaque ? 0 : 1;
-        outInfo->HdrTransferFn = (int)IGHdrTransferFn.None;
-        outInfo->ColorSpace = (int)IGColorSpace.Srgb;
-        outInfo->Orientation = ReadExifOrientation(data, offset, length);
-        outInfo->FrameCount = 1;
-        outInfo->FileSizeBytes = -1;
-        outInfo->IccProfileData = null;
-        outInfo->IccProfileSize = 0;
+        int hasAlpha = srcInfo.AlphaType == SKAlphaType.Opaque ? 0 : 1;
+        FillImageInfo(outInfo, w, h, hasAlpha, ReadExifOrientation(data, offset, length));
 
         if (outBuf == null) return IGStatus.OK; // metadata-only
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
@@ -291,27 +282,13 @@ internal static unsafe class IthmbCodecPlugin
 
         if (data.Length < 4 + frameSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
 
-        outInfo->Width = w;
-        outInfo->Height = h;
-        outInfo->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        outInfo->HasAlpha = 0;
-        outInfo->HdrTransferFn = (int)IGHdrTransferFn.None;
-        outInfo->ColorSpace = (int)IGColorSpace.Srgb;
-        outInfo->Orientation = 1;
-        outInfo->FrameCount = 1;
-        outInfo->FileSizeBytes = -1;
-        outInfo->IccProfileData = null;
-        outInfo->IccProfileSize = 0;
+        FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1);
 
         if (outBuf == null) return IGStatus.OK;
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
-        // Allocate BGRA pixel buffer
-        ulong stride = (ulong)w * 4UL;
-        ulong size = stride * (ulong)h;
-        if (size > int.MaxValue) return IGStatus.OutOfMemory;
-        var pixels = (byte*)NativeMemory.Alloc((nuint)size);
-        if (pixels == null) return IGStatus.OutOfMemory;
+        var allocStatus = AllocateBgraBuffer(w, h, out var stride, out var pixels);
+        if (allocStatus != IGStatus.OK) return allocStatus;
 
         var raw = data.AsSpan(4);
         switch (profile.Encoding)
@@ -412,11 +389,8 @@ internal static unsafe class IthmbCodecPlugin
     // ------------------------------ Shared SkiaSharp decode ------------------------------
     private static IGStatus DecodeToPixelBuffer(SKCodec codec, int w, int h, IGPixelBuffer* outBuf)
     {
-        ulong stride = (ulong)w * 4UL;
-        ulong size = stride * (ulong)h;
-        if (size > int.MaxValue) return IGStatus.OutOfMemory;
-        var pixels = (byte*)NativeMemory.Alloc((nuint)size);
-        if (pixels == null) return IGStatus.OutOfMemory;
+        var allocStatus = AllocateBgraBuffer(w, h, out var stride, out var pixels);
+        if (allocStatus != IGStatus.OK) return allocStatus;
 
         try
         {
@@ -445,6 +419,33 @@ internal static unsafe class IthmbCodecPlugin
     }
 
     // ------------------------------ Helpers ------------------------------
+
+    /// <summary>Populates an IGImageInfo with common defaults.</summary>
+    private static void FillImageInfo(IGImageInfo* info, int w, int h, int hasAlpha, int orientation)
+    {
+        info->Width = w;
+        info->Height = h;
+        info->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
+        info->HasAlpha = hasAlpha;
+        info->HdrTransferFn = (int)IGHdrTransferFn.None;
+        info->ColorSpace = (int)IGColorSpace.Srgb;
+        info->Orientation = orientation;
+        info->FrameCount = 1;
+        info->FileSizeBytes = -1;
+        info->IccProfileData = null;
+        info->IccProfileSize = 0;
+    }
+
+    /// <summary>Allocates a BGRA8 pixel buffer; returns OOM status on failure.</summary>
+    private static IGStatus AllocateBgraBuffer(int w, int h, out ulong stride, out byte* pixels)
+    {
+        stride = (ulong)w * 4UL;
+        ulong size = stride * (ulong)h;
+        if (size > int.MaxValue) { pixels = null; return IGStatus.OutOfMemory; }
+        pixels = (byte*)NativeMemory.Alloc((nuint)size);
+        if (pixels == null) return IGStatus.OutOfMemory;
+        return IGStatus.OK;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static ushort ReadU16LE(byte[] data, int offset) =>
