@@ -1,0 +1,21 @@
+# Build outputs
+bin/
+obj/
+*.dll
+*.so
+*.dylib
+*.exe
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# SDK dependency (cloned locally, not committed)
+imageglass-sdk/
+
+# Release artifacts
+*.zip
