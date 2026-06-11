@@ -31,7 +31,7 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 
 ### Decode pipeline
 
-1. **Read the file** --- the entire `.ithmb` file is read into memory (typical size: 1-2 MB).
+1. **Read the file** --- a 4 MB header is read for JPEG scan, then the exact JPEG slice is seeked and read from the FileStream. Peak memory: ~5 MB for typical files.
 2. **JPEG scan** --- the file is scanned (SIMD-accelerated via `Span.IndexOf`) for a JPEG SOI marker (`FF D8`) followed within 128 bytes by either a JFIF or Exif header. If found, the JPEG payload is extracted (SOI to EOI) and decoded via StbImageSharp (MIT, ~200 KB).
 3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts.
 4. **EXIF orientation** --- if the JPEG contains an EXIF APP1 segment with an orientation tag (0x0112), it is parsed and reported to the host. ImageGlass rotates the image accordingly.
@@ -57,10 +57,10 @@ Files larger than **100 MB** are rejected before reading to prevent OOM from pat
    The folder should contain:
 
    ```
-   %LocalAppData%\ImageGlass_10\_plugins\IthmbCodec\
-       IthmbCodec.dll        (1.8 MB --- native plugin with embedded JPEG decoder)
-       igplugin.json         (plugin manifest)
-       profiles.json         (optional --- external profile definitions)
+    %LocalAppData%\ImageGlass_10\_plugins\IthmbCodec\
+        IthmbCodec.dll        (1.4 MB --- native plugin with embedded JPEG decoder)
+        igplugin.json         (plugin manifest)
+        profiles.json         (optional --- external profile definitions)
    ```
 
    > StbImageSharp (JPEG decoder) is compiled directly into `IthmbCodec.dll` by Native AOT. No separate DLL needed. This replaced the previous 11 MB `libSkiaSharp.dll` dependency (85% size reduction).
@@ -83,14 +83,15 @@ Requires .NET 10 SDK and Visual Studio 2022 with the "Desktop development with C
 git clone https://github.com/ImageGlass/SDK.git imageglass-sdk --depth 1
 
 # Publish as Native AOT shared library
-dotnet publish src/IthmbCodec/IthmbCodec.csproj -c Release -r win-x64
+# Note: -p:IlcInstructionSet=base works around an ILC stack buffer overrun in SDK 10.0.301
+dotnet publish src/IthmbCodec/IthmbCodec.csproj -c Release -r win-x64 -p:IlcInstructionSet=base
 ```
 
 Output lands in `src/IthmbCodec/bin/Release/net10.0/win-x64/native/`. To package for distribution:
 
 ```powershell
 cd src/IthmbCodec
-Copy-Item igplugin.json bin/Release/net10.0/win-x64/native/
+Copy-Item igplugin.json,profiles.json bin/Release/net10.0/win-x64/native/
 Compress-Archive -Path bin/Release/net10.0/win-x64/native/* -DestinationPath IthmbCodec_win-x64.zip
 ```
 
@@ -135,16 +136,16 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 
 | File                                          | Description                                                                                                                                         |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~805 lines)                                                                     |
-| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~447 lines)                                                           |
+| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~864 lines)                                                                     |
+| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~551 lines)                                                           |
 | `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                               |
 | `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                                   |
-| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged at init, overridable without recompile)                                                               |
+| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged on first decode, overridable without recompile)                                                               |
 | `src/IthmbCodec/test/`                        | xUnit test project (306 tests) --- exhaustive RGB565+RGB555, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
 
 ### Raw profile definitions
 
-18 profiles are defined based on known iPod/iPhone thumbnail formats, aggregated from iOpenPod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
+20 profiles are defined based on known iPod/iPhone thumbnail formats, aggregated from iOpenPod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
 
 | Profile | Resolution | Encoding    | Device(s)                              |
 | ------- | ---------- | ----------- | -------------------------------------- |
