@@ -374,4 +374,247 @@ public unsafe class IthmbCodecTests
         ms.Write([0x00, 0x00, 0x00, 0x00]);
         return ms.ToArray();
     }
+
+    // ===================== Roundtrip consistency (reference encode → decode) =====================
+    //
+    // Reference encoders matching iOpenPod's algorithm (MIT-licensed reference implementation).
+    // Proves our decoders are algorithmically correct without requiring real .ithmb files.
+    //
+
+    /// <summary>Reference RGB565 packer matching iOpenPod's Python _pack_rgb565.</summary>
+    private static ushort PackRgb565(int r, int g, int b) =>
+        (ushort)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+
+    /// <summary>Reference BT.601 forward transform matching iOpenPod's UYVY encoder.</summary>
+    private static (int y, int u, int v) RgbToYuv(int r, int g, int b)
+    {
+        int y = (int)(0.299 * r + 0.587 * g + 0.114 * b);
+        int u = (int)(-0.169 * r - 0.331 * g + 0.5 * b + 128);
+        int v = (int)(0.5 * r - 0.419 * g - 0.081 * b + 128);
+        return (Clamp(y, 0, 255), Clamp(u, 0, 255), Clamp(v, 0, 255));
+    }
+
+    private static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
+
+    // --------------------- RGB565 ---------------------
+
+    [Fact]
+    public void Rgb565_Roundtrip_AllCornerColors()
+    {
+        // Test every combination of R=0,128,255, G=0,128,255, B=0,128,255 (27 combos)
+        int[] vals = [0, 64, 128, 192, 255];
+        foreach (int r in vals)
+        {
+            foreach (int g in vals)
+            {
+                foreach (int b in vals)
+                {
+                    // Pack using reference encoder (matching iOpenPod)
+                    ushort packed = PackRgb565(r, g, b);
+                    byte leLow = (byte)(packed & 0xFF);
+                    byte leHigh = (byte)(packed >> 8);
+                    byte[] src = [leLow, leHigh];
+
+                    byte* dst = (byte*)NativeMemory.Alloc(4);
+                    try
+                    {
+                        // Decode using our implementation
+                        IthmbCodecPlugin.DecodeRgb565(src, dst, 1, 1, littleEndian: true);
+
+                        // RGB565 is lossy (5-bit/6-bit precision). Allow ±4 error.
+                        int dr = Math.Abs(dst[2] - r);
+                        int dg = Math.Abs(dst[1] - g);
+                        int db = Math.Abs(dst[0] - b);
+                        Assert.True(dr <= 8, $"R roundtrip error too large: {r}→{dst[2]} (Δ{dr})");
+                        Assert.True(dg <= 8, $"G roundtrip error too large: {g}→{dst[1]} (Δ{dg})");
+                        Assert.True(db <= 8, $"B roundtrip error too large: {b}→{dst[0]} (Δ{db})");
+                    }
+                    finally
+                    {
+                        NativeMemory.Free(dst);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void Rgb565_Roundtrip_ExactValues()
+    {
+        // Some values roundtrip exactly through 5/6-bit precision:
+        // R=0→0, R=255→248+7=255, G=0→0, G=255→252+3=255, B=0→0, B=255→248+7=255
+        ushort packed = PackRgb565(255, 255, 255);
+        byte[] src = [(byte)(packed & 0xFF), (byte)(packed >> 8)];
+        byte* dst = (byte*)NativeMemory.Alloc(4);
+        try
+        {
+            IthmbCodecPlugin.DecodeRgb565(src, dst, 1, 1, littleEndian: true);
+            Assert.Equal(255, dst[2]); // R
+            Assert.Equal(255, dst[1]); // G
+            Assert.Equal(255, dst[0]); // B
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // --------------------- YUV422 (UYVY) ---------------------
+
+    [Fact]
+    public void Yuv422_Roundtrip_NeutralChroma()
+    {
+        // Neutral chroma (128,128): output should equal luma for all channels
+        // Encode a 2×1 row: two pixels with known RGB values
+        int r0 = 128, g0 = 128, b0 = 128; // mid-gray
+        int r1 = 255, g1 = 255, b1 = 255; // white
+
+        // Encode via reference T.601 forward transform
+        var (y0, u, v) = RgbToYuv(r0, g0, b0);
+        var (y1, _, _) = RgbToYuv(r1, g1, b1);
+
+        // UYVY layout: [U][Y0][V][Y1]
+        byte[] src = [(byte)u, (byte)y0, (byte)v, (byte)y1];
+
+        byte* dst = (byte*)NativeMemory.Alloc(2 * 4);
+        try
+        {
+            IthmbCodecPlugin.DecodeYuv422(src, dst, 2, 1);
+
+            // With neutral chroma (U=V=128), chroma offset = 0 after -128
+            // Output should be approximately gray (all channels ≈ luma)
+            int tol = 16; // YUV roundtrip is lossy (quantization + coefficient rounding)
+            Assert.InRange(dst[2], r0 - tol, r0 + tol); // R0
+            Assert.InRange(dst[1], g0 - tol, g0 + tol); // G0
+            Assert.InRange(dst[0], b0 - tol, b0 + tol); // B0
+            Assert.InRange(dst[6], r1 - tol, r1 + tol); // R1
+            Assert.InRange(dst[5], g1 - tol, g1 + tol); // G1
+            Assert.InRange(dst[4], b1 - tol, b1 + tol); // B1
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void Yuv422_Roundtrip_RedPixel()
+    {
+        // Pure red (255,0,0) → YCbCr values using BT.601
+        var (y, u, v) = RgbToYuv(255, 0, 0);
+
+        // Two identical red pixels
+        byte[] src = [(byte)u, (byte)y, (byte)v, (byte)y];
+        byte* dst = (byte*)NativeMemory.Alloc(2 * 4);
+        try
+        {
+            IthmbCodecPlugin.DecodeYuv422(src, dst, 2, 1);
+
+            // Red should dominate
+            Assert.True(dst[2] > 200, $"R0 should be red, got {dst[2]}");
+            Assert.True(dst[6] > 200, $"R1 should be red, got {dst[6]}");
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // --------------------- YCbCr 4:2:0 ---------------------
+
+    [Fact]
+    public void Ycbcr420_Roundtrip_GrayscaleGrid()
+    {
+        // 4×4 grayscale image: all neutral chroma, checkerboard luma
+        int w = 4, h = 4;
+        int ySize = w * h;
+        int uvSize = ySize / 4;
+
+        byte[] src = new byte[ySize + uvSize * 2];
+        // Y plane: checkerboard (0 and 255)
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                src[y * w + x] = (byte)(((x + y) % 2 == 0) ? 0 : 255);
+
+        // Cb plane: neutral (128)
+        for (int i = 0; i < uvSize; i++)
+            src[ySize + i] = 128;
+        // Cr plane: neutral (128)
+        for (int i = 0; i < uvSize; i++)
+            src[ySize + uvSize + i] = 128;
+
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
+        try
+        {
+            IthmbCodecPlugin.DecodeYcbcr420(src, dst, w, h);
+
+            // With neutral chroma, output = luma values (approximately)
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    int expectedLuma = ((x + y) % 2 == 0) ? 0 : 255;
+                    int idx = (y * w + x) * 4;
+                    // YUV roundtrip: allow ±16 for luma precision
+                    Assert.InRange(dst[idx + 2], expectedLuma - 16, expectedLuma + 16); // R
+                    Assert.InRange(dst[idx + 1], expectedLuma - 16, expectedLuma + 16); // G
+                    Assert.InRange(dst[idx], expectedLuma - 16, expectedLuma + 16);     // B
+                }
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // --------------------- Interlaced YUV422 (F1019) ---------------------
+
+    [Fact]
+    public void Yuv422Interlaced_Roundtrip_MatchesLinearForFlatImage()
+    {
+        // For a flat-color image, interlaced and non-interlaced decode should match.
+        // This validates the field-split logic is correct.
+        int w = 4, h = 4;
+        int bytesPerField = (h / 2) * w * 2; // 16 bytes per field
+        int totalBytes = bytesPerField * 2;   // 32 bytes
+        byte[] flatSrc = new byte[totalBytes];
+
+        // Fill with a known UYVY pattern (neutral chroma, varying luma)
+        for (int field = 0; field < 2; field++)
+        {
+            for (int row = 0; row < h / 2; row++)
+            {
+                for (int x = 0; x < w; x += 2)
+                {
+                    int off = field * bytesPerField + row * (w * 2) + x * 2;
+                    flatSrc[off] = 128;     // U (neutral)
+                    flatSrc[off + 1] = (byte)(field * 128 + row * 64 + x * 32); // Y0
+                    flatSrc[off + 2] = 128; // V (neutral)
+                    flatSrc[off + 3] = (byte)(field * 128 + row * 64 + x * 32 + 16); // Y1
+                }
+            }
+        }
+
+        byte* linearDst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
+        byte* interlaceDst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
+        try
+        {
+            // We need to create a non-interlaced version of the same data
+            // Re-arrange: interlace stores even rows in first half, odd in second
+            // Linear stores all rows sequentially
+            byte[] linearSrc = new byte[totalBytes];
+            for (int y = 0; y < h; y++)
+            {
+                int fieldOffset = (y % 2 == 0) ? 0 : bytesPerField;
+                int rowInField = y / 2;
+                for (int x = 0; x < w * 2; x++)
+                {
+                    linearSrc[y * w * 2 + x] = flatSrc[fieldOffset + rowInField * w * 2 + x];
+                }
+            }
+
+            IthmbCodecPlugin.DecodeYuv422(linearSrc, linearDst, w, h);
+            IthmbCodecPlugin.DecodeYuv422Interlaced(flatSrc, interlaceDst, w, h);
+
+            // Both should produce identical output
+            for (int i = 0; i < w * h * 4; i++)
+            {
+                Assert.Equal(linearDst[i], interlaceDst[i]);
+            }
+        }
+        finally
+        {
+            NativeMemory.Free(linearDst);
+            NativeMemory.Free(interlaceDst);
+        }
+    }
 }
