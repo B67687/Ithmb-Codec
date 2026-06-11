@@ -223,7 +223,7 @@ internal static unsafe partial class IthmbCodecPlugin
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
         // Load external profiles on first decode (deferred from init to avoid I/O in GetApi)
-        if (!_profilesLoaded) { _profilesLoaded = true; LoadExternalProfiles(); }
+        if (!Volatile.Read(ref _profilesLoaded)) { LoadExternalProfiles(); Volatile.Write(ref _profilesLoaded, true); }
 
         // Check file size before reading
         long fileSize;
