@@ -211,10 +211,12 @@ internal static unsafe class IthmbCodecPlugin
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
         // Check file size before reading
-        var fileInfo = new FileInfo(path);
-        if (fileInfo.Length > 100L * 1024 * 1024)
+        long fileSize;
+        try { fileSize = new FileInfo(path).Length; }
+        catch { return IGStatus.IoError; }
+        if (fileSize > 100L * 1024 * 1024)
         {
-            Log(4, $"ITHMB: file too large ({fileInfo.Length} bytes)");
+            Log(4, $"ITHMB: file too large ({fileSize} bytes)");
             return IGStatus.DecodeFailed;
         }
 
@@ -306,7 +308,7 @@ internal static unsafe class IthmbCodecPlugin
         return DecodeToPixelBuffer(codec, w, h, outBuf);
     }
 
-    /// <summary>Creates an SKData from a slice of a byte array without an intermediate allocation.</summary>
+    /// <summary>Creates an SKData from a slice of a byte array without an additional byte[] allocation.</summary>
     private static SKData CreateSliceSkData(byte[] data, int offset, int length)
     {
         fixed (byte* p = data)
@@ -334,27 +336,35 @@ internal static unsafe class IthmbCodecPlugin
         var allocStatus = AllocateBgraBuffer(w, h, out var stride, out var pixels);
         if (allocStatus != IGStatus.OK) return allocStatus;
 
-        var raw = data.AsSpan(4);
-        // For padded profiles, trim to the valid pixel data portion
-        if (profile.IsPadded)
+        try
         {
-            int validSize = w * h * 3 / 2;
-            if (raw.Length > validSize) raw = raw[..validSize];
+            var raw = data.AsSpan(4);
+            // For padded profiles, trim to the valid pixel data portion
+            if (profile.IsPadded)
+            {
+                int validSize = w * h * 3 / 2;
+                if (raw.Length > validSize) raw = raw[..validSize];
+            }
+            switch (profile.Encoding)
+            {
+                case IthmbEncoding.Rgb565:
+                    DecodeRgb565(raw, pixels, w, h, profile.LittleEndian);
+                    break;
+                case IthmbEncoding.Yuv422:
+                    if (profile.IsInterlaced)
+                        DecodeYuv422Interlaced(raw, pixels, w, h);
+                    else
+                        DecodeYuv422(raw, pixels, w, h);
+                    break;
+                case IthmbEncoding.Ycbcr420:
+                    DecodeYcbcr420(raw, pixels, w, h);
+                    break;
+            }
         }
-        switch (profile.Encoding)
+        catch
         {
-            case IthmbEncoding.Rgb565:
-                DecodeRgb565(raw, pixels, w, h, profile.LittleEndian);
-                break;
-            case IthmbEncoding.Yuv422:
-                if (profile.IsInterlaced)
-                    DecodeYuv422Interlaced(raw, pixels, w, h);
-                else
-                    DecodeYuv422(raw, pixels, w, h);
-                break;
-            case IthmbEncoding.Ycbcr420:
-                DecodeYcbcr420(raw, pixels, w, h);
-                break;
+            NativeMemory.Free(pixels);
+            return IGStatus.Internal;
         }
 
         outBuf->Data = pixels;
@@ -369,7 +379,7 @@ internal static unsafe class IthmbCodecPlugin
 
     internal static void DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
-        int expectedBytes = w * h * 2;
+        long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
 
         for (int y = 0; y < h; y++)
@@ -397,7 +407,7 @@ internal static unsafe class IthmbCodecPlugin
 
     internal static void DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int expectedBytes = w * h * 2;
+        long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
 
         // UYVY interleaved: every 4 bytes = U0 Y0 V0 Y1
@@ -412,7 +422,7 @@ internal static unsafe class IthmbCodecPlugin
                 int y1 = src[idx + 3];
 
                 WriteYuvPixel(dst, y, x, w, y0, u, v);
-                WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
+                if (x + 1 < w) WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
             }
         }
     }
@@ -424,7 +434,7 @@ internal static unsafe class IthmbCodecPlugin
     /// </summary>
     internal static void DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int expectedBytes = w * h * 2;
+        long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
         int half = (h / 2) * w * 2; // bytes per field
         int rowStride = w * 2;      // bytes per row within a field
@@ -441,7 +451,7 @@ internal static unsafe class IthmbCodecPlugin
                 int v = src[idx + 2] - 128;
                 int y1 = src[idx + 3];
                 WriteYuvPixel(dst, y, x, w, y0, u, v);
-                WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
+                if (x + 1 < w) WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
             }
         }
     }
@@ -449,18 +459,30 @@ internal static unsafe class IthmbCodecPlugin
     internal static void DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         int ySize = w * h;
-        int uvSize = ySize / 4;
-        int expectedBytes = ySize + uvSize * 2;
+        int uvSize = ((w + 1) / 2) * ((h + 1) / 2); // ceil(w/2) * ceil(h/2)
+        long expectedBytes = (long)ySize + uvSize * 2;
         if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
-        for (int y = 0; y < h; y++)
+
+        // Process in 2x2 blocks: reads Cb/Cr once per block (vs 4x in naive loop).
+        // Chroma subsampling 4:2:0 means 2x2 luma blocks share one Cb/Cr pair.
+        int uvStride = w / 2; // chroma row stride in standard JPEG 4:2:0
+        for (int y = 0; y < h; y += 2)
         {
-            for (int x = 0; x < w; x++)
+            for (int x = 0; x < w; x += 2)
             {
-                int yy = src[y * w + x];
-                int uvIdx = ySize + (y / 2) * (w / 2) + (x / 2);
+                int uvIdx = ySize + (y / 2) * uvStride + (x / 2);
                 int cb = src[uvIdx] - 128;
                 int cr = src[uvIdx + uvSize] - 128;
-                WriteYuvPixel(dst, y, x, w, yy, cb, cr);
+
+                // Process all 4 luma pixels in this 2x2 block
+                for (int dy = 0; dy < 2 && y + dy < h; dy++)
+                {
+                    for (int dx = 0; dx < 2 && x + dx < w; dx++)
+                    {
+                        int yy = src[(y + dy) * w + (x + dx)];
+                        WriteYuvPixel(dst, y + dy, x + dx, w, yy, cb, cr);
+                    }
+                }
             }
         }
     }
@@ -535,7 +557,7 @@ internal static unsafe class IthmbCodecPlugin
         stride = (ulong)w * 4UL;
         ulong size = stride * (ulong)h;
         if (size > int.MaxValue) { pixels = null; return IGStatus.OutOfMemory; }
-        pixels = (byte*)NativeMemory.Alloc((nuint)size);
+        pixels = (byte*)NativeMemory.AllocZeroed((nuint)size);
         if (pixels == null) return IGStatus.OutOfMemory;
         return IGStatus.OK;
     }
@@ -564,10 +586,8 @@ internal static unsafe class IthmbCodecPlugin
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int IndexOf(byte[] haystack, byte[] needle, int start, int end)
     {
-        for (int i = start; i <= end - needle.Length; i++)
-            if (haystack.AsSpan(i, needle.Length).SequenceEqual(needle))
-                return i;
-        return -1;
+        int len = end - start;
+        return len <= 0 ? -1 : haystack.AsSpan(start, len).IndexOf(needle);
     }
 
     /// <summary>
@@ -753,12 +773,9 @@ internal static unsafe class IthmbCodecPlugin
 
             if (prefix > 0 && width > 0 && height > 0 && frameBytes > 0)
             {
-                var enc = encoding.ToLowerInvariant() switch
-                {
-                    "yuv422" => IthmbEncoding.Yuv422,
-                    "ycbcr420" => IthmbEncoding.Ycbcr420,
-                    _ => IthmbEncoding.Rgb565,
-                };
+                var enc = string.Equals(encoding, "yuv422", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
+                    : string.Equals(encoding, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
+                    : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced);
             }
