@@ -11,8 +11,10 @@ Format behavior informed by the IthmbDecoder reference (ImageGlass PR #2316).
 This is a clean-room implementation for the v10 native codec plugin ABI.
 */
 using System.Collections.Frozen;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using ImageGlass.SDK.Plugins;
 using SkiaSharp;
 
@@ -43,19 +45,36 @@ internal static unsafe class IthmbCodecPlugin
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true,
-        bool IsPadded = false);
+        bool IsPadded = false, bool IsInterlaced = false);
 
-    private static readonly FrozenDictionary<int, IthmbVariantProfile> KnownProfiles =
+    private static FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
+
+    private static FrozenDictionary<int, IthmbVariantProfile> GetBuiltInProfiles() =>
         new Dictionary<int, IthmbVariantProfile>
         {
             [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2),
             [1009] = new(1009, 42, 30, IthmbEncoding.Rgb565, 42 * 30 * 2),
+            // iPod Photo 4G full-screen
+            [1013] = new(1013, 220, 176, IthmbEncoding.Rgb565, 220 * 176 * 2),
             [1015] = new(1015, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
-            [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2),
+            [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2, IsInterlaced: true),
             [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true),
             [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2),
+            // iPod Classic 5G/6G full-screen
+            [1024] = new(1024, 320, 240, IthmbEncoding.Rgb565, 320 * 240 * 2),
+            // iPod Classic thumbnail
+            [1036] = new(1036, 50, 41, IthmbEncoding.Rgb565, 50 * 41 * 2),
+            // iPod Classic 6G square photo thumbnail
+            [1066] = new(1066, 64, 64, IthmbEncoding.Rgb565, 64 * 64 * 2),
             // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame
             [1067] = new(1067, 720, 480, IthmbEncoding.Ycbcr420, 720 * 480 * 2, IsPadded: true),
+            // iPod Nano 4G photo thumbnails
+            [1079] = new(1079, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
+            [1083] = new(1083, 240, 320, IthmbEncoding.Rgb565, 240 * 320 * 2),
+            // iPod Nano 5G photo
+            [1087] = new(1087, 384, 384, IthmbEncoding.Rgb565, 384 * 384 * 2),
+            // iPhone 1G/2G, iPod Touch 1G/2G full-screen
+            [3008] = new(3008, 640, 480, IthmbEncoding.Rgb565, 640 * 480 * 2),
         }.ToFrozenDictionary();
 
     // ------------------------------ Static plugin state ------------------------------
@@ -328,7 +347,10 @@ internal static unsafe class IthmbCodecPlugin
                 DecodeRgb565(raw, pixels, w, h, profile.LittleEndian);
                 break;
             case IthmbEncoding.Yuv422:
-                DecodeYuv422(raw, pixels, w, h);
+                if (profile.IsInterlaced)
+                    DecodeYuv422Interlaced(raw, pixels, w, h);
+                else
+                    DecodeYuv422(raw, pixels, w, h);
                 break;
             case IthmbEncoding.Ycbcr420:
                 DecodeYcbcr420(raw, pixels, w, h);
@@ -383,6 +405,33 @@ internal static unsafe class IthmbCodecPlugin
                 int v = src[idx + 2] - 128;
                 int y1 = src[idx + 3];
 
+                WriteYuvPixel(dst, y, x, w, y0, u, v);
+                WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Decodes interlaced UYVY 4:2:2 (F1019 format).
+    /// Even rows are stored in the first half of the buffer, odd rows in the second half.
+    /// Within each field: UYVY macropixels (4 bytes = 2 pixels, chroma shared).
+    /// </summary>
+    internal static void DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
+        int half = (h / 2) * w * 2; // bytes per field
+        int rowStride = w * 2;      // bytes per row within a field
+        for (int y = 0; y < h; y++)
+        {
+            int fieldOffset = (y % 2 == 0) ? 0 : half;
+            int rowInField = y / 2;
+            int rowStart = fieldOffset + rowInField * rowStride;
+            for (int x = 0; x < w; x += 2)
+            {
+                int idx = rowStart + x * 2;
+                int u = src[idx] - 128;
+                int y0 = src[idx + 1];
+                int v = src[idx + 2] - 128;
+                int y1 = src[idx + 3];
                 WriteYuvPixel(dst, y, x, w, y0, u, v);
                 WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
             }
@@ -591,6 +640,181 @@ internal static unsafe class IthmbCodecPlugin
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static IGStringRef MakeStringRef(char* data, int len) => new() { Data = data, Length = len };
 
+    // ------------------------------ External profiles.json ------------------------------
+
+    /// <summary>
+    /// Looks for a profiles.json sidecar file next to the plugin DLL.
+    /// If found, parses it and merges entries into KnownProfiles (external overrides built-in).
+    /// Safe for Native AOT: uses a minimal manual JSON parser (no reflection).
+    /// </summary>
+    private static void LoadExternalProfiles()
+    {
+        string? jsonPath = null;
+        try
+        {
+            // Look relative to the app base directory (works in Native AOT)
+            string baseDir = AppContext.BaseDirectory;
+            jsonPath = Path.Combine(baseDir, "profiles.json");
+            if (!File.Exists(jsonPath))
+            {
+                // Fallback: current working directory
+                jsonPath = Path.Combine(Environment.CurrentDirectory, "profiles.json");
+                if (!File.Exists(jsonPath)) return;
+            }
+        }
+        catch { return; }
+        if (jsonPath == null) return;
+
+        string json;
+        try { json = File.ReadAllText(jsonPath); }
+        catch { return; }
+
+        if (string.IsNullOrWhiteSpace(json)) return;
+
+        var external = new Dictionary<int, IthmbVariantProfile>();
+        try
+        {
+            ParseProfilesJson(json, external);
+        }
+        catch { return; }
+
+        if (external.Count == 0) return;
+
+        // Merge: start with built-in, override with external, rebuild
+        var merged = new Dictionary<int, IthmbVariantProfile>();
+        foreach (var kv in GetBuiltInProfiles()) merged[kv.Key] = kv.Value;
+        foreach (var kv in external) merged[kv.Key] = kv.Value;
+        KnownProfiles = merged.ToFrozenDictionary();
+    }
+
+    /// <summary>Minimal AOT-safe JSON parser for the profiles.json schema.</summary>
+    private static void ParseProfilesJson(string json, Dictionary<int, IthmbVariantProfile> output)
+    {
+        int pos = 0;
+        SkipWhitespace(json, ref pos);
+        if (pos >= json.Length || json[pos] != '[') return;
+        pos++; // skip '['
+
+        while (pos < json.Length)
+        {
+            SkipWhitespace(json, ref pos);
+            if (pos >= json.Length) break;
+            if (json[pos] == ']') { pos++; break; }
+
+            // Parse object
+            if (json[pos] != '{') return;
+            pos++; // skip '{'
+
+            int prefix = 0, width = 0, height = 0, frameBytes = 0;
+            string encoding = "rgb565";
+            bool swapsDim = false, le = true, padded = false, interlaced = false;
+
+            while (pos < json.Length)
+            {
+                SkipWhitespace(json, ref pos);
+                if (pos >= json.Length || json[pos] == '}') { pos++; break; }
+
+                // Read key
+                string key = ParseJsonString(json, ref pos);
+                if (key == null) return;
+                SkipWhitespace(json, ref pos);
+                if (pos >= json.Length || json[pos] != ':') return;
+                pos++; // skip ':'
+                SkipWhitespace(json, ref pos);
+
+                // Read value (type depends on key)
+                switch (key)
+                {
+                    case "prefix": prefix = ParseJsonInt(json, ref pos); break;
+                    case "width": width = ParseJsonInt(json, ref pos); break;
+                    case "height": height = ParseJsonInt(json, ref pos); break;
+                    case "frameBytes": frameBytes = ParseJsonInt(json, ref pos); break;
+                    case "encoding": encoding = ParseJsonString(json, ref pos) ?? "rgb565"; break;
+                    case "swapsDimensions": swapsDim = ParseJsonBool(json, ref pos); break;
+                    case "littleEndian": le = ParseJsonBool(json, ref pos); break;
+                    case "isPadded": padded = ParseJsonBool(json, ref pos); break;
+                    case "isInterlaced": interlaced = ParseJsonBool(json, ref pos); break;
+                    default: SkipJsonValue(json, ref pos); break;
+                }
+
+                SkipWhitespace(json, ref pos);
+                if (pos < json.Length && json[pos] == ',') pos++;
+            }
+
+            if (prefix > 0 && width > 0 && height > 0 && frameBytes > 0)
+            {
+                var enc = encoding.ToLowerInvariant() switch
+                {
+                    "yuv422" => IthmbEncoding.Yuv422,
+                    "ycbcr420" => IthmbEncoding.Ycbcr420,
+                    _ => IthmbEncoding.Rgb565,
+                };
+                output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
+                    SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced);
+            }
+
+            SkipWhitespace(json, ref pos);
+            if (pos < json.Length && json[pos] == ',') pos++;
+        }
+    }
+
+    private static void SkipWhitespace(string s, ref int pos)
+    {
+        while (pos < s.Length && (s[pos] == ' ' || s[pos] == '\t' || s[pos] == '\n' || s[pos] == '\r')) pos++;
+    }
+
+    private static string? ParseJsonString(string s, ref int pos)
+    {
+        if (pos >= s.Length || s[pos] != '"') return null;
+        pos++; // skip opening quote
+        int start = pos;
+        while (pos < s.Length && s[pos] != '"') pos++;
+        if (pos >= s.Length) return null;
+        string result = s[start..pos];
+        pos++; // skip closing quote
+        return result;
+    }
+
+    private static int ParseJsonInt(string s, ref int pos)
+    {
+        int sign = 1, val = 0;
+        if (pos < s.Length && s[pos] == '-') { sign = -1; pos++; }
+        while (pos < s.Length && s[pos] >= '0' && s[pos] <= '9')
+        {
+            val = val * 10 + (s[pos] - '0');
+            pos++;
+        }
+        return sign * val;
+    }
+
+    private static bool ParseJsonBool(string s, ref int pos)
+    {
+        if (pos + 4 <= s.Length && s[pos..(pos + 4)] == "true") { pos += 4; return true; }
+        if (pos + 5 <= s.Length && s[pos..(pos + 5)] == "false") { pos += 5; return false; }
+        return false; // default
+    }
+
+    private static void SkipJsonValue(string s, ref int pos)
+    {
+        if (pos >= s.Length) return;
+        if (s[pos] == '"') { ParseJsonString(s, ref pos); return; }
+        if (s[pos] == '{' || s[pos] == '[')
+        {
+            int depth = 1;
+            pos++;
+            while (pos < s.Length && depth > 0)
+            {
+                if (s[pos] == '{' || s[pos] == '[') depth++;
+                else if (s[pos] == '}' || s[pos] == ']') depth--;
+                pos++;
+            }
+            return;
+        }
+        // number or boolean
+        while (pos < s.Length && s[pos] != ',' && s[pos] != '}' && s[pos] != ']' && !char.IsWhiteSpace(s[pos]))
+            pos++;
+    }
+
     // ------------------------------ Init ------------------------------
     private static void InitStrings()
     {
@@ -609,6 +833,9 @@ internal static unsafe class IthmbCodecPlugin
             _bufExtensions[i] = AllocUtf16(ext);
             _extArray[i] = MakeStringRef(_bufExtensions[i], ext.Length);
         }
+
+        // Load external profiles.json if present
+        LoadExternalProfiles();
     }
 
     private static void InitCodecApi()
