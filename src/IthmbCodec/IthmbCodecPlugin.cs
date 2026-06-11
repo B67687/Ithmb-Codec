@@ -4,7 +4,7 @@ Copyright (C) 2026 B67687
 MIT License
 
 Reads Apple .ithmb thumbnail-cache files. Primary path: locate an embedded
-JPEG payload (JFIF/Exif markers) and decode it via SkiaSharp. Secondary
+JPEG payload (JFIF/Exif markers) and decode it via StbImageSharp. Secondary
 path: decode known legacy raw thumbnail profiles (RGB565, YUV422, YCbCr420).
 
 Format behavior informed by the IthmbDecoder reference (ImageGlass PR #2316).
@@ -240,7 +240,7 @@ internal static unsafe partial class IthmbCodecPlugin
         // Check file size before reading
         long fileSize;
         try { fileSize = new FileInfo(path).Length; }
-        catch { return IGStatus.IoError; }
+        catch (Exception) { return IGStatus.IoError; }
         if (fileSize > 100L * 1024 * 1024)
         {
             Log(4, $"ITHMB: file too large ({fileSize} bytes)");
@@ -394,7 +394,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 pixels[i * 4 + 3] = srcData[si + 3]; // A = A
             }
         }
-        catch
+        catch (Exception)
         {
             NativeMemory.Free(pixels);
             return IGStatus.Internal;
@@ -453,7 +453,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 return IGStatus.DecodeFailed;
             }
         }
-        catch
+        catch (Exception)
         {
             NativeMemory.Free(pixels);
             return IGStatus.Internal;
