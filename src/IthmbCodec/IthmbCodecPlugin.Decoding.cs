@@ -203,9 +203,12 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Scalar fallback for RGB555 decode.</summary>
     private static void DecodeRgb555_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
-        for (int y = 0; y < h; y++)
-            DecodeRgb555_Tail((byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(src)) + y * w * 2,
-                dst + y * w * 4, 0, w, littleEndian);
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+                DecodeRgb555_Tail(pSrc + y * w * 2,
+                    dst + y * w * 4, 0, w, littleEndian);
+        }
     }
 
     /// <summary>Inner row decoder — used by both SIMD (tail) and scalar paths.</summary>

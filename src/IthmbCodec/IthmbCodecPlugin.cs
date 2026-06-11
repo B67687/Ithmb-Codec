@@ -92,8 +92,8 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ------------------------------ Static plugin state ------------------------------
     private static volatile IGPluginApi* _pluginApi;
-    private static IGCodecApi* _codecApi;
-    private static IGHostApi* _hostApi;
+    private static volatile IGCodecApi* _codecApi;
+    private static volatile IGHostApi* _hostApi;
 
     private static char* _bufPluginId, _bufPluginName, _bufVersion;
     private static char* _bufCodecId, _bufCodecName;
@@ -229,7 +229,13 @@ internal static unsafe partial class IthmbCodecPlugin
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
         // Load external profiles on first decode (deferred from init to avoid I/O in GetApi)
-        if (!Volatile.Read(ref _profilesLoaded)) { LoadExternalProfiles(); Volatile.Write(ref _profilesLoaded, true); }
+        if (!_profilesLoaded)
+        {
+            lock (_initLock)
+            {
+                if (!_profilesLoaded) { LoadExternalProfiles(); _profilesLoaded = true; }
+            }
+        }
 
         // Check file size before reading
         long fileSize;
@@ -300,7 +306,7 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.DecodeFailed;
         }
         catch (IOException ex) { Log(4, $"ITHMB: read failed '{path}' ({ex.Message})"); return IGStatus.IoError; }
-        catch { return IGStatus.Internal; }
+        catch (Exception ex) { Log(4, $"ITHMB: unexpected error reading '{path}' ({ex.Message})"); return IGStatus.Internal; }
     }
 
     // ------------------------------ JPEG extraction ------------------------------
@@ -393,12 +399,12 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.Internal;
         }
 
+        _liveBuffers.TryAdd((nint)pixels, 0);
         outBuf->Data = pixels;
         outBuf->Width = w;
         outBuf->Height = h;
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        _liveBuffers.TryAdd((nint)pixels, 0);
         return IGStatus.OK;
     }
 
@@ -452,12 +458,12 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.Internal;
         }
 
+        _liveBuffers.TryAdd((nint)pixels, 0);
         outBuf->Data = pixels;
         outBuf->Width = w;
         outBuf->Height = h;
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        _liveBuffers.TryAdd((nint)pixels, 0);
         return IGStatus.OK;
     }
 
@@ -618,12 +624,12 @@ internal static unsafe partial class IthmbCodecPlugin
                 if (!File.Exists(jsonPath)) return;
             }
         }
-        catch { return; }
+        catch (Exception) { return; }
         if (jsonPath == null) return;
 
         string json;
         try { json = File.ReadAllText(jsonPath); }
-        catch { return; }
+        catch (Exception) { return; }
 
         if (string.IsNullOrWhiteSpace(json)) return;
 
@@ -632,7 +638,7 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             ParseProfilesJson(json, external);
         }
-        catch { return; }
+        catch (Exception) { return; }
 
         if (external.Count == 0) return;
 
@@ -750,7 +756,10 @@ internal static unsafe partial class IthmbCodecPlugin
         if (pos < s.Length && s[pos] == '-') { sign = -1; pos++; }
         while (pos < s.Length && s[pos] >= '0' && s[pos] <= '9')
         {
-            val = val * 10 + (s[pos] - '0');
+            int digit = s[pos] - '0';
+            // Guard against integer overflow for malicious numeric strings
+            if (val > (int.MaxValue - digit) / 10) { val = int.MaxValue; break; }
+            val = val * 10 + digit;
             pos++;
         }
         return sign * val;
