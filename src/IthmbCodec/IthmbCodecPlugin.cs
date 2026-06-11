@@ -39,7 +39,7 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly byte[] App1Marker = [0xFF, 0xE1];
 
     // ------------------------------ Raw profile enums ------------------------------
-    internal enum IthmbEncoding { Rgb565, Yuv422, Ycbcr420 }
+    internal enum IthmbEncoding { Rgb565, Rgb555, Yuv422, Ycbcr420 }
 
     internal readonly record struct IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
@@ -47,7 +47,7 @@ internal static unsafe partial class IthmbCodecPlugin
         bool SwapsDimensions = false, bool LittleEndian = true,
         bool IsPadded = false, bool IsInterlaced = false);
 
-    private static FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
+    internal static FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
     private static FrozenDictionary<int, IthmbVariantProfile> GetBuiltInProfiles() =>
         new Dictionary<int, IthmbVariantProfile>
@@ -73,8 +73,15 @@ internal static unsafe partial class IthmbCodecPlugin
             [1083] = new(1083, 240, 320, IthmbEncoding.Rgb565, 240 * 320 * 2),
             // iPod Nano 5G photo
             [1087] = new(1087, 384, 384, IthmbEncoding.Rgb565, 384 * 384 * 2),
+            // iPod Nano 6G photo thumbnail and full-screen
+            [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
+            [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
+            // iPhone 1G/2G, iPod Touch 1G/2G photo thumbnail variants
+            [3004] = new(3004, 56, 55, IthmbEncoding.Rgb555, 56 * 55 * 2),
+            [3009] = new(3009, 160, 120, IthmbEncoding.Rgb555, 160 * 120 * 2),
+            [3011] = new(3011, 80, 79, IthmbEncoding.Rgb555, 80 * 79 * 2),
             // iPhone 1G/2G, iPod Touch 1G/2G full-screen
-            [3008] = new(3008, 640, 480, IthmbEncoding.Rgb565, 640 * 480 * 2),
+            [3008] = new(3008, 640, 480, IthmbEncoding.Rgb555, 640 * 480 * 2),
         }.ToFrozenDictionary();
 
     private static bool _profilesLoaded;
@@ -426,6 +433,7 @@ internal static unsafe partial class IthmbCodecPlugin
             bool ok = profile.Encoding switch
             {
                 IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
+                IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian),
                 IthmbEncoding.Yuv422 => profile.IsInterlaced
                     ? DecodeYuv422Interlaced(raw, pixels, w, h)
                     : DecodeYuv422(raw, pixels, w, h),
@@ -693,6 +701,7 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 var enc = string.Equals(encoding, "yuv422", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
                     : string.Equals(encoding, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
+                    : string.Equals(encoding, "rgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb555
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced);

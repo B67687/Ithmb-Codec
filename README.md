@@ -111,7 +111,7 @@ Native AOT cross-compilation is not supported. You must build on each target pla
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-Tests cover: RGB565 decode (65,536 exhaustive + SIMD-vs-scalar), 200 fuzz tests across 4 decoders, YUV422/Ycbcr420 cross-reference and roundtrip, JPEG slice detection, EXIF orientation parsing, SIMD correctness, memory safety, property invariants (**244 tests total**).
+Tests cover: RGB565 + RGB555 decode (both 65,536 exhaustive + SIMD-vs-scalar), 250 fuzz tests across 5 decoders, YUV422/Ycbcr420 cross-reference and roundtrip, JPEG slice detection, EXIF orientation parsing, SIMD correctness, memory safety, property invariants, JSON parser tests (**306 tests total**).
 
 ---
 
@@ -133,14 +133,14 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 
 ### Key source files
 
-| File                                          | Description                                                                                                                                  |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~805 lines)                                                              |
-| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~447 lines)                                                    |
-| `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                        |
-| `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                            |
-| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged at init, overridable without recompile)                                                        |
-| `src/IthmbCodec/test/`                        | xUnit test project (244 tests) --- exhaustive RGB565, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
+| File                                          | Description                                                                                                                                         |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~805 lines)                                                                     |
+| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~447 lines)                                                           |
+| `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                               |
+| `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                                   |
+| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged at init, overridable without recompile)                                                               |
+| `src/IthmbCodec/test/`                        | xUnit test project (306 tests) --- exhaustive RGB565+RGB555, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
 
 ### Raw profile definitions
 
@@ -162,7 +162,12 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 | 1079    | 80×80      | RGB565      | iPod Nano 4G (photo)                   |
 | 1083    | 240×320    | RGB565      | iPod Nano 4G (photo)                   |
 | 1087    | 384×384    | RGB565      | iPod Nano 5G (photo)                   |
-| 3008    | 640×480    | RGB565      | iPhone 1G/2G, iPod Touch (full-screen) |
+| 1092    | 80×80      | RGB565      | iPod Nano 6G (photo thumbnail)         |
+| 1093    | 512×512    | RGB565      | iPod Nano 6G (full-screen photo)       |
+| 3004    | 56×55      | RGB555      | iPhone 1G/2G, iPod Touch (photo thumb) |
+| 3008    | 640×480    | RGB555      | iPhone 1G/2G, iPod Touch (full-screen) |
+| 3009    | 160×120    | RGB555      | iPhone 1G/2G, iPod Touch (photo prev)  |
+| 3011    | 80×79      | RGB555      | iPhone 1G/2G, iPod Touch (photo thumb) |
 
 ### EXIF orientation parsing
 
