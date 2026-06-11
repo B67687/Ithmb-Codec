@@ -418,7 +418,44 @@ public unsafe class IthmbCodecTests
     // ---- SIMD correctness: SSE2 vs scalar must produce identical output ----
 
     [Fact]
-    public void DecodeRgb565_SIMD_MatchesScalar_All65536Values()
+    public void DecodeRgb565_SIMD_MatchesScalar_8Wide()
+    {
+        // Verifies the SSE2 path (activated by w >= 8) and the scalar path (w < 8)
+        // produce byte-identical output for all 65,536 RGB565 values processed as 8-wide rows.
+        var src = new byte[8 * 2]; // 8 pixels × 2 bytes
+        byte* simdDst = (byte*)NativeMemory.Alloc(8 * 4);
+        byte* scalarDst = (byte*)NativeMemory.Alloc(8 * 4);
+        try
+        {
+            for (int i = 0; i < 65536; i += 8)
+            {
+                // Fill 8 pixels with a sequence of 8 consecutive RGB565 values
+                for (int j = 0; j < 8; j++)
+                {
+                    ushort val = (ushort)((i + j) & 0xFFFF);
+                    src[j * 2] = (byte)(val & 0xFF);
+                    src[j * 2 + 1] = (byte)(val >> 8);
+                }
+
+                NativeMemory.Clear(simdDst, 8 * 4);
+                NativeMemory.Clear(scalarDst, 8 * 4);
+
+                // SIMD path (w = 8, SSE2 activated on x64)
+                IthmbCodecPlugin.DecodeRgb565(src, simdDst, 8, 1, littleEndian: true);
+
+                // Scalar path (w = 4 forces fallback)
+                IthmbCodecPlugin.DecodeRgb565(src, scalarDst, 4, 2, littleEndian: true);
+
+                // Both must produce identical BGRA output (same pixel count)
+                for (int j = 0; j < 8 * 4; j++)
+                    Assert.Equal(simdDst[j], scalarDst[j]);
+            }
+        }
+        finally { NativeMemory.Free(simdDst); NativeMemory.Free(scalarDst); }
+    }
+
+    [Fact]
+    public void Rgb565_Exhaustive_All65536Values_SIMD_Redundant()
     {
         // Verifies that the SSE2-accelerated path produces byte-identical output
         // to the scalar path for ALL 65,536 possible 1×1 RGB565 values.
@@ -814,27 +851,22 @@ public unsafe class IthmbCodecTests
         int uvSize = ySize / 4;
         var src = new byte[ySize + uvSize * 2];
         byte* dst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
-
-        for (int topCb = 0; topCb < 256; topCb += 32)
+        try
         {
-            for (int topCr = 0; topCr < 256; topCr += 32)
+            for (int topCb = 0; topCb < 256; topCb += 32)
             {
-                try
+                for (int topCr = 0; topCr < 256; topCr += 32)
                 {
-                    // Fill Y plane: 2×2 top-left block has one chroma, rest neutral
                     for (int i = 0; i < ySize; i++) src[i] = 128;
-                    for (int i = 0; i < uvSize; i++) src[ySize + i] = 128; // Cb
-                    for (int i = 0; i < uvSize; i++) src[ySize + uvSize + i] = 128; // Cr
+                    for (int i = 0; i < uvSize; i++) src[ySize + i] = 128;
+                    for (int i = 0; i < uvSize; i++) src[ySize + uvSize + i] = 128;
 
-                    // Set top-left 2×2 block to test chroma
                     src[ySize] = (byte)topCb;
                     src[ySize + uvSize] = (byte)topCr;
 
                     NativeMemory.Clear(dst, (nuint)(w * h * 4));
                     IthmbCodecPlugin.DecodeYcbcr420(src, dst, w, h);
 
-                    // Top-left pixel (block 0,0) should differ from top-right (block 2,0)
-                    // due to different subsampled chroma. At minimum, no crash + valid ranges.
                     for (int i = 0; i < w * h * 4; i += 4)
                     {
                         Assert.InRange(dst[i], 0, 255);
@@ -843,10 +875,9 @@ public unsafe class IthmbCodecTests
                         Assert.Equal(255, dst[i + 3]);
                     }
                 }
-                finally { }
             }
         }
-        NativeMemory.Free(dst);
+        finally { NativeMemory.Free(dst); }
     }
 
     // ===================== Phase 4: Robustness =====================

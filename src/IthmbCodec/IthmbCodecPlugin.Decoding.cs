@@ -98,10 +98,13 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Scalar fallback for RGB565 decode (pure pointer-based).</summary>
     private static void DecodeRgb565_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
-        for (int y = 0; y < h; y++)
+        fixed (byte* pSrc = src)
         {
-            byte* pDstRow = dst + y * w * 4;
-            DecodeRgb565_Tail((byte*)Unsafe.AsPointer(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(src)) + y * w * 2, pDstRow, 0, w, littleEndian);
+            for (int y = 0; y < h; y++)
+            {
+                byte* pDstRow = dst + y * w * 4;
+                DecodeRgb565_Tail(pSrc + y * w * 2, pDstRow, 0, w, littleEndian);
+            }
         }
     }
 

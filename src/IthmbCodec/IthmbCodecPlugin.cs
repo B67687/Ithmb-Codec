@@ -15,7 +15,6 @@ using System.Collections.Frozen;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using ImageGlass.SDK.Plugins;
 using SkiaSharp;
 
