@@ -168,11 +168,9 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>SSE2/SSSE3-accelerated UYVY→BGRA (uses pshufb for deinterleave, 32-bit arithmetic).</summary>
     private static void DecodeYuv422_SIMD(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        // Zero-extending shuffle masks: each Y/U/V byte → [val, 0] in 16-bit LE layout
         var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
         var shufU = Vector128.Create((byte)0, 0x80, 0, 0x80, 4, 0x80, 4, 0x80, 8, 0x80, 8, 0x80, 12, 0x80, 12, 0x80);
         var shufV = Vector128.Create((byte)2, 0x80, 2, 0x80, 6, 0x80, 6, 0x80, 10, 0x80, 10, 0x80, 14, 0x80, 14, 0x80);
-
         var zeroI = Vector128<int>.Zero;
         var max255 = Vector128.Create(255);
         var alpha = Vector128.Create(255 << 24);
@@ -180,66 +178,60 @@ internal static unsafe partial class IthmbCodecPlugin
         var gCoefCb = Vector128.Create(YuvGCoefCb);
         var gCoefCr = Vector128.Create(YuvGCoefCr);
         var bCoef = Vector128.Create(YuvBCoef);
-        var vec128i = Vector128.Create(128);
 
         fixed (byte* pSrc = src)
-        {
             for (int y = 0; y < h; y++)
+                ProcessUyvyRow(pSrc + y * w * 2, dst + y * w * 4, w,
+                    shufY, shufU, shufV, zeroI, max255, alpha,
+                    rCoef, gCoefCb, gCoefCr, bCoef);
+    }
+
+    /// <summary>Processes one row of UYVY data using SSSE3/SSE2 (8 pixels per iteration).</summary>
+    private static void ProcessUyvyRow(byte* pSrcRow, byte* pDstRow, int w,
+        Vector128<byte> shufY, Vector128<byte> shufU, Vector128<byte> shufV,
+        Vector128<int> zeroI, Vector128<int> max255, Vector128<int> alpha,
+        Vector128<int> rCoef, Vector128<int> gCoefCb, Vector128<int> gCoefCr, Vector128<int> bCoef)
+    {
+        for (int x = 0; x < w; x += 8)
+        {
+            var raw = Sse2.LoadVector128(pSrcRow + x * 2);
+            var y16 = Ssse3.Shuffle(raw, shufY).AsInt16();
+            var u16 = Ssse3.Shuffle(raw, shufU).AsInt16();
+            var v16 = Ssse3.Shuffle(raw, shufV).AsInt16();
+
+            u16 = Sse2.Subtract(u16, Vector128.Create((short)128));
+            v16 = Sse2.Subtract(v16, Vector128.Create((short)128));
+
+            var zero16 = Vector128<short>.Zero;
+            for (int hIdx = 0; hIdx < 2; hIdx++)
             {
-                int rowStart = y * w * 2;
-                byte* pSrcRow = pSrc + rowStart;
-                byte* pDstRow = dst + y * w * 4;
+                var yI = (hIdx == 0
+                    ? Sse2.UnpackLow(y16, zero16)
+                    : Sse2.UnpackHigh(y16, zero16)).AsInt32();
+                var uI = (hIdx == 0
+                    ? Sse2.UnpackLow(u16, zero16)
+                    : Sse2.UnpackHigh(u16, zero16)).AsInt32();
+                var vI = (hIdx == 0
+                    ? Sse2.UnpackLow(v16, zero16)
+                    : Sse2.UnpackHigh(v16, zero16)).AsInt32();
 
-                for (int x = 0; x < w; x += 8)
-                {
-                    var raw = Sse2.LoadVector128(pSrcRow + x * 2);
+                var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
+                var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
+                           - Vector128.ShiftRightArithmetic(vI * gCoefCr, 8);
+                var bI = yI + Vector128.ShiftRightArithmetic(uI * bCoef, 8);
 
-                    // Deinterleave + zero-extend to 16-bit via SSSE3 pshufb
-                    var y16 = Ssse3.Shuffle(raw, shufY).AsInt16();
-                    var u16 = Ssse3.Shuffle(raw, shufU).AsInt16();
-                    var v16 = Ssse3.Shuffle(raw, shufV).AsInt16();
+                rI = Vector128.Max(zeroI, Vector128.Min(rI, max255));
+                gI = Vector128.Max(zeroI, Vector128.Min(gI, max255));
+                bI = Vector128.Max(zeroI, Vector128.Min(bI, max255));
 
-                    // Unbias chroma (64-bit intermediate to keep values in range)
-                    u16 = Sse2.Subtract(u16, Vector128.Create((short)128));
-                    v16 = Sse2.Subtract(v16, Vector128.Create((short)128));
+                var px = bI | Vector128.ShiftLeft(gI, 8)
+                    | Vector128.ShiftLeft(rI, 16) | alpha;
 
-                    // Widen to 32-bit for correct signed multiply (coef * chroma can exceed Int16.MaxValue)
-                    var zero16 = Vector128<short>.Zero;
-                    for (int half = 0; half < 2; half++)
-                    {
-                        var yI = (half == 0
-                            ? Sse2.UnpackLow(y16, zero16)
-                            : Sse2.UnpackHigh(y16, zero16)).AsInt32();
-                        var uI = (half == 0
-                            ? Sse2.UnpackLow(u16, zero16)
-                            : Sse2.UnpackHigh(u16, zero16)).AsInt32();
-                        var vI = (half == 0
-                            ? Sse2.UnpackLow(v16, zero16)
-                            : Sse2.UnpackHigh(v16, zero16)).AsInt32();
-
-                        // Cross-platform 32-bit multiply (correct for all product magnitudes)
-                        var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
-                        var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
-                                   - Vector128.ShiftRightArithmetic(vI * gCoefCr, 8);
-                        var bI = yI + Vector128.ShiftRightArithmetic(uI * bCoef, 8);
-
-                        // Branchless clamp to [0, 255]
-                        rI = Vector128.Max(zeroI, Vector128.Min(rI, max255));
-                        gI = Vector128.Max(zeroI, Vector128.Min(gI, max255));
-                        bI = Vector128.Max(zeroI, Vector128.Min(bI, max255));
-
-                        // Pack BGRA: (B) | (G<<8) | (R<<16) | (255<<24)
-                        var px = bI | Vector128.ShiftLeft(gI, 8)
-                            | Vector128.ShiftLeft(rI, 16) | alpha;
-
-                        // Store 4 pixels
-                        int* pRow = (int*)(pDstRow + x * 4 + half * 16);
-                        pRow[0] = px.GetElement(0);
-                        pRow[1] = px.GetElement(1);
-                        pRow[2] = px.GetElement(2);
-                        pRow[3] = px.GetElement(3);
-                    }
-                }
+                int* pRow = (int*)(pDstRow + x * 4 + hIdx * 16);
+                pRow[0] = px.GetElement(0);
+                pRow[1] = px.GetElement(1);
+                pRow[2] = px.GetElement(2);
+                pRow[3] = px.GetElement(3);
             }
         }
     }
@@ -289,7 +281,6 @@ internal static unsafe partial class IthmbCodecPlugin
         var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
         var shufU = Vector128.Create((byte)0, 0x80, 0, 0x80, 4, 0x80, 4, 0x80, 8, 0x80, 8, 0x80, 12, 0x80, 12, 0x80);
         var shufV = Vector128.Create((byte)2, 0x80, 2, 0x80, 6, 0x80, 6, 0x80, 10, 0x80, 10, 0x80, 14, 0x80, 14, 0x80);
-
         var zeroI = Vector128<int>.Zero;
         var max255 = Vector128.Create(255);
         var alpha = Vector128.Create(255 << 24);
@@ -305,61 +296,11 @@ internal static unsafe partial class IthmbCodecPlugin
                 int fieldOffset = (y % 2 == 0) ? 0 : half;
                 int rowInField = y / 2;
                 int rowStart = fieldOffset + rowInField * rowStride;
-                byte* pSrcRow = pSrc + rowStart;
-                byte* pDstRow = dst + y * w * 4;
-
-                for (int x = 0; x < w; x += 8)
-                {
-                    var raw = Sse2.LoadVector128(pSrcRow + x * 2);
-
-                    // Zero-extend each byte to 16-bit via SSSE3 pshufb
-                    var y16 = Ssse3.Shuffle(raw, shufY).AsInt16();
-                    var u16 = Ssse3.Shuffle(raw, shufU).AsInt16();
-                    var v16 = Ssse3.Shuffle(raw, shufV).AsInt16();
-
-                    // Unbias chroma
-                    u16 = Sse2.Subtract(u16, Vector128.Create((short)128));
-                    v16 = Sse2.Subtract(v16, Vector128.Create((short)128));
-
-                    // Widen to 32-bit and compute using cross-platform Vector128 arithmetic
-                    var zero16 = Vector128<short>.Zero;
-                    for (int hIdx = 0; hIdx < 2; hIdx++)
-                    {
-                        var yI = (hIdx == 0
-                            ? Sse2.UnpackLow(y16, zero16)
-                            : Sse2.UnpackHigh(y16, zero16)).AsInt32();
-                        var uI = (hIdx == 0
-                            ? Sse2.UnpackLow(u16, zero16)
-                            : Sse2.UnpackHigh(u16, zero16)).AsInt32();
-                        var vI = (hIdx == 0
-                            ? Sse2.UnpackLow(v16, zero16)
-                            : Sse2.UnpackHigh(v16, zero16)).AsInt32();
-
-                        // 32-bit multiply (never overflows: max product 454*127=57,658)
-                        var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
-                        var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
-                                   - Vector128.ShiftRightArithmetic(vI * gCoefCr, 8);
-                        var bI = yI + Vector128.ShiftRightArithmetic(uI * bCoef, 8);
-
-                        // Branchless clamp to [0, 255]
-                        rI = Vector128.Max(zeroI, Vector128.Min(rI, max255));
-                        gI = Vector128.Max(zeroI, Vector128.Min(gI, max255));
-                        bI = Vector128.Max(zeroI, Vector128.Min(bI, max255));
-
-                        // Pack BGRA: (B) | (G<<8) | (R<<16) | (255<<24)
-                        var px = bI | Vector128.ShiftLeft(gI, 8)
-                            | Vector128.ShiftLeft(rI, 16) | alpha;
-
-                        // Store 4 pixels
-                        int* pRow = (int*)(pDstRow + x * 4 + hIdx * 16);
-                        pRow[0] = px.GetElement(0);
-                        pRow[1] = px.GetElement(1);
-                        pRow[2] = px.GetElement(2);
-                        pRow[3] = px.GetElement(3);
-                    }
+                ProcessUyvyRow(pSrc + rowStart, dst + y * w * 4, w,
+                    shufY, shufU, shufV, zeroI, max255, alpha,
+                    rCoef, gCoefCb, gCoefCr, bCoef);
             }
         }
-        } // close fixed block
     }
 
     // ---------- YCbCr 4:2:0 (planar) ----------

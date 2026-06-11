@@ -669,7 +669,18 @@ internal static unsafe partial class IthmbCodecPlugin
 
     private static void SkipWhitespace(string s, ref int pos)
     {
-        while (pos < s.Length && (s[pos] == ' ' || s[pos] == '\t' || s[pos] == '\n' || s[pos] == '\r')) pos++;
+        while (pos < s.Length)
+        {
+            char c = s[pos];
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') { pos++; continue; }
+            // Skip // line comments (useful for profiles.json documentation)
+            if (c == '/' && pos + 1 < s.Length && s[pos + 1] == '/')
+            {
+                while (pos < s.Length && s[pos] != '\n') pos++;
+                continue;
+            }
+            break;
+        }
     }
 
     private static string? ParseJsonString(string s, ref int pos)
