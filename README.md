@@ -126,6 +126,35 @@ The plugin follows the ImageGlass v10 native codec plugin ABI (v1.0.0.0):
 ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 ```
 
+- **Source tree** — two partial class files:
+  - `IthmbCodecPlugin.cs` — ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader
+  - `IthmbCodecPlugin.Decoding.cs` — all decode algorithms + SIMD acceleration
+- **Profile-driven dispatch** — format ID → (width, height, encoding, flags) → appropriate decoder
+- **JPEG path** (primary) — TryFindJpegSlice → StbImageSharp decode → BGRA output
+- **Raw path** (fallback) — prefix lookup → one of 4 decoders (RGB565, RGB555, YUV422, YCbCr420)
+
+### Data flow
+
+```
+.ithmb file
+  → Peek read (4 MB header for JPEG scan)
+  → TryFindJpegSlice (SIMD Span.IndexOf)
+  ├── JPEG found → seek + read slice → StbImageSharp → BGRA
+  └── No JPEG    → read full file → prefix lookup → raw decoder → BGRA
+```
+
+## Pipeline
+
+The plugin was developed through an iterative research-and-review pipeline:
+
+1. **Format survey** — 17 open-source .ithmb implementations found across GitHub, GitLab, Codeberg, and SourceForge. Complete source analysis of each.
+2. **Format table extraction** — iOpenPod, libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 28 profiles.
+3. **Implementation** — C# Native AOT plugin with 4 decoders + 3 SIMD engines (SSE2, SSSE3, Vector128). ~877 lines ABI + ~554 lines decoding.
+4. **Testing** — 307 unit tests (exhaustive 65K-pattern, 250 fuzz, SIMD-vs-scalar, roundtrip, property invariants, real-file validation with 227 public samples).
+5. **Review cycles** — 3 rounds of 5-agent adversarial review. ~30 findings fixed covering memory safety, threading, ABI compatibility, and SIMD correctness.
+6. **Release** — Windows binary (1.4 MB native AOT), published to GitHub Releases. SDK sample PR submitted to ImageGlass/SDK.
+7. **Documentation** — All 17 references credited in README and RESEARCH.md. Research methodology preserved in repo.
+
 - **Single entry point** (`ig_plugin_get_api`) --- the only C export.
 - **Double-checked locking with `volatile`** in `GetApi` for thread-safe initialization (ARM64-safe).
 - **Single codec**, single-frame static raster decoder.
