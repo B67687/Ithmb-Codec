@@ -16,7 +16,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ImageGlass.SDK.Plugins;
-using SkiaSharp;
+using StbImageSharp;
 
 namespace IthmbCodec;
 
@@ -303,32 +303,59 @@ internal static unsafe partial class IthmbCodecPlugin
         if (offset < 0 || length <= 0 || offset + length > data.Length)
             return IGStatus.DecodeFailed;
 
-        using var skData = offset == 0 && length == data.Length
-            ? SKData.CreateCopy(data)
-            : CreateSliceSkData(data, offset, length);
-        using var codec = SKCodec.Create(skData);
-        if (codec == null) { Log(4, "ITHMB: JPEG slice is not a valid image"); return IGStatus.DecodeFailed; }
+        // Extract JPEG slice and decode via StbImageSharp (MIT, ~200KB, Native AOT compatible)
+        var jpegSlice = new byte[length];
+        Buffer.BlockCopy(data, offset, jpegSlice, 0, length);
+        ImageResult result;
+        try
+        {
+            result = ImageResult.FromMemory(jpegSlice, ColorComponents.RedGreenBlueAlpha);
+        }
+        catch (Exception ex)
+        {
+            Log(4, $"ITHMB: JPEG decode failed ({ex.Message})");
+            return IGStatus.DecodeFailed;
+        }
 
-        var srcInfo = codec.Info;
-        int w = srcInfo.Width, h = srcInfo.Height;
-        if (w <= 0 || h <= 0) return IGStatus.DecodeFailed;
+        if (result == null || result.Width <= 0 || result.Height <= 0)
+            return IGStatus.DecodeFailed;
 
-        int hasAlpha = srcInfo.AlphaType == SKAlphaType.Opaque ? 0 : 1;
+        int w = result.Width, h = result.Height;
+        int hasAlpha = 0; // stb_image always outputs alpha channel (RGBA) — we treat it as opaque
         FillImageInfo(outInfo, w, h, hasAlpha, ReadExifOrientation(data, offset, length), fileSize);
 
         if (outBuf == null) return IGStatus.OK; // metadata-only
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
-        return DecodeToPixelBuffer(codec, w, h, outBuf);
-    }
+        // Allocate native BGRA buffer and convert RGBA→BGRA
+        var allocStatus = AllocateBgraBuffer(w, h, out var stride, out var pixels);
+        if (allocStatus != IGStatus.OK) return allocStatus;
 
-    /// <summary>Creates an SKData from a slice of a byte array without an additional byte[] allocation.</summary>
-    private static SKData CreateSliceSkData(byte[] data, int offset, int length)
-    {
-        fixed (byte* p = data)
+        try
         {
-            return SKData.CreateCopy((IntPtr)(p + offset), length);
+            var srcData = result.Data;
+            for (int i = 0; i < w * h; i++)
+            {
+                int si = i * 4;
+                pixels[i * 4 + 0] = srcData[si + 2]; // B = R
+                pixels[i * 4 + 1] = srcData[si + 1]; // G = G
+                pixels[i * 4 + 2] = srcData[si + 0]; // R = B
+                pixels[i * 4 + 3] = srcData[si + 3]; // A = A
+            }
         }
+        catch
+        {
+            NativeMemory.Free(pixels);
+            return IGStatus.Internal;
+        }
+
+        outBuf->Data = pixels;
+        outBuf->Width = w;
+        outBuf->Height = h;
+        outBuf->Stride = (int)stride;
+        outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
+        _liveBuffers.TryAdd((nint)pixels, 0);
+        return IGStatus.OK;
     }
 
     // ------------------------------ Raw profile decoding ------------------------------
@@ -390,36 +417,6 @@ internal static unsafe partial class IthmbCodecPlugin
         return IGStatus.OK;
     }
 
-    // ------------------------------ Shared SkiaSharp decode ------------------------------
-    private static IGStatus DecodeToPixelBuffer(SKCodec codec, int w, int h, IGPixelBuffer* outBuf)
-    {
-        var allocStatus = AllocateBgraBuffer(w, h, out var stride, out var pixels);
-        if (allocStatus != IGStatus.OK) return allocStatus;
-
-        try
-        {
-            var dstInfo = new SKImageInfo(w, h, SKColorType.Bgra8888, SKAlphaType.Premul);
-            var result = codec.GetPixels(dstInfo, (nint)pixels);
-            if (result != SKCodecResult.Success && result != SKCodecResult.IncompleteInput)
-            {
-                NativeMemory.Free(pixels);
-                Log(4, $"ITHMB: SKCodec.GetPixels failed ({result})");
-                return IGStatus.DecodeFailed;
-            }
-        }
-        catch
-        {
-            NativeMemory.Free(pixels);
-            return IGStatus.Internal;
-        }
-
-        outBuf->Data = pixels;
-        outBuf->Width = w; outBuf->Height = h;
-        outBuf->Stride = (int)stride;
-        outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        _liveBuffers.TryAdd((nint)pixels, 0);
-        return IGStatus.OK;
-    }
 
     // ------------------------------ Helpers ------------------------------
 
