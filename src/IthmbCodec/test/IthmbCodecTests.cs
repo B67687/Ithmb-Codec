@@ -661,7 +661,68 @@ public unsafe class IthmbCodecTests
         NativeMemory.Free(dst);
     }
 
-    // ---- Test 8 (stub): ithmbrdr cross-ref — see Phase 3 ----
+    // ===================== Phase 4: Robustness =====================
+
+    // ---- Test 11: Integer overflow / extreme dimensions ----
+
+    [Theory]
+    [InlineData(100_000, 100)]    // w large but h small
+    [InlineData(100, 100_000)]    // h large but w small
+    [InlineData(0x7FFF, 0x7FFF)]  // near int32 overflow (w*h ≈ 2^30)
+    public void Overflow_ExtremeDimensions_NoCrash(int w, int h)
+    {
+        // These dimensions could overflow (y * w + x) * 2 in DecodeRgb565
+        // if not handled. The bounds guard should return early for undersized buffers.
+        long bufLen = Math.Min((long)w * h * 2, 1024L * 1024);
+        var buf = new byte[bufLen > 0 ? (int)bufLen : 1];
+        new Random(42).NextBytes(buf);
+        long allocSize = Math.Min((long)w * h * 4, 1024L * 1024);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)Math.Max(allocSize, 1));
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)Math.Min(allocSize, 1024 * 1024));
+            IthmbCodecPlugin.DecodeRgb565(buf, dst, w, h, littleEndian: true);
+            // No crash = pass. Bounds guard handles undersized buffers gracefully.
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // ---- Test 12: Determinism across all decoders ----
+
+    [Fact]
+    public void Property_Determinism_AllDecoders()
+    {
+        var rng = new Random(99);
+        var buf = new byte[64];
+        rng.NextBytes(buf);
+
+        byte* dst1 = (byte*)NativeMemory.Alloc(256);
+        byte* dst2 = (byte*)NativeMemory.Alloc(256);
+
+        try
+        {
+            // RGB565
+            NativeMemory.Clear(dst1, 256); NativeMemory.Clear(dst2, 256);
+            IthmbCodecPlugin.DecodeRgb565(buf, dst1, 4, 4, true);
+            IthmbCodecPlugin.DecodeRgb565(buf, dst2, 4, 4, true);
+            Assert.True(MemCmp(dst1, dst2, 64));
+
+            // YUV422
+            NativeMemory.Clear(dst1, 256); NativeMemory.Clear(dst2, 256);
+            IthmbCodecPlugin.DecodeYuv422(buf, dst1, 4, 4);
+            IthmbCodecPlugin.DecodeYuv422(buf, dst2, 4, 4);
+            Assert.True(MemCmp(dst1, dst2, 64));
+        }
+        finally { NativeMemory.Free(dst1); NativeMemory.Free(dst2); }
+    }
+
+    private static unsafe bool MemCmp(byte* a, byte* b, int len)
+    {
+        for (int i = 0; i < len; i++)
+            if (a[i] != b[i]) return false;
+        return true;
+    }
+
 
     // ===================== Roundtrip consistency (reference encode → decode) =====================
     //

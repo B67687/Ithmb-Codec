@@ -725,7 +725,7 @@ internal static unsafe class IthmbCodecPlugin
                 if (pos >= json.Length || json[pos] == '}') { pos++; break; }
 
                 // Read key
-                string key = ParseJsonString(json, ref pos);
+                string? key = ParseJsonString(json, ref pos);
                 if (key == null) return;
                 SkipWhitespace(json, ref pos);
                 if (pos >= json.Length || json[pos] != ':') return;
