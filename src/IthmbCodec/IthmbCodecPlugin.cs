@@ -10,6 +10,7 @@ path: decode known legacy raw thumbnail profiles (RGB565, YUV422, YCbCr420).
 Format behavior informed by the IthmbDecoder reference (ImageGlass PR #2316).
 This is a clean-room implementation for the v10 native codec plugin ABI.
 */
+using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ImageGlass.SDK.Plugins;
@@ -38,13 +39,13 @@ internal static unsafe class IthmbCodecPlugin
     // ------------------------------ Raw profile enums ------------------------------
     private enum IthmbEncoding { Rgb565, Yuv422, Ycbcr420 }
 
-    private sealed record IthmbVariantProfile(
+    private readonly record struct IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true,
         bool IsPadded = false);
 
-    private static readonly IReadOnlyDictionary<int, IthmbVariantProfile> KnownProfiles =
+    private static readonly FrozenDictionary<int, IthmbVariantProfile> KnownProfiles =
         new Dictionary<int, IthmbVariantProfile>
         {
             [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2),
@@ -55,7 +56,7 @@ internal static unsafe class IthmbCodecPlugin
             [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2),
             // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame
             [1067] = new(1067, 720, 480, IthmbEncoding.Ycbcr420, 720 * 480 * 2, IsPadded: true),
-        };
+        }.ToFrozenDictionary();
 
     // ------------------------------ Static plugin state ------------------------------
     private static volatile IGPluginApi* _pluginApi;
@@ -354,9 +355,12 @@ internal static unsafe class IthmbCodecPlugin
                 ushort rgb = littleEndian
                     ? (ushort)(src[idx] | (src[idx + 1] << 8))
                     : (ushort)((src[idx] << 8) | src[idx + 1]);
-                int r = ((rgb >> 11) & 0x1F) * 255 / 31;
-                int g = ((rgb >> 5) & 0x3F) * 255 / 63;
-                int b = (rgb & 0x1F) * 255 / 31;
+                int r5 = (rgb >> 11) & 0x1F;
+                int g6 = (rgb >> 5) & 0x3F;
+                int b5 = rgb & 0x1F;
+                int r = (r5 << 3) | (r5 >> 2);   // 5-bit → 8-bit with MSB replication
+                int g = (g6 << 2) | (g6 >> 4);   // 6-bit → 8-bit with MSB replication
+                int b = (b5 << 3) | (b5 >> 2);
                 int dstIdx = (y * w + x) * 4;
                 dst[dstIdx] = (byte)b;
                 dst[dstIdx + 1] = (byte)g;
