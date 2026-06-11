@@ -620,6 +620,13 @@ public unsafe class IthmbCodecTests
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(3004));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(3009));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(3011));
+        // Cover art profiles
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1016));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1017));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1028));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1029));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1055));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1060));
     }
 
     // ---- SIMD correctness: SSE2 vs scalar must produce identical output ----

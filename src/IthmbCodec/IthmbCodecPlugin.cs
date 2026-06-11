@@ -73,6 +73,13 @@ internal static unsafe partial class IthmbCodecPlugin
             [1083] = new(1083, 240, 320, IthmbEncoding.Rgb565, 240 * 320 * 2),
             // iPod Nano 5G photo
             [1087] = new(1087, 384, 384, IthmbEncoding.Rgb565, 384 * 384 * 2),
+            // Cover art / album art formats (also stored as .ithmb, same RGB565 encoding)
+            [1016] = new(1016, 140, 140, IthmbEncoding.Rgb565, 140 * 140 * 2),
+            [1017] = new(1017, 56, 56, IthmbEncoding.Rgb565, 56 * 56 * 2),
+            [1028] = new(1028, 100, 100, IthmbEncoding.Rgb565, 100 * 100 * 2),
+            [1029] = new(1029, 200, 200, IthmbEncoding.Rgb565, 200 * 200 * 2),
+            [1055] = new(1055, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
+            [1060] = new(1060, 320, 320, IthmbEncoding.Rgb565, 320 * 320 * 2),
             // iPod Nano 6G photo thumbnail and full-screen
             [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
