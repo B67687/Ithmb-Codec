@@ -287,12 +287,13 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
-                return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
-                    cancellation, outInfo, outBuf);
-            }
+                    // fileSize ≤ 100 MB (guarded at line 244), safe for int
+                    return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
+                        cancellation, outInfo, outBuf);
+                }
 
-            // No embedded JPEG found — read full file for raw profile fallback
-            byte[] fileBytes = new byte[(int)fileSize];
+                // No embedded JPEG found — read full file for raw profile fallback
+                byte[] fileBytes = new byte[(int)fileSize];
             fs.Seek(0, SeekOrigin.Begin);
             fs.ReadExactly(fileBytes, 0, (int)fileSize);
 
