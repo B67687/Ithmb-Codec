@@ -33,7 +33,7 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 
 1. **Read the file** --- a 4 MB header is read for JPEG scan, then the exact JPEG slice is seeked and read from the FileStream. Peak memory: ~5 MB for typical files.
 2. **JPEG scan** --- the file is scanned (SIMD-accelerated via `Span.IndexOf`) for a JPEG SOI marker (`FF D8`) followed within 128 bytes by either a JFIF or Exif header. If found, the JPEG payload is extracted (SOI to EOI) and decoded via StbImageSharp (MIT, ~200 KB).
-3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts.
+3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts. A **speculative CLCL nibble-chroma** decoder is also included for iPod 4G/5G files (chroma packed as 4-bit values, no test files available).
 4. **EXIF orientation** --- if the JPEG contains an EXIF APP1 segment with an orientation tag (0x0112), it is parsed and reported to the host. ImageGlass rotates the image accordingly.
 
 ### File size guard
@@ -130,7 +130,7 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 - **Double-checked locking with `volatile`** in `GetApi` for thread-safe initialization (ARM64-safe).
 - **Single codec**, single-frame static raster decoder.
 - **Memory ownership**: the plugin allocates pixel buffers; the host calls back into `FreePixelBuffer` to release them (thread-safe).
-- **SIMD acceleration**: RGB565 uses SSE2 (4-6× gain), YCbCr420 uses cross-platform Vector128 (3-5× gain, x64 + ARM64 NEON), UYVY uses SSSE3+SSE2 (2-3× gain). UYVY interlaced and non-interlaced share a common SIMD inner loop via `ProcessUyvyRow`.
+- **SIMD acceleration**: RGB565 uses SSE2 (4-6× gain), YCbCr420 uses cross-platform Vector128 (3-5× gain, x64 + ARM64 NEON), UYVY uses SSSE3+SSE2 (2-3× gain). UYVY interlaced and non-interlaced share a common SIMD inner loop via `ProcessUyvyRow`. The speculative **CLCL nibble-chroma** decoder is scalar-only (no SIMD, no test files).
 
 ### Key source files
 
@@ -201,7 +201,7 @@ If you test this plugin with a different device or iOS version, please open an i
 ## Limitations
 
 1. **Only T-prefix `.ithmb` files with embedded JPEG** --- this is the primary tested path. Other `.ithmb` variants may not work.
-2. **Legacy raw profiles are untested** --- the decoders exist (RGB565, YUV422, YCbCr420) but no sample files were available for verification. Community contributions of unknown profiles can be added via `profiles.json` without recompiling.
+2. **Legacy raw profiles are untested** --- the decoders exist (RGB565, YUV422, YCbCr420, CLCL nibble-chroma) but no sample files were available for verification. Community contributions of unknown profiles can be added via `profiles.json` without recompiling.
 3. **No open-file dialog** --- ImageGlass v10 Beta 2 doesn't register `.ithmb` for the file-open dialog. Use drag-and-drop.
 4. **No folder browsing** --- third-party extensions can't be registered for folder navigation in Beta 2.
 5. **Single-frame only** --- `.ithmb` files contain a single image per file. No animation/multi-frame support.

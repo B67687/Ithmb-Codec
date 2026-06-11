@@ -45,7 +45,8 @@ internal static unsafe partial class IthmbCodecPlugin
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true,
-        bool IsPadded = false, bool IsInterlaced = false);
+        bool IsPadded = false, bool IsInterlaced = false,
+        bool ClclChroma = false);
 
     internal static FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
@@ -459,7 +460,9 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
                 IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian),
-                IthmbEncoding.Yuv422 => profile.IsInterlaced
+                IthmbEncoding.Yuv422 => profile.ClclChroma
+                    ? DecodeYuv422Clcl(raw, pixels, w, h)
+                    : profile.IsInterlaced
                     ? DecodeYuv422Interlaced(raw, pixels, w, h)
                     : DecodeYuv422(raw, pixels, w, h),
                 IthmbEncoding.Ycbcr420 => DecodeYcbcr420(raw, pixels, w, h),
@@ -688,7 +691,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
             int prefix = 0, width = 0, height = 0, frameBytes = 0;
             string encoding = "rgb565";
-            bool swapsDim = false, le = true, padded = false, interlaced = false;
+            bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false;
 
             while (pos < json.Length)
             {
@@ -715,6 +718,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "littleEndian": le = ParseJsonBool(json, ref pos); break;
                     case "isPadded": padded = ParseJsonBool(json, ref pos); break;
                     case "isInterlaced": interlaced = ParseJsonBool(json, ref pos); break;
+                case "isClcl": clcl = ParseJsonBool(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos); break;
                 }
 
@@ -725,11 +729,12 @@ internal static unsafe partial class IthmbCodecPlugin
             if (prefix > 0 && width > 0 && height > 0 && frameBytes > 0)
             {
                 var enc = string.Equals(encoding, "yuv422", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
+                    : string.Equals(encoding, "yuv422clcl", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
                     : string.Equals(encoding, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
                     : string.Equals(encoding, "rgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb555
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
-                    SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced);
+                    SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl);
             }
 
             SkipWhitespace(json, ref pos);
