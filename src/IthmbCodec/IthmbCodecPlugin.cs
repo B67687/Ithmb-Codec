@@ -234,29 +234,53 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.DecodeFailed;
         }
 
-        // Read the file
-        byte[] fileBytes;
-        try { fileBytes = File.ReadAllBytes(path); }
+        // Read a header buffer for JPEG scan (4 MB or file size, whichever is smaller)
+        // This avoids reading the entire file into memory for the common JPEG-embedded path.
+        try
+        {
+            using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            int peekSize = (int)Math.Min(fileSize, 4L * 1024 * 1024);
+            byte[] peek = new byte[peekSize];
+            fs.ReadExactly(peek, 0, peekSize);
+
+            if (TryFindJpegSlice(peek, out var jpegOffset, out var jpegLength, cancellation))
+            {
+                // JPEG found — read exactly the JPEG slice from the stream
+                if (jpegOffset + jpegLength > peekSize)
+                {
+                    // JPEG extends beyond the peek buffer — seek and read it
+                    byte[] jpegSlice = new byte[jpegLength];
+                    fs.Seek(jpegOffset, SeekOrigin.Begin);
+                    fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
+                    return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
+                        cancellation, outInfo, outBuf);
+                }
+                else
+                {
+                    // JPEG fully contained in the peek buffer — extract slice
+                    byte[] jpegSlice = new byte[jpegLength];
+                    Buffer.BlockCopy(peek, jpegOffset, jpegSlice, 0, jpegLength);
+                    return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
+                        cancellation, outInfo, outBuf);
+                }
+            }
+
+            // No embedded JPEG found — read full file for raw profile fallback
+            byte[] fileBytes = new byte[(int)fileSize];
+            fs.Seek(0, SeekOrigin.Begin);
+            fs.ReadExactly(fileBytes, 0, (int)fileSize);
+
+            int prefix = ReadInt32BigEndian(fileBytes, 0);
+            if (KnownProfiles.TryGetValue(prefix, out var profile))
+            {
+                return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf);
+            }
+
+            Log(4, $"ITHMB: '{Path.GetFileName(path)}' no embedded JPEG found, unknown profile prefix {prefix}");
+            return IGStatus.DecodeFailed;
+        }
         catch (IOException ex) { Log(4, $"ITHMB: read failed '{path}' ({ex.Message})"); return IGStatus.IoError; }
         catch { return IGStatus.Internal; }
-        if (fileBytes.Length < 8) return IGStatus.DecodeFailed;
-
-        // Try embedded JPEG path first
-        if (TryFindJpegSlice(fileBytes, out var jpegOffset, out var jpegLength, cancellation))
-        {
-            return DecodeJpegSlice(fileBytes, jpegOffset, jpegLength, fileBytes.Length,
-                cancellation, outInfo, outBuf);
-        }
-
-        // Fallback: try known raw profiles via prefix header
-        int prefix = ReadInt32BigEndian(fileBytes, 0);
-        if (KnownProfiles.TryGetValue(prefix, out var profile))
-        {
-            return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf);
-        }
-
-        Log(4, $"ITHMB: '{Path.GetFileName(path)}' no embedded JPEG found, unknown profile prefix {prefix}");
-        return IGStatus.DecodeFailed;
     }
 
     // ------------------------------ JPEG extraction ------------------------------
