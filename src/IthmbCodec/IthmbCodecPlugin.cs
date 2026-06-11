@@ -41,7 +41,8 @@ internal static unsafe class IthmbCodecPlugin
     private sealed record IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
-        bool SwapsDimensions = false, bool LittleEndian = true);
+        bool SwapsDimensions = false, bool LittleEndian = true,
+        bool IsPadded = false);
 
     private static readonly IReadOnlyDictionary<int, IthmbVariantProfile> KnownProfiles =
         new Dictionary<int, IthmbVariantProfile>
@@ -52,6 +53,8 @@ internal static unsafe class IthmbCodecPlugin
             [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2),
             [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true),
             [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2),
+            // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame
+            [1067] = new(1067, 720, 480, IthmbEncoding.Ycbcr420, 720 * 480 * 2, IsPadded: true),
         };
 
     // ------------------------------ Static plugin state ------------------------------
@@ -205,7 +208,8 @@ internal static unsafe class IthmbCodecPlugin
         // Try embedded JPEG path first
         if (TryFindJpegSlice(fileBytes, out var jpegOffset, out var jpegLength, cancellation))
         {
-            return DecodeJpegSlice(fileBytes, jpegOffset, jpegLength, cancellation, outInfo, outBuf);
+            return DecodeJpegSlice(fileBytes, jpegOffset, jpegLength, fileBytes.Length,
+                cancellation, outInfo, outBuf);
         }
 
         // Fallback: try known raw profiles via prefix header
@@ -255,7 +259,7 @@ internal static unsafe class IthmbCodecPlugin
         return false;
     }
 
-    private static IGStatus DecodeJpegSlice(byte[] data, int offset, int length,
+    private static IGStatus DecodeJpegSlice(byte[] data, int offset, int length, int fileSize,
         void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf)
     {
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
@@ -274,7 +278,7 @@ internal static unsafe class IthmbCodecPlugin
         if (w <= 0 || h <= 0) return IGStatus.DecodeFailed;
 
         int hasAlpha = srcInfo.AlphaType == SKAlphaType.Opaque ? 0 : 1;
-        FillImageInfo(outInfo, w, h, hasAlpha, ReadExifOrientation(data, offset, length));
+        FillImageInfo(outInfo, w, h, hasAlpha, ReadExifOrientation(data, offset, length), fileSize);
 
         if (outBuf == null) return IGStatus.OK; // metadata-only
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
@@ -301,7 +305,8 @@ internal static unsafe class IthmbCodecPlugin
 
         if (data.Length < 4 + frameSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
 
-        FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1);
+        int fileSize = data.Length; // actual file bytes read (available before FillImageInfo)
+        FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1, fileSize: fileSize);
 
         if (outBuf == null) return IGStatus.OK;
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
@@ -310,6 +315,12 @@ internal static unsafe class IthmbCodecPlugin
         if (allocStatus != IGStatus.OK) return allocStatus;
 
         var raw = data.AsSpan(4);
+        // For padded profiles, trim to the valid pixel data portion
+        if (profile.IsPadded)
+        {
+            int validSize = w * h * 3 / 2;
+            if (raw.Length > validSize) raw = raw[..validSize];
+        }
         switch (profile.Encoding)
         {
             case IthmbEncoding.Rgb565:
@@ -440,7 +451,7 @@ internal static unsafe class IthmbCodecPlugin
     // ------------------------------ Helpers ------------------------------
 
     /// <summary>Populates an IGImageInfo with common defaults.</summary>
-    private static void FillImageInfo(IGImageInfo* info, int w, int h, int hasAlpha, int orientation)
+    private static void FillImageInfo(IGImageInfo* info, int w, int h, int hasAlpha, int orientation, long fileSize = -1)
     {
         info->Width = w;
         info->Height = h;
@@ -450,7 +461,7 @@ internal static unsafe class IthmbCodecPlugin
         info->ColorSpace = (int)IGColorSpace.Srgb;
         info->Orientation = orientation;
         info->FrameCount = 1;
-        info->FileSizeBytes = -1;
+        info->FileSizeBytes = fileSize;
         info->IccProfileData = null;
         info->IccProfileSize = 0;
     }
