@@ -423,20 +423,19 @@ internal static unsafe partial class IthmbCodecPlugin
                 int validSize = w * h * 3 / 2;
                 if (raw.Length > validSize) raw = raw[..validSize];
             }
-            switch (profile.Encoding)
+            bool ok = profile.Encoding switch
             {
-                case IthmbEncoding.Rgb565:
-                    DecodeRgb565(raw, pixels, w, h, profile.LittleEndian);
-                    break;
-                case IthmbEncoding.Yuv422:
-                    if (profile.IsInterlaced)
-                        DecodeYuv422Interlaced(raw, pixels, w, h);
-                    else
-                        DecodeYuv422(raw, pixels, w, h);
-                    break;
-                case IthmbEncoding.Ycbcr420:
-                    DecodeYcbcr420(raw, pixels, w, h);
-                    break;
+                IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
+                IthmbEncoding.Yuv422 => profile.IsInterlaced
+                    ? DecodeYuv422Interlaced(raw, pixels, w, h)
+                    : DecodeYuv422(raw, pixels, w, h),
+                IthmbEncoding.Ycbcr420 => DecodeYcbcr420(raw, pixels, w, h),
+                _ => false,
+            };
+            if (!ok)
+            {
+                NativeMemory.Free(pixels);
+                return IGStatus.DecodeFailed;
             }
         }
         catch
@@ -725,7 +724,11 @@ internal static unsafe partial class IthmbCodecPlugin
         if (pos >= s.Length || s[pos] != '"') return null;
         pos++; // skip opening quote
         int start = pos;
-        while (pos < s.Length && s[pos] != '"') pos++;
+        while (pos < s.Length && s[pos] != '"')
+        {
+            if (s[pos] == '\\' && pos + 1 < s.Length) pos++; // skip escape sequence
+            pos++;
+        }
         if (pos >= s.Length) return null;
         string result = s[start..pos];
         pos++; // skip closing quote

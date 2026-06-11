@@ -18,20 +18,18 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ---------- RGB565 ----------
 
-    internal static void DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    internal static bool DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
         long expectedBytes = (long)w * h * 2;
-        if (src.Length < expectedBytes) return;
+        if (src.Length < expectedBytes) return false;
 
         // SIMD path: process 8 pixels per iteration on x64 (SSE2)
         if (Sse2.IsSupported && w >= 8)
-        {
             DecodeRgb565_Sse2(src, dst, w, h, littleEndian);
-            return;
-        }
-
-        // Scalar fallback
-        DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
+        else
+            DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
+        return true;
     }
 
     /// <summary>SSE2-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
@@ -131,16 +129,18 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ---------- YUV 4:2:2 (UYVY) ----------
 
-    internal static void DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    internal static bool DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         long expectedBytes = (long)w * h * 2;
-        if (src.Length < expectedBytes) return;
+        if (src.Length < expectedBytes) return false;
 
         // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
         if (Ssse3.IsSupported && (w & 7) == 0)
             DecodeYuv422_SIMD(src, dst, w, h);
         else
             DecodeYuv422_Scalar(src, dst, w, h);
+        return true;
     }
 
     private static void DecodeYuv422_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
@@ -235,16 +235,18 @@ internal static unsafe partial class IthmbCodecPlugin
         }
     }
 
-    internal static void DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    internal static bool DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         long expectedBytes = (long)w * h * 2;
-        if (src.Length < expectedBytes) return;
+        if (src.Length < expectedBytes) return false;
 
         // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
         if (Ssse3.IsSupported && (w & 7) == 0)
             DecodeYuv422Interlaced_SIMD(src, dst, w, h);
         else
             DecodeYuv422Interlaced_Scalar(src, dst, w, h);
+        return true;
     }
 
     private static void DecodeYuv422Interlaced_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
@@ -304,18 +306,20 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ---------- YCbCr 4:2:0 (planar) ----------
 
-    internal static void DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    internal static bool DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         int ySize = w * h;
         int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
         long expectedBytes = (long)ySize + uvSize * 2;
-        if (src.Length < expectedBytes) return;
+        if (src.Length < expectedBytes) return false;
 
         // SIMD path: requires even dimensions (2×2 blocks fit perfectly in Vector128<int>)
         if (Vector128.IsHardwareAccelerated && (w & 1) == 0 && (h & 1) == 0)
             DecodeYcbcr420_SIMD(src, dst, w, h, ySize, uvSize);
         else
             DecodeYcbcr420_Scalar(src, dst, w, h, ySize, uvSize);
+        return true;
     }
 
     /// <summary>Scalar fallback for YCbCr 4:2:0 (extracted from original body).</summary>
