@@ -1,6 +1,6 @@
 # ITHMB Codec for ImageGlass v10
 
-A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 18 legacy raw thumbnail profiles covering iPod Photo through iPhone 2G.
+A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 20 legacy raw thumbnail profiles covering iPod Photo through iPhone 2G.
 
 Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**.
 
@@ -27,7 +27,7 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 | Type                                | Description                                                                                                                                                     | Our support                                                                                                                                   |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | **T-prefix** (e.g. `T####.ithmb`)   | Contains a single full-resolution photo as an embedded JPEG (JFIF or Exif). These are found in newer iOS device caches (iPhone 5 and later).                    | ✅ **Fully supported** --- the primary path. 956/956 verified.                                                                                |
-| **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 18 known profiles. Untested due to lack of sample files. See [raw profile table](#raw-profile-definitions). |
+| **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 20 known profiles. Untested due to lack of sample files. See [raw profile table](#raw-profile-definitions). |
 
 ### Decode pipeline
 
@@ -140,7 +140,7 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 | `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~551 lines)                                                           |
 | `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                               |
 | `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                                   |
-| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged on first decode, overridable without recompile)                                                               |
+| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged on first decode, overridable without recompile)                                                       |
 | `src/IthmbCodec/test/`                        | xUnit test project (306 tests) --- exhaustive RGB565+RGB555, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
 
 ### Raw profile definitions
