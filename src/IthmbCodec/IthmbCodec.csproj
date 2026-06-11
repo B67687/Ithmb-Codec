@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>Preview</LangVersion>
     <Platforms>x64;ARM64</Platforms>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;osx-arm64</RuntimeIdentifiers>
 
     <!-- Native shared library produced by Native AOT for the v10 codec plugin ABI. -->
     <OutputType>Library</OutputType>
