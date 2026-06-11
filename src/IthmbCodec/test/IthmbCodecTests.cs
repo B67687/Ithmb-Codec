@@ -615,6 +615,8 @@ public unsafe class IthmbCodecTests
     public void NewProfiles_Exist()
     {
         // Verify all newly added profiles are in the KnownProfiles dictionary
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1005));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1032));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1092));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1093));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(3004));
