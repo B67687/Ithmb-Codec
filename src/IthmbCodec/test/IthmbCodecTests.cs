@@ -1185,4 +1185,106 @@ public unsafe class IthmbCodecTests
             NativeMemory.Free(interlaceDst);
         }
     }
+
+    // ===================== P3: SIMD coverage + JSON parser tests =====================
+
+    // ---- UYVY SIMD (SSSE3) known-value test with w=8 ----
+
+    [Fact]
+    public void DecodeYuv422_SIMD_KnownValue_8Wide()
+    {
+        // 8 identical red pixels in UYVY format: all U=85, V=255 (red chroma), Y=76 (red luma)
+        var src = new byte[16];
+        for (int i = 0; i < 8; i += 2)
+        {
+            src[i * 2] = 85;     // U
+            src[i * 2 + 1] = 76; // Y0
+            src[i * 2 + 2] = 255; // V
+            src[i * 2 + 3] = 76; // Y1
+        }
+
+        byte* dst = (byte*)NativeMemory.Alloc(8 * 4);
+        try
+        {
+            IthmbCodecPlugin.DecodeYuv422(src, dst, 8, 1);
+
+            // All 8 pixels should be approximately red (R dominates, G/B low)
+            for (int i = 0; i < 8; i++)
+            {
+                Assert.True(dst[i * 4 + 2] > 200, $"Pixel {i}: R={dst[i*4+2]} not dominant");
+                Assert.True(dst[i * 4 + 1] < 50, $"Pixel {i}: G={dst[i*4+1]} not low");
+                Assert.Equal(255, dst[i * 4 + 3]); // A
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // ---- YCbCr420 SIMD known-value test ----
+
+    [Fact]
+    public void DecodeYcbcr420_SIMD_KnownValue()
+    {
+        // 2×2 block: all luma=128, Cb=128, Cr=128 → neutral chroma → mid-gray output
+        var src = new byte[4 + 1 + 1]; // Y=4, Cb=1, Cr=1
+        for (int i = 0; i < 4; i++) src[i] = 128;
+        src[4] = 128; // Cb
+        src[5] = 128; // Cr
+
+        byte* dst = (byte*)NativeMemory.Alloc(4 * 4);
+        try
+        {
+            IthmbCodecPlugin.DecodeYcbcr420(src, dst, 2, 2);
+
+            // Neutral chroma → all channels ≈ luma (128, with ±8 tolerance)
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.InRange(dst[i * 4], 120, 136);     // B
+                Assert.InRange(dst[i * 4 + 1], 120, 136); // G
+                Assert.InRange(dst[i * 4 + 2], 120, 136); // R
+                Assert.Equal(255, dst[i * 4 + 3]);         // A
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // ---- JSON parser tests ----
+
+    [Fact]
+    public void ParseProfilesJson_WithComments_ParsesCorrectly()
+    {
+        string json = "[\n  // This is a comment\n  {\n    \"prefix\": 1013,\n    \"width\": 220,\n    \"height\": 176,\n    \"encoding\": \"rgb565\",\n    \"frameBytes\": 77440\n  }\n]";
+        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
+        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(method);
+        method.Invoke(null, [json, output]);
+
+        Assert.Single(output);
+        Assert.True(output.ContainsKey(1013));
+        Assert.Equal(220, output[1013].Width);
+        Assert.Equal(176, output[1013].Height);
+        Assert.Equal(77440, output[1013].FrameByteLength);
+    }
+
+    [Fact]
+    public void ParseProfilesJson_EmptyArray_NoEntries()
+    {
+        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
+        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(method);
+        method.Invoke(null, ["[]", output]);
+        Assert.Empty(output);
+    }
+
+    [Fact]
+    public void ParseProfilesJson_Malformed_SilentlyFails()
+    {
+        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
+        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(method);
+        method.Invoke(null, ["{bad json}", output]);
+        Assert.Empty(output);
+    }
 }

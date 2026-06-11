@@ -39,9 +39,9 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly byte[] App1Marker = [0xFF, 0xE1];
 
     // ------------------------------ Raw profile enums ------------------------------
-    private enum IthmbEncoding { Rgb565, Yuv422, Ycbcr420 }
+    internal enum IthmbEncoding { Rgb565, Yuv422, Ycbcr420 }
 
-    private readonly record struct IthmbVariantProfile(
+    internal readonly record struct IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true,
@@ -245,24 +245,37 @@ internal static unsafe partial class IthmbCodecPlugin
 
             if (TryFindJpegSlice(peek, out var jpegOffset, out var jpegLength, cancellation))
             {
-                // JPEG found — read exactly the JPEG slice from the stream
+                // If JPEG extends beyond peek buffer, read tail to find true EOI
                 if (jpegOffset + jpegLength > peekSize)
                 {
-                    // JPEG extends beyond the peek buffer — seek and read it
-                    byte[] jpegSlice = new byte[jpegLength];
-                    fs.Seek(jpegOffset, SeekOrigin.Begin);
-                    fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
-                    return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
-                        cancellation, outInfo, outBuf);
+                    long tailSize = fileSize - (jpegOffset + 2);
+                    byte[] tail = new byte[tailSize > 0 ? (int)Math.Min(tailSize, 100L * 1024 * 1024) : 0];
+                    if (tail.Length > 0)
+                    {
+                        fs.Seek(jpegOffset + 2, SeekOrigin.Begin);
+                        fs.ReadExactly(tail, 0, tail.Length);
+                        int eoiRel = tail.AsSpan().IndexOf(JpegEoiMarker);
+                        if (eoiRel >= 0)
+                        {
+                            // Use the actual file position, not the peek offset
+                            long actualEoiPos = jpegOffset + 2L + eoiRel + 2;
+                            jpegLength = (int)(actualEoiPos - jpegOffset);
+                        }
+                        else
+                        {
+                            // No EOI found — use rest of file
+                            jpegLength = (int)(fileSize - jpegOffset);
+                        }
+                    }
                 }
-                else
-                {
-                    // JPEG fully contained in the peek buffer — extract slice
-                    byte[] jpegSlice = new byte[jpegLength];
-                    Buffer.BlockCopy(peek, jpegOffset, jpegSlice, 0, jpegLength);
-                    return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
-                        cancellation, outInfo, outBuf);
-                }
+
+                // Always read the JPEG slice from the FileStream (not the peek buffer)
+                byte[] jpegSlice = new byte[jpegLength];
+                fs.Seek(jpegOffset, SeekOrigin.Begin);
+                int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
+                if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
+                return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
+                    cancellation, outInfo, outBuf);
             }
 
             // No embedded JPEG found — read full file for raw profile fallback

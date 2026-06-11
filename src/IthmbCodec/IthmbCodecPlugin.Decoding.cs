@@ -11,11 +11,10 @@ namespace IthmbCodec;
 
 internal static unsafe partial class IthmbCodecPlugin
 {
-    // BT.601-7 (SDTV) Y′CbCr → R′G′B′ coefficients, 8:8 fixed-point
-    private const int YuvRCoef = 359;   //  1.402  (Cr contribution to R)
-    private const int YuvGCoefCb = 88;  // -0.344  (Cb contribution to G)
-    private const int YuvGCoefCr = 183; // -0.714  (Cr contribution to G)
-    private const int YuvBCoef = 454;   //  1.772  (Cb contribution to B)
+    internal const int YuvRCoef = 359;   //  1.402  (Cr contribution to R)
+    internal const int YuvGCoefCb = 88;  // -0.344  (Cb contribution to G)
+    internal const int YuvGCoefCr = 183; // -0.714  (Cr contribution to G)
+    internal const int YuvBCoef = 454;   //  1.772  (Cb contribution to B)
 
     // ---------- RGB565 ----------
 
