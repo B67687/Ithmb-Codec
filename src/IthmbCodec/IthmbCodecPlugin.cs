@@ -10,6 +10,7 @@ path: decode known legacy raw thumbnail profiles (RGB565, YUV422, YCbCr420).
 Format behavior informed by the IthmbDecoder reference (ImageGlass PR #2316).
 This is a clean-room implementation for the v10 native codec plugin ABI.
 */
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -20,7 +21,7 @@ using SkiaSharp;
 
 namespace IthmbCodec;
 
-internal static unsafe class IthmbCodecPlugin
+internal static unsafe partial class IthmbCodecPlugin
 {
     // ------------------------------ Constants ------------------------------
     private const string PluginIdString = "Plugin_IthmbCodec";
@@ -77,6 +78,12 @@ internal static unsafe class IthmbCodecPlugin
             [3008] = new(3008, 640, 480, IthmbEncoding.Rgb565, 640 * 480 * 2),
         }.ToFrozenDictionary();
 
+    private static bool _profilesLoaded;
+
+    // Cached host function pointers (set once during init, eliminates pointer chase per call)
+    private static delegate* unmanaged[Cdecl]<void*, int> _isCanceledFn;
+    private static delegate* unmanaged[Cdecl]<int, IGStringRef, void> _logFn;
+
     // ------------------------------ Static plugin state ------------------------------
     private static volatile IGPluginApi* _pluginApi;
     private static IGCodecApi* _codecApi;
@@ -87,9 +94,8 @@ internal static unsafe class IthmbCodecPlugin
     private static char** _bufExtensions;
     private static IGStringRef* _extArray;
 
-    private static readonly object _bufLock = new();
     private static readonly object _initLock = new();
-    private static readonly HashSet<nint> _liveBuffers = new();
+    private static readonly ConcurrentDictionary<nint, byte> _liveBuffers = new();
 
     // ------------------------------ Entry point ------------------------------
     [UnmanagedCallersOnly(EntryPoint = IGNativeAbi.ENTRY_POINT_NAME, CallConvs = [typeof(CallConvCdecl)])]
@@ -126,6 +132,7 @@ internal static unsafe class IthmbCodecPlugin
     }
 
     // ------------------------------ Codec API ------------------------------
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static IGStatus CodecGetCapability(IGCodecCapability* outCap)
     {
@@ -146,6 +153,7 @@ internal static unsafe class IthmbCodecPlugin
         return IGStatus.OK;
     }
 
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int CodecCanHandleExtension(IGStringRef ext)
     {
@@ -155,6 +163,7 @@ internal static unsafe class IthmbCodecPlugin
             if (s.Equals(supported, StringComparison.OrdinalIgnoreCase)) return 1;
         return 0;
     }
+
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     internal static int CodecCanHandleSignature(byte* signature, int length)
@@ -172,6 +181,7 @@ internal static unsafe class IthmbCodecPlugin
         return probe.IndexOf(JfifMarker) >= 0 || probe.IndexOf(ExifMarker) >= 0 ? 1 : 0;
     }
 
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static IGStatus CodecLoadMetadata(IGStringRef filePath, IGImageInfo* outInfo, void* cancellation)
     {
@@ -179,6 +189,7 @@ internal static unsafe class IthmbCodecPlugin
         *outInfo = default;
         return DecodeInternal(filePath, cancellation, outInfo, null);
     }
+
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static IGStatus CodecDecodeStaticRaster(IGStringRef filePath, int frameIndex,
@@ -191,12 +202,13 @@ internal static unsafe class IthmbCodecPlugin
         return DecodeInternal(filePath, cancellation, &info, outBuf);
     }
 
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static void CodecFreePixelBuffer(IGPixelBuffer* buf)
     {
         if (buf == null || buf->Data == null) return;
         nint key = (nint)buf->Data;
-        lock (_bufLock) { if (!_liveBuffers.Remove(key)) return; }
+        if (!_liveBuffers.TryRemove(key, out _)) return;
         NativeMemory.Free((void*)key);
         buf->Data = null;
         buf->ReleaseContext = null;
@@ -209,6 +221,9 @@ internal static unsafe class IthmbCodecPlugin
         if (filePath.Data == null || filePath.Length <= 0) return IGStatus.InvalidArg;
         var path = new string(filePath.Data, 0, filePath.Length);
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
+
+        // Load external profiles on first decode (deferred from init to avoid I/O in GetApi)
+        if (!_profilesLoaded) { _profilesLoaded = true; LoadExternalProfiles(); }
 
         // Check file size before reading
         long fileSize;
@@ -372,134 +387,9 @@ internal static unsafe class IthmbCodecPlugin
         outBuf->Height = h;
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        outBuf->ReleaseContext = pixels;
-        lock (_bufLock) { _liveBuffers.Add((nint)pixels); }
+        _liveBuffers.TryAdd((nint)pixels, 0);
         return IGStatus.OK;
     }
-
-    internal static void DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
-    {
-        long expectedBytes = (long)w * h * 2;
-        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
-
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x++)
-            {
-                int idx = (y * w + x) * 2;
-                ushort rgb = littleEndian
-                    ? (ushort)(src[idx] | (src[idx + 1] << 8))
-                    : (ushort)((src[idx] << 8) | src[idx + 1]);
-                int r5 = (rgb >> 11) & 0x1F;
-                int g6 = (rgb >> 5) & 0x3F;
-                int b5 = rgb & 0x1F;
-                int r = (r5 << 3) | (r5 >> 2);   // 5-bit → 8-bit with MSB replication
-                int g = (g6 << 2) | (g6 >> 4);   // 6-bit → 8-bit with MSB replication
-                int b = (b5 << 3) | (b5 >> 2);
-                int dstIdx = (y * w + x) * 4;
-                dst[dstIdx] = (byte)b;
-                dst[dstIdx + 1] = (byte)g;
-                dst[dstIdx + 2] = (byte)r;
-                dst[dstIdx + 3] = 255;
-            }
-        }
-    }
-
-    internal static void DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
-    {
-        long expectedBytes = (long)w * h * 2;
-        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
-
-        // UYVY interleaved: every 4 bytes = U0 Y0 V0 Y1
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x += 2)
-            {
-                int idx = (y * w + x) * 2;
-                int u = src[idx] - 128;
-                int y0 = src[idx + 1];
-                int v = src[idx + 2] - 128;
-                int y1 = src[idx + 3];
-
-                WriteYuvPixel(dst, y, x, w, y0, u, v);
-                if (x + 1 < w) WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Decodes interlaced UYVY 4:2:2 (F1019 format).
-    /// Even rows are stored in the first half of the buffer, odd rows in the second half.
-    /// Within each field: UYVY macropixels (4 bytes = 2 pixels, chroma shared).
-    /// </summary>
-    internal static void DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
-    {
-        long expectedBytes = (long)w * h * 2;
-        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
-        int half = (h / 2) * w * 2; // bytes per field
-        int rowStride = w * 2;      // bytes per row within a field
-        for (int y = 0; y < h; y++)
-        {
-            int fieldOffset = (y % 2 == 0) ? 0 : half;
-            int rowInField = y / 2;
-            int rowStart = fieldOffset + rowInField * rowStride;
-            for (int x = 0; x < w; x += 2)
-            {
-                int idx = rowStart + x * 2;
-                int u = src[idx] - 128;
-                int y0 = src[idx + 1];
-                int v = src[idx + 2] - 128;
-                int y1 = src[idx + 3];
-                WriteYuvPixel(dst, y, x, w, y0, u, v);
-                if (x + 1 < w) WriteYuvPixel(dst, y, x + 1, w, y1, u, v);
-            }
-        }
-    }
-
-    internal static void DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
-    {
-        int ySize = w * h;
-        int uvSize = ((w + 1) / 2) * ((h + 1) / 2); // ceil(w/2) * ceil(h/2)
-        long expectedBytes = (long)ySize + uvSize * 2;
-        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
-
-        // Process in 2x2 blocks: reads Cb/Cr once per block (vs 4x in naive loop).
-        // Chroma subsampling 4:2:0 means 2x2 luma blocks share one Cb/Cr pair.
-        int uvStride = w / 2; // chroma row stride in standard JPEG 4:2:0
-        for (int y = 0; y < h; y += 2)
-        {
-            for (int x = 0; x < w; x += 2)
-            {
-                int uvIdx = ySize + (y / 2) * uvStride + (x / 2);
-                int cb = src[uvIdx] - 128;
-                int cr = src[uvIdx + uvSize] - 128;
-
-                // Process all 4 luma pixels in this 2x2 block
-                for (int dy = 0; dy < 2 && y + dy < h; dy++)
-                {
-                    for (int dx = 0; dx < 2 && x + dx < w; dx++)
-                    {
-                        int yy = src[(y + dy) * w + (x + dx)];
-                        WriteYuvPixel(dst, y + dy, x + dx, w, yy, cb, cr);
-                    }
-                }
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void WriteYuvPixel(byte* dst, int y, int x, int w, int luma, int cb, int cr)
-    {
-        int r = Clamp(luma + ((359 * cr) >> 8));
-        int g = Clamp(luma - ((88 * cb) >> 8) - ((183 * cr) >> 8));
-        int b = Clamp(luma + ((454 * cb) >> 8));
-        int idx = (y * w + x) * 4;
-        dst[idx] = (byte)b; dst[idx + 1] = (byte)g;
-        dst[idx + 2] = (byte)r; dst[idx + 3] = 255;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int Clamp(int v) => v < 0 ? 0 : v > 255 ? 255 : v;
 
     // ------------------------------ Shared SkiaSharp decode ------------------------------
     private static IGStatus DecodeToPixelBuffer(SKCodec codec, int w, int h, IGPixelBuffer* outBuf)
@@ -528,8 +418,7 @@ internal static unsafe class IthmbCodecPlugin
         outBuf->Width = w; outBuf->Height = h;
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
-        outBuf->ReleaseContext = pixels;
-        lock (_bufLock) { _liveBuffers.Add((nint)pixels); }
+        _liveBuffers.TryAdd((nint)pixels, 0);
         return IGStatus.OK;
     }
 
@@ -654,17 +543,14 @@ internal static unsafe class IthmbCodecPlugin
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsCanceled(void* cancellation)
     {
-        if (cancellation == null || _hostApi == null || _hostApi->Core == null) return false;
-        var fn = _hostApi->Core->IsCancellationRequested;
-        return fn != null && fn(cancellation) != 0;
+        // Use cached function pointer (set during init). Avoids chasing _hostApi->Core->{fn} per call.
+        return cancellation != null && _isCanceledFn != null && _isCanceledFn(cancellation) != 0;
     }
 
     private static void Log(int level, string message)
     {
-        if (_hostApi == null || _hostApi->Core == null) return;
-        var fn = _hostApi->Core->Log;
-        if (fn == null) return;
-        fixed (char* p = message) fn(level, new IGStringRef { Data = p, Length = message.Length });
+        if (_logFn == null) return;
+        fixed (char* p = message) _logFn(level, new IGStringRef { Data = p, Length = message.Length });
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -861,8 +747,12 @@ internal static unsafe class IthmbCodecPlugin
             _extArray[i] = MakeStringRef(_bufExtensions[i], ext.Length);
         }
 
-        // Load external profiles.json if present
-        LoadExternalProfiles();
+        // Cache host function pointers for fast-path access
+        if (_hostApi != null && _hostApi->Core != null)
+        {
+            _isCanceledFn = _hostApi->Core->IsCancellationRequested;
+            _logFn = _hostApi->Core->Log;
+        }
     }
 
     private static void InitCodecApi()
