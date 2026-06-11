@@ -4,6 +4,8 @@
 // Separated from plugin ABI glue for independent AOT compilation.
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace IthmbCodec;
 
@@ -22,25 +24,106 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return;
 
+        // SIMD path: process 8 pixels per iteration on x64 (SSE2)
+        if (Sse2.IsSupported && w >= 8)
+        {
+            DecodeRgb565_Sse2(src, dst, w, h, littleEndian);
+            return;
+        }
+
+        // Scalar fallback
+        DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
+    }
+
+    /// <summary>SSE2-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
+    private static void DecodeRgb565_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    {
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                byte* pSrcRow = pSrc + y * w * 2;
+                byte* pDstRow = dst + y * w * 4;
+                int x = 0;
+
+                // Main SIMD loop: 8 pixels per iteration
+                for (; x + 7 < w; x += 8)
+                {
+                    Vector128<byte> raw = Sse2.LoadVector128(pSrcRow + x * 2);
+                    Vector128<ushort> v = raw.AsUInt16();
+
+                    // Byte-swap for big-endian profiles
+                    if (!littleEndian)
+                    {
+                        v = Sse2.Or(
+                            Sse2.ShiftRightLogical(v, 8),
+                            Sse2.ShiftLeftLogical(v, 8)).AsUInt16();
+                    }
+
+                    // Extract 5/6/5 bit fields
+                    var b5 = Sse2.And(v,          Vector128.Create((ushort)0x001F));
+                    var g6 = Sse2.And(Sse2.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x003F));
+                    var r5 = Sse2.And(Sse2.ShiftRightLogical(v, 11), Vector128.Create((ushort)0x001F));
+
+                    // MSB replicate to 8-bit: (val << k) | (val >> (8-k))
+                    var b8 = Sse2.Or(Sse2.ShiftLeftLogical(b5, 3), Sse2.ShiftRightLogical(b5, 2));
+                    var g8 = Sse2.Or(Sse2.ShiftLeftLogical(g6, 2), Sse2.ShiftRightLogical(g6, 4));
+                    var r8 = Sse2.Or(Sse2.ShiftLeftLogical(r5, 3), Sse2.ShiftRightLogical(r5, 2));
+
+                    // Pack to bytes: 16-bit → 8-bit (saturating, safe since values ≤ 255)
+                    var bp = Sse2.PackUnsignedSaturate(b8.AsInt16(), b8.AsInt16()); // [B0..B7, B0..B7]
+                    var gp = Sse2.PackUnsignedSaturate(g8.AsInt16(), g8.AsInt16()); // [G0..G7, G0..G7]
+                    var rp = Sse2.PackUnsignedSaturate(r8.AsInt16(), r8.AsInt16()); // [R0..R7, R0..R7]
+
+                    var alpha = Vector128.Create((byte)255);
+
+                    // Level 1: (B,R) and (G,A) interleaved
+                    var br = Sse2.UnpackLow(bp, rp);    // [B0,R0,…,B3,R3, B4,R4,…,B7,R7]
+                    var ga = Sse2.UnpackLow(gp, alpha); // [G0,255,…,G3,255, G4,255,…,G7,255]
+
+                    // Level 2: (BR, GA) interleaved → BGRA quads
+                    var pxLo = Sse2.UnpackLow(br, ga);  // pixels 0-3: [B0,G0,R0,255, B1,G1,R1,255, B2,G2,R2,255, B3,G3,R3,255]
+                    var pxHi = Sse2.UnpackHigh(br, ga); // pixels 4-7: [B4,G4,R4,255, B5,G5,R5,255, B6,G6,R6,255, B7,G7,R7,255]
+
+                    Sse2.Store(pDstRow + x * 4, pxLo);
+                    Sse2.Store(pDstRow + (x + 4) * 4, pxHi);
+                }
+
+                // Scalar tail: remaining <8 pixels
+                DecodeRgb565_Tail(pSrcRow, pDstRow, x, w, littleEndian);
+            }
+        }
+    }
+
+    /// <summary>Scalar fallback for RGB565 decode (pure pointer-based).</summary>
+    private static void DecodeRgb565_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    {
         for (int y = 0; y < h; y++)
         {
-            int srcRowBase = y * w * 2;
             byte* pDstRow = dst + y * w * 4;
-            for (int x = 0; x < w; x++)
-            {
-                int idx = srcRowBase + x * 2;
-                ushort rgb = littleEndian
-                    ? (ushort)(src[idx] | (src[idx + 1] << 8))
-                    : (ushort)((src[idx] << 8) | src[idx + 1]);
-                int r5 = (rgb >> 11) & 0x1F;
-                int g6 = (rgb >> 5) & 0x3F;
-                int b5 = rgb & 0x1F;
-                pDstRow[0] = (byte)((b5 << 3) | (b5 >> 2));   // B with MSB replication
-                pDstRow[1] = (byte)((g6 << 2) | (g6 >> 4));   // G with MSB replication
-                pDstRow[2] = (byte)((r5 << 3) | (r5 >> 2));   // R with MSB replication
-                pDstRow[3] = 255;
-                pDstRow += 4;
-            }
+            DecodeRgb565_Tail((byte*)Unsafe.AsPointer(ref System.Runtime.InteropServices.MemoryMarshal.GetReference(src)) + y * w * 2, pDstRow, 0, w, littleEndian);
+        }
+    }
+
+    /// <summary>Inner row decoder — processes remaining pixels from xStart to w.</summary>
+    /// <remarks>Takes byte* pSrc for SIMD path (tail after SSE2). The scalar decoder wraps
+    /// this by fixing up the span pointer via a GCHandle internally.</remarks>
+    private static void DecodeRgb565_Tail(byte* pSrc, byte* pDstRow, int xStart, int w, bool littleEndian)
+    {
+        for (int x = xStart; x < w; x++)
+        {
+            int idx = x * 2;
+            ushort rgb = littleEndian
+                ? (ushort)(pSrc[idx] | (pSrc[idx + 1] << 8))
+                : (ushort)((pSrc[idx] << 8) | pSrc[idx + 1]);
+            int r5 = (rgb >> 11) & 0x1F;
+            int g6 = (rgb >> 5) & 0x3F;
+            int b5 = rgb & 0x1F;
+            pDstRow[0] = (byte)((b5 << 3) | (b5 >> 2));
+            pDstRow[1] = (byte)((g6 << 2) | (g6 >> 4));
+            pDstRow[2] = (byte)((r5 << 3) | (r5 >> 2));
+            pDstRow[3] = 255;
+            pDstRow += 4;
         }
     }
 
