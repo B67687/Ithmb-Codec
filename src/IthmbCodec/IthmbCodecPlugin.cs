@@ -52,7 +52,7 @@ internal static unsafe class IthmbCodecPlugin
         };
 
     // ------------------------------ Static plugin state ------------------------------
-    private static IGPluginApi* _pluginApi;
+    private static volatile IGPluginApi* _pluginApi;
     private static IGCodecApi* _codecApi;
     private static IGHostApi* _hostApi;
 
@@ -257,13 +257,9 @@ internal static unsafe class IthmbCodecPlugin
         if (offset < 0 || length <= 0 || offset + length > data.Length)
             return IGStatus.DecodeFailed;
 
-        byte[] jpegBytes;
-        if (offset == 0 && length == data.Length)
-            jpegBytes = data;
-        else
-            jpegBytes = data[offset..(offset + length)];
-
-        using var skData = SKData.CreateCopy(jpegBytes);
+        using var skData = offset == 0 && length == data.Length
+            ? SKData.CreateCopy(data)
+            : CreateSliceSkData(data, offset, length);
         using var codec = SKCodec.Create(skData);
         if (codec == null) { Log(4, "ITHMB: JPEG slice is not a valid image"); return IGStatus.DecodeFailed; }
 
@@ -278,6 +274,15 @@ internal static unsafe class IthmbCodecPlugin
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
         return DecodeToPixelBuffer(codec, w, h, outBuf);
+    }
+
+    /// <summary>Creates an SKData from a slice of a byte array without an intermediate allocation.</summary>
+    private static SKData CreateSliceSkData(byte[] data, int offset, int length)
+    {
+        fixed (byte* p = data)
+        {
+            return SKData.CreateCopy((IntPtr)(p + offset), length);
+        }
     }
 
     // ------------------------------ Raw profile decoding ------------------------------
