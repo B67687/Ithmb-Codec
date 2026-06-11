@@ -1,6 +1,6 @@
 # ITHMB Codec for ImageGlass v10
 
-A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via SkiaSharp. Also includes best-effort decoders for legacy raw thumbnail profiles (untested).
+A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via SkiaSharp. Also includes best-effort decoders for 18 legacy raw thumbnail profiles covering iPod Photo through iPhone 2G.
 
 Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**.
 
@@ -24,16 +24,16 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 
 `.ithmb` files (iThumbnail cache) are a proprietary format used by Apple iOS devices to store photo thumbnails. Two broad categories exist:
 
-| Type                                | Description                                                                                                                                                     | Our support                                                                                                                          |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **T-prefix** (e.g. `T####.ithmb`)   | Contains a single full-resolution photo as an embedded JPEG (JFIF or Exif). These are found in newer iOS device caches (iPhone 5 and later).                    | ✅ **Fully supported** --- the primary path. 956/956 verified.                                                                       |
-| **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 7 known profiles (1007, 1009, 1015, 1019, 1020, 1023, 1067). Untested due to lack of sample files. |
+| Type                                | Description                                                                                                                                                     | Our support                                                                                                                                   |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T-prefix** (e.g. `T####.ithmb`)   | Contains a single full-resolution photo as an embedded JPEG (JFIF or Exif). These are found in newer iOS device caches (iPhone 5 and later).                    | ✅ **Fully supported** --- the primary path. 956/956 verified.                                                                                |
+| **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 18 known profiles. Untested due to lack of sample files. See [raw profile table](#raw-profile-definitions). |
 
 ### Decode pipeline
 
 1. **Read the file** --- the entire `.ithmb` file is read into memory (typical size: 1-2 MB).
 2. **JPEG scan** --- the file is scanned (SIMD-accelerated via `Span.IndexOf`) for a JPEG SOI marker (`FF D8`) followed within 128 bytes by either a JFIF or Exif header. If found, the JPEG payload is extracted (SOI to EOI) and decoded via SkiaSharp.
-3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used.
+3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts.
 4. **EXIF orientation** --- if the JPEG contains an EXIF APP1 segment with an orientation tag (0x0112), it is parsed and reported to the host. ImageGlass rotates the image accordingly.
 
 ### File size guard
@@ -61,6 +61,7 @@ Files larger than **100 MB** are rejected before reading to prevent OOM from pat
        IthmbCodec.dll        (1.6 MB --- the native plugin)
        libSkiaSharp.dll      (11 MB --- SkiaSharp dependency)
        igplugin.json         (plugin manifest)
+       profiles.json         (optional --- external profile definitions)
    ```
 
 3. Restart ImageGlass v10.
@@ -130,26 +131,35 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 
 ### Key source files
 
-| File                                 | Description                                                                                                                      |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `src/IthmbCodec/IthmbCodecPlugin.cs` | Main plugin implementation (~670 lines) --- entry point, codec API, JPEG extraction, raw profile decoders, EXIF parsing, helpers |
-| `src/IthmbCodec/IthmbCodec.csproj`   | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                            |
-| `src/IthmbCodec/igplugin.json`       | Plugin manifest consumed by ImageGlass on startup                                                                                |
-| `src/IthmbCodec/test/`               | xUnit test project (19 tests) --- RGB565, YUV422, YCbCr420, JPEG extraction, EXIF orientation                                    |
+| File                                 | Description                                                                                                                                  |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/IthmbCodec/IthmbCodecPlugin.cs` | Main plugin implementation (~780 lines) --- entry point, codec API, JPEG extraction, raw profile decoders, EXIF parsing, JSON profile loader |
+| `src/IthmbCodec/IthmbCodec.csproj`   | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                        |
+| `src/IthmbCodec/igplugin.json`       | Plugin manifest consumed by ImageGlass on startup                                                                                            |
+| `src/IthmbCodec/profiles.json`       | External profile definitions (sidecar, merged at init, overridable without recompile)                                                        |
+| `src/IthmbCodec/test/`               | xUnit test project (19 tests) --- RGB565, YUV422, YCbCr420, JPEG extraction, EXIF orientation                                                |
 
 ### Raw profile definitions
 
-Seven legacy profiles are defined based on known iPod/iPhone thumbnail formats:
+18 profiles are defined based on known iPod/iPhone thumbnail formats, aggregated from iOpenPod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
 
-| Profile | Resolution | Encoding    | Notes                                    |
-| ------- | ---------- | ----------- | ---------------------------------------- |
-| 1007    | 480x864    | RGB565      | Swapped dimensions                       |
-| 1009    | 42x30      | RGB565      | Smallest thumbnail                       |
-| 1015    | 130x88     | RGB565      | Slideshow browser                        |
-| 1019    | 720x480    | YUV422      | TV-out resolution                        |
-| 1020    | 176x220    | RGB565      | Portrait thumbnail                       |
-| 1023    | 176x132    | RGB565      | Landscape thumbnail                      |
-| 1067    | 720x480    | YCbCr 4:2:0 | iPod Classic 6G / Nano 3G (padded frame) |
+| Profile | Resolution | Encoding    | Device(s)                              |
+| ------- | ---------- | ----------- | -------------------------------------- |
+| 1007    | 480×864    | RGB565      | iPod nano 7G (swapped dimensions)      |
+| 1009    | 42×30      | RGB565      | iPod Photo 4G (smallest thumbnail)     |
+| 1013    | 220×176    | RGB565      | iPod Photo 4G (full-screen)            |
+| 1015    | 130×88     | RGB565      | iPod Photo 4G (slideshow browser)      |
+| 1019    | 720×480    | YUV422      | iPod Photo/Video (TV-out, interlaced)  |
+| 1020    | 176×220    | RGB565      | iPod (portrait thumbnail)              |
+| 1023    | 176×132    | RGB565      | iPod Nano 1G/2G (landscape thumbnail)  |
+| 1024    | 320×240    | RGB565      | iPod Classic 5G/6G (full-screen)       |
+| 1036    | 50×41      | RGB565      | iPod Classic (smallest thumbnail)      |
+| 1066    | 64×64      | RGB565      | iPod Classic 6G (square photo)         |
+| 1067    | 720×480    | YCbCr 4:2:0 | iPod Classic 6G / Nano 3G (padded)     |
+| 1079    | 80×80      | RGB565      | iPod Nano 4G (photo)                   |
+| 1083    | 240×320    | RGB565      | iPod Nano 4G (photo)                   |
+| 1087    | 384×384    | RGB565      | iPod Nano 5G (photo)                   |
+| 3008    | 640×480    | RGB565      | iPhone 1G/2G, iPod Touch (full-screen) |
 
 ### EXIF orientation parsing
 
@@ -170,7 +180,7 @@ If you test this plugin with a different device or iOS version, please open an i
 ## Limitations
 
 1. **Only T-prefix `.ithmb` files with embedded JPEG** --- this is the primary tested path. Other `.ithmb` variants may not work.
-2. **Legacy raw profiles are untested** --- the decoders exist (RGB565, YUV422, YCbCr420) but no sample files were available for verification.
+2. **Legacy raw profiles are untested** --- the decoders exist (RGB565, YUV422, YCbCr420) but no sample files were available for verification. Community contributions of unknown profiles can be added via `profiles.json` without recompiling.
 3. **No open-file dialog** --- ImageGlass v10 Beta 2 doesn't register `.ithmb` for the file-open dialog. Use drag-and-drop.
 4. **No folder browsing** --- third-party extensions can't be registered for folder navigation in Beta 2.
 5. **Single-frame only** --- `.ithmb` files contain a single image per file. No animation/multi-frame support.
@@ -203,18 +213,32 @@ The standalone repo (`B67687/ithmb-codec`) is the primary development home. The 
 
 ## References and Acknowledgments
 
-| Project                                                                             | Author(s)       | What it contributed                                                                                            | License |
-| ----------------------------------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------- | ------- |
-| [**Keith's iPod Photo Reader**](https://github.com/kebwi/Keiths_iPod_Photo_Reader)  | Keith W.        | Original .ithmb reverse engineering: 13 decode methods, interlaced YUV, RGB565, format docs                    | GPL-2.0 |
-| [**ithmbrdr**](https://github.com/cyianor/ithmbrdr)                                 | cyianor         | F1067 YCbCr 4:2:0 with BT.601 coefficients; padded frame structure for iPod Classic 6G                         | MIT     |
-| [**andrewmalta/ithmb**](https://github.com/andrewmalta/ithmb)                       | Andrew Malta    | F1019 interlaced YUV decoder (720x480), F1015/F1024/F1036 16-bit RGB                                           | MIT     |
-| [**ithmb-extractor-F1007**](https://github.com/Gaurav-Phogat/ithmb-extractor-F1007) | Gaurav Phogat   | F1007 RGB565 decoder (480x864) with MSB-replication scaling                                                    | MIT     |
-| [**ImageGlass**](https://github.com/d2phap/ImageGlass)                              | Duong Dieu Phap | Host app; original PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316) (GPL-3.0) proposing ITHMB for v9 | GPL-3.0 |
-| [**ImageGlass SDK**](https://github.com/ImageGlass/SDK)                             | Duong Dieu Phap | v10 Native AOT plugin ABI (`IGPluginApi`, `IGCodecApi`, `IGHostApi`), `igplugin.json` schema                   | MIT     |
+Every known open-source `.ithmb` implementation (11 total) was surveyed across GitHub, Codeberg, GitLab, SourceHut, Bitbucket, Gitee, and SourceForge.
+
+### Directly incorporated (MIT-licensed)
+
+| Project                                                                        | Author(s) | What it contributed                                                                              |
+| ------------------------------------------------------------------------------ | --------- | ------------------------------------------------------------------------------------------------ |
+| [**iOpenPod**](https://github.com/TheRealSavi/iOpenPod)                        | Savi      | Most complete modern codec (2026). 50+ format entries, encode + decode for all iPod generations. |
+| [**ithmbrdr**](https://github.com/cyianor/ithmbrdr)                            | cyianor   | F1067 YCbCr 4:2:0 with correct BT.601 coefficients; padded frame structure.                      |
+| [**B67687/ithmb-codec**](https://github.com/B67687/ithmb-codec) (this project) | B67687    | C# Native AOT ImageGlass plugin. JPEG-embedded path (956/956).                                   |
+
+### Clean-room format reference (no code copied; format specs are factual discoveries)
+
+| Project                                                                                                                          | Author(s)          | What it contributed                                                                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [**Keith's iPod Photo Reader**](https://github.com/kebwi/Keiths_iPod_Photo_Reader)                                               | Keith Wiley        | Original 2005 RE. 13 decode methods. [iLounge thread](https://web.archive.org/web/20191225184817/https://forums.ilounge.com/threads/hacking-ithmb-file-format.110066/) documents YUV 4:2:2 interlaced with working code. |
+| [**iLounge "Gory Details" thread**](https://web.archive.org/web/20090120040252/http://forums.ilounge.com/showthread.php?t=66435) | jhollington        | Complete per-device format ID table (2005).                                                                                                                                                                              |
+| [**andrewmalta/ithmb**](https://github.com/andrewmalta/ithmb)                                                                    | Andrew Malta       | Python decoder confirming F1019 CLCL packed-chroma layout.                                                                                                                                                               |
+| [**Gaurav-Phogat/F1007**](https://github.com/Gaurav-Phogat/ithmb-extractor-F1007)                                                | Gaurav Phogat      | F1007 RGB565 at 480×864 with MSB-replication scaling.                                                                                                                                                                    |
+| [**keyj.emphy.de blog**](https://web.archive.org/web/2024*/https://keyj.emphy.de/an-ipod-hackers-diary/)                         | Jeff Luyten (KeyJ) | ArtworkDB RE: F1027/F1031 mandatory filenames, RGB565 byte-swapped artwork.                                                                                                                                              |
+| [**worstje/repear**](https://github.com/worstje/repear)                                                                          | worstje            | Python ArtworkDB writer with complete format→dimension encoder table.                                                                                                                                                    |
+| [**tbutter/podsyncr**](https://github.com/tbutter/podsyncr)                                                                      | tbutter            | iPod Nano 2G photo syncer (2006). Writes F1023/F1032 with configurable endianness.                                                                                                                                       |
+| [**libgpod/gtkpod**](https://github.com/gtkpod/libgpod)                                                                          | gtkpod team        | C library, 22 format variants, complete ArtworkDB/PhotoDB parser. 22 years of Linux distribution.                                                                                                                        |
 
 ### Color conversion references
 
-- YCbCr → RGB uses **ITU-R BT.601** matrix (JPEG standard), per [Recommendation ITU-R BT.601-7](https://www.itu.int/rec/R-REC-BT.601).
+- YCbCr → RGB uses **ITU-R BT.601** matrix (JPEG full-range variant), per [Recommendation ITU-R BT.601-7](https://www.itu.int/rec/R-REC-BT.601).
 - RGB565 → RGB888 uses **MSB replication** (standard in ffmpeg, libpng, Skia).
 
 ---
