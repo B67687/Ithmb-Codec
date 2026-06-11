@@ -188,6 +188,17 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)ySize + uvSize * 2;
         if (src.Length < expectedBytes) return;
 
+        // SIMD path: requires even dimensions (2×2 blocks fit perfectly in Vector128<int>)
+        if (Vector128.IsHardwareAccelerated && (w & 1) == 0 && (h & 1) == 0)
+            DecodeYcbcr420_SIMD(src, dst, w, h, ySize, uvSize);
+        else
+            DecodeYcbcr420_Scalar(src, dst, w, h, ySize, uvSize);
+    }
+
+    /// <summary>Scalar fallback for YCbCr 4:2:0 (extracted from original body).</summary>
+    private static void DecodeYcbcr420_Scalar(ReadOnlySpan<byte> src, byte* dst,
+        int w, int h, int ySize, int uvSize)
+    {
         int uvStride = w / 2;
         for (int y = 0; y < h; y += 2)
         {
@@ -208,6 +219,89 @@ internal static unsafe partial class IthmbCodecPlugin
                         pDstBlock += 4;
                     }
                 }
+            }
+        }
+    }
+
+    /// <summary>Vector128-accelerated YCbCr 4:2:0 → BGRA.</summary>
+    /// <remarks>
+    /// Processes one 2×2 block per iteration. 4 luma values + shared Cb/Cr
+    /// map directly to Vector128&lt;int&gt; (4 × int32 lanes).
+    /// Cross-platform: SSE2 on x64, NEON on ARM64.
+    /// </remarks>
+    private static void DecodeYcbcr420_SIMD(ReadOnlySpan<byte> src, byte* dst,
+        int w, int h, int ySize, int uvSize)
+    {
+        int uvStride = w / 2;
+
+        // Loop-invariant constant vectors
+        var zero = Vector128<int>.Zero;
+        var maxVal = Vector128.Create(255);
+        var alpha = Vector128.Create(255 << 24);
+        var rCoef = Vector128.Create(YuvRCoef);
+        var gCoefCb = Vector128.Create(YuvGCoefCb);
+        var gCoefCr = Vector128.Create(YuvGCoefCr);
+        var bCoef = Vector128.Create(YuvBCoef);
+
+        for (int y = 0; y < h; y += 2)
+        {
+            int yRow0 = y * w;
+            int yRow1 = (y + 1) * w;
+            byte* dstRow0 = dst + y * w * 4;
+            byte* dstRow1 = dst + (y + 1) * w * 4;
+
+            for (int x = 0; x < w; x += 2)
+            {
+                int uvIdx = ySize + (y / 2) * uvStride + (x / 2);
+                int cb = src[uvIdx] - 128;
+                int cr = src[uvIdx + uvSize] - 128;
+
+                // Load 4 Y values as int32 lanes: Y0, Y1, Y2, Y3
+                var yVec = Vector128.Create(
+                    (int)src[yRow0 + x],
+                    (int)src[yRow0 + x + 1],
+                    (int)src[yRow1 + x],
+                    (int)src[yRow1 + x + 1]);
+
+                var cbVec = Vector128.Create(cb);
+                var crVec = Vector128.Create(cr);
+
+                // R = Y + ((359 * Cr) >> 8)
+                var rVec = Vector128.Add(yVec,
+                    Vector128.ShiftRightArithmetic(
+                        Vector128.Multiply(crVec, rCoef), 8));
+
+                // G = Y - ((88 * Cb) >> 8) - ((183 * Cr) >> 8)
+                var gVec = Vector128.Subtract(
+                    Vector128.Subtract(yVec,
+                        Vector128.ShiftRightArithmetic(
+                            Vector128.Multiply(cbVec, gCoefCb), 8)),
+                    Vector128.ShiftRightArithmetic(
+                        Vector128.Multiply(crVec, gCoefCr), 8));
+
+                // B = Y + ((454 * Cb) >> 8)
+                var bVec = Vector128.Add(yVec,
+                    Vector128.ShiftRightArithmetic(
+                        Vector128.Multiply(cbVec, bCoef), 8));
+
+                // Branchless clamp to [0, 255]
+                rVec = Vector128.Max(zero, Vector128.Min(rVec, maxVal));
+                gVec = Vector128.Max(zero, Vector128.Min(gVec, maxVal));
+                bVec = Vector128.Max(zero, Vector128.Min(bVec, maxVal));
+
+                // Pack BGRA: (B) | (G<<8) | (R<<16) | (255<<24)
+                var pixelVec = bVec
+                    | Vector128.ShiftLeft(gVec, 8)
+                    | Vector128.ShiftLeft(rVec, 16)
+                    | alpha;
+
+                // Store 4 non-contiguous pixels (row0: x, x+1; row1: x, x+1)
+                int* pRow0 = (int*)(dstRow0 + x * 4);
+                int* pRow1 = (int*)(dstRow1 + x * 4);
+                pRow0[0] = pixelVec.GetElement(0);
+                pRow0[1] = pixelVec.GetElement(1);
+                pRow1[0] = pixelVec.GetElement(2);
+                pRow1[1] = pixelVec.GetElement(3);
             }
         }
     }
