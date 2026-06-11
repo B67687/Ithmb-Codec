@@ -781,6 +781,35 @@ public unsafe class IthmbCodecTests
         finally { NativeMemory.Free(dst); }
     }
 
+    // ---- YCbCr420 scalar path (odd dimensions force scalar fallback) ----
+
+    [Fact]
+    public void DecodeYcbcr420_Scalar_OddDimensions()
+    {
+        // Odd w/h (3×3) force the scalar path. Neutral chroma → grayscale output.
+        int w = 3, h = 3;
+        int ySize = w * h;
+        int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
+        var src = new byte[ySize + uvSize * 2];
+        for (int i = 0; i < ySize; i++) src[i] = 128;
+        for (int i = 0; i < uvSize; i++) src[ySize + i] = 128;        // Cb plane
+        for (int i = 0; i < uvSize; i++) src[ySize + uvSize + i] = 128; // Cr plane
+
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
+        try
+        {
+            IthmbCodecPlugin.DecodeYcbcr420(src, dst, w, h);
+            for (int i = 0; i < w * h * 4; i += 4)
+            {
+                Assert.InRange(dst[i], 120, 136);     // B
+                Assert.InRange(dst[i + 1], 120, 136); // G
+                Assert.InRange(dst[i + 2], 120, 136); // R
+                Assert.Equal(255, dst[i + 3]);         // A
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
     // ---- Test 3: Fuzz — random buffers (no crash, valid output ranges) ----
 
     public static IEnumerable<object[]> GetRandomValidBuffers()
