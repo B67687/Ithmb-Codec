@@ -134,6 +134,15 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return;
 
+        // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
+        if (Ssse3.IsSupported && (w & 7) == 0)
+            DecodeYuv422_SIMD(src, dst, w, h);
+        else
+            DecodeYuv422_Scalar(src, dst, w, h);
+    }
+
+    private static void DecodeYuv422_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
         for (int y = 0; y < h; y++)
         {
             int rowStart = y * w * 2;
@@ -153,10 +162,89 @@ internal static unsafe partial class IthmbCodecPlugin
         }
     }
 
+    /// <summary>SSE2/SSSE3-accelerated UYVY→BGRA (requires SSSE3 for pshufb deinterleave).</summary>
+    private static void DecodeYuv422_SIMD(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
+        var shufY = Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 0, 0, 0, 0, 0, 0, 0, 0);
+        var shufU = Vector128.Create((byte)0, 0, 4, 4, 8, 8, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0);
+        var shufV = Vector128.Create((byte)2, 2, 6, 6, 10, 10, 14, 14, 0, 0, 0, 0, 0, 0, 0, 0);
+
+        var zero = Vector128.Create((short)0);
+        var vec128 = Vector128.Create((short)128);
+        var rCoef = Vector128.Create((short)YuvRCoef);
+        var gCoefCb = Vector128.Create((short)YuvGCoefCb);
+        var gCoefCr = Vector128.Create((short)YuvGCoefCr);
+        var bCoef = Vector128.Create((short)YuvBCoef);
+
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                int rowStart = y * w * 2;
+                byte* pSrcRow = pSrc + rowStart;
+                byte* pDstRow = dst + y * w * 4;
+
+                for (int x = 0; x < w; x += 8)
+                {
+                    var raw = Sse2.LoadVector128(pSrcRow + x * 2);
+                    var sY = Ssse3.Shuffle(raw, shufY).AsInt16();
+                    var sU = Ssse3.Shuffle(raw, shufU).AsInt16();
+                    var sV = Ssse3.Shuffle(raw, shufV).AsInt16();
+
+                // Unbias chroma
+                sU = Sse2.Subtract(sU, vec128);
+                sV = Sse2.Subtract(sV, vec128);
+
+                // R = Y + ((359 * V) >> 8)
+                var rV = Sse2.Add(sY,
+                    Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sV, rCoef), 8));
+                // G = Y - ((88 * U) >> 8) - ((183 * V) >> 8)
+                var gV = Sse2.Subtract(
+                    Sse2.Subtract(sY,
+                        Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sU, gCoefCb), 8)),
+                    Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sV, gCoefCr), 8));
+                // B = Y + ((454 * U) >> 8)
+                var bV = Sse2.Add(sY,
+                    Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sU, bCoef), 8));
+
+                // Clamp
+                var max255 = Vector128.Create((short)255);
+                rV = Sse2.Max(zero, Sse2.Min(rV, max255));
+                gV = Sse2.Max(zero, Sse2.Min(gV, max255));
+                bV = Sse2.Max(zero, Sse2.Min(bV, max255));
+
+                // Pack to bytes + interleave BGRA
+                var bp = Sse2.PackUnsignedSaturate(bV, bV);
+                var gp = Sse2.PackUnsignedSaturate(gV, gV);
+                var rp = Sse2.PackUnsignedSaturate(rV, rV);
+
+                var alpha = Vector128.Create((byte)255);
+                var br = Sse2.UnpackLow(bp, rp);
+                var ga = Sse2.UnpackLow(gp, alpha);
+                var pxLo = Sse2.UnpackLow(br, ga);
+                var pxHi = Sse2.UnpackHigh(br, ga);
+
+                Sse2.Store(pDstRow + x * 4, pxLo);
+                Sse2.Store(pDstRow + (x + 4) * 4, pxHi);
+            }
+        }
+        } // close fixed block
+    }
+
     internal static void DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return;
+
+        // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
+        if (Ssse3.IsSupported && (w & 7) == 0)
+            DecodeYuv422Interlaced_SIMD(src, dst, w, h);
+        else
+            DecodeYuv422Interlaced_Scalar(src, dst, w, h);
+    }
+
+    private static void DecodeYuv422Interlaced_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
         int half = (h / 2) * w * 2;
         int rowStride = w * 2;
         for (int y = 0; y < h; y++)
@@ -177,6 +265,74 @@ internal static unsafe partial class IthmbCodecPlugin
                 pDstRow += 8;
             }
         }
+    }
+
+    /// <summary>SIMD-accelerated interlaced UYVY (F1019). Inner loop identical to non-interlaced.</summary>
+    private static void DecodeYuv422Interlaced_SIMD(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
+        int half = (h / 2) * w * 2;
+        int rowStride = w * 2;
+
+        var shufY = Vector128.Create((byte)1, 3, 5, 7, 9, 11, 13, 15, 0, 0, 0, 0, 0, 0, 0, 0);
+        var shufU = Vector128.Create((byte)0, 0, 4, 4, 8, 8, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0);
+        var shufV = Vector128.Create((byte)2, 2, 6, 6, 10, 10, 14, 14, 0, 0, 0, 0, 0, 0, 0, 0);
+
+        var zero = Vector128<short>.Zero;
+        var vec128 = Vector128.Create((short)128);
+        var rCoef = Vector128.Create((short)YuvRCoef);
+        var gCoefCb = Vector128.Create((short)YuvGCoefCb);
+        var gCoefCr = Vector128.Create((short)YuvGCoefCr);
+        var bCoef = Vector128.Create((short)YuvBCoef);
+
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                int fieldOffset = (y % 2 == 0) ? 0 : half;
+                int rowInField = y / 2;
+                int rowStart = fieldOffset + rowInField * rowStride;
+                byte* pSrcRow = pSrc + rowStart;
+                byte* pDstRow = dst + y * w * 4;
+
+                for (int x = 0; x < w; x += 8)
+                {
+                    var raw = Sse2.LoadVector128(pSrcRow + x * 2);
+                    var sY = Ssse3.Shuffle(raw, shufY).AsInt16();
+                var sU = Ssse3.Shuffle(raw, shufU).AsInt16();
+                var sV = Ssse3.Shuffle(raw, shufV).AsInt16();
+
+                sU = Sse2.Subtract(sU, vec128);
+                sV = Sse2.Subtract(sV, vec128);
+
+                var rV = Sse2.Add(sY,
+                    Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sV, rCoef), 8));
+                var gV = Sse2.Subtract(
+                    Sse2.Subtract(sY,
+                        Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sU, gCoefCb), 8)),
+                    Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sV, gCoefCr), 8));
+                var bV = Sse2.Add(sY,
+                    Sse2.ShiftRightArithmetic(Sse2.MultiplyHigh(sU, bCoef), 8));
+
+                var max255 = Vector128.Create((short)255);
+                rV = Sse2.Max(zero, Sse2.Min(rV, max255));
+                gV = Sse2.Max(zero, Sse2.Min(gV, max255));
+                bV = Sse2.Max(zero, Sse2.Min(bV, max255));
+
+                var bp = Sse2.PackUnsignedSaturate(bV, bV);
+                var gp = Sse2.PackUnsignedSaturate(gV, gV);
+                var rp = Sse2.PackUnsignedSaturate(rV, rV);
+
+                var alpha = Vector128.Create((byte)255);
+                var br = Sse2.UnpackLow(bp, rp);
+                var ga = Sse2.UnpackLow(gp, alpha);
+                var pxLo = Sse2.UnpackLow(br, ga);
+                var pxHi = Sse2.UnpackHigh(br, ga);
+
+                Sse2.Store(pDstRow + x * 4, pxLo);
+                Sse2.Store(pDstRow + (x + 4) * 4, pxHi);
+            }
+        }
+        } // close fixed block
     }
 
     // ---------- YCbCr 4:2:0 (planar) ----------
