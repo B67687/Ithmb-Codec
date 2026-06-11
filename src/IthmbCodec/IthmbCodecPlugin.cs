@@ -138,7 +138,7 @@ internal static unsafe class IthmbCodecPlugin
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int CodecCanHandleSignature(byte* signature, int length)
+    internal static int CodecCanHandleSignature(byte* signature, int length)
     {
         if (signature == null || length < 8) return 0;
         var span = new ReadOnlySpan<byte>(signature, Math.Min(length, 256));
@@ -225,7 +225,7 @@ internal static unsafe class IthmbCodecPlugin
     }
 
     // ------------------------------ JPEG extraction ------------------------------
-    private static bool TryFindJpegSlice(byte[] data, out int offset, out int length, void* cancellation)
+    internal static bool TryFindJpegSlice(byte[] data, out int offset, out int length, void* cancellation)
     {
         offset = 0; length = 0;
         int i = 0;
@@ -345,7 +345,7 @@ internal static unsafe class IthmbCodecPlugin
         return IGStatus.OK;
     }
 
-    private static void DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    internal static void DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
         for (int y = 0; y < h; y++)
         {
@@ -370,7 +370,7 @@ internal static unsafe class IthmbCodecPlugin
         }
     }
 
-    private static void DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    internal static void DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         // UYVY interleaved: every 4 bytes = U0 Y0 V0 Y1
         for (int y = 0; y < h; y++)
@@ -389,7 +389,7 @@ internal static unsafe class IthmbCodecPlugin
         }
     }
 
-    private static void DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    internal static void DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         int ySize = w * h;
         int uvSize = ySize / 4;
@@ -515,7 +515,7 @@ internal static unsafe class IthmbCodecPlugin
     /// Reads the EXIF Orientation tag (0x0112) from a JPEG slice.
     /// Returns 1-8 on success, or 1 (normal) if not found.
     /// </summary>
-    private static int ReadExifOrientation(byte[] data, int jpegOffset, int jpegLength)
+    internal static int ReadExifOrientation(byte[] data, int jpegOffset, int jpegLength)
     {
         int end = jpegOffset + jpegLength;
         var jpeg = data.AsSpan(jpegOffset, jpegLength);

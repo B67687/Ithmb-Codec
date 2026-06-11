@@ -19,6 +19,9 @@
     <AssemblyName>IthmbCodec</AssemblyName>
     <RootNamespace>IthmbCodec</RootNamespace>
 
+    <!-- Exclude the test project from main compilation. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);test/**</DefaultItemExcludes>
+
     <!-- This plugin is not part of the ImageGlass app; skip auto-generated AppBuildInfo. -->
     <GenerateIgAppBuildInfo>false</GenerateIgAppBuildInfo>
 
@@ -32,6 +35,10 @@
 
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="3.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="IthmbCodec.Tests" />
   </ItemGroup>
 
   <ItemGroup>
