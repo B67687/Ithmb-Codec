@@ -53,16 +53,21 @@ internal static unsafe partial class IthmbCodecPlugin
         new Dictionary<int, IthmbVariantProfile>
         {
             [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2),
+            // iPod Nano 7G photo thumbnail (from iOpenPod)
+            [1005] = new(1005, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1009] = new(1009, 42, 30, IthmbEncoding.Rgb565, 42 * 30 * 2),
-            // iPod Photo 4G full-screen
-            [1013] = new(1013, 220, 176, IthmbEncoding.Rgb565, 220 * 176 * 2),
+            // iPod Photo 4G full-screen (big-endian, per iOpenPod/libgpod)
+            [1013] = new(1013, 220, 176, IthmbEncoding.Rgb565, 220 * 176 * 2, LittleEndian: false),
             [1015] = new(1015, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
             [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2, IsInterlaced: true),
-            [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true),
-            [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2),
+            [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true, LittleEndian: false),
+            [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2, LittleEndian: false),
             // iPod Classic 5G/6G full-screen
             [1024] = new(1024, 320, 240, IthmbEncoding.Rgb565, 320 * 240 * 2),
             // iPod Classic thumbnail
+            [1031] = new(1031, 42, 42, IthmbEncoding.Rgb565, 42 * 42 * 2),  // Nano album art small
+            // iPod Nano 1G/2G photo list thumbnail
+            [1032] = new(1032, 42, 37, IthmbEncoding.Rgb565, 42 * 37 * 2),
             [1036] = new(1036, 50, 41, IthmbEncoding.Rgb565, 50 * 41 * 2),
             // iPod Classic 6G square photo thumbnail
             [1066] = new(1066, 64, 64, IthmbEncoding.Rgb565, 64 * 64 * 2),
