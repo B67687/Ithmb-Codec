@@ -111,7 +111,7 @@ Native AOT cross-compilation is not supported. You must build on each target pla
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-Tests cover: RGB565 decode (65,536 exhaustive + SIMD-vs-scalar), 200 fuzz tests across 4 decoders, YUV422/Ycbcr420 cross-reference and roundtrip, JPEG slice detection, EXIF orientation parsing, SIMD correctness, memory safety, property invariants (**239 tests total**).
+Tests cover: RGB565 decode (65,536 exhaustive + SIMD-vs-scalar), 200 fuzz tests across 4 decoders, YUV422/Ycbcr420 cross-reference and roundtrip, JPEG slice detection, EXIF orientation parsing, SIMD correctness, memory safety, property invariants (**244 tests total**).
 
 ---
 
@@ -140,7 +140,7 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 | `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                        |
 | `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                            |
 | `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged at init, overridable without recompile)                                                        |
-| `src/IthmbCodec/test/`                        | xUnit test project (239 tests) --- exhaustive RGB565, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
+| `src/IthmbCodec/test/`                        | xUnit test project (244 tests) --- exhaustive RGB565, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
 
 ### Raw profile definitions
 
