@@ -1,6 +1,6 @@
 # ITHMB Codec for ImageGlass v10
 
-A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via SkiaSharp. Also includes best-effort decoders for 18 legacy raw thumbnail profiles covering iPod Photo through iPhone 2G.
+A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 18 legacy raw thumbnail profiles covering iPod Photo through iPhone 2G.
 
 Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**.
 
@@ -32,7 +32,7 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 ### Decode pipeline
 
 1. **Read the file** --- the entire `.ithmb` file is read into memory (typical size: 1-2 MB).
-2. **JPEG scan** --- the file is scanned (SIMD-accelerated via `Span.IndexOf`) for a JPEG SOI marker (`FF D8`) followed within 128 bytes by either a JFIF or Exif header. If found, the JPEG payload is extracted (SOI to EOI) and decoded via SkiaSharp.
+2. **JPEG scan** --- the file is scanned (SIMD-accelerated via `Span.IndexOf`) for a JPEG SOI marker (`FF D8`) followed within 128 bytes by either a JFIF or Exif header. If found, the JPEG payload is extracted (SOI to EOI) and decoded via StbImageSharp (MIT, ~200 KB).
 3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts.
 4. **EXIF orientation** --- if the JPEG contains an EXIF APP1 segment with an orientation tag (0x0112), it is parsed and reported to the host. ImageGlass rotates the image accordingly.
 
@@ -58,11 +58,12 @@ Files larger than **100 MB** are rejected before reading to prevent OOM from pat
 
    ```
    %LocalAppData%\ImageGlass_10\_plugins\IthmbCodec\
-       IthmbCodec.dll        (1.6 MB --- the native plugin)
-       libSkiaSharp.dll      (11 MB --- SkiaSharp dependency)
+       IthmbCodec.dll        (1.8 MB --- native plugin with embedded JPEG decoder)
        igplugin.json         (plugin manifest)
        profiles.json         (optional --- external profile definitions)
    ```
+
+   > StbImageSharp (JPEG decoder) is compiled directly into `IthmbCodec.dll` by Native AOT. No separate DLL needed. This replaced the previous 11 MB `libSkiaSharp.dll` dependency (85% size reduction).
 
 3. Restart ImageGlass v10.
 4. Drag any `.ithmb` file into the ImageGlass window.
@@ -110,7 +111,7 @@ Native AOT cross-compilation is not supported. You must build on each target pla
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-Tests cover: RGB565 decode (corner cases, endianness), YUV422/Ycbcr420 neutral chroma, JPEG slice detection (SOI/JFIF/EOI), EXIF orientation parsing (19 tests total).
+Tests cover: RGB565 decode (65,536 exhaustive + SIMD-vs-scalar), 200 fuzz tests across 4 decoders, YUV422/Ycbcr420 cross-reference and roundtrip, JPEG slice detection, EXIF orientation parsing, SIMD correctness, memory safety, property invariants (**239 tests total**).
 
 ---
 
@@ -128,16 +129,18 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 - **Double-checked locking with `volatile`** in `GetApi` for thread-safe initialization (ARM64-safe).
 - **Single codec**, single-frame static raster decoder.
 - **Memory ownership**: the plugin allocates pixel buffers; the host calls back into `FreePixelBuffer` to release them (thread-safe).
+- **SIMD acceleration**: RGB565 uses SSE2 (4-6× gain), YCbCr420 uses cross-platform Vector128 (3-5× gain, x64 + ARM64 NEON), UYVY uses SSSE3+SSE2 (2-3× gain). UYVY interlaced and non-interlaced share a common SIMD inner loop via `ProcessUyvyRow`.
 
 ### Key source files
 
-| File                                 | Description                                                                                                                                  |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/IthmbCodec/IthmbCodecPlugin.cs` | Main plugin implementation (~780 lines) --- entry point, codec API, JPEG extraction, raw profile decoders, EXIF parsing, JSON profile loader |
-| `src/IthmbCodec/IthmbCodec.csproj`   | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                        |
-| `src/IthmbCodec/igplugin.json`       | Plugin manifest consumed by ImageGlass on startup                                                                                            |
-| `src/IthmbCodec/profiles.json`       | External profile definitions (sidecar, merged at init, overridable without recompile)                                                        |
-| `src/IthmbCodec/test/`               | xUnit test project (19 tests) --- RGB565, YUV422, YCbCr420, JPEG extraction, EXIF orientation                                                |
+| File                                          | Description                                                                                                                                  |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~805 lines)                                                              |
+| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~447 lines)                                                    |
+| `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                        |
+| `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                            |
+| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged at init, overridable without recompile)                                                        |
+| `src/IthmbCodec/test/`                        | xUnit test project (239 tests) --- exhaustive RGB565, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
 
 ### Raw profile definitions
 
