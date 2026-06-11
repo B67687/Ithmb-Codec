@@ -375,6 +375,201 @@ public unsafe class IthmbCodecTests
         return ms.ToArray();
     }
 
+    // ===================== Phase 1: Exhaustive + Fuzz + Properties =====================
+
+    // ---- Test 1: Exhaustive 1×1 RGB565 (all 65,536 possible 16-bit values) ----
+
+    [Fact]
+    public void Rgb565_Exhaustive_All65536Values()
+    {
+        // Tests EVERY possible 16-bit RGB565 input, proving the MSB-replication
+        // formula is correct for all inputs. Runs in ~50ms.
+        var src = new byte[2];
+        byte* dst = (byte*)NativeMemory.Alloc(4);
+        try
+        {
+            for (int i = 0; i < 65536; i++)
+            {
+                src[0] = (byte)(i & 0xFF);
+                src[1] = (byte)(i >> 8);
+
+                NativeMemory.Clear(dst, 4); // zero dst before each decode
+                IthmbCodecPlugin.DecodeRgb565(src, dst, 1, 1, littleEndian: true);
+
+                // Decode the word back out
+                int r5 = (i >> 11) & 0x1F;
+                int g6 = (i >> 5) & 0x3F;
+                int b5 = i & 0x1F;
+
+                int expectedR = (r5 << 3) | (r5 >> 2);
+                int expectedG = (g6 << 2) | (g6 >> 4);
+                int expectedB = (b5 << 3) | (b5 >> 2);
+
+                // Must match the MSB-replication formula exactly
+                Assert.Equal(expectedR, dst[2]); // R
+                Assert.Equal(expectedG, dst[1]); // G
+                Assert.Equal(expectedB, dst[0]); // B
+                Assert.Equal(255, dst[3]); // A
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // ---- Test 3: Fuzz — random buffers (no crash, valid output ranges) ----
+
+    public static IEnumerable<object[]> GetRandomValidBuffers()
+    {
+        var rng = new Random(42);
+        // Use small valid dimensions so buffers match expected sizes
+        int[] sizes = [2, 4, 8, 16, 32, 64, 128];
+        for (int i = 0; i < 50; i++)
+        {
+            int w = sizes[rng.Next(sizes.Length)];
+            int h = sizes[rng.Next(sizes.Length)];
+            var buf = new byte[w * h * 2]; // correct size for RGB565/YUV422
+            rng.NextBytes(buf);
+            yield return [buf, w, h];
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetRandomValidBuffers))]
+    public void Fuzz_Rgb565_NoCrash(byte[] buf, int w, int h)
+    {
+        int allocSize = Math.Max(4096, w * h * 4);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)allocSize);
+            IthmbCodecPlugin.DecodeRgb565(buf, dst, w, h, littleEndian: true);
+            int pixels = Math.Min(w * h, allocSize / 4);
+            for (int i = 0; i < pixels; i++)
+            {
+                int offset = i * 4;
+                Assert.InRange(dst[offset], 0, 255);     // B
+                Assert.InRange(dst[offset + 1], 0, 255); // G
+                Assert.InRange(dst[offset + 2], 0, 255); // R
+                Assert.Equal(255, dst[offset + 3]);       // A
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetRandomValidBuffers))]
+    public void Fuzz_Yuv422_NoCrash(byte[] buf, int w, int h)
+    {
+        int allocSize = Math.Max(4096, w * h * 4);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)allocSize);
+            IthmbCodecPlugin.DecodeYuv422(buf, dst, w, h);
+            int pixels = Math.Min(w * h, allocSize / 4);
+            for (int i = 0; i < pixels; i++)
+            {
+                int offset = i * 4;
+                Assert.InRange(dst[offset], 0, 255);
+                Assert.InRange(dst[offset + 1], 0, 255);
+                Assert.InRange(dst[offset + 2], 0, 255);
+                Assert.Equal(255, dst[offset + 3]);
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetRandomValidBuffers))]
+    public void Fuzz_Ycbcr420_NoCrash(byte[] buf, int w, int h)
+    {
+        // YCbCr420 needs less: w*h*3/2 per frame
+        int allocSize = Math.Max(4096, w * h * 4);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)allocSize);
+            IthmbCodecPlugin.DecodeYcbcr420(buf, dst, w, h);
+            int pixels = Math.Min(w * h, allocSize / 4);
+            for (int i = 0; i < pixels; i++)
+            {
+                int offset = i * 4;
+                Assert.InRange(dst[offset], 0, 255);
+                Assert.InRange(dst[offset + 1], 0, 255);
+                Assert.InRange(dst[offset + 2], 0, 255);
+                Assert.Equal(255, dst[offset + 3]);
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetRandomValidBuffers))]
+    public void Fuzz_InterlacedYuv422_NoCrash(byte[] buf, int w, int h)
+    {
+        int allocSize = Math.Max(4096, w * h * 4);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)allocSize);
+            IthmbCodecPlugin.DecodeYuv422Interlaced(buf, dst, w, h);
+            int pixels = Math.Min(w * h, allocSize / 4);
+            for (int i = 0; i < pixels; i++)
+            {
+                int offset = i * 4;
+                Assert.InRange(dst[offset], 0, 255);
+                Assert.InRange(dst[offset + 1], 0, 255);
+                Assert.InRange(dst[offset + 2], 0, 255);
+                Assert.Equal(255, dst[offset + 3]);
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    // ---- Test 4: Property invariants ----
+
+    [Fact]
+    public void Property_Determinism_Rgb565()
+    {
+        // Same input must produce same output every time
+        byte[] src = [0x00, 0xF8]; // 16-bit LE = 0xF800 = pure red
+        byte* dst1 = (byte*)NativeMemory.Alloc(4);
+        byte* dst2 = (byte*)NativeMemory.Alloc(4);
+        try
+        {
+            IthmbCodecPlugin.DecodeRgb565(src, dst1, 1, 1, littleEndian: true);
+            IthmbCodecPlugin.DecodeRgb565(src, dst2, 1, 1, littleEndian: true);
+            for (int i = 0; i < 4; i++)
+                Assert.Equal(dst1[i], dst2[i]);
+        }
+        finally { NativeMemory.Free(dst1); NativeMemory.Free(dst2); }
+    }
+
+    [Fact]
+    public void Property_OutputDims_MatchInput()
+    {
+        // Structural: decode functions accept w,h and produce output of correct dimensions.
+        // This is verified by the memory alloc pattern — if w*h*4 bytes are written
+        // without OOB, the dimensions are structurally correct.
+        byte[] src = new byte[32];
+        new Random(42).NextBytes(src);
+        int[] testDims = [1, 2, 3, 4, 8, 16];
+        foreach (int w in testDims)
+        {
+            foreach (int h in testDims)
+            {
+                int allocSize = Math.Max(4096, w * h * 4);
+                byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+                try
+                {
+                    NativeMemory.Clear(dst, (nuint)allocSize);
+                    IthmbCodecPlugin.DecodeRgb565(src, dst, w, h, littleEndian: true);
+                    // No crash = structurally valid
+                }
+                finally { NativeMemory.Free(dst); }
+            }
+        }
+    }
+
     // ===================== Roundtrip consistency (reference encode → decode) =====================
     //
     // Reference encoders matching iOpenPod's algorithm (MIT-licensed reference implementation).

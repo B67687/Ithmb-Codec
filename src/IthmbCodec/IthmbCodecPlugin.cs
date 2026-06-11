@@ -369,6 +369,9 @@ internal static unsafe class IthmbCodecPlugin
 
     internal static void DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
+        int expectedBytes = w * h * 2;
+        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
+
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
@@ -394,6 +397,9 @@ internal static unsafe class IthmbCodecPlugin
 
     internal static void DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        int expectedBytes = w * h * 2;
+        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
+
         // UYVY interleaved: every 4 bytes = U0 Y0 V0 Y1
         for (int y = 0; y < h; y++)
         {
@@ -418,6 +424,8 @@ internal static unsafe class IthmbCodecPlugin
     /// </summary>
     internal static void DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        int expectedBytes = w * h * 2;
+        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
         int half = (h / 2) * w * 2; // bytes per field
         int rowStride = w * 2;      // bytes per row within a field
         for (int y = 0; y < h; y++)
@@ -442,6 +450,8 @@ internal static unsafe class IthmbCodecPlugin
     {
         int ySize = w * h;
         int uvSize = ySize / 4;
+        int expectedBytes = ySize + uvSize * 2;
+        if (src.Length < expectedBytes) return; // defensive: prevent OOB reads
         for (int y = 0; y < h; y++)
         {
             for (int x = 0; x < w; x++)
