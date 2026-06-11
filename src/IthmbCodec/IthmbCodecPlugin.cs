@@ -186,6 +186,8 @@ internal static unsafe partial class IthmbCodecPlugin
         // SIMD-accelerated search for JPEG SOI marker (FF D8)
         int soi = span.IndexOf(JpegSoiMarker);
         if (soi < 0) return 0;
+        // FF D8 must be followed by FF (valid JPEG marker)
+        if (soi + 2 >= span.Length || span[soi + 2] != 0xFF) return 0;
         // Verify JFIF or Exif within 128 bytes of SOI (must have room for the probe)
         int scanEnd = Math.Min(soi + 128, span.Length);
         int probeLen = scanEnd - soi - 2;
@@ -331,6 +333,10 @@ internal static unsafe partial class IthmbCodecPlugin
 
             // Periodic cancellation check (every 64KB)
             if ((i & 0xFFFF) == 0 && IsCanceled(cancellation)) return false;
+
+            // Validate: FF D8 must be followed by FF (start of a JPEG marker).
+            // Reject false positives where random data happens to contain FF D8.
+            if (i + 2 >= data.Length || data[i + 2] != 0xFF) { i += JpegSoiMarker.Length; continue; }
 
             // Verify JFIF or Exif within 128 bytes of SOI
             int scanEnd = Math.Min(i + 128, data.Length);
