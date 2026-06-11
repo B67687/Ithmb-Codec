@@ -145,7 +145,9 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 
 ### Raw profile definitions
 
-26 profiles are defined based on known iPod/iPhone thumbnail formats, aggregated from iOpenPod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
+20 profiles are defined based on known iPod/iPhone thumbnail formats, aggregated from iOpenPod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
+
+> **Note:** iOS 1.x firmwares used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per [Steee29/ithmb_converter](https://github.com/Steee29/ithmb_converter)). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 
 | Profile | Resolution | Encoding    | Device(s)                              |
 | ------- | ---------- | ----------- | -------------------------------------- |
@@ -229,7 +231,7 @@ The standalone repo (`B67687/ithmb-codec`) is the primary development home. The 
 
 ## References and Acknowledgments
 
-Every known open-source `.ithmb` implementation (11 total) was surveyed across GitHub, Codeberg, GitLab, SourceHut, Bitbucket, Gitee, and SourceForge.
+Every known open-source `.ithmb` implementation (17 total) was surveyed across GitHub, Codeberg, GitLab, SourceHut, Bitbucket, Gitee, and SourceForge.
 
 ### Directly incorporated (MIT-licensed)
 
@@ -252,6 +254,9 @@ Every known open-source `.ithmb` implementation (11 total) was surveyed across G
 | [**tbutter/podsyncr**](https://github.com/tbutter/podsyncr)                                                                      | tbutter            | iPod Nano 2G photo syncer (2006). Writes F1023/F1032 with configurable endianness.                                                                                                                                       |
 | [**libgpod/gtkpod**](https://github.com/gtkpod/libgpod)                                                                          | gtkpod team        | C library, 22 format variants, complete ArtworkDB/PhotoDB parser. 22 years of Linux distribution.                                                                                                                        |
 | [**shinyquagsire23 gist**](https://gist.github.com/shinyquagsire23/5ac38487b4c8f9252e78e0275814c90b)                             | shinyquagsire23    | C code for iPod Nano 6G Photo DB reading confirming F1093 = 512×512 RGB565 decode.                                                                                                                                       |
+| [**Steee29/ithmb_converter**](https://github.com/Steee29/ithmb_converter)                                                        | Steee29            | Python iOS 1.x converter. Format table: 3004=55×55, 3009=120×160, 3011=75×75 — differs from our libgpod-sourced dimensions, suggesting firmware version variation.                                                       |
+| [**wrinklykong/pyithmb**](https://github.com/wrinklykong/pyithmb)                                                                | wrinklykong        | iPod nano CLCL nibble-chroma decoder confirming the Keith Wiley packing method.                                                                                                                                          |
+| [**thomas-alrek/iPod-photo-database**](https://github.com/thomas-alrek/iPod-photo-database)                                      | thomas-alrek       | Node.js Photo Database parser with ithmb → JPEG conversion.                                                                                                                                                              |
 
 ### Color conversion references
 
