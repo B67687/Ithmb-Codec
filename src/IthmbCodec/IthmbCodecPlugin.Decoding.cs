@@ -25,8 +25,9 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
-        // SIMD path: process 8 pixels per iteration on x64 (SSE2)
-        if (Sse2.IsSupported && w >= 8)
+        // SIMD path: process 8 pixels per iteration on x64 (SSE2).
+        // Requires w % 4 == 0 for 16-byte aligned Sse2.Store (movdqa).
+        if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb565_Sse2(src, dst, w, h, littleEndian);
         else
             DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
@@ -34,6 +35,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>SSE2-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
+    /// <remarks>Requires w % 4 == 0 for 16-byte aligned Sse2.Store.</remarks>
     private static void DecodeRgb565_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
         fixed (byte* pSrc = src)
@@ -44,7 +46,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 byte* pDstRow = dst + y * w * 4;
                 int x = 0;
 
-                // Main SIMD loop: 8 pixels per iteration
+                    // Main SIMD loop: 8 pixels per iteration
                 for (; x + 7 < w; x += 8)
                 {
                     Vector128<byte> raw = Sse2.LoadVector128(pSrcRow + x * 2);
@@ -136,8 +138,9 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
-        // SIMD path: process 8 pixels per iteration on x64 (SSE2)
-        if (Sse2.IsSupported && w >= 8)
+        // SIMD path: process 8 pixels per iteration on x64 (SSE2).
+        // Requires w % 4 == 0 for 16-byte aligned Sse2.Store (movdqa).
+        if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb555_Sse2(src, dst, w, h, littleEndian);
         else
             DecodeRgb555_Scalar(src, dst, w, h, littleEndian);
@@ -302,8 +305,8 @@ internal static unsafe partial class IthmbCodecPlugin
             var u16 = Ssse3.Shuffle(raw, shufU).AsInt16();
             var v16 = Ssse3.Shuffle(raw, shufV).AsInt16();
 
-            u16 = Sse2.Subtract(u16, Vector128.Create((short)128));
-            v16 = Sse2.Subtract(v16, Vector128.Create((short)128));
+            // Defer chroma unbias to after 32-bit widening (see below).
+            // Applying -128 on 16-bit then zero-extending via UnpackLow loses the sign.
 
             var zero16 = Vector128<short>.Zero;
             for (int hIdx = 0; hIdx < 2; hIdx++)
@@ -317,6 +320,12 @@ internal static unsafe partial class IthmbCodecPlugin
                 var vI = (hIdx == 0
                     ? Sse2.UnpackLow(v16, zero16)
                     : Sse2.UnpackHigh(v16, zero16)).AsInt32();
+
+                // Unbias chroma: subtract 128 after widening to preserve sign.
+                // UnpackLow zero-extends shorts — negative values would become
+                // large positive if we subtracted 128 before widening.
+                uI = Sse2.Subtract(uI, Vector128.Create(128));
+                vI = Sse2.Subtract(vI, Vector128.Create(128));
 
                 var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
                 var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
@@ -414,6 +423,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// Decodes CLCL-packed YCbCr 4:2:2: one chroma byte packs Cb (high nibble) and
     /// Cr (low nibble) at 4-bit precision. Two luma bytes follow for two pixels.
     /// Byte layout per macropixel: [CbCr] [Y0] [CbCr] [Y1]  —  4 bytes, 2 pixels.
+    /// The two CbCr bytes are identical (same packed chroma for both pixels).
     ///
     /// Chroma conversion (4-bit → 8-bit): multiply by 17 (evenly scales 0-15 to 0-255).
     /// Same BT.601 YUV→RGB math as standard YUV422.
