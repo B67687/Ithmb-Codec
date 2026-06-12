@@ -24,6 +24,27 @@
     "frameBytes": 77440
   }
   //
+  // Album art / cover art formats (from iOpenPod format registry):
+  // All use standard RGB565 LE encoding. Add any of these to enable new prefix support:
+  // {"prefix": 1010, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
+  // {"prefix": 1027, "width": 100, "height": 100, "encoding": "rgb565", "frameBytes": 20000}
+  // {"prefix": 1056, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768}
+  // {"prefix": 1061, "width": 56, "height": 56, "encoding": "rgb565", "frameBytes": 6272}
+  // {"prefix": 1068, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768}
+  // {"prefix": 1071, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
+  // {"prefix": 1073, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
+  // {"prefix": 1074, "width": 50, "height": 50, "encoding": "rgb565", "frameBytes": 5000}
+  // {"prefix": 1078, "width": 80, "height": 80, "encoding": "rgb565", "frameBytes": 12800}
+  // {"prefix": 1084, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
+  // {"prefix": 1085, "width": 88, "height": 88, "encoding": "rgb565", "frameBytes": 15488}
+  // {"prefix": 1089, "width": 58, "height": 58, "encoding": "rgb565", "frameBytes": 6728}
+  // {"prefix": 2002, "width": 50, "height": 50, "encoding": "rgb565", "frameBytes": 5000, "littleEndian": false}
+  // {"prefix": 2003, "width": 150, "height": 150, "encoding": "rgb565", "frameBytes": 45000, "littleEndian": false}
+  // {"prefix": 3001, "width": 256, "height": 256, "encoding": "rgb555", "frameBytes": 131072}
+  // {"prefix": 3002, "width": 128, "height": 128, "encoding": "rgb555", "frameBytes": 32768}
+  // {"prefix": 3003, "width": 64, "height": 64, "encoding": "rgb555", "frameBytes": 8192}
+  // {"prefix": 3005, "width": 320, "height": 320, "encoding": "rgb555", "frameBytes": 204800}
+  //
   // iOS 1.x firmware variants (iPhone 1.x, differs from libgpod's 2G+ dims per Steee29):
   // Uncomment to override built-in profiles for iPhone 1.x targets:
   // {"prefix": 3004, "width": 55, "height": 55, "encoding": "rgb555", "frameBytes": 6050}

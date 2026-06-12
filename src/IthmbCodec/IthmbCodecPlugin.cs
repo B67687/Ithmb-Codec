@@ -68,11 +68,15 @@ internal static unsafe partial class IthmbCodecPlugin
             // iPod Photo 4G full-screen (big-endian, per iOpenPod/libgpod)
             [1013] = new(1013, 220, 176, IthmbEncoding.Rgb565, 220 * 176 * 2, LittleEndian: false),
             [1015] = new(1015, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
+            // Nano 7G cover art large (iOpenPod)
+            [1010] = new(1010, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
             [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2, IsInterlaced: true),
             [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true, LittleEndian: false),
             [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2, LittleEndian: false),
             // iPod Classic 5G/6G full-screen
             [1024] = new(1024, 320, 240, IthmbEncoding.Rgb565, 320 * 240 * 2),
+            // Nano/Classic cover art variants (iOpenPod)
+            [1027] = new(1027, 100, 100, IthmbEncoding.Rgb565, 100 * 100 * 2),
             // iPod Classic thumbnail
             [1031] = new(1031, 42, 42, IthmbEncoding.Rgb565, 42 * 42 * 2),  // Nano album art small
             // iPod Nano 1G/2G photo list thumbnail
@@ -82,9 +86,20 @@ internal static unsafe partial class IthmbCodecPlugin
             [1066] = new(1066, 64, 64, IthmbEncoding.Rgb565, 64 * 64 * 2),
             // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame
             [1067] = new(1067, 720, 480, IthmbEncoding.Ycbcr420, 720 * 480 * 2, IsPadded: true),
+            // Classic/Nano cover art variants (iOpenPod)
+            [1068] = new(1068, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
+            // Nano 4G/5G/6G cover art variants (iOpenPod)
+            [1071] = new(1071, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
+            [1073] = new(1073, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
+            [1074] = new(1074, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2),
+            [1078] = new(1078, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             // iPod Nano 4G photo thumbnails
             [1079] = new(1079, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1083] = new(1083, 240, 320, IthmbEncoding.Rgb565, 240 * 320 * 2),
+            // Nano 4G/6G cover art variants (iOpenPod)
+            [1084] = new(1084, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
+            [1085] = new(1085, 88, 88, IthmbEncoding.Rgb565, 88 * 88 * 2),
+            [1089] = new(1089, 58, 58, IthmbEncoding.Rgb565, 58 * 58 * 2),
             // iPod Nano 5G photo
             [1087] = new(1087, 384, 384, IthmbEncoding.Rgb565, 384 * 384 * 2),
             // Cover art / album art formats (also stored as .ithmb, same RGB565 encoding)
@@ -93,10 +108,22 @@ internal static unsafe partial class IthmbCodecPlugin
             [1028] = new(1028, 100, 100, IthmbEncoding.Rgb565, 100 * 100 * 2),
             [1029] = new(1029, 200, 200, IthmbEncoding.Rgb565, 200 * 200 * 2),
             [1055] = new(1055, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
+            // Nano 5G cover art medium (iOpenPod)
+            [1056] = new(1056, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
             [1060] = new(1060, 320, 320, IthmbEncoding.Rgb565, 320 * 320 * 2),
+            // Classic cover art small (iOpenPod)
+            [1061] = new(1061, 56, 56, IthmbEncoding.Rgb565, 56 * 56 * 2),
             // iPod Nano 6G photo thumbnail and full-screen
             [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
+            // iPod Mobile (Motorola ROKR/SLVR/RAZR) cover art — big-endian (iOpenPod)
+            [2002] = new(2002, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2, LittleEndian: false),
+            [2003] = new(2003, 150, 150, IthmbEncoding.Rgb565, 150 * 150 * 2, LittleEndian: false),
+            // iPod touch cover art (iOpenPod) — RGB555 LE
+            [3001] = new(3001, 256, 256, IthmbEncoding.Rgb555, 256 * 256 * 2),
+            [3002] = new(3002, 128, 128, IthmbEncoding.Rgb555, 128 * 128 * 2),
+            [3003] = new(3003, 64, 64, IthmbEncoding.Rgb555, 64 * 64 * 2),
+            [3005] = new(3005, 320, 320, IthmbEncoding.Rgb555, 320 * 320 * 2),
             // iPhone 1G/2G, iPod Touch 1G/2G photo thumbnail variants
             // Note: iOS 1.x used different dims per Steee29: 3004=55×55, 3009=120×160 (swapped!), 3011=75×75
             // Our dimensions are from libgpod (iOS 2G+). Use profiles.json to override if targeting iPhone 1.x.
