@@ -7,12 +7,13 @@
   // Schema:
   //   prefix: int (format FXXXX, e.g. 1007)
   //   width, height: int (pixels)
-  //   encoding: "rgb565" | "yuv422" | "ycbcr420"
+  //   encoding: "rgb565" | "rgb555" | "yuv422" | "yuv422clcl" | "ycbcr420"
   //   frameBytes: int (bytes per frame, including padding)
   //   swapsDimensions: bool (optional, default false)
   //   littleEndian: bool (optional, default true)
   //   isPadded: bool (optional, default false — for YCbCr420 with 2-Bpp frames)
   //   isInterlaced: bool (optional, default false — for F1019 YUV422 field-split)
+  //   isClcl: bool (optional, default false — for CLCL nibble-chroma YUV422)
   //
   // Example — iPod Photo 4G full-screen:
   {

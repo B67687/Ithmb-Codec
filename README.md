@@ -1,8 +1,8 @@
 # ITHMB Codec for ImageGlass v10
 
-A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 28 profiles (20 photo + 6 cover art) covering iPod Photo through iPhone 2G.
+A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 29 profiles (20 photo + 6 cover art) covering iPod Photo through iPhone 2G.
 
-Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**. Additionally validated against **227 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
+Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**. Additionally validated against **228 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
 
 ---
 
@@ -148,7 +148,7 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 The plugin was developed through an iterative research-and-review pipeline:
 
 1. **Format survey** — 17 open-source .ithmb implementations found across GitHub, GitLab, Codeberg, and SourceForge. Complete source analysis of each.
-2. **Format table extraction** — iOpenPod, libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 28 profiles.
+2. **Format table extraction** — iOpenPod, libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 29 profiles.
 3. **Implementation** — C# Native AOT plugin with 4 decoders + 3 SIMD engines (SSE2, SSSE3, Vector128). ~877 lines ABI + ~554 lines decoding.
 4. **Testing** — 307 unit tests (exhaustive 65K-pattern, 250 fuzz, SIMD-vs-scalar, roundtrip, property invariants, real-file validation with 227 public samples).
 5. **Review cycles** — 3 rounds of 5-agent adversarial review. ~30 findings fixed covering memory safety, threading, ABI compatibility, and SIMD correctness.
