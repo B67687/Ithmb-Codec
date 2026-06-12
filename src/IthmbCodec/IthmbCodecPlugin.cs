@@ -97,7 +97,7 @@ internal static unsafe partial class IthmbCodecPlugin
             [3008] = new(3008, 640, 480, IthmbEncoding.Rgb555, 640 * 480 * 2),
         }.ToFrozenDictionary();
 
-    private static bool _profilesLoaded;
+    private static volatile bool _profilesLoaded;
 
     // Cached host function pointers (set once during init, eliminates pointer chase per call)
     private static delegate* unmanaged[Cdecl]<void*, int> _isCanceledFn;
@@ -419,7 +419,7 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.Internal;
         }
 
-        _liveBuffers.TryAdd((nint)pixels, 0);
+        _liveBuffers[(nint)pixels] = 0;
         outBuf->Data = pixels;
         outBuf->Width = w;
         outBuf->Height = h;
@@ -436,7 +436,7 @@ internal static unsafe partial class IthmbCodecPlugin
         if (profile.SwapsDimensions) (w, h) = (h, w);
         int frameSize = profile.FrameByteLength;
 
-        if (data.Length < 4 + frameSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
+        if (data.Length < 4 || data.Length - 4 < frameSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
 
         int fileSize = data.Length; // actual file bytes read (available before FillImageInfo)
         FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1, fileSize: fileSize);
@@ -480,7 +480,7 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.Internal;
         }
 
-        _liveBuffers.TryAdd((nint)pixels, 0);
+        _liveBuffers[(nint)pixels] = 0;
         outBuf->Data = pixels;
         outBuf->Width = w;
         outBuf->Height = h;
