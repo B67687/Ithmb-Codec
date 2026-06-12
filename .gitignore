@@ -22,3 +22,7 @@ imageglass-sdk/
 
 # AGENT context
 
+
+# Sample .ithmb files (downloaded from public sources, not redistributed)
+samples/
+*.ithmb
