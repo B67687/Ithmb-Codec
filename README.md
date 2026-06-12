@@ -1,6 +1,6 @@
 # ITHMB Codec for ImageGlass v10
 
-A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 29 profiles (20 photo + 6 cover art) covering iPod Photo through iPhone 2G.
+A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 29 profiles (19 photo + 6 cover art + 4 iPhone RGB555) covering iPod Photo through iPhone 2G.
 
 Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**. Additionally validated against **228 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
 

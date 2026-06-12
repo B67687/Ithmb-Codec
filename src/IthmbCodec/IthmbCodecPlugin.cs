@@ -115,6 +115,8 @@ internal static unsafe partial class IthmbCodecPlugin
 
     private static readonly object _initLock = new();
     private static readonly ConcurrentDictionary<nint, byte> _liveBuffers = new();
+    // Indexer overwrite is intentional — buffer pointers are unique per NativeMemory.AllocZeroed call.
+    // CodecFreePixelBuffer uses TryRemove + null-Data guard for double-free safety.
 
     // ------------------------------ Entry point ------------------------------
     [UnmanagedCallersOnly(EntryPoint = IGNativeAbi.ENTRY_POINT_NAME, CallConvs = [typeof(CallConvCdecl)])]
@@ -453,7 +455,7 @@ internal static unsafe partial class IthmbCodecPlugin
             // For padded profiles, trim to the valid pixel data portion
             if (profile.IsPadded)
             {
-                int validSize = w * h * 3 / 2;
+                int validSize = w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2;
                 if (raw.Length > validSize) raw = raw[..validSize];
             }
             bool ok = profile.Encoding switch

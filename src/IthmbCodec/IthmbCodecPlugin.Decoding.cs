@@ -49,7 +49,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     // Main SIMD loop: 8 pixels per iteration
                 for (; x + 7 < w; x += 8)
                 {
-                    Vector128<byte> raw = Sse2.LoadVector128(pSrcRow + x * 2);
+                    Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
                     Vector128<ushort> v = raw.AsUInt16();
 
                     // Byte-swap for big-endian profiles
@@ -85,8 +85,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     var pxLo = Sse2.UnpackLow(br, ga);  // pixels 0-3: [B0,G0,R0,255, B1,G1,R1,255, B2,G2,R2,255, B3,G3,R3,255]
                     var pxHi = Sse2.UnpackHigh(br, ga); // pixels 4-7: [B4,G4,R4,255, B5,G5,R5,255, B6,G6,R6,255, B7,G7,R7,255]
 
-                    Sse2.Store(pDstRow + x * 4, pxLo);
-                    Sse2.Store(pDstRow + (x + 4) * 4, pxHi);
+                    Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                    Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
                 }
 
                 // Scalar tail: remaining <8 pixels
@@ -167,7 +167,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
                 for (; x + 7 < w; x += 8)
                 {
-                    Vector128<byte> raw = Sse2.LoadVector128(pSrcRow + x * 2);
+                    Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
                     Vector128<ushort> v = raw.AsUInt16();
 
                     if (!littleEndian)
@@ -194,8 +194,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     var pxLo = Sse2.UnpackLow(br, ga);
                     var pxHi = Sse2.UnpackHigh(br, ga);
 
-                    Sse2.Store(pDstRow + x * 4, pxLo);
-                    Sse2.Store(pDstRow + (x + 4) * 4, pxHi);
+                    Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                    Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
                 }
 
                 DecodeRgb555_Tail(pSrcRow, pDstRow, x, w, littleEndian);
@@ -300,7 +300,7 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         for (int x = 0; x < w; x += 8)
         {
-            var raw = Sse2.LoadVector128(pSrcRow + x * 2);
+            var raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
             var y16 = Ssse3.Shuffle(raw, shufY).AsInt16();
             var u16 = Ssse3.Shuffle(raw, shufU).AsInt16();
             var v16 = Ssse3.Shuffle(raw, shufV).AsInt16();
