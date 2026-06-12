@@ -15,7 +15,6 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 - [Verified devices and formats](#verified-devices-and-formats)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
-- [SDK sample PR](#sdk-sample-pr)
 - [License](#license)
 
 ---
@@ -152,7 +151,7 @@ The plugin was developed through an iterative research-and-review pipeline:
 3. **Implementation** — C# Native AOT plugin with 4 decoders + 3 SIMD engines (SSE2, SSSE3, Vector128). ~887 lines ABI + ~605 lines decoding.
 4. **Testing** — 317 unit tests (exhaustive 65K-pattern, 250 fuzz, SIMD-vs-scalar, roundtrip, property invariants, real-file validation with 228 public samples). Includes lossless roundtrip for RGB565 (65,536 values, pixel-perfect) and RGB555 (32,768 values, pixel-perfect), and lossy YUV roundtrip for UYVY and YCbCr420 (gradient, ±5 tolerance).
 5. **Review cycles** — 4 rounds of 5-agent adversarial review. ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth hardening.
-6. **Release** — Windows binary (1.4 MB native AOT), published to GitHub Releases. SDK sample PR submitted to ImageGlass/SDK (closed — SDK repo is SDK-only; plugin sharing platform expected later).
+6. **Release** — Windows binary (1.4 MB native AOT), published to GitHub Releases.
 7. **Documentation** — All 17 references credited in README.
 
 - **Single entry point** (`ig_plugin_get_api`) --- the only C export.
@@ -251,14 +250,6 @@ If you test this plugin with a different device or iOS version, please open an i
 If the plugin doesn't work for your files, try [ithmb.org](https://ithmb.org) --- a free browser-based `.ithmb` decoder with broader device support. No upload required.
 
 ---
-
-## SDK sample PR
-
-This plugin has been submitted as a sample to the [ImageGlass SDK](https://github.com/ImageGlass/SDK) repository:
-
-**[PR #2 --- samples: add IthmbCodec plugin](https://github.com/ImageGlass/SDK/pull/2)**
-
-The standalone repo (`B67687/ithmb-codec`) is the primary development home. The SDK PR is a mirror for reference.
 
 ---
 

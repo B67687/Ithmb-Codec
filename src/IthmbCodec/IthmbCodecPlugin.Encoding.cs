@@ -241,11 +241,9 @@ partial class IthmbCodecPlugin
         for (int y = 0; y < h; y++)
         {
             int srcRow = y * rowStride;
-            int dstRow;
-            if (y % 2 == 0)
-                dstRow = (y / 2) * rowStride;         // even → first half
-            else
-                dstRow = (halfRows + y / 2) * rowStride; // odd → second half
+            int dstRow = y % 2 == 0
+                ? (y / 2) * rowStride
+                : (halfRows + y / 2) * rowStride;
 
             Array.Copy(planar, srcRow, result, dstRow, rowStride);
         }
