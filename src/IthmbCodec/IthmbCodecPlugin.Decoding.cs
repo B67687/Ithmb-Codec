@@ -430,12 +430,14 @@ internal static unsafe partial class IthmbCodecPlugin
     /// Byte layout per macropixel: [CbCr] [Y0] [CbCr] [Y1]  —  4 bytes, 2 pixels.
     /// The two CbCr bytes are identical (same packed chroma for both pixels).
     ///
-    /// Chroma conversion (4-bit → 8-bit): multiply by 17 (evenly scales 0-15 to 0-255).
+    /// Chroma conversion (4-bit → 8-bit): multiply by 16 (shifts nibble to byte range 0-240).
+    /// Confirmed against andrewmalta/ithmb and wrinklykong/pyithmb sources.
+    /// Keith Wiley method 1 uses full 8-bit chroma (different variant, no nibble packing).
     /// Same BT.601 YUV→RGB math as standard YUV422.
     ///
     /// SPECULATIVE — no real-world .ithmb sample files available for verification.
     /// The neutral-chroma unit test validates the math but not real file compatibility.
-    /// Based on Keith's iPod Photo Reader method 1 and wrinklykong/pyithmb source.
+    /// Based on andrewmalta/ithmb, wrinklykong/pyithmb, and Keith's iPod Photo Reader.
     /// Activate via profiles.json for iPod 4G/5G files that decode incorrectly
     /// with the standard UYVY path.
     /// </summary>
@@ -452,8 +454,8 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 int idx = rowStart + x * 2;
                 int packed = src[idx];
-                int cb = ((packed >> 4) & 0x0F) * 17 - 128;
-                int cr = (packed & 0x0F) * 17 - 128;
+                int cb = ((packed >> 4) & 0x0F) * 16 - 128;
+                int cr = (packed & 0x0F) * 16 - 128;
                 int y0 = src[idx + 1];
                 int y1 = src[idx + 3];
 

@@ -98,6 +98,8 @@ internal static unsafe partial class IthmbCodecPlugin
             [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
             // iPhone 1G/2G, iPod Touch 1G/2G photo thumbnail variants
+            // Note: iOS 1.x used different dims per Steee29: 3004=55×55, 3009=120×160 (swapped!), 3011=75×75
+            // Our dimensions are from libgpod (iOS 2G+). Use profiles.json to override if targeting iPhone 1.x.
             [3004] = new(3004, 56, 55, IthmbEncoding.Rgb555, 56 * 55 * 2),
             [3009] = new(3009, 160, 120, IthmbEncoding.Rgb555, 160 * 120 * 2),
             [3011] = new(3011, 80, 79, IthmbEncoding.Rgb555, 80 * 79 * 2),
@@ -246,7 +248,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     // ------------------------------ Core decode pipeline ------------------------------
-    private static IGStatus DecodeInternal(IGStringRef filePath, void* cancellation,
+    internal static IGStatus DecodeInternal(IGStringRef filePath, void* cancellation,
         IGImageInfo* outInfo, IGPixelBuffer* outBuf)
     {
         if (filePath.Data == null || filePath.Length <= 0) return IGStatus.InvalidArg;

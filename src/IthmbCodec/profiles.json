@@ -23,4 +23,10 @@
     "encoding": "rgb565",
     "frameBytes": 77440
   }
+  //
+  // iOS 1.x firmware variants (iPhone 1.x, differs from libgpod's 2G+ dims per Steee29):
+  // Uncomment to override built-in profiles for iPhone 1.x targets:
+  // {"prefix": 3004, "width": 55, "height": 55, "encoding": "rgb555", "frameBytes": 6050}
+  // {"prefix": 3009, "width": 120, "height": 160, "encoding": "rgb555", "frameBytes": 38400, "littleEndian": false}
+  // {"prefix": 3011, "width": 75, "height": 75, "encoding": "rgb555", "frameBytes": 11250}
 ]
