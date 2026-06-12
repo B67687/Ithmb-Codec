@@ -38,6 +38,14 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly byte[] JpegEoiMarker = [0xFF, 0xD9];
     private static readonly byte[] App1Marker = [0xFF, 0xE1];
 
+    // Size limits (documented rationale in DecodeInternal)
+    private const long MaxDecodeFileSize = 100L * 1024 * 1024;   // 100 MB: prevents OOM on corrupt/malicious files
+    private const int PeekBufferSize = 4 * 1024 * 1024;           // 4 MB: covers thumbnail JPEG headers + embedded JPEGs
+    private const int MaxSignatureProbe = 4096;                    // 4 KB: covers JPEG SOI + marker segments
+
+    // JFIF/Exif probe window after SOI (must cover DQT, DHT, COM before APP0/APP1)
+    private const int JfifExifScanWindow = 512;
+
     // ------------------------------ Raw profile enums ------------------------------
     internal enum IthmbEncoding { Rgb565, Rgb555, Yuv422, Ycbcr420 }
 
@@ -48,7 +56,7 @@ internal static unsafe partial class IthmbCodecPlugin
         bool IsPadded = false, bool IsInterlaced = false,
         bool ClclChroma = false);
 
-    internal static FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
+    internal static volatile FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
     private static FrozenDictionary<int, IthmbVariantProfile> GetBuiltInProfiles() =>
         new Dictionary<int, IthmbVariantProfile>
@@ -100,8 +108,8 @@ internal static unsafe partial class IthmbCodecPlugin
     private static volatile bool _profilesLoaded;
 
     // Cached host function pointers (set once during init, eliminates pointer chase per call)
-    private static delegate* unmanaged[Cdecl]<void*, int> _isCanceledFn;
-    private static delegate* unmanaged[Cdecl]<int, IGStringRef, void> _logFn;
+    private static volatile delegate* unmanaged[Cdecl]<void*, int> _isCanceledFn;
+    private static volatile delegate* unmanaged[Cdecl]<int, IGStringRef, void> _logFn;
 
     // ------------------------------ Static plugin state ------------------------------
     private static volatile IGPluginApi* _pluginApi;
@@ -190,14 +198,14 @@ internal static unsafe partial class IthmbCodecPlugin
     internal static int CodecCanHandleSignature(byte* signature, int length)
     {
         if (signature == null || length < 8) return 0;
-        var span = new ReadOnlySpan<byte>(signature, Math.Min(length, 256));
+        var span = new ReadOnlySpan<byte>(signature, Math.Min(length, MaxSignatureProbe));
         // SIMD-accelerated search for JPEG SOI marker (FF D8)
         int soi = span.IndexOf(JpegSoiMarker);
         if (soi < 0) return 0;
         // FF D8 must be followed by FF (valid JPEG marker)
         if (soi + 2 >= span.Length || span[soi + 2] != 0xFF) return 0;
-        // Verify JFIF or Exif within 128 bytes of SOI (must have room for the probe)
-        int scanEnd = Math.Min(soi + 128, span.Length);
+        // Verify JFIF or Exif within the scan window (covers marker segments before APP0/APP1)
+        int scanEnd = Math.Min(soi + JfifExifScanWindow, span.Length);
         int probeLen = scanEnd - soi - 2;
         if (probeLen <= 0) return 0;
         var probe = span.Slice(soi + 2, probeLen);
@@ -258,7 +266,7 @@ internal static unsafe partial class IthmbCodecPlugin
         long fileSize;
         try { fileSize = new FileInfo(path).Length; }
         catch (Exception) { return IGStatus.IoError; }
-        if (fileSize > 100L * 1024 * 1024)
+        if (fileSize > MaxDecodeFileSize)
         {
             Log(4, $"ITHMB: file too large ({fileSize} bytes)");
             return IGStatus.DecodeFailed;
@@ -269,17 +277,17 @@ internal static unsafe partial class IthmbCodecPlugin
         try
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-            int peekSize = (int)Math.Min(fileSize, 4L * 1024 * 1024);
+            int peekSize = (int)Math.Min(fileSize, PeekBufferSize);
             byte[] peek = new byte[peekSize];
             fs.ReadExactly(peek, 0, peekSize);
 
             if (TryFindJpegSlice(peek, out var jpegOffset, out var jpegLength, cancellation))
             {
-                // If JPEG extends beyond peek buffer, read tail to find true EOI
-                if (jpegOffset + jpegLength > peekSize)
+                // If JPEG EOI extends beyond peek buffer, read tail to find true EOI
+                if (jpegOffset + jpegLength >= peekSize && fileSize > peekSize)
                 {
                     long tailSize = fileSize - (jpegOffset + 2);
-                    byte[] tail = new byte[tailSize > 0 ? (int)Math.Min(tailSize, 100L * 1024 * 1024) : 0];
+                    byte[] tail = new byte[tailSize > 0 ? (int)Math.Min(tailSize, MaxDecodeFileSize) : 0];
                     if (tail.Length > 0)
                     {
                         fs.Seek(jpegOffset + 2, SeekOrigin.Begin);
@@ -304,7 +312,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
-                // fileSize ≤ 100 MB (guarded at line 244), safe for int
+                // fileSize ≤ 100 MB (guarded at line 261), safe for int
                     return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }
@@ -346,8 +354,8 @@ internal static unsafe partial class IthmbCodecPlugin
             // Reject false positives where random data happens to contain FF D8.
             if (i + 2 >= data.Length || data[i + 2] != 0xFF) { i += JpegSoiMarker.Length; continue; }
 
-            // Verify JFIF or Exif within 128 bytes of SOI
-            int scanEnd = Math.Min(i + 128, data.Length);
+            // Verify JFIF or Exif within the scan window (covers marker segments before APP0/APP1)
+            int scanEnd = Math.Min(i + JfifExifScanWindow, data.Length);
             int jfifOff = IndexOf(data, JfifMarker, i, scanEnd);
             int exifOff = IndexOf(data, ExifMarker, i, scanEnd);
             if (jfifOff < 0 && exifOff < 0) { i += JpegSoiMarker.Length; continue; }
@@ -389,7 +397,7 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.DecodeFailed;
         }
 
-        if (result == null || result.Width <= 0 || result.Height <= 0)
+        if (result == null || result.Data == null || result.Width <= 0 || result.Height <= 0)
             return IGStatus.DecodeFailed;
 
         int w = result.Width, h = result.Height;
@@ -431,14 +439,17 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     // ------------------------------ Raw profile decoding ------------------------------
-    private static IGStatus DecodeRawProfile(byte[] data, IthmbVariantProfile profile,
+    internal static IGStatus DecodeRawProfile(byte[] data, IthmbVariantProfile profile,
         void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf)
     {
         int w = profile.Width, h = profile.Height;
         if (profile.SwapsDimensions) (w, h) = (h, w);
         int frameSize = profile.FrameByteLength;
 
-        if (data.Length < 4 || data.Length - 4 < frameSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
+        int requiredSize = profile.IsPadded
+            ? Math.Min(frameSize, w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2)
+            : frameSize;
+        if (data.Length < 4 || data.Length - 4 < requiredSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
 
         int fileSize = data.Length; // actual file bytes read (available before FillImageInfo)
         FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1, fileSize: fileSize);
@@ -588,14 +599,14 @@ internal static unsafe partial class IthmbCodecPlugin
         // IFD0 offset
         int ifdOff = tiffStart + 4;
         int ifdPos = tiffStart + (int)(le ? ReadU32LE(data, ifdOff) : ReadU32BE(data, ifdOff));
-        if (ifdPos <= tiffStart || ifdPos + 2 > end) return 1;
+        if (ifdPos < tiffStart + 8 || ifdPos + 2 > end) return 1;
 
         // Number of IFD entries (16-bit)
         int numEntries = le ? ReadU16LE(data, ifdPos) : ReadU16BE(data, ifdPos);
 
         // Scan IFD for Orientation tag (0x0112)
         int entryStart = ifdPos + 2;
-        for (int e = 0; e < numEntries && entryStart + 12 <= end; e++, entryStart += 12)
+        for (int e = 0; e < Math.Min(numEntries, 100) && entryStart + 12 <= end; e++, entryStart += 12)
         {
             int tag = le ? ReadU16LE(data, entryStart) : ReadU16BE(data, entryStart);
             if (tag != 0x0112) continue;
@@ -674,7 +685,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>Minimal AOT-safe JSON parser for the profiles.json schema.</summary>
-    private static void ParseProfilesJson(string json, Dictionary<int, IthmbVariantProfile> output)
+    internal static void ParseProfilesJson(string json, Dictionary<int, IthmbVariantProfile> output)
     {
         int pos = 0;
         SkipWhitespace(json, ref pos);
@@ -814,6 +825,8 @@ internal static unsafe partial class IthmbCodecPlugin
             }
             return;
         }
+        // null literal
+        if (pos + 4 <= s.Length && s[pos] == 'n' && s[pos..(pos + 4)] == "null") { pos += 4; return; }
         // number or boolean
         while (pos < s.Length && s[pos] != ',' && s[pos] != '}' && s[pos] != ']' && !char.IsWhiteSpace(s[pos]))
             pos++;

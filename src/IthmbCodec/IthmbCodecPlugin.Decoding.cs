@@ -35,7 +35,8 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>SSE2-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
-    /// <remarks>Requires w % 4 == 0 for 16-byte aligned Sse2.Store.</remarks>
+    /// <remarks>Uses Vector128.StoreUnsafe (movdqu, no alignment required). The (w &amp; 3) == 0 guard
+    /// is retained for correctness equivalence with the scalar tail handler.</remarks>
     private static void DecodeRgb565_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
         fixed (byte* pSrc = src)
@@ -148,7 +149,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>SSE2-accelerated RGB555→BGRA: 8 pixels (16B→32B) per iteration.</summary>
-    /// <remarks>
+    /// <remarks>Uses Vector128.StoreUnsafe (movdqu, no alignment required).
     /// RGB555 bit layout: xRRRRRGGGGGBBBBB (bit 15 unused)
     /// Differences from RGB565:
     ///   - Red:  >> 10 (not >> 11) — skips unused bit 15
@@ -272,6 +273,9 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>SSE2/SSSE3-accelerated UYVY→BGRA (uses pshufb for deinterleave, 32-bit arithmetic).</summary>
+    /// <remarks>32-bit integer arithmetic (pmulld, pmaxsd, pminsd) requires SSE4.1 at minimum.
+    /// On CPUs with SSSE3 but without SSE4.1, Vector128 intrinsics fall back to software emulation
+    /// (correct but slower). The dispatch guard only checks Ssse3.IsSupported for correctness.</remarks>
     private static void DecodeYuv422_SIMD(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
@@ -292,7 +296,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     rCoef, gCoefCb, gCoefCr, bCoef);
     }
 
-    /// <summary>Processes one row of UYVY data using SSSE3/SSE2 (8 pixels per iteration).</summary>
+    /// <summary>Processes one row of UYVY data using SSSE3/SSE2 with 32-bit arithmetic (8 pixels per iteration).</summary>
+    /// <remarks>32-bit Vector128&lt;int&gt;.Multiply, Max, Min map to pmulld/pmaxsd/pminsd (SSE4.1+).</remarks>
     private static void ProcessUyvyRow(byte* pSrcRow, byte* pDstRow, int w,
         Vector128<byte> shufY, Vector128<byte> shufU, Vector128<byte> shufV,
         Vector128<int> zeroI, Vector128<int> max255, Vector128<int> alpha,
@@ -364,7 +369,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
     private static void DecodeYuv422Interlaced_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int half = (h / 2) * w * 2;
+        int half = ((h + 1) / 2) * w * 2;
         int rowStride = w * 2;
         for (int y = 0; y < h; y++)
         {
@@ -389,7 +394,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>SIMD-accelerated interlaced UYVY (F1019). Inner loop identical to non-interlaced.</summary>
     private static void DecodeYuv422Interlaced_SIMD(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int half = (h / 2) * w * 2;
+        int half = ((h + 1) / 2) * w * 2;
         int rowStride = w * 2;
 
         var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
@@ -428,7 +433,8 @@ internal static unsafe partial class IthmbCodecPlugin
     /// Chroma conversion (4-bit → 8-bit): multiply by 17 (evenly scales 0-15 to 0-255).
     /// Same BT.601 YUV→RGB math as standard YUV422.
     ///
-    /// SPECULATIVE — no sample files available for verification.
+    /// SPECULATIVE — no real-world .ithmb sample files available for verification.
+    /// The neutral-chroma unit test validates the math but not real file compatibility.
     /// Based on Keith's iPod Photo Reader method 1 and wrinklykong/pyithmb source.
     /// Activate via profiles.json for iPod 4G/5G files that decode incorrectly
     /// with the standard UYVY path.
@@ -481,7 +487,7 @@ internal static unsafe partial class IthmbCodecPlugin
     private static void DecodeYcbcr420_Scalar(ReadOnlySpan<byte> src, byte* dst,
         int w, int h, int ySize, int uvSize)
     {
-        int uvStride = w / 2;
+        int uvStride = (w + 1) / 2;
         for (int y = 0; y < h; y += 2)
         {
             for (int x = 0; x < w; x += 2)
@@ -514,7 +520,7 @@ internal static unsafe partial class IthmbCodecPlugin
     private static void DecodeYcbcr420_SIMD(ReadOnlySpan<byte> src, byte* dst,
         int w, int h, int ySize, int uvSize)
     {
-        int uvStride = w / 2;
+        int uvStride = (w + 1) / 2;
 
         // Loop-invariant constant vectors
         var zero = Vector128<int>.Zero;

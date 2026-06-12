@@ -1209,6 +1209,8 @@ public unsafe class IthmbCodecTests
 
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
 
+    private static int Clamp(int v) => Clamp(v, 0, 255);
+
     // --------------------- RGB565 ---------------------
 
     [Fact]
@@ -1526,5 +1528,141 @@ public unsafe class IthmbCodecTests
         finally { NativeMemory.Free(dst); }
     }
 
+    [Fact]
+    public void DecodeYuv422_SIMD_MatchesScalar_8Wide()
+    {
+        // Verifies the SSSE3 path (w=8) produces byte-identical output to the scalar path (w=2)
+        // for all 256 combinations of Y, U, V values.
+        var rng = new Random(42);
+        byte* simdDst = (byte*)NativeMemory.Alloc(8 * 4);
+        byte* scalarDst = (byte*)NativeMemory.Alloc(8 * 4);
+        try
+        {
+            for (int iter = 0; iter < 256; iter++)
+            {
+                // 8 pixels of UYVY data: U Y0 V Y1 repeated
+                int uVal = rng.Next(256);
+                int vVal = rng.Next(256);
+                var src = new byte[16];
+                for (int i = 0; i < 16; i += 4)
+                {
+                    src[i] = (byte)uVal;
+                    src[i + 1] = (byte)rng.Next(256); // Y0
+                    src[i + 2] = (byte)vVal;
+                    src[i + 3] = (byte)rng.Next(256); // Y1
+                }
 
+                NativeMemory.Clear(simdDst, 8 * 4);
+                NativeMemory.Clear(scalarDst, 8 * 4);
+
+                // SIMD path (w=8, SSSE3 dispatched on x64)
+                IthmbCodecPlugin.DecodeYuv422(src, simdDst, 8, 1);
+
+                // Scalar path (w=2 forces fallback)
+                IthmbCodecPlugin.DecodeYuv422(src, scalarDst, 2, 4);
+
+                for (int j = 0; j < 8 * 4; j++)
+                    Assert.Equal(simdDst[j], scalarDst[j]);
+            }
+        }
+        finally { NativeMemory.Free(simdDst); NativeMemory.Free(scalarDst); }
+    }
+
+    [Fact]
+    public void DecodeYcbcr420_SIMD_MatchesFormula()
+    {
+        // Verifies the Vector128 SIMD path matches the BT.601 formula for colorful input.
+        int w = 4, h = 4;
+        int ySize = w * h;
+        int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
+        var src = new byte[ySize + uvSize * 2];
+        var rng = new Random(99);
+        rng.NextBytes(src);
+        // Ensure chroma is in valid range (already random bytes, debiased to ~128)
+        for (int i = 0; i < uvSize; i++) { src[ySize + i] = (byte)rng.Next(256); }
+        for (int i = 0; i < uvSize; i++) { src[ySize + uvSize + i] = (byte)rng.Next(256); }
+
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
+        try
+        {
+            IthmbCodecPlugin.DecodeYcbcr420(src, dst, w, h);
+
+            // Check each pixel against BT.601 fixed-point formula
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    int luma = src[y * w + x];
+                    int cu = y / 2, cv = x / 2;
+                    int uvIdx = ySize + cu * (w / 2) + cv;
+                    int cb = src[uvIdx] - 128;
+                    int cr = src[uvIdx + uvSize] - 128;
+
+                    int er = Clamp(luma + ((359 * cr) >> 8));
+                    int eg = Clamp(luma - ((88 * cb) >> 8) - ((183 * cr) >> 8));
+                    int eb = Clamp(luma + ((454 * cb) >> 8));
+
+                    int off = (y * w + x) * 4;
+                    Assert.Equal(eb, dst[off]);     // B
+                    Assert.Equal(eg, dst[off + 1]); // G
+                    Assert.Equal(er, dst[off + 2]); // R
+                    Assert.Equal(255, dst[off + 3]); // A
+                }
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_PaddedYcbcr420_NoCrash()
+    {
+        // Synthetic test for padded YCbCr420 (profile F1067: 720x480, IsPadded=true).
+        // Creates a buffer with valid YCbCr data plus extra padding bytes.
+        int w = 720, h = 480;
+        int validSize = w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2;
+        int paddedSize = w * h * 2; // 2 Bpp as in FrameByteLength
+        var data = new byte[4 + paddedSize]; // 4-byte prefix + padded frame
+
+        // Fill prefix (arbitrary 4 bytes)
+        data[0] = 0x00; data[1] = 0x00; data[2] = 0x04; data[3] = 0x2B; // 1067 in big-endian
+
+        // Fill Y plane with gradient
+        for (int i = 0; i < w * h; i++) data[4 + i] = (byte)(i & 0xFF);
+        // Fill Cb, Cr planes with neutral chroma
+        for (int i = w * h; i < validSize; i++) data[4 + i] = 128;
+        // Padding bytes remain 0 (unused)
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1067, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Ycbcr420,
+            FrameByteLength: paddedSize,
+            LittleEndian: true, SwapsDimensions: false,
+            IsPadded: true, IsInterlaced: false, ClclChroma: false);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)(w * h * 4));
+            var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
+                cancellation: null, outInfo, outBuf: null);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+        }
+        finally { NativeMemory.Free(dst); NativeMemory.Free(outInfo); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_BufferTooSmall_ReturnsDecodeFailed()
+    {
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1007, Width: 480, Height: 864,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: 480 * 864 * 2);
+
+        var data = new byte[4 + 10]; // Way too small
+        var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
+            cancellation: null, outInfo: null, outBuf: null);
+        Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+    }
 }

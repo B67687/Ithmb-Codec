@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Xunit;
 
 namespace IthmbCodec.Tests;
@@ -12,10 +11,7 @@ public unsafe class ParserTests
     {
         string json = "[\n  // This is a comment\n  {\n    \"prefix\": 1013,\n    \"width\": 220,\n    \"height\": 176,\n    \"encoding\": \"rgb565\",\n    \"frameBytes\": 77440\n  }\n]";
         var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
-        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
-            BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        method.Invoke(null, [json, output]);
+        IthmbCodecPlugin.ParseProfilesJson(json, output);
 
         Assert.Single(output);
         Assert.True(output.ContainsKey(1013));
@@ -28,10 +24,7 @@ public unsafe class ParserTests
     public void ParseProfilesJson_EmptyArray_NoEntries()
     {
         var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
-        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
-            BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        method.Invoke(null, ["[]", output]);
+        IthmbCodecPlugin.ParseProfilesJson("[]", output);
         Assert.Empty(output);
     }
 
@@ -39,10 +32,7 @@ public unsafe class ParserTests
     public void ParseProfilesJson_Malformed_SilentlyFails()
     {
         var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
-        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
-            BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        method.Invoke(null, ["{bad json}", output]);
+        IthmbCodecPlugin.ParseProfilesJson("{bad json}", output);
         Assert.Empty(output);
     }
 }
