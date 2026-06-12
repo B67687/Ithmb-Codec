@@ -302,7 +302,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
-                    // fileSize ≤ 100 MB (guarded at line 244), safe for int
+                // fileSize ≤ 100 MB (guarded at line 244), safe for int
                     return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }
@@ -718,7 +718,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "littleEndian": le = ParseJsonBool(json, ref pos); break;
                     case "isPadded": padded = ParseJsonBool(json, ref pos); break;
                     case "isInterlaced": interlaced = ParseJsonBool(json, ref pos); break;
-                case "isClcl": clcl = ParseJsonBool(json, ref pos); break;
+                    case "isClcl": clcl = ParseJsonBool(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos); break;
                 }
 
