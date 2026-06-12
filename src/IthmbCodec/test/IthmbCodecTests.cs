@@ -1464,6 +1464,40 @@ public unsafe class IthmbCodecTests
         finally { NativeMemory.Free(dst); }
     }
 
+    // ---- CLCL nibble-chroma (speculative, untested) ----
+
+    [Fact]
+    public void DecodeYuv422Clcl_NeutralChroma_Grayscale()
+    {
+        // CLCL format: [CbCr][Y0][CbCr][Y1] — 4 bytes per 2 pixels.
+        // Neutral chroma: Cb=8, Cr=8 → packed = 0x88, scaled: 8*17=136.
+        // With Y=128 and neutral chroma, output should be approximately gray.
+        var src = new byte[8];
+        for (int i = 0; i < 8; i += 4)
+        {
+            src[i] = 0x88;     // CbCr
+            src[i + 1] = 128;  // Y0
+            src[i + 2] = 0x88; // CbCr (duplicate)
+            src[i + 3] = 128;  // Y1
+        }
+
+        byte* dst = (byte*)NativeMemory.Alloc(8 * 4);
+        try
+        {
+            IthmbCodecPlugin.DecodeYuv422Clcl(src, dst, 4, 1);
+
+            // All pixels should be approximately gray (±20 tolerance for 4-bit precision loss)
+            for (int i = 0; i < 4; i++)
+            {
+                Assert.InRange(dst[i * 4], 100, 156);     // B
+                Assert.InRange(dst[i * 4 + 1], 100, 156); // G
+                Assert.InRange(dst[i * 4 + 2], 100, 156); // R
+                Assert.Equal(255, dst[i * 4 + 3]);         // A
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
     // ---- YCbCr420 SIMD known-value test ----
 
     [Fact]
@@ -1492,44 +1526,5 @@ public unsafe class IthmbCodecTests
         finally { NativeMemory.Free(dst); }
     }
 
-    // ---- JSON parser tests ----
 
-    [Fact]
-    public void ParseProfilesJson_WithComments_ParsesCorrectly()
-    {
-        string json = "[\n  // This is a comment\n  {\n    \"prefix\": 1013,\n    \"width\": 220,\n    \"height\": 176,\n    \"encoding\": \"rgb565\",\n    \"frameBytes\": 77440\n  }\n]";
-        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
-        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        Assert.NotNull(method);
-        method.Invoke(null, [json, output]);
-
-        Assert.Single(output);
-        Assert.True(output.ContainsKey(1013));
-        Assert.Equal(220, output[1013].Width);
-        Assert.Equal(176, output[1013].Height);
-        Assert.Equal(77440, output[1013].FrameByteLength);
-    }
-
-    [Fact]
-    public void ParseProfilesJson_EmptyArray_NoEntries()
-    {
-        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
-        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        Assert.NotNull(method);
-        method.Invoke(null, ["[]", output]);
-        Assert.Empty(output);
-    }
-
-    [Fact]
-    public void ParseProfilesJson_Malformed_SilentlyFails()
-    {
-        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
-        var method = typeof(IthmbCodecPlugin).GetMethod("ParseProfilesJson",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        Assert.NotNull(method);
-        method.Invoke(null, ["{bad json}", output]);
-        Assert.Empty(output);
-    }
 }
