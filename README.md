@@ -112,7 +112,7 @@ Native AOT cross-compilation is not supported. You must build on each target pla
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-Tests cover: RGB565 + RGB555 decode (both 65,536 exhaustive + SIMD-vs-scalar), 250 fuzz tests across 5 decoders, YUV422/Ycbcr420 cross-reference and roundtrip, JPEG slice detection, EXIF orientation parsing, SIMD correctness, memory safety, property invariants, JSON parser tests, real-file validation (**312 tests total**).
+Tests cover: exhaustive RGB565 (65,536 values, **pixel-perfect roundtrip**) + RGB555 (32,768), 250 fuzz tests across 5 decoders, YUV422/Ycbcr420 roundtrip (gradient, ±5 tolerance), JPEG slice detection, EXIF orientation, SIMD correctness, memory safety, property invariants, JSON parser, real-file validation (**317 tests total**).
 
 ---
 
@@ -150,7 +150,7 @@ The plugin was developed through an iterative research-and-review pipeline:
 1. **Format survey** — 17 open-source .ithmb implementations found across GitHub, GitLab, Codeberg, and SourceForge. Complete source analysis of each.
 2. **Format table extraction** — iOpenPod, libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 29 profiles.
 3. **Implementation** — C# Native AOT plugin with 4 decoders + 3 SIMD engines (SSE2, SSSE3, Vector128). ~887 lines ABI + ~605 lines decoding.
-4. **Testing** — 312 unit tests (exhaustive 65K-pattern, 250 fuzz, SIMD-vs-scalar, roundtrip, property invariants, real-file validation with 228 public samples).
+4. **Testing** — 317 unit tests (exhaustive 65K-pattern, 250 fuzz, SIMD-vs-scalar, roundtrip, property invariants, real-file validation with 228 public samples). Includes lossless roundtrip for RGB565 (65,536 values, pixel-perfect) and RGB555 (32,768 values, pixel-perfect), and lossy YUV roundtrip for UYVY and YCbCr420 (gradient, ±5 tolerance).
 5. **Review cycles** — 4 rounds of 5-agent adversarial review. ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth hardening.
 6. **Release** — Windows binary (1.4 MB native AOT), published to GitHub Releases. SDK sample PR submitted to ImageGlass/SDK (closed — SDK repo is SDK-only; plugin sharing platform expected later).
 7. **Documentation** — All 17 references credited in README.
@@ -163,14 +163,15 @@ The plugin was developed through an iterative research-and-review pipeline:
 
 ### Key source files
 
-| File                                          | Description                                                                                                                                         |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~887 lines)                                                                     |
-| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, YUV422, YCbCr420 (~605 lines)                                                           |
-| `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                               |
-| `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                                   |
-| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged on first decode, overridable without recompile)                                                       |
-| `src/IthmbCodec/test/`                        | xUnit test project (312 tests) --- exhaustive RGB565+RGB555, SIMD-vs-scalar, fuzz, roundtrip, EXIF, property invariants, cross-reference validation |
+| File                                          | Description                                                                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~887 lines)                                                                    |
+| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, RGB555, UYVY, YCbCr420 (~605 lines)                                                    |
+| `src/IthmbCodec/IthmbCodecPlugin.Encoding.cs` | Synthetic file encoder for all 5 raw formats (RGB565, RGB555, UYVY, YCbCr420, CLCL) — used by roundtrip tests                                      |
+| `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                              |
+| `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                                  |
+| `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged on first decode, overridable without recompile)                                                      |
+| `src/IthmbCodec/test/`                        | xUnit test project (317 tests) --- exhaustive RGB565+RGB555 roundtrip (65K+32K values), SIMD-vs-scalar, 250 fuzz, YUV roundtrip, EXIF, JSON parser |
 
 ### Raw profile definitions
 
