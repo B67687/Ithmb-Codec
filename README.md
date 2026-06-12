@@ -255,7 +255,7 @@ If the plugin doesn't work for your files, try [ithmb.org](https://ithmb.org) --
 
 ## References and Acknowledgments
 
-Every known open-source `.ithmb` implementation (17 total) was surveyed across GitHub, Codeberg, GitLab, SourceHut, Bitbucket, Gitee, and SourceForge.
+Every known open-source `.ithmb` implementation (25 total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge.
 
 ### Directly incorporated (MIT-licensed)
 
@@ -281,6 +281,13 @@ Every known open-source `.ithmb` implementation (17 total) was surveyed across G
 | [**Steee29/ithmb_converter**](https://github.com/Steee29/ithmb_converter)                                                        | Steee29            | Python iOS 1.x converter. Format table: 3004=55×55, 3009=120×160, 3011=75×75 — differs from our libgpod-sourced dimensions, suggesting firmware version variation.                                                       |
 | [**wrinklykong/pyithmb**](https://github.com/wrinklykong/pyithmb)                                                                | wrinklykong        | iPod nano CLCL nibble-chroma decoder confirming the Keith Wiley packing method.                                                                                                                                          |
 | [**thomas-alrek/iPod-photo-database**](https://github.com/thomas-alrek/iPod-photo-database)                                      | thomas-alrek       | Node.js Photo Database parser with ithmb → JPEG conversion.                                                                                                                                                              |
+| [**epireyn/ithmb-rs**](https://gitlab.com/epireyn/ithmb-rs)                                                                      | epireyn            | Rust implementation supporting profiles 1024, 1066, 1067 (iPod 6G). GPLv3.                                                                                                                                               |
+| [**Keipydesu/ipod-convert**](https://github.com/Keipydesu/ipod-convert)                                                          | Keipydesu          | Python converter, profiles 1066/1067 with F1067 padded YCbCr support. MIT.                                                                                                                                               |
+| [**devm18426/mhfd_extractor**](https://github.com/devm18426/mhfd_extractor)                                                      | devm18426          | Python MHFD chunk parser confirming UYVY interlaced storage format for F1019.                                                                                                                                            |
+| [**moerdowo/Minpod**](https://github.com/moerdowo/Minpod)                                                                        | moerdowo           | Swift iPod sync tool. Creates .ithmb files for album art via ArtworkDB. MIT.                                                                                                                                             |
+| [**atimevil/Ithmb-Converter**](https://github.com/atimevil/Ithmb-Converter)                                                      | atimevil           | Korean Python converter with AI upscaling (Real-ESRGAN). Profiles 1015/1019/1024/1036. MIT.                                                                                                                              |
+| [**yosoyemi/ithmb-converter-a-jpg**](https://github.com/yosoyemi/ithmb-converter-a-jpg)                                          | yosoyemi           | Simple Python extractor, F1019 UYVY big-endian decode with BT.601-like coefficients. MIT.                                                                                                                                |
+| [**Bionded/pygpod**](https://github.com/Bionded/pygpod)                                                                          | Bionded            | Pure-Python libgpod port. Complete iPod database library with ithmb encode/decode.                                                                                                                                       |
 
 ### Color conversion references
 
