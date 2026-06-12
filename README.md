@@ -1,6 +1,6 @@
 # ITHMB Codec for ImageGlass v10
 
-A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 29 profiles (18 photo + 6 cover art + 4 iPhone RGB555 + 1 padded YCbCr420) covering iPod Photo through iPhone 2G.
+A Native AOT C# codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files. Primarily works by locating embedded JPEG payloads inside `.ithmb` files and decoding them via StbImageSharp. Also includes SIMD-accelerated decoders (SSE2/SSSE3/Vector128) for 47 profiles (22 photo + 25 cover art) covering iPod Photo through iPhone 2G, aggregated from iOpenPod, libgpod, Keith's iPod Photo Reader, and the original iLounge format specification thread.
 
 Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache --- **100% extraction rate**. Additionally validated against **228 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
 
@@ -174,7 +174,7 @@ The plugin was developed through an iterative research-and-review pipeline:
 
 ### Raw profile definitions
 
-29 profiles are defined based on known iPod/iPhone thumbnail formats, aggregated from iOpenPod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
+47 profiles are defined based on known iPod/iPhone thumbnail and album art formats, aggregated from iOpenPod (50+ entries), libgpod, Keith's iPod Photo Reader, and the original iLounge format specification thread. Additional profiles can be added at runtime via an external `profiles.json` sidecar file (shipped with the plugin, no recompile needed).
 
 > **Note:** iOS 1.x firmwares used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per [Steee29/ithmb_converter](https://github.com/Steee29/ithmb_converter)). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 
@@ -183,29 +183,47 @@ The plugin was developed through an iterative research-and-review pipeline:
 | 1007    | 480×864    | RGB565      | iPod nano 7G (swapped dimensions)       |
 | 1005    | 80×80      | RGB565      | iPod Nano 7G (photo thumbnail)          |
 | 1009    | 42×30      | RGB565      | iPod Photo 4G (smallest thumbnail)      |
+| 1010    | 240×240    | RGB565      | Nano 7G (cover art large)               |
 | 1013    | 220×176    | RGB565 BE   | iPod Photo 4G (full-screen, big-endian) |
 | 1015    | 130×88     | RGB565      | iPod Photo 4G (slideshow browser)       |
+| 1016    | 140×140    | RGB565      | iPod Photo 4G (cover art)               |
+| 1017    | 56×56      | RGB565      | iPod Photo 4G (cover art)               |
 | 1019    | 720×480    | YUV422      | iPod Photo/Video (TV-out, interlaced)   |
 | 1020    | 176×220    | RGB565 BE   | iPod (portrait thumb, BE, rotated)      |
 | 1023    | 176×132    | RGB565 BE   | iPod Nano 1G/2G (landscape, big-endian) |
 | 1024    | 320×240    | RGB565      | iPod Classic 5G/6G (full-screen)        |
+| 1027    | 100×100    | RGB565      | Nano/Classic (cover art)                |
+| 1028    | 100×100    | RGB565      | iPod Video 5G (cover art)               |
+| 1029    | 200×200    | RGB565      | iPod Video 5G (cover art)               |
 | 1031    | 42×42      | RGB565      | iPod Nano (album art small)             |
 | 1032    | 42×37      | RGB565      | iPod Nano 1G/2G (photo list thumb)      |
 | 1036    | 50×41      | RGB565      | iPod Classic (smallest thumbnail)       |
+| 1055    | 128×128    | RGB565      | Classic/Nano3G/Nano4G (cover art)       |
+| 1056    | 128×128    | RGB565      | Nano 5G (cover art)                     |
+| 1060    | 320×320    | RGB565      | Classic/Nano3G (cover art)              |
+| 1061    | 56×56      | RGB565      | Classic (cover art small)               |
 | 1066    | 64×64      | RGB565      | iPod Classic 6G (square photo)          |
 | 1067    | 720×480    | YCbCr 4:2:0 | iPod Classic 6G / Nano 3G (padded)      |
+| 1068    | 128×128    | RGB565      | Classic/Nano (cover art variant)        |
+| 1071    | 240×240    | RGB565      | Nano 4G (cover art large)               |
+| 1073    | 240×240    | RGB565      | Nano 5G/6G (cover art large)            |
+| 1074    | 50×50      | RGB565      | Nano 4G/5G/6G (cover art xsmall)        |
+| 1078    | 80×80      | RGB565      | Nano 4G/5G (cover art small)            |
 | 1079    | 80×80      | RGB565      | iPod Nano 4G (photo)                    |
 | 1083    | 240×320    | RGB565      | iPod Nano 4G (photo)                    |
+| 1084    | 240×240    | RGB565      | Nano 4G (cover art alt)                 |
+| 1085    | 88×88      | RGB565      | Nano 6G (cover art medium)              |
 | 1087    | 384×384    | RGB565      | iPod Nano 5G (photo)                    |
+| 1089    | 58×58      | RGB565      | Nano 6G (cover art small)               |
 | 1092    | 80×80      | RGB565      | iPod Nano 6G (photo thumbnail)          |
 | 1093    | 512×512    | RGB565      | iPod Nano 6G (full-screen photo)        |
-| 1016    | 140×140    | RGB565      | iPod Photo 4G (cover art)               |
-| 1017    | 56×56      | RGB565      | iPod Photo 4G (cover art)               |
-| 1028    | 100×100    | RGB565      | iPod Video 5G (cover art)               |
-| 1029    | 200×200    | RGB565      | iPod Video 5G (cover art)               |
-| 1055    | 128×128    | RGB565      | Classic/Nano3G/Nano4G (cover art)       |
-| 1060    | 320×320    | RGB565      | Classic/Nano3G (cover art)              |
+| 2002    | 50×50      | RGB565 BE   | iPod Mobile / Motorola ROKR (cover art) |
+| 2003    | 150×150    | RGB565 BE   | iPod Mobile / Motorola ROKR (cover art) |
+| 3001    | 256×256    | RGB555      | iPod touch (cover art large)            |
+| 3002    | 128×128    | RGB555      | iPod touch (cover art medium)           |
+| 3003    | 64×64      | RGB555      | iPod touch (cover art small)            |
 | 3004    | 56×55      | RGB555      | iPhone 1G/2G, iPod Touch (photo thumb)  |
+| 3005    | 320×320    | RGB555      | iPod touch (cover art xlarge)           |
 | 3008    | 640×480    | RGB555      | iPhone 1G/2G, iPod Touch (full-screen)  |
 | 3009    | 160×120    | RGB555      | iPhone 1G/2G, iPod Touch (photo prev)   |
 | 3011    | 80×79      | RGB555      | iPhone 1G/2G, iPod Touch (photo thumb)  |
