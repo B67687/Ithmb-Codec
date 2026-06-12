@@ -1665,4 +1665,244 @@ public unsafe class IthmbCodecTests
             cancellation: null, outInfo: null, outBuf: null);
         Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
     }
+
+    // ---- Roundtrip tests: encode → decode → compare pixel-perfect ----
+
+    [Fact]
+    public void Roundtrip_Rgb565_Exhaustive()
+    {
+        // Test all 65,536 RGB565 values at 64×1024 for full coverage
+        var bgra = new byte[65536 * 4];
+        for (int i = 0; i < 65536; i++)
+        {
+            ushort rgb565 = (ushort)i;
+            int r5 = (rgb565 >> 11) & 0x1F;
+            int g6 = (rgb565 >> 5) & 0x3F;
+            int b5 = rgb565 & 0x1F;
+            // MSB-replication (same as decoder uses)
+            bgra[i * 4] = (byte)((b5 << 3) | (b5 >> 2));         // B
+            bgra[i * 4 + 1] = (byte)((g6 << 2) | (g6 >> 4));     // G
+            bgra[i * 4 + 2] = (byte)((r5 << 3) | (r5 >> 2));     // R
+            bgra[i * 4 + 3] = 255;
+        }
+
+        // Encode then decode
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1007, Width: 65536, Height: 1,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: 65536 * 2);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, 65536, 1, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.NotEqual((nint)0, (nint)outBuf->Data);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, 65536 * 4);
+            for (int i = 0; i < 65536 * 4; i++)
+            {
+                if (decoded[i] != bgra[i])
+                {
+                    int px = i / 4;
+                    int ch = i % 4;
+                    Assert.Equal(bgra[i], decoded[i]);
+                }
+            }
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void Roundtrip_Rgb555_Exhaustive()
+    {
+        var bgra = new byte[32768 * 4];
+        for (int i = 0; i < 32768; i++)
+        {
+            ushort rgb555 = (ushort)i;
+            int r5 = (rgb555 >> 10) & 0x1F;
+            int g5 = (rgb555 >> 5) & 0x1F;
+            int b5 = rgb555 & 0x1F;
+            bgra[i * 4] = (byte)((b5 << 3) | (b5 >> 2));
+            bgra[i * 4 + 1] = (byte)((g5 << 3) | (g5 >> 2));
+            bgra[i * 4 + 2] = (byte)((r5 << 3) | (r5 >> 2));
+            bgra[i * 4 + 3] = 255;
+        }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 3008, Width: 32768, Height: 1,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb555,
+            FrameByteLength: 32768 * 2);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, 32768, 1, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.NotEqual((nint)0, (nint)outBuf->Data);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, 32768 * 4);
+            for (int i = 0; i < 32768 * 4; i++)
+                Assert.Equal(bgra[i], decoded[i]);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void Roundtrip_Uyvy_Gradient()
+    {
+        // UYVY encode→decode with smooth gradient (realistic — adjacent pixels similar)
+        // Random colors cause large chroma averaging error; gradients do not.
+        int w = 64, h = 16;
+        var bgra = new byte[w * h * 4];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                int off = (y * w + x) * 4;
+                bgra[off] = (byte)((x * 255) / w);      // B gradient horizontal
+                bgra[off + 1] = (byte)((y * 255) / h);  // G gradient vertical
+                bgra[off + 2] = (byte)(((x + y) * 128) / (w + h)); // R diagonal
+                bgra[off + 3] = 255;
+            }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1019, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Yuv422,
+            FrameByteLength: w * h * 2);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, w * h * 4);
+            int maxError = 0, totalError = 0;
+            for (int i = 0; i < w * h; i++)
+            {
+                int pxOff = i * 4;
+                int dr = Math.Abs(decoded[pxOff + 2] - bgra[pxOff + 2]);
+                int dg = Math.Abs(decoded[pxOff + 1] - bgra[pxOff + 1]);
+                int db = Math.Abs(decoded[pxOff] - bgra[pxOff]);
+                maxError = Math.Max(maxError, Math.Max(dr, Math.Max(dg, db)));
+                totalError += dr + dg + db;
+                Assert.Equal(255, decoded[pxOff + 3]);
+            }
+            // YUV is lossy: max error per channel ≤ 5 for smooth gradient data
+            Assert.InRange(maxError, 0, 5);
+            // Average error per channel per pixel ≤ 1.5
+            int avgError = totalError / (w * h * 3);
+            Assert.InRange(avgError, 0, 2);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void Roundtrip_Ycbcr420_Gradient()
+    {
+        // Smooth gradient test — realistic for real photos where adjacent pixels are similar
+        int w = 64, h = 64;
+        var bgra = new byte[w * h * 4];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                int off = (y * w + x) * 4;
+                bgra[off] = (byte)((x * 255) / w);
+                bgra[off + 1] = (byte)((y * 255) / h);
+                bgra[off + 2] = (byte)(((x + y) * 128) / (w + h));
+                bgra[off + 3] = 255;
+            }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1067, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Ycbcr420,
+            FrameByteLength: w * h * 2,
+            IsPadded: true);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, w * h * 4);
+            int maxError = 0, totalError = 0;
+            for (int i = 0; i < w * h; i++)
+            {
+                int pxOff = i * 4;
+                int dr = Math.Abs(decoded[pxOff + 2] - bgra[pxOff + 2]);
+                int dg = Math.Abs(decoded[pxOff + 1] - bgra[pxOff + 1]);
+                int db = Math.Abs(decoded[pxOff] - bgra[pxOff]);
+                maxError = Math.Max(maxError, Math.Max(dr, Math.Max(dg, db)));
+                totalError += dr + dg + db;
+                Assert.Equal(255, decoded[pxOff + 3]);
+            }
+            // YCbCr 4:2:0 (2×2 chroma block) has more averaging than UYVY
+            Assert.InRange(maxError, 0, 6);
+            int avgError = totalError / (w * h * 3);
+            Assert.InRange(avgError, 0, 2);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void Roundtrip_AllProfiles_NonCrashing()
+    {
+        // Smoke test: every known profile at least doesn't crash on encode→decode
+        var profiles = IthmbCodecPlugin.KnownProfiles;
+        var bgra = new byte[64 * 64 * 4];
+        for (int i = 0; i < 64 * 64; i++)
+        {
+            bgra[i * 4] = (byte)(i & 0xFF);      // B
+            bgra[i * 4 + 1] = (byte)((i * 7) & 0xFF); // G
+            bgra[i * 4 + 2] = (byte)((i * 13) & 0xFF); // R
+            bgra[i * 4 + 3] = 255;
+        }
+
+        foreach (var kvp in profiles)
+        {
+            var profile = kvp.Value;
+            try
+            {
+                byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, 64, 64, profile);
+
+                var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+                    (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+                var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+                    (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+                try
+                {
+                    var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                        cancellation: null, outInfo, outBuf);
+                    // Smoke: any status is OK except Internal
+                    Assert.NotEqual(ImageGlass.SDK.Plugins.IGStatus.Internal, status);
+                }
+                finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Profile {profile.Prefix} ({profile.Encoding}) failed: {ex.Message}");
+            }
+        }
+    }
 }
