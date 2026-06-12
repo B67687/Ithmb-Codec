@@ -19,3 +19,6 @@ imageglass-sdk/
 
 # Release artifacts
 *.zip
+
+# AGENT context
+
