@@ -530,7 +530,12 @@ internal static unsafe partial class IthmbCodecPlugin
                 return IGStatus.DecodeFailed;
             }
         }
-        catch (Exception)
+        catch (Exception) when (!System.Diagnostics.Debugger.IsAttached)
+#pragma warning disable CS0168 // Deliberate catch-all: Native AOT plugin error boundary — 
+        // any exception from unsafe decode must be caught to avoid crashing the host.
+        // Specific exception types (AccessViolationException, OutOfMemoryException)
+        // are unreliable in Native AOT trimming scenarios.
+#pragma warning restore CS0168
         {
             NativeMemory.Free(pixels);
             return IGStatus.Internal;
@@ -587,11 +592,9 @@ internal static unsafe partial class IthmbCodecPlugin
                 for (int x = 0; x < srcW; x++)
                 {
                     int srcIdx = (y * srcW + x) * 4;
-                    int dstIdx;
-                    if (rotation == 90)
-                        dstIdx = (x * dstW + (srcH - 1 - y)) * 4;
-                    else // 270
-                        dstIdx = ((srcW - 1 - x) * dstW + y) * 4;
+                    int dstIdx = rotation == 90
+                        ? (x * dstW + (srcH - 1 - y)) * 4
+                        : ((srcW - 1 - x) * dstW + y) * 4;
 
                     rotated[dstIdx]     = pixels[srcIdx];
                     rotated[dstIdx + 1] = pixels[srcIdx + 1];
