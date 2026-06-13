@@ -20,7 +20,7 @@ unsafe class Program
         {
             Console.Error.WriteLine("Usage: IthmbDecoder <input.ithmb> [output.bmp]");
             Console.Error.WriteLine("Decodes an Apple .ithmb thumbnail-cache file to BMP.");
-            Console.Error.WriteLine("If output path is omitted, writes to <input>.png in the same directory.");
+            Console.Error.WriteLine("If output path is omitted, writes to <input>.bmp in the same directory.");
             return 0;
         }
 
@@ -31,7 +31,7 @@ unsafe class Program
             return 1;
         }
 
-        string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(inputPath, ".png");
+        string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(inputPath, ".bmp");
 
         // Build an IGStringRef for the file path (UTF-16, as expected by the plugin)
         char[] pathChars = (inputPath + "\0").ToCharArray();

@@ -37,23 +37,28 @@ public unsafe partial class IthmbCodecTests
 
     // ---- Test 3: Fuzz — random buffers (no crash, valid output ranges) ----
 
-    public static IEnumerable<object[]> GetRandomValidBuffers()
+    private static IEnumerable<object[]> GetBuffers(int seed)
     {
-        var rng = new Random(42);
-        // Use small valid dimensions so buffers match expected sizes
+        var rng = new Random(seed);
         int[] sizes = [2, 4, 8, 16, 32, 64, 128];
         for (int i = 0; i < 50; i++)
         {
             int w = sizes[rng.Next(sizes.Length)];
             int h = sizes[rng.Next(sizes.Length)];
-            var buf = new byte[w * h * 2]; // correct size for RGB565/YUV422
+            var buf = new byte[w * h * 2];
             rng.NextBytes(buf);
             yield return [buf, w, h];
         }
     }
 
+    public static IEnumerable<object[]> GetBuffers_Rgb565() => GetBuffers(42);
+    public static IEnumerable<object[]> GetBuffers_Yuv422() => GetBuffers(43);
+    public static IEnumerable<object[]> GetBuffers_Ycbcr420() => GetBuffers(44);
+    public static IEnumerable<object[]> GetBuffers_Interlaced() => GetBuffers(45);
+    public static IEnumerable<object[]> GetBuffers_Rgb555() => GetBuffers(46);
+
     [Theory]
-    [MemberData(nameof(GetRandomValidBuffers))]
+    [MemberData(nameof(GetBuffers_Rgb565))]
     public void Fuzz_Rgb565_NoCrash(byte[] buf, int w, int h)
     {
         int allocSize = Math.Max(4096, w * h * 4);
@@ -76,7 +81,7 @@ public unsafe partial class IthmbCodecTests
     }
 
     [Theory]
-    [MemberData(nameof(GetRandomValidBuffers))]
+    [MemberData(nameof(GetBuffers_Yuv422))]
     public void Fuzz_Yuv422_NoCrash(byte[] buf, int w, int h)
     {
         int allocSize = Math.Max(4096, w * h * 4);
@@ -99,7 +104,7 @@ public unsafe partial class IthmbCodecTests
     }
 
     [Theory]
-    [MemberData(nameof(GetRandomValidBuffers))]
+    [MemberData(nameof(GetBuffers_Ycbcr420))]
     public void Fuzz_Ycbcr420_NoCrash(byte[] buf, int w, int h)
     {
         // YCbCr420 needs less: w*h*3/2 per frame
@@ -123,7 +128,7 @@ public unsafe partial class IthmbCodecTests
     }
 
     [Theory]
-    [MemberData(nameof(GetRandomValidBuffers))]
+    [MemberData(nameof(GetBuffers_Interlaced))]
     public void Fuzz_InterlacedYuv422_NoCrash(byte[] buf, int w, int h)
     {
         int allocSize = Math.Max(4096, w * h * 4);

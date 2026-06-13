@@ -162,7 +162,7 @@ public unsafe partial class IthmbCodecTests
     // ---- P4e: Fuzz (50 random buffers) ----
 
     [Theory]
-    [MemberData(nameof(GetRandomValidBuffers))]
+    [MemberData(nameof(GetBuffers_Rgb555))]
     public void Fuzz_Rgb555_NoCrash(byte[] buf, int w, int h)
     {
         int allocSize = Math.Max(4096, w * h * 4);
