@@ -21,6 +21,9 @@ Thumbs.db
 # Internal/handover docs (not part of the plugin distribution)
 
 
+# Agentic workflows propagated shims
+propagated/
+
 # Python Ruff linter cache
 
 
