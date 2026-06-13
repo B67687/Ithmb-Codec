@@ -467,10 +467,45 @@ internal static unsafe partial class IthmbCodecPlugin
         return true;
     }
 
+    // ---- CL per-pixel nibble chroma (Keith's "CL", Methods 3/4) ----
+    //
+    // Byte layout per pixel: [Cb:Cr_nibble][Y] — 2 bytes, 1 pixel
+    // High nibble = Cb (4-bit, range 0–15), low nibble = Cr (4-bit, range 0–15)
+    // Each pixel has independent chroma (not shared like CLCL).
+    //
+    // Chroma conversion (4-bit → 8-bit): multiply by 16 (shifts nibble to byte range 0–240).
+    // Same BT.601 YUV→RGB math as standard YUV422.
+    //
+    // Confirmed against Keith's iPod Photo Reader source (Methods 3 and 4).
+    internal static bool DecodeYuv422Cl(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
+        long expectedBytes = (long)w * h * 2;
+        if (src.Length < expectedBytes) return false;
+
+        for (int y = 0; y < h; y++)
+        {
+            int rowStart = y * w * 2;
+            byte* pDstRow = dst + y * w * 4;
+            for (int x = 0; x < w; x++)
+            {
+                int idx = rowStart + x * 2;
+                int packed = src[idx];
+                int cb = ((packed >> 4) & 0x0F) * 16 - 128;
+                int cr = (packed & 0x0F) * 16 - 128;
+                int yy = src[idx + 1];
+
+                WriteYuvPixel(pDstRow, yy, cb, cr);
+                pDstRow += 4;
+            }
+        }
+        return true;
+    }
+
     // ---------- YCbCr 4:2:0 (planar) ----------
 
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
-    internal static bool DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    internal static bool DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h,
+        bool swapChromaPlanes = false)
     {
         int ySize = w * h;
         int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
@@ -478,16 +513,17 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
 
         // SIMD path: requires even dimensions (2×2 blocks fit perfectly in Vector128<int>)
-        if (Vector128.IsHardwareAccelerated && (w & 1) == 0 && (h & 1) == 0)
+        // Note: SIMD path always uses standard Cb/Cr order (swapChromaPlanes not supported there)
+        if (!swapChromaPlanes && Vector128.IsHardwareAccelerated && (w & 1) == 0 && (h & 1) == 0)
             DecodeYcbcr420_SIMD(src, dst, w, h, ySize, uvSize);
         else
-            DecodeYcbcr420_Scalar(src, dst, w, h, ySize, uvSize);
+            DecodeYcbcr420_Scalar(src, dst, w, h, ySize, uvSize, swapChromaPlanes);
         return true;
     }
 
     /// <summary>Scalar fallback for YCbCr 4:2:0 (extracted from original body).</summary>
     private static void DecodeYcbcr420_Scalar(ReadOnlySpan<byte> src, byte* dst,
-        int w, int h, int ySize, int uvSize)
+        int w, int h, int ySize, int uvSize, bool swapChromaPlanes = false)
     {
         int uvStride = (w + 1) / 2;
         for (int y = 0; y < h; y += 2)
@@ -495,8 +531,17 @@ internal static unsafe partial class IthmbCodecPlugin
             for (int x = 0; x < w; x += 2)
             {
                 int uvIdx = ySize + (y / 2) * uvStride + (x / 2);
-                int cb = src[uvIdx] - 128;
-                int cr = src[uvIdx + uvSize] - 128;
+                int cb, cr;
+                if (swapChromaPlanes)
+                {
+                    cr = src[uvIdx] - 128;
+                    cb = src[uvIdx + uvSize] - 128;
+                }
+                else
+                {
+                    cb = src[uvIdx] - 128;
+                    cr = src[uvIdx + uvSize] - 128;
+                }
 
                 for (int dy = 0; dy < 2 && y + dy < h; dy++)
                 {

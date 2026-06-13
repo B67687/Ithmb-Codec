@@ -13,7 +13,9 @@
   //   littleEndian: bool (optional, default true)
   //   isPadded: bool (optional, default false — for YCbCr420 with 2-Bpp frames)
   //   isInterlaced: bool (optional, default false — for F1019 YUV422 field-split)
-  //   isClcl: bool (optional, default false — for CLCL nibble-chroma YUV422)
+  //   isClcl: bool (optional, default false — for CLCL nibble-chroma YUV422, shared chroma)
+  //   isCl: bool (optional, default false — for CL per-pixel nibble-chroma YUV422)
+  //   swapChromaPlanes: bool (optional, default false — swaps Cb/Cr in YCbCr 4:2:0)
   //
   // Example — iPod Photo 4G full-screen (built-in, shown here for reference):
   // {"prefix": 1013, "width": 220, "height": 176, "encoding": "rgb565", "frameBytes": 77440, "littleEndian": false}
