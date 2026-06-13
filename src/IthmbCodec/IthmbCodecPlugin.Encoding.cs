@@ -181,6 +181,35 @@ internal static unsafe partial class IthmbCodecPlugin
         return result;
     }
 
+    // ---- CL per-pixel nibble-chroma encoder (Keith's CL, Methods 3/4) ----
+    internal static byte[] EncodeCl(ReadOnlySpan<byte> bgra, int w, int h)
+    {
+        // CL: 2-bytes-per-pixel, each pixel has its own chroma nibble
+        // Byte layout per pixel: [Cb:Cr_nibble][Y] — 2 bytes, 1 pixel
+        int pixelCount = w * h;
+        var result = new byte[pixelCount * 2];
+
+        for (int i = 0; i < pixelCount; i++)
+        {
+            int px = i * 4;
+            int r = bgra[px + 2], g = bgra[px + 1], b = bgra[px];
+
+            int y = Bt601Y(r, g, b);
+            int cb = Bt601Cb(r, g, b);
+            int cr = Bt601Cr(r, g, b);
+
+            // Pack chroma as 4-bit nibbles: Cb in high 4 bits, Cr in low 4 bits
+            int cbNibble = ClampU8(cb) >> 4;
+            int crNibble = ClampU8(cr) >> 4;
+            byte chromaNibble = (byte)((cbNibble << 4) | crNibble);
+
+            int dstOff = i * 2;
+            result[dstOff]     = chromaNibble;  // [0]: packed CbCr
+            result[dstOff + 1] = ClampU8(y);    // [1]: Y
+        }
+        return result;
+    }
+
     // ---- File builder: creates a complete F-prefix .ithmb file ----
     internal static byte[] BuildIthmbFile(ReadOnlySpan<byte> bgra, int w, int h, IthmbVariantProfile profile)
     {
@@ -203,11 +232,15 @@ internal static unsafe partial class IthmbCodecPlugin
             encoded = InterlaceFields(encoded, fw, fh, profile.Encoding);
         }
 
-        // 3. Handle CLCL chroma packing
-        if (profile.ClclChroma)
+        // 3. Handle CL/CLCL chroma packing
+        if (profile.ClChroma)
         {
-            // For now, CLCL uses the same encoding path with nibble packing handled in EncodeClcl
-            // Re-encode with CLCL-specific format
+            // Per-pixel nibble chroma (Keith's CL, Methods 3/4)
+            encoded = EncodeCl(bgra, fw, fh);
+        }
+        else if (profile.ClclChroma)
+        {
+            // Shared 2-pixel nibble chroma
             encoded = EncodeClcl(bgra, fw, fh);
         }
 

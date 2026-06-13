@@ -51,12 +51,16 @@ internal static unsafe partial class IthmbCodecPlugin
     // ------------------------------ Raw profile enums ------------------------------
     internal enum IthmbEncoding { Rgb565, Rgb555, Yuv422, Ycbcr420 }
 
+    /// <summary>Raw profile for F-prefix .ithmb files (single image, no container).</summary>
+    /// <param name="SwapChromaPlanes">If true, swaps Cb/Cr order in YCbCr 4:2:0 (some iPod variants).</param>
+    /// <param name="ClChroma">Per-pixel 4-bit nibble chroma (Keith CL, not CLCL).</param>
     internal readonly record struct IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true,
         bool IsPadded = false, bool IsInterlaced = false,
-        bool ClclChroma = false);
+        bool ClclChroma = false,
+        bool SwapChromaPlanes = false, bool ClChroma = false);
 
     internal static volatile FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
@@ -504,12 +508,14 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
                 IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian),
-                IthmbEncoding.Yuv422 => profile.ClclChroma
+                IthmbEncoding.Yuv422 => profile.ClChroma
+                    ? DecodeYuv422Cl(raw, pixels, w, h)
+                    : profile.ClclChroma
                     ? DecodeYuv422Clcl(raw, pixels, w, h)
                     : profile.IsInterlaced
                     ? DecodeYuv422Interlaced(raw, pixels, w, h)
                     : DecodeYuv422(raw, pixels, w, h),
-                IthmbEncoding.Ycbcr420 => DecodeYcbcr420(raw, pixels, w, h),
+                IthmbEncoding.Ycbcr420 => DecodeYcbcr420(raw, pixels, w, h, profile.SwapChromaPlanes),
                 _ => false,
             };
             if (!ok)
@@ -735,7 +741,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
             int prefix = 0, width = 0, height = 0, frameBytes = 0;
             string encoding = "rgb565";
-            bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false;
+            bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false;
 
             while (pos < json.Length)
             {
@@ -763,6 +769,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "isPadded": padded = ParseJsonBool(json, ref pos); break;
                     case "isInterlaced": interlaced = ParseJsonBool(json, ref pos); break;
                     case "isClcl": clcl = ParseJsonBool(json, ref pos); break;
+                    case "isCl": clSingle = ParseJsonBool(json, ref pos); break;
+                    case "swapChromaPlanes": swapPlanes = ParseJsonBool(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos); break;
                 }
 
@@ -778,7 +786,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     : string.Equals(encoding, "rgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb555
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
-                    SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl);
+                    SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl,
+                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle);
             }
 
             SkipWhitespace(json, ref pos);

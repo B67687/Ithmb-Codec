@@ -33,7 +33,7 @@ Tested with **956 T-prefix files** from an iPhone 5 (iOS 7) — **100% extractio
 
 1. **Peek read** — reads the first 4 MB of the file for JPEG scanning, then seeks the exact JPEG byte range from the FileStream (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos).
 2. **JPEG scan** — SIMD-accelerated `Span.IndexOf` (SSE2 on x64, NEON on ARM64) locates a SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via StbImageSharp, and its EXIF orientation tag (0x0112) is parsed for auto-rotation in ImageGlass.
-3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 47 known profiles and runs the appropriate raw decoder (RGB565, RGB555, UYVY, YCbCr420, or CLCL nibble-chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is rejected as unrecognized.
+3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 47 known profiles and runs the appropriate raw decoder (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is rejected as unrecognized. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, and padded frame handling.
 
 ### File size guard
 

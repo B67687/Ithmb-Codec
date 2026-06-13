@@ -59,3 +59,19 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 
 > The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets orientation (1–8). ImageGlass uses this to auto-rotate.
+
+## Advanced Profile Flags
+
+These flags can be set in `profiles.json` for fine-tuning raw decoder behavior:
+
+| Field              | Type | Default | Description                                                                                                       |
+| ------------------ | ---- | ------- | ----------------------------------------------------------------------------------------------------------------- |
+| `littleEndian`     | bool | `true`  | Byte order for 16-bit RGB (RGB565/RGB555). Set `false` for big-endian (iPod Photo 4G).                            |
+| `swapsDimensions`  | bool | `false` | If true, swaps width and height (e.g., profile 1020 stores 220×176 but displays as 176×220 portrait).             |
+| `isPadded`         | bool | `false` | Frame has trailing padding beyond valid pixel data (used by profile 1067 YCbCr 4:2:0).                            |
+| `isInterlaced`     | bool | `false` | Even/odd rows stored separately (used by profile 1019 UYVY interlaced).                                           |
+| `isClcl`           | bool | `false` | CLCL nibble-chroma: 4-bit chroma shared across 2 pixels (4 bytes per macropixel).                                 |
+| `isCl`             | bool | `false` | CL per-pixel nibble-chroma: each pixel has its own 4-bit chroma (2 bytes per pixel). Keith's Methods 3/4.         |
+| `swapChromaPlanes` | bool | `false` | Swaps Cb/Cr order in YCbCr 4:2:0 planar decode (Keith's Method 6). For iPod variants with reversed chroma planes. |
+
+> **CL vs CLCL:** The term CLCL (Chrominance, Luminance, Chrominance, Luminance) originates from Keith Wiley's original 2005 reverse engineering. CLCL shares one 8-bit Cb+Cr pair across 2 pixels (UYVY). The nibble-packed variant shares a single 4-bit Cb:Cr nibble across 2 pixels. "CL" (single) gives each pixel its own 4-bit chroma nibble. No known built-in profiles use `isCl` or `swapChromaPlanes` — they are safety nets for undocumented iPod variants.
