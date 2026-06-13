@@ -38,8 +38,10 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly byte[] JpegEoiMarker = [0xFF, 0xD9];
     private static readonly byte[] App1Marker = [0xFF, 0xE1];
 
-    // Size limits (documented rationale in DecodeInternal)
-    private const long MaxDecodeFileSize = 100L * 1024 * 1024;   // 100 MB: prevents OOM on corrupt/malicious files
+    // Size limit: 50 MB prevents OOM on corrupt/malicious files while providing
+    // 32× headroom over the largest known real file (1.55 MB, FAU T412.ithmb)
+    // and 1.67× over the most extreme theoretical iPhone JPEG (30 MB, 48 MP).
+    private const long MaxDecodeFileSize = 50L * 1024 * 1024;
     private const int PeekBufferSize = 4 * 1024 * 1024;           // 4 MB: covers thumbnail JPEG headers + embedded JPEGs
     private const int MaxSignatureProbe = 4096;                    // 4 KB: covers JPEG SOI + marker segments
 
@@ -341,7 +343,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
-                // fileSize ≤ 100 MB (guarded at line 261), safe for int
+                // fileSize ≤ 50 MB (guarded at line 298), safe for int
                     return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }
@@ -412,9 +414,9 @@ internal static unsafe partial class IthmbCodecPlugin
         if (offset < 0 || length <= 0 || offset + length > data.Length)
             return IGStatus.DecodeFailed;
 
-        // Extract JPEG slice and decode via StbImageSharp (MIT, ~200KB, Native AOT compatible)
-        var jpegSlice = new byte[length];
-        Buffer.BlockCopy(data, offset, jpegSlice, 0, length);
+        // data is already an exact JPEG slice (caller at line 345 allocates jpegSlice with offset=0)
+        // Use it directly to avoid doubling peak memory for large embedded JPEGs.
+        var jpegSlice = data;
         ImageResult result;
         try
         {

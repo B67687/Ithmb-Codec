@@ -15,14 +15,8 @@
   //   isInterlaced: bool (optional, default false — for F1019 YUV422 field-split)
   //   isClcl: bool (optional, default false — for CLCL nibble-chroma YUV422)
   //
-  // Example — iPod Photo 4G full-screen:
-  {
-    "prefix": 1013,
-    "width": 220,
-    "height": 176,
-    "encoding": "rgb565",
-    "frameBytes": 77440
-  }
+  // Example — iPod Photo 4G full-screen (built-in, shown here for reference):
+  // {"prefix": 1013, "width": 220, "height": 176, "encoding": "rgb565", "frameBytes": 77440, "littleEndian": false}
   //
   // Album art / cover art formats (from iOpenPod format registry):
   // All use standard RGB565 LE encoding. Add any of these to enable new prefix support:

@@ -16,10 +16,12 @@ unsafe class Program
 {
     static int Main(string[] args)
     {
-        if (args.Length < 1)
+        if (args.Length < 1 || args[0] == "--help" || args[0] == "-h")
         {
             Console.Error.WriteLine("Usage: IthmbDecoder <input.ithmb> [output.bmp]");
-            return 1;
+            Console.Error.WriteLine("Decodes an Apple .ithmb thumbnail-cache file to BMP.");
+            Console.Error.WriteLine("If output path is omitted, writes to <input>.png in the same directory.");
+            return 0;
         }
 
         string inputPath = args[0];
@@ -73,7 +75,7 @@ unsafe class Program
                 }
 
                 // Write as BMP (no external dependencies, natively supported by Windows/ImageGlass)
-                WriteBgraAsBmp(rgba, w, h, outputPath);
+                WriteRgbaAsBmp(rgba, w, h, outputPath);
                 Console.Error.WriteLine($"Written: {outputPath}");
             }
             finally
@@ -88,9 +90,10 @@ unsafe class Program
         return 0;
     }
 
-    static void WriteBgraAsBmp(byte[] bgra, int w, int h, string path)
+    static void WriteRgbaAsBmp(byte[] rgba, int w, int h, string path)
     {
         // BMP format: 14-byte header + 40-byte DIB header + pixel data (BGRA, bottom-up)
+        // Input is RGBA; remap to BGRA for BMP.
         int rowStride = ((w * 32 + 31) / 32) * 4; // BMP row alignment to 4 bytes
         int pixelDataSize = rowStride * h;
         int fileSize = 14 + 40 + pixelDataSize;
@@ -126,10 +129,10 @@ unsafe class Program
             for (int x = 0; x < w; x++)
             {
                 int off = srcOff + x * 4;
-                row[x * 4]     = bgra[off];      // B
-                row[x * 4 + 1] = bgra[off + 1];  // G
-                row[x * 4 + 2] = bgra[off + 2];  // R
-                row[x * 4 + 3] = bgra[off + 3];  // A
+                row[x * 4]     = rgba[off + 2];  // B (from RGBA)
+                row[x * 4 + 1] = rgba[off + 1];  // G
+                row[x * 4 + 2] = rgba[off];      // R (from RGBA)
+                row[x * 4 + 3] = 255;            // A (opaque)
             }
             bw.Write(row, 0, rowStride);
         }

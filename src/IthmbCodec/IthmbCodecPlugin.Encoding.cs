@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace IthmbCodec;
 
-partial class IthmbCodecPlugin
+internal static unsafe partial class IthmbCodecPlugin
 {
     // BT.601 fixed-point coefficients (same as Decoding.cs, used for YUV encoding)
     // Forward transform: BGRA → YCbCr (full-range JPEG variant)
@@ -148,8 +148,8 @@ partial class IthmbCodecPlugin
     internal static byte[] EncodeClcl(ReadOnlySpan<byte> bgra, int w, int h)
     {
         // CLCL: 2-bytes-per-pixel, chroma packed as 4-bit nibbles
-        // Byte layout per 2-pixel block: [Y0, Y1, CbCr_nibbles, ...]
-        // See Decoding.cs DecodeClcl for the inverse
+        // Byte layout per macropixel (2 pixels): [CbCr_nibbles] [Y0] [CbCr_nibbles] [Y1] — 4 bytes
+        // See Decoding.cs DecodeYuv422Clcl for the inverse
         int pixelCount = w * h;
         var result = new byte[pixelCount * 2];
 
@@ -173,9 +173,10 @@ partial class IthmbCodecPlugin
             byte chromaNibble = (byte)((cbNibble << 4) | crNibble);
 
             int dstOff = i * 2;
-            result[dstOff] = ClampU8(y0);
-            result[dstOff + 1] = ClampU8(y1);
-            result[dstOff + 4] = chromaNibble;
+            result[dstOff]     = chromaNibble;          // [0]: packed CbCr
+            result[dstOff + 1] = ClampU8(y0);           // [1]: Y0
+            result[dstOff + 2] = chromaNibble;          // [2]: packed CbCr (same)
+            result[dstOff + 3] = ClampU8(y1);           // [3]: Y1
         }
         return result;
     }
@@ -232,7 +233,7 @@ partial class IthmbCodecPlugin
     // ---- Helper: interleave fields for interlaced formats ----
     private static byte[] InterlaceFields(byte[] planar, int w, int h, IthmbEncoding enc)
     {
-        int bpp = enc == IthmbEncoding.Yuv422 ? 2 : 2; // both RGB565 and UYVY are 2 Bpp
+        int bpp = 2; // both RGB565 and UYVY are 2 Bpp
         int rowStride = w * bpp;
         int halfRows = (h + 1) / 2;
         var result = new byte[planar.Length];
