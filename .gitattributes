@@ -1,0 +1,27 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# C# source
+*.cs text diff=csharp
+
+# Project files
+*.csproj text
+*.sln text
+*.slnx text
+
+# Documentation
+*.md text diff=markdown
+*.mmd text
+*.svg text
+
+# Config
+*.json text
+*.xml text
+
+# Binaries (should never be tracked, but mark as binary if they slip through)
+*.dll binary
+*.so binary
+*.dylib binary
+*.exe binary
+*.pdb binary
+*.zip binary

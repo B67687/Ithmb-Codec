@@ -5,6 +5,7 @@ obj/
 *.so
 *.dylib
 *.exe
+*.pdb
 
 # IDE and editors
 .vscode/
@@ -14,16 +15,17 @@ obj/
 .DS_Store
 Thumbs.db
 
-# SDK dependency (cloned locally, not committed)
-imageglass-sdk/
-
 # Release artifacts
 *.zip
 
-# AGENT context
+# Internal/handover docs (not part of the plugin distribution)
 
-HARDWARE_GUIDE.md
-ACADEMIC.md
+
+# Python Ruff linter cache
+
+
+# Mermaid diagram sources (regenerate from local mmdc tooling)
+docs/*.mmd
 
 # Sample .ithmb files (downloaded from public sources, not redistributed)
 samples/
