@@ -397,12 +397,7 @@ public unsafe partial class IthmbCodecTests
             var decoded = new Span<byte>((void*)outBuf->Data, 65536 * 4);
             for (int i = 0; i < 65536 * 4; i++)
             {
-                if (decoded[i] != bgra[i])
-                {
-                    int px = i / 4;
-                    int ch = i % 4;
-                    Assert.Equal(bgra[i], decoded[i]);
-                }
+                Assert.Equal(bgra[i], decoded[i]);
             }
         }
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
@@ -624,15 +619,13 @@ public unsafe partial class IthmbCodecTests
 
         var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
             (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
-        byte* dst = (byte*)NativeMemory.Alloc((nuint)(w * h * 4));
         try
         {
-            NativeMemory.Clear(dst, (nuint)(w * h * 4));
             var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
                 cancellation: null, outInfo, outBuf: null);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
         }
-        finally { NativeMemory.Free(dst); NativeMemory.Free(outInfo); }
+        finally { NativeMemory.Free(outInfo); }
     }
 
     [Fact]

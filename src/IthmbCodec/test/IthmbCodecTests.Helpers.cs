@@ -129,9 +129,10 @@ public unsafe partial class IthmbCodecTests
     /// <summary>Reference BT.601 forward transform matching iOpenPod's UYVY encoder.</summary>
     private static (int y, int u, int v) RgbToYuv(int r, int g, int b)
     {
-        int y = (int)(0.299 * r + 0.587 * g + 0.114 * b);
-        int u = (int)(-0.169 * r - 0.331 * g + 0.5 * b + 128);
-        int v = (int)(0.5 * r - 0.419 * g - 0.081 * b + 128);
+        // Match encoder's fixed-point BT.601 coefficients (Encoding.cs Bt601Y, Bt601Cb, Bt601Cr)
+        int y = (77 * r + 150 * g + 29 * b) >> 8;
+        int u = ((-43 * r - 85 * g + 128 * b) >> 8) + 128;
+        int v = ((128 * r - 107 * g - 21 * b) >> 8) + 128;
         return (Clamp(y, 0, 255), Clamp(u, 0, 255), Clamp(v, 0, 255));
     }
 
