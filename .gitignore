@@ -27,5 +27,5 @@ imageglass-sdk/
 samples/
 *.ithmb
 
-# CLI tool + sample download scripts (not part of the plugin distribution)
+# Sample download utilities (not part of the plugin distribution)
 scripts/
