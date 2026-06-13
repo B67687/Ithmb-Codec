@@ -30,6 +30,8 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 | **T-prefix** (e.g. `T####.ithmb`)   | Contains a single full-resolution photo as an embedded JPEG (JFIF or Exif). These are found in newer iOS device caches (iPhone 5 and later).                    | ✅ **Fully supported** --- the primary path. 956/956 verified.                                                                                                                        |
 | **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 47 known profiles (22 photo + 25 cover art). Roundtrip-tested via synthetic encoder (317 tests). See [raw profile table](#raw-profile-definitions). |
 
+<img src="docs/pipeline.svg" alt="Decode pipeline diagram" width="800">
+
 ### Decode pipeline
 
 1. **Read the file** --- a 4 MB header is read for JPEG scan, then the exact JPEG slice is seeked and read from the FileStream. Peak memory: ~5 MB for typical files.
@@ -146,6 +148,8 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 
 ## Pipeline
 
+<img src="docs/pipeline.svg" alt="Pipeline diagram" width="800">
+
 The plugin was developed through an iterative research-and-review pipeline:
 
 1. **Format survey** — 25 open-source .ithmb implementations found across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, and Gitee. Complete source analysis of each.
@@ -155,6 +159,10 @@ The plugin was developed through an iterative research-and-review pipeline:
 5. **Review cycles** — 4 rounds of 5-agent adversarial review. ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth hardening.
 6. **Release** — Windows binary (1.4 MB native AOT), published to GitHub Releases.
 7. **Documentation** — All 25 references credited in README.
+
+<img src="docs/architecture.svg" alt="Architecture diagram" width="800">
+
+### Key design decisions
 
 - **Single entry point** (`ig_plugin_get_api`) --- the only C export.
 - **Double-checked locking with `volatile`** in `GetApi` for thread-safe initialization (ARM64-safe).
