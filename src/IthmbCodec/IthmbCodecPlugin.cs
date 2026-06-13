@@ -54,13 +54,15 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Raw profile for F-prefix .ithmb files (single image, no container).</summary>
     /// <param name="SwapChromaPlanes">If true, swaps Cb/Cr order in YCbCr 4:2:0 (some iPod variants).</param>
     /// <param name="ClChroma">Per-pixel 4-bit nibble chroma (Keith CL, not CLCL).</param>
+    /// <param name="Rotation">Clockwise rotation in degrees (0, 90, 180, 270). Applied post-decode to BGRA output.</param>
     internal readonly record struct IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
         bool SwapsDimensions = false, bool LittleEndian = true,
         bool IsPadded = false, bool IsInterlaced = false,
         bool ClclChroma = false,
-        bool SwapChromaPlanes = false, bool ClChroma = false);
+        bool SwapChromaPlanes = false, bool ClChroma = false,
+        int Rotation = 0);
 
     internal static volatile FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
@@ -534,6 +536,13 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.Internal;
         }
 
+        // Apply post-decode rotation (speculative, for profiles with Rotation≠0)
+        if (profile.Rotation != 0 && w > 0 && h > 0)
+        {
+            RotateBgra(pixels, ref w, ref h, profile.Rotation);
+            stride = (ulong)w * 4UL;
+        }
+
         _liveBuffers[(nint)pixels] = 0;
         outBuf->Data = pixels;
         outBuf->Width = w;
@@ -545,6 +554,60 @@ internal static unsafe partial class IthmbCodecPlugin
 
 
     // ------------------------------ Helpers ------------------------------
+
+    /// <summary>Rotates a BGRA pixel buffer in place (90, 180, or 270 degrees clockwise). Updates w/h.</summary>
+    private static void RotateBgra(byte* pixels, ref int w, ref int h, int rotation)
+    {
+        if (rotation == 0) return;
+        int srcW = w, srcH = h;
+        int pixelCount = srcW * srcH;
+
+        // 180°: simple in-place swap of opposite pixels
+        if (rotation == 180)
+        {
+            for (int i = 0; i < pixelCount / 2; i++)
+            {
+                int j = pixelCount - 1 - i;
+                for (int c = 0; c < 4; c++)
+                {
+                    (pixels[j * 4 + c], pixels[i * 4 + c]) = (pixels[i * 4 + c], pixels[j * 4 + c]);
+                }
+            }
+            return;
+        }
+
+        // 90° or 270°: allocate temp buffer, rotate, copy back
+        int dstW = srcH, dstH = srcW;
+        int newSize = dstW * dstH * 4;
+        byte* rotated = (byte*)NativeMemory.Alloc((nuint)newSize);
+        try
+        {
+            for (int y = 0; y < srcH; y++)
+            {
+                for (int x = 0; x < srcW; x++)
+                {
+                    int srcIdx = (y * srcW + x) * 4;
+                    int dstIdx;
+                    if (rotation == 90)
+                        dstIdx = (x * dstW + (srcH - 1 - y)) * 4;
+                    else // 270
+                        dstIdx = ((srcW - 1 - x) * dstW + y) * 4;
+
+                    rotated[dstIdx]     = pixels[srcIdx];
+                    rotated[dstIdx + 1] = pixels[srcIdx + 1];
+                    rotated[dstIdx + 2] = pixels[srcIdx + 2];
+                    rotated[dstIdx + 3] = pixels[srcIdx + 3];
+                }
+            }
+            NativeMemory.Copy(rotated, pixels, (nuint)newSize);
+            w = dstW;
+            h = dstH;
+        }
+        finally
+        {
+            NativeMemory.Free(rotated);
+        }
+    }
 
     /// <summary>Populates an IGImageInfo with common defaults.</summary>
     private static void FillImageInfo(IGImageInfo* info, int w, int h, int hasAlpha, int orientation, long fileSize = -1)
@@ -746,6 +809,7 @@ internal static unsafe partial class IthmbCodecPlugin
             int prefix = 0, width = 0, height = 0, frameBytes = 0;
             string encoding = "rgb565";
             bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false;
+            int rotationDeg = 0;
 
             while (pos < json.Length)
             {
@@ -775,6 +839,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "isClcl": clcl = ParseJsonBool(json, ref pos); break;
                     case "isCl": clSingle = ParseJsonBool(json, ref pos); break;
                     case "swapChromaPlanes": swapPlanes = ParseJsonBool(json, ref pos); break;
+                    case "rotation": rotationDeg = ParseJsonInt(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos); break;
                 }
 
@@ -791,7 +856,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl,
-                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle);
+                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle, Rotation: rotationDeg);
             }
 
             SkipWhitespace(json, ref pos);

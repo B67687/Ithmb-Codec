@@ -216,35 +216,55 @@ internal static unsafe partial class IthmbCodecPlugin
         int fw = w, fh = h;
         if (profile.SwapsDimensions) { fw = h; fh = w; }
 
-        // 1. Encode pixels to the raw format
+        // 1. Apply pre-encode rotation (undecode the decode rotation)
+        ReadOnlySpan<byte> src = bgra;
+        byte[]? rotatedBuf = null;
+        if (profile.Rotation != 0 && w > 0 && h > 0)
+        {
+            rotatedBuf = new byte[w * h * 4];
+            bgra.CopyTo(rotatedBuf);
+            unsafe
+            {
+                fixed (byte* p = rotatedBuf)
+                {
+                    int rw = w, rh = h;
+                    // Reverse rotation: decode rotation + encode = identity
+                    int revRotation = (360 - profile.Rotation) % 360;
+                    RotateBgra(p, ref rw, ref rh, revRotation);
+                }
+            }
+            src = rotatedBuf;
+        }
+
+        // 2. Encode pixels to the raw format
         byte[] encoded = profile.Encoding switch
         {
-            IthmbEncoding.Rgb565 => EncodeRgb565(bgra, fw, fh, !profile.LittleEndian),
-            IthmbEncoding.Rgb555 => EncodeRgb555(bgra, fw, fh, !profile.LittleEndian),
-            IthmbEncoding.Yuv422 => EncodeUyvy(bgra, fw, fh),
-            IthmbEncoding.Ycbcr420 => EncodeYcbcr420(bgra, fw, fh),
+            IthmbEncoding.Rgb565 => EncodeRgb565(src, fw, fh, !profile.LittleEndian),
+            IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian),
+            IthmbEncoding.Yuv422 => EncodeUyvy(src, fw, fh),
+            IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh),
             _ => throw new ArgumentException($"Unknown encoding: {profile.Encoding}")
         };
 
-        // 2. Handle interlaced reordering (F1019: even fields first, then odd fields)
+        // 3. Handle interlaced reordering (F1019: even fields first, then odd fields)
         if (profile.IsInterlaced)
         {
             encoded = InterlaceFields(encoded, fw, fh, profile.Encoding);
         }
 
-        // 3. Handle CL/CLCL chroma packing
+        // 4. Handle CL/CLCL chroma packing
         if (profile.ClChroma)
         {
             // Per-pixel nibble chroma (Keith's CL, Methods 3/4)
-            encoded = EncodeCl(bgra, fw, fh);
+            encoded = EncodeCl(src, fw, fh);
         }
         else if (profile.ClclChroma)
         {
             // Shared 2-pixel nibble chroma
-            encoded = EncodeClcl(bgra, fw, fh);
+            encoded = EncodeClcl(src, fw, fh);
         }
 
-        // 4. Pad to FrameByteLength if needed
+        // 5. Pad to FrameByteLength if needed
         if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
         {
             var padded = new byte[profile.FrameByteLength];

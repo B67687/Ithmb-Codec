@@ -16,6 +16,7 @@
   //   isClcl: bool (optional, default false — for CLCL nibble-chroma YUV422, shared chroma)
   //   isCl: bool (optional, default false — for CL per-pixel nibble-chroma YUV422)
   //   swapChromaPlanes: bool (optional, default false — swaps Cb/Cr in YCbCr 4:2:0)
+  //   rotation: int (optional, default 0 — clockwise rotation degrees: 90, 180, or 270)
   //
   // Example — iPod Photo 4G full-screen (built-in, shown here for reference):
   // {"prefix": 1013, "width": 220, "height": 176, "encoding": "rgb565", "frameBytes": 77440, "littleEndian": false}
