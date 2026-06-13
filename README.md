@@ -33,7 +33,7 @@ Tested with **956 T-prefix files** from an iPhone 5 (iOS 7) — **100% extractio
 
 1. **Peek read** — reads the first 4 MB of the file for JPEG scanning, then seeks the exact JPEG byte range from the FileStream (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos).
 2. **JPEG scan** — SIMD-accelerated `Span.IndexOf` (SSE2 on x64, NEON on ARM64) locates a SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via StbImageSharp, and its EXIF orientation tag (0x0112) is parsed for auto-rotation in ImageGlass.
-3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 47 known profiles and runs the appropriate raw decoder (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is rejected as unrecognized. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, and padded frame handling.
+3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 48 known profiles and runs the appropriate raw decoder (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is rejected as unrecognized. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, and padded frame handling.
 
 ### File size guard
 
@@ -141,14 +141,14 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 
 ## Profile Reference
 
-**47 known profiles** (22 photo + 25 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
+**48 known profiles** (22 photo + 26 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
 
 ---
 
 ## Limitations
 
 > [!WARNING]
-> **Only T-prefix (JPEG-embedded) is validated on real hardware.** Raw decoders exist for 47 known profiles and pass roundtrip tests, but no real F-prefix files have been obtained for hardware validation. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for a hardware validation plan.
+> **Only T-prefix (JPEG-embedded) is validated on real hardware.** Raw decoders exist for 48 known profiles and pass roundtrip tests, but no real F-prefix files have been obtained for hardware validation. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for a hardware validation plan.
 
 - **F-prefix (raw) decoders are best-effort** — roundtrip-tested via synthetic encoder but unverified against real iPod/iPhone hardware.
 - **JPEG SOI must be within the first 4 MB** of the file (covers all known real files).

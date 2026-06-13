@@ -1,6 +1,6 @@
 # Profiles
 
-47 known raw-format profiles covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+48 known raw-format profiles covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
@@ -29,6 +29,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1055    | 128×128    | RGB565           | Classic/Nano3G/Nano4G (cover art)                |
 | 1056    | 128×128    | RGB565           | Nano 5G (cover art)                              |
 | 1060    | 320×320    | RGB565           | Classic/Nano3G (cover art)                       |
+| 1044    | 128×128    | RGB565           | Compatibility alias for 1055                     |
 | 1061    | 56×56      | RGB565           | Classic (cover art small)                        |
 | 1066    | 64×64      | RGB565           | iPod Classic 6G (square photo)                   |
 | 1067    | 720×480    | YCbCr 4:2:0      | iPod Classic 6G / Nano 3G (padded)               |
@@ -74,4 +75,4 @@ These flags can be set in `profiles.json` for fine-tuning raw decoder behavior:
 | `isCl`             | bool | `false` | CL per-pixel nibble-chroma: each pixel has its own 4-bit chroma (2 bytes per pixel). Keith's Methods 3/4.         |
 | `swapChromaPlanes` | bool | `false` | Swaps Cb/Cr order in YCbCr 4:2:0 planar decode (Keith's Method 6). For iPod variants with reversed chroma planes. |
 
-> **CL vs CLCL:** The term CLCL (Chrominance, Luminance, Chrominance, Luminance) originates from Keith Wiley's original 2005 reverse engineering. CLCL shares one 8-bit Cb+Cr pair across 2 pixels (UYVY). The nibble-packed variant shares a single 4-bit Cb:Cr nibble across 2 pixels. "CL" (single) gives each pixel its own 4-bit chroma nibble. No known built-in profiles use `isCl` or `swapChromaPlanes` — they are safety nets for undocumented iPod variants.
+> **Speculative decoders:** The `isClcl`, `isCl`, and `swapChromaPlanes` flags are based on Keith Wiley's original 2005 reverse engineering (Methods 1–6). No other open-source ithmb implementation (iOpenPod, libgpod, andrewmalta/ithmb, etc.) independently confirms these byte layouts or chroma orderings. No known built-in profiles use them — they are safety nets for undocumented iPod variants. If you encounter a file that decodes with wrong colors, try toggling these flags via `profiles.json`.

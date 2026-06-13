@@ -122,6 +122,10 @@ internal static unsafe partial class IthmbCodecPlugin
             // iPod Nano 6G photo thumbnail and full-screen
             [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
+
+            // Compatibility alias for 1055 (same 128×128 cover art, older iTunes versions)
+            [1044] = new(1044, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
+
             // iPod Mobile (Motorola ROKR/SLVR/RAZR) cover art — big-endian (iOpenPod)
             [2002] = new(2002, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2, LittleEndian: false),
             [2003] = new(2003, 150, 150, IthmbEncoding.Rgb565, 150 * 150 * 2, LittleEndian: false),
