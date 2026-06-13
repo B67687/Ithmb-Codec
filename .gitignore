@@ -1,4 +1,40 @@
-# Build outputs
+# ==============================================================
+# WHITELIST: Ignore everything by default, only allow specific files.
+# New files won't be tracked unless explicitly un-ignored below.
+# ==============================================================
+
+# ----------------------
+# Ignore everything by default
+# ----------------------
+/*
+!/.gitignore
+!/.gitattributes
+!/.github/
+!/.github/**/*
+
+# ----------------------
+# Documentation
+# ----------------------
+!/LICENSE
+!/*.md
+!/docs/
+!/docs/*
+
+# ----------------------
+# Source code
+# ----------------------
+!/src/
+!/src/**/*
+
+# ----------------------
+# Tools
+# ----------------------
+!/tools/
+!/tools/**/*
+
+# ----------------------
+# Build outputs (must stay ignored despite whitelist)
+# ----------------------
 bin/
 obj/
 *.dll
@@ -7,7 +43,9 @@ obj/
 *.exe
 *.pdb
 
+# ----------------------
 # IDE and editors
+# ----------------------
 .vscode/
 .idea/
 *.swp
@@ -15,24 +53,38 @@ obj/
 .DS_Store
 Thumbs.db
 
+# ----------------------
 # Release artifacts
+# ----------------------
 *.zip
 
+# ----------------------
 # Internal/handover docs (not part of the plugin distribution)
+# ----------------------
 
 
+# ----------------------
 # Agentic workflows propagated shims
+# ----------------------
 propagated/
 
+# ----------------------
 # Python Ruff linter cache
+# ----------------------
 
 
+# ----------------------
 # Mermaid diagram sources (regenerate from local mmdc tooling)
+# ----------------------
 docs/*.mmd
 
+# ----------------------
 # Sample .ithmb files (downloaded from public sources, not redistributed)
+# ----------------------
 samples/
 *.ithmb
 
+# ----------------------
 # Sample download utilities (not part of the plugin distribution)
+# ----------------------
 scripts/
