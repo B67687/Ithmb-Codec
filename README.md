@@ -12,9 +12,11 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 - [Install](#install)
 - [Build from source](#build-from-source)
 - [Architecture](#architecture)
+- [Raw profile definitions](#raw-profile-definitions)
 - [Verified devices and formats](#verified-devices-and-formats)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
+- [References and Acknowledgments](#references-and-acknowledgments)
 - [License](#license)
 
 ---
@@ -23,16 +25,16 @@ Tested with **956 T####.ithmb files** from an iPhone 5 (iOS 7) iPod Photo Cache 
 
 `.ithmb` files (iThumbnail cache) are a proprietary format used by Apple iOS devices to store photo thumbnails. Two broad categories exist:
 
-| Type                                | Description                                                                                                                                                     | Our support                                                                                                                                                            |
-| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **T-prefix** (e.g. `T####.ithmb`)   | Contains a single full-resolution photo as an embedded JPEG (JFIF or Exif). These are found in newer iOS device caches (iPhone 5 and later).                    | ✅ **Fully supported** --- the primary path. 956/956 verified.                                                                                                         |
-| **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 28 known profiles (20 photo + 6 cover art). Untested due to lack of sample files. See [raw profile table](#raw-profile-definitions). |
+| Type                                | Description                                                                                                                                                     | Our support                                                                                                                                                                           |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T-prefix** (e.g. `T####.ithmb`)   | Contains a single full-resolution photo as an embedded JPEG (JFIF or Exif). These are found in newer iOS device caches (iPhone 5 and later).                    | ✅ **Fully supported** --- the primary path. 956/956 verified.                                                                                                                        |
+| **F-prefix** (e.g. `F1019_1.ithmb`) | Older format used by iPods and early iPhones. Contains multiple raw-format thumbnails concatenated together (RGB565, YUV422, YCbCr420). These are uncompressed. | ⚠️ Best-effort decoders exist for 47 known profiles (22 photo + 25 cover art). Roundtrip-tested via synthetic encoder (317 tests). See [raw profile table](#raw-profile-definitions). |
 
 ### Decode pipeline
 
 1. **Read the file** --- a 4 MB header is read for JPEG scan, then the exact JPEG slice is seeked and read from the FileStream. Peak memory: ~5 MB for typical files.
 2. **JPEG scan** --- the file is scanned (SIMD-accelerated via `Span.IndexOf`) for a JPEG SOI marker (`FF D8`) followed within 512 bytes by either a JFIF or Exif header. If found, the JPEG payload is extracted (SOI to EOI) and decoded via StbImageSharp (MIT, ~200 KB).
-3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, YUV422, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts. A **CLCL nibble-chroma** decoder is also included for iPod 4G/5G files (chroma packed as 4-bit values, unit-test-validated but no real sample files).
+3. **Raw fallback** --- if no embedded JPEG is found, the first 4 bytes are read as a big-endian integer prefix and checked against known profiles. On match, the appropriate raw decoder (RGB565, RGB555, UYVY, or YCbCr420) is used. The YUV422 decoder handles both linear (UYVY) and interlaced (F1019: even/odd rows in separate fields) layouts. A **CLCL nibble-chroma** decoder is also included for iPod 4G/5G files (chroma packed as 4-bit values, scaling confirmed by andrewmalta/ithmb).
 4. **EXIF orientation** --- if the JPEG contains an EXIF APP1 segment with an orientation tag (0x0112), it is parsed and reported to the host. ImageGlass rotates the image accordingly.
 
 ### File size guard
@@ -111,7 +113,7 @@ Native AOT cross-compilation is not supported. You must build on each target pla
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-Tests cover: exhaustive RGB565 (65,536 values, **pixel-perfect roundtrip**) + RGB555 (32,768), 250 fuzz tests across 5 decoders, YUV422/Ycbcr420 roundtrip (gradient, ±5 tolerance), JPEG slice detection, EXIF orientation, SIMD correctness, memory safety, property invariants, JSON parser, real-file validation (**317 tests total**).
+Tests cover: exhaustive RGB565 (65,536 values, **pixel-perfect roundtrip**) + RGB555 (32,768), 250 fuzz tests across 5 decoders, YUV422/YCbCr420 roundtrip (gradient, ±5 tolerance), JPEG slice detection, EXIF orientation, SIMD correctness, memory safety, property invariants, JSON parser, real-file validation (**317 tests total**).
 
 ---
 
@@ -146,28 +148,29 @@ ig_plugin_get_api() -> IGPluginApi -> GetCodec() -> IGCodecApi
 
 The plugin was developed through an iterative research-and-review pipeline:
 
-1. **Format survey** — 17 open-source .ithmb implementations found across GitHub, GitLab, Codeberg, and SourceForge. Complete source analysis of each.
-2. **Format table extraction** — iOpenPod, libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 29 profiles.
-3. **Implementation** — C# Native AOT plugin with 4 decoders + 3 SIMD engines (SSE2, SSSE3, Vector128). ~887 lines ABI + ~605 lines decoding.
+1. **Format survey** — 25 open-source .ithmb implementations found across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, and Gitee. Complete source analysis of each.
+2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 47 profiles.
+3. **Implementation** — C# Native AOT plugin with 5 decoders + 3 SIMD engines (SSE2, SSSE3, Vector128). ~931 lines ABI + ~613 lines decoding. Standalone CLI decoder at `tools/IthmbDecoder/`.
 4. **Testing** — 317 unit tests (exhaustive 65K-pattern, 250 fuzz, SIMD-vs-scalar, roundtrip, property invariants, real-file validation with 228 public samples). Includes lossless roundtrip for RGB565 (65,536 values, pixel-perfect) and RGB555 (32,768 values, pixel-perfect), and lossy YUV roundtrip for UYVY and YCbCr420 (gradient, ±5 tolerance).
 5. **Review cycles** — 4 rounds of 5-agent adversarial review. ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth hardening.
 6. **Release** — Windows binary (1.4 MB native AOT), published to GitHub Releases.
-7. **Documentation** — All 17 references credited in README.
+7. **Documentation** — All 25 references credited in README.
 
 - **Single entry point** (`ig_plugin_get_api`) --- the only C export.
 - **Double-checked locking with `volatile`** in `GetApi` for thread-safe initialization (ARM64-safe).
 - **Single codec**, single-frame static raster decoder.
 - **Memory ownership**: the plugin allocates pixel buffers; the host calls back into `FreePixelBuffer` to release them (thread-safe).
-- **SIMD acceleration**: RGB565 uses SSE2 (4-6× gain), YCbCr420 uses cross-platform Vector128 (3-5× gain, x64 + ARM64 NEON), UYVY uses SSSE3+SSE2 (2-3× gain). UYVY interlaced and non-interlaced share a common SIMD inner loop via `ProcessUyvyRow`. The **CLCL nibble-chroma** decoder is scalar-only (unit-test-validated, no real sample files).
+- **SIMD acceleration**: RGB565 uses SSE2 (4-6× gain), YCbCr420 uses cross-platform Vector128 (3-5× gain, x64 + ARM64 NEON), UYVY uses SSSE3+SSE2 (2-3× gain). UYVY interlaced and non-interlaced share a common SIMD inner loop via `ProcessUyvyRow`. The **CLCL nibble-chroma** decoder is scalar-only (nibble scaling confirmed by andrewmalta/ithmb).
 
 ### Key source files
 
 | File                                          | Description                                                                                                                                        |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~887 lines)                                                                    |
-| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, RGB555, UYVY, YCbCr420 (~605 lines)                                                    |
+| `src/IthmbCodec/IthmbCodecPlugin.cs`          | Plugin ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~931 lines)                                                                    |
+| `src/IthmbCodec/IthmbCodecPlugin.Decoding.cs` | Decode algorithms + SIMD (SSE2/SSSE3/Vector128) for RGB565, RGB555, UYVY, YCbCr420 (~613 lines)                                                    |
 | `src/IthmbCodec/IthmbCodecPlugin.Encoding.cs` | Synthetic file encoder for all 5 raw formats (RGB565, RGB555, UYVY, YCbCr420, CLCL) — used by roundtrip tests                                      |
 | `src/IthmbCodec/IthmbCodec.csproj`            | .NET 10 Native AOT project targeting `win-x64`, `win-arm64`, `linux-x64`, `osx-arm64`                                                              |
+| `tools/IthmbDecoder/`                         | Standalone CLI decoder — decodes .ithmb files through the full plugin pipeline, writes BMP output                                                  |
 | `src/IthmbCodec/igplugin.json`                | Plugin manifest consumed by ImageGlass on startup                                                                                                  |
 | `src/IthmbCodec/profiles.json`                | External profile definitions (sidecar, merged on first decode, overridable without recompile)                                                      |
 | `src/IthmbCodec/test/`                        | xUnit test project (317 tests) --- exhaustive RGB565+RGB555 roundtrip (65K+32K values), SIMD-vs-scalar, 250 fuzz, YUV roundtrip, EXIF, JSON parser |
@@ -236,10 +239,11 @@ The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets `outIn
 
 ## Verified devices and formats
 
-| Device / Source      | Files tested        | Result                                    |
-| -------------------- | ------------------- | ----------------------------------------- |
-| iPhone 5 (iOS 7)     | 956 T####.ithmb     | 100% --- all yield valid JPEG             |
-| Jakarade.com F00-F08 | 228 T-prefix .ithmb | 100% --- all contain embedded JPEG + EXIF |
+| Device / Source      | Files tested              | Result                                    |
+| -------------------- | ------------------------- | ----------------------------------------- |
+| iPhone 5 (iOS 7)     | 956 T####.ithmb           | 100% --- all yield valid JPEG             |
+| Jakarade.com F00-F08 | 227 T-prefix .ithmb       | 100% --- all contain embedded JPEG + EXIF |
+| FAU.edu F00-F50      | ~500 T-prefix (directory) | Listed but files return 404 on download   |
 
 If you test this plugin with a different device or iOS version, please open an issue with sample files (or a link to them).
 
@@ -248,7 +252,7 @@ If you test this plugin with a different device or iOS version, please open an i
 ## Limitations
 
 1. **Only T-prefix `.ithmb` files with embedded JPEG** --- this is the primary tested path. Other `.ithmb` variants may not work.
-2. **Legacy raw profiles are untested** --- the decoders exist (RGB565, YUV422, YCbCr420, CLCL nibble-chroma) but no sample files were available for verification. Community contributions of unknown profiles can be added via `profiles.json` without recompiling.
+2. **Legacy raw profiles are unverified on real hardware** --- the decoders exist (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma) and are roundtrip-tested via synthetic encoder (317 tests), but no real-device F-prefix sample files were available for hardware validation. Community contributions of unknown profiles can be added via `profiles.json` without recompiling.
 3. **No open-file dialog** --- ImageGlass v10 Beta 2 doesn't register `.ithmb` for the file-open dialog. Use drag-and-drop.
 4. **No folder browsing** --- third-party extensions can't be registered for folder navigation in Beta 2.
 5. **Single-frame only** --- `.ithmb` files contain a single image per file. No animation/multi-frame support.
@@ -318,4 +322,4 @@ Every known open-source `.ithmb` implementation (25 total) was surveyed across G
 
 MIT --- see [LICENSE](LICENSE).
 
-The original IthmbDecoder reference implementation (PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316)) was GPL-3.0. This plugin is a clean-room implementation for the v10 SDK ABI, informed by format behavior described in that PR but using no GPL code.
+The original IthmbDecoder reference implementation (PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316), closed without merging) was GPL-3.0. This plugin is a clean-room implementation for the v10 SDK ABI, informed by format behavior described in that PR but using no GPL code.
