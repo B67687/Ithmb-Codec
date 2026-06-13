@@ -22,6 +22,7 @@ imageglass-sdk/
 
 # AGENT context
 
+HARDWARE_GUIDE.md
 
 # Sample .ithmb files (downloaded from public sources, not redistributed)
 samples/
