@@ -10,8 +10,11 @@
 !/.gitignore
 !/.gitattributes
 !/.editorconfig
-!/.github/
-!/.github/**/*
+!/.github/**
+!/review.sh
+!/.pre-commit-config.yaml
+!/.commitlintrc.json
+!/.lycheeignore
 !/.github/
 !/.github/**/*
 
