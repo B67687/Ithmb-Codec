@@ -99,7 +99,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**329 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250 inputs across 5 decoders), SIMD identity (10 tests), YUV tolerance, parsers, and speculative decoder paths (CL, CLCL, rotation, swapped chroma).
+**332 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250 inputs across 5 decoders), SIMD identity (10 tests), YUV tolerance, parsers, and speculative decoder paths (CL, CLCL, rotation, swapped chroma), plus per-decoder determinism verification.
 
 **Real-device validation:**
 
@@ -145,7 +145,8 @@ Use `review.sh --fix` to auto-apply fixes for the editor layer.
 
 This project was developed entirely with AI assistance:
 
-- **Model:** DeepSeek V4 Flash
+- **Model:** DeepSeek V4 Flash (direct API)
+- **Reasoning:** Chain-of-thought via sequential-thinking tool, multi-agent delegation (explore/worker/review/plan/scout/architect), context budgeting for cost-optimized model allocation
 - **Platform:** Opencode-Go subscription on Opencode TUI
 - **Workflow:** Specification, implementation, review, testing, documentation, and pipeline configuration were carried out through AI pair-programming sessions. The AI generated all code and tests; human oversight focused on architecture decisions, validation against real hardware samples, and release management.
 
