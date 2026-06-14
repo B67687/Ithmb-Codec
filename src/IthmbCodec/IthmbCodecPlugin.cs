@@ -759,7 +759,7 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             // Only load from app base directory (prevents working-directory injection)
             string baseDir = AppContext.BaseDirectory;
-            jsonPath = Path.Combine(baseDir, "profiles.json");
+            jsonPath = System.IO.Path.Join(baseDir, "profiles.json");
             if (!File.Exists(jsonPath)) return;
         }
         catch (Exception) { return; }
