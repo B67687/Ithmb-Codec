@@ -28,6 +28,7 @@ Additionally validated against **227 publicly available T-prefix files** from an
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
 - [Acknowledgments](#acknowledgments)
+- [Changelog](#changelog)
 - [License](#license)
 
 ---
@@ -177,6 +178,12 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 ## Acknowledgments
 
 25 open-source .ithmb implementations were surveyed during development. See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for the full list of credited projects, sample file sources, academic references, and color conversion standards.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 

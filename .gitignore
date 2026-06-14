@@ -12,6 +12,8 @@
 !/.editorconfig
 !/.github/
 !/.github/**/*
+!/.github/
+!/.github/**/*
 
 # ----------------------
 # Documentation
