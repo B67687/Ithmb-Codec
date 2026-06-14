@@ -95,7 +95,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**317 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250 inputs across 5 decoders), SIMD identity (10 tests), YUV tolerance, and parsers.
+**329 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250 inputs across 5 decoders), SIMD identity (10 tests), YUV tolerance, parsers, and speculative decoder paths (CL, CLCL, rotation, swapped chroma).
 
 **Real-device validation:**
 
@@ -119,7 +119,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — two partial class files:
+**Source layout** — three partial class files:
 
 - `IthmbCodecPlugin.cs` — ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~1015 lines)
 - `IthmbCodecPlugin.Decoding.cs` — all decode algorithms + SIMD intrinsics (~660 lines)
