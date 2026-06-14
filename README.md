@@ -147,10 +147,7 @@ This project was developed entirely with AI assistance:
 
 - **Model:** DeepSeek V4 Flash
 - **Platform:** Opencode-Go subscription on Opencode TUI
-- **Role:** Specification drafting, code generation, review, refactoring, testing, documentation, and pipeline configuration — all done through AI pair-programming sessions.
-- **Human role:** Architecture decisions, validation against real hardware samples, acceptance testing, and release management.
-
-Every line of code was reviewed, tested, and verified by both AI and human before commit.
+- **Workflow:** Specification, implementation, review, testing, documentation, and pipeline configuration were carried out through AI pair-programming sessions. The AI generated all code and tests; human oversight focused on architecture decisions, validation against real hardware samples, and release management.
 
 ---
 
