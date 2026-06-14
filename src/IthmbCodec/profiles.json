@@ -8,6 +8,11 @@
   //   prefix: int (format FXXXX, e.g. 1007)
   //   width, height: int (pixels)
   //   encoding: "rgb565" | "rgb555" | "yuv422" | "yuv422clcl" | "ycbcr420"
+  //     - rgb565: 2 Bpp, 16-bit: R(5) G(6) B(5), MSB-replicated to 8-bit
+  //     - rgb555: 2 Bpp, 16-bit: R(5) G(5) B(5), bit 15 unused, MSB-replicated
+  //     - yuv422: 2 Bpp, UYVY byte order: [U, Y0, V, Y1] per 2 pixels
+  //     - yuv422clcl: 2 Bpp, 4-bit nibble-packed Cb:Cr shared per 2 pixels
+  //     - ycbcr420: 2 Bpp, planar: Y plane + subsampled Cb, Cr planes
   //   frameBytes: int (bytes per frame, including padding)
   //   swapsDimensions: bool (optional, default false)
   //   littleEndian: bool (optional, default true)

@@ -121,8 +121,9 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 
 **Source layout** — two partial class files:
 
-- `IthmbCodecPlugin.cs` — ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~933 lines)
-- `IthmbCodecPlugin.Decoding.cs` — all decode algorithms + SIMD intrinsics (~613 lines)
+- `IthmbCodecPlugin.cs` — ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~1015 lines)
+- `IthmbCodecPlugin.Decoding.cs` — all decode algorithms + SIMD intrinsics (~660 lines)
+- `IthmbCodecPlugin.Encoding.cs` — synthetic encoder for all raw formats (~335 lines)
 
 **Data flow:**
 
