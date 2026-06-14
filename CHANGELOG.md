@@ -13,15 +13,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `AssertDeterminism` shared test helper — eliminates alloc×2+compare boilerplate in determinism tests
 - Determinism tests for RGB555, YUV422, YCbCr420 decoders (+3 tests, 332 total)
 - AI-assisted development disclosure in README (model, reasoning, platform, workflow)
+- **ARM64 NEON SIMD:** full NEON (AdvSimd) implementations for RGB565, RGB555, and UYVY decoders — these previously fell to scalar on ARM64
 
 ### Changed
 
 - `Property_Determinism_AllDecoders` expanded from 2→7 decoders via shared helper
 - AI declaration updated to specify chain-of-thought reasoning, multi-agent delegation, and context budgeting
+- README SIMD section: now documents ARM64 NEON alongside x64 SSE2/SSSE3
 
 ### Fixed
 
 - Ghost heading `// ---- P4f: Determinism ----` removed from Exhaustive.cs (no test)
+
+### SIMD Architecture
+
+| Decoder  | x64                     | ARM64                                                         |
+| -------- | ----------------------- | ------------------------------------------------------------- |
+| RGB565   | SSE2 (`Sse2.*`)         | NEON (`AdvSimd.*`)                                            |
+| RGB555   | SSE2 (`Sse2.*`)         | NEON (`AdvSimd.*`)                                            |
+| UYVY     | SSSE3 (`Ssse3.Shuffle`) | NEON (`AdvSimd.Arm64.VectorTableLookup` + `ZipLow`/`ZipHigh`) |
+| YCbCr420 | Generic `Vector128<T>`  | Generic `Vector128<T>` (already cross-platform)               |
+| CLCL/CL  | Scalar                  | Scalar                                                        |
+
+Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `AdvSimd.IsSupported` → NEON, else scalar.
 
 ## [1.0.0] — 2026-06-14
 

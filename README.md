@@ -169,7 +169,7 @@ This project was developed entirely with AI assistance:
                                         └→ No JPEG → prefix lookup → raw decoder → BGRA
 ```
 
-**SIMD acceleration:** RGB565 → SSE2 (4-6× gain), YCbCr420 → cross-platform Vector128 (x64 + ARM64 NEON, 3-5× gain), UYVY → SSSE3+SSE2 (2-3× gain). CLCL nibble-chroma is scalar-only.
+**SIMD acceleration:** RGB565/RGB555 → SSE2 or NEON (x64/ARM64, 4-6× gain), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (x64 + ARM64 NEON, 3-5× gain). CLCL nibble-chroma is scalar-only.
 
 **Single-frame, single-codec** — each `.ithmb` contains one image; no multi-frame support.
 
