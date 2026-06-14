@@ -641,4 +641,94 @@ public unsafe partial class IthmbCodecTests
             cancellation: null, outInfo: null, outBuf: null);
         Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
     }
+
+    [Fact]
+    public void DecodeRawProfile_ClChroma_DecodeOnly()
+    {
+        // Test that CL decoder path at least doesn't crash (speculative)
+        byte[] src = new byte[4 + 4 * 4 * 2]; // prefix + 4x4 CL data
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9999, Width: 4, Height: 4,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Yuv422,
+            FrameByteLength: 4 * 4 * 2, ClChroma: true);
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(src, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_ClclChroma_DecodeOnly()
+    {
+        byte[] src = new byte[4 + 4 * 4 * 2];
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9998, Width: 4, Height: 4,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Yuv422,
+            FrameByteLength: 4 * 4 * 2, ClclChroma: true);
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(src, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_SwapChromaPlanes_NoCrash()
+    {
+        int w = 4, h = 4;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h; i++) bgra[i * 4 + 3] = 255;
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9997, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Ycbcr420,
+            FrameByteLength: w * h * 2, IsPadded: true, SwapChromaPlanes: true);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_Rotation_90_NoCrash()
+    {
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9996, Width: 2, Height: 4,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: 2 * 4 * 2, Rotation: 90);
+        var bgra = new byte[2 * 4 * 4];
+        for (int i = 0; i < 2 * 4; i++) bgra[i * 4 + 3] = 255;
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, 2, 4, profile);
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
 }

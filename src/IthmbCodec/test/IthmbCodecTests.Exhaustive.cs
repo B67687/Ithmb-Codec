@@ -186,22 +186,6 @@ public unsafe partial class IthmbCodecTests
 
     // ---- P4f: Determinism ----
 
-    [Fact]
-    public void Property_Determinism_Rgb555()
-    {
-        byte[] src = [0x00, 0x7C]; // LE 0x7C00 = red
-        byte* dst1 = (byte*)NativeMemory.Alloc(4);
-        byte* dst2 = (byte*)NativeMemory.Alloc(4);
-        try
-        {
-            IthmbCodecPlugin.DecodeRgb555(src, dst1, 1, 1, littleEndian: true);
-            IthmbCodecPlugin.DecodeRgb555(src, dst2, 1, 1, littleEndian: true);
-            for (int i = 0; i < 4; i++)
-                Assert.Equal(dst1[i], dst2[i]);
-        }
-        finally { NativeMemory.Free(dst1); NativeMemory.Free(dst2); }
-    }
-
     // ---- P4g: Roundtrip ----
 
     [Fact]

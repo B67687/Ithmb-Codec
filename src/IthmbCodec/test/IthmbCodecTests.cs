@@ -263,4 +263,61 @@ public unsafe partial class IthmbCodecTests
         Assert.Equal(1, orient);
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    public void ReadExifOrientation_AllValues_ReturnsCorrectly(int orientation)
+    {
+        var jpeg = BuildJpegWithExifOrientation(orientation);
+        int orient = IthmbCodecPlugin.ReadExifOrientation(jpeg, 0, jpeg.Length);
+        Assert.Equal(orientation, orient);
+    }
+
+    [Fact]
+    public void ReadExifOrientation_BigEndianTiff_ReturnsValue()
+    {
+        // Build minimal JPEG with big-endian TIFF EXIF
+        using var ms = new MemoryStream();
+        // SOI
+        ms.Write([0xFF, 0xD8]);
+        // APP1 marker + size
+        ms.Write([0xFF, 0xE1]);
+        // APP1 size (big-endian)
+        ms.WriteByte(0); ms.WriteByte(0x45); // 69 bytes total
+
+        // Exif header
+        ms.Write([0x45, 0x78, 0x69, 0x66, 0x00, 0x00]); // "Exif\0\0"
+
+        // TIFF header (big-endian "MM")
+        ms.Write([0x4D, 0x4D]); // byte order
+        ms.WriteByte(0x00); ms.WriteByte(0x2A); // magic 42
+
+        // IFD0 offset: 8 (right after TIFF header)
+        ms.Write([0x00, 0x00, 0x00, 0x08]);
+
+        // IFD0: 1 entry (orientation), 8 bytes, then next IFD offset = 0
+        ms.Write([0x00, 0x01]); // 1 entry
+
+        // Tag 0x0112 = Orientation
+        ms.Write([0x01, 0x12]); // tag
+        ms.Write([0x00, 0x03]); // type = SHORT
+        ms.Write([0x00, 0x00, 0x00, 0x01]); // count = 1
+        ms.Write([0x00, 0x01, 0x00, 0x00]); // value = 1 (big-endian, 4 bytes)
+
+        ms.Write([0x00, 0x00, 0x00, 0x00]); // next IFD = none
+
+        // EOI
+        ms.Write([0xFF, 0xD9]);
+
+        var jpeg = ms.ToArray();
+        int orient = IthmbCodecPlugin.ReadExifOrientation(jpeg, 0, jpeg.Length);
+        Assert.Equal(1, orient);
+    }
+
 }

@@ -455,13 +455,14 @@ internal static unsafe partial class IthmbCodecPlugin
         try
         {
             var srcData = result.Data;
-            for (int i = 0; i < w * h; i++)
+            long totalPixels = (long)w * h;
+            for (long i = 0; i < totalPixels; i++)
             {
-                int si = i * 4;
-                pixels[i * 4 + 0] = srcData[si + 2]; // B = R
-                pixels[i * 4 + 1] = srcData[si + 1]; // G = G
-                pixels[i * 4 + 2] = srcData[si + 0]; // R = B
-                pixels[i * 4 + 3] = srcData[si + 3]; // A = A
+                long si = i * 4;
+                pixels[si + 0] = srcData[si + 2]; // B = R
+                pixels[si + 1] = srcData[si + 1]; // G = G
+                pixels[si + 2] = srcData[si + 0]; // R = B
+                pixels[si + 3] = srcData[si + 3]; // A = A
             }
         }
         catch (Exception)
@@ -756,15 +757,10 @@ internal static unsafe partial class IthmbCodecPlugin
         string? jsonPath = null;
         try
         {
-            // Look relative to the app base directory (works in Native AOT)
+            // Only load from app base directory (prevents working-directory injection)
             string baseDir = AppContext.BaseDirectory;
             jsonPath = Path.Combine(baseDir, "profiles.json");
-            if (!File.Exists(jsonPath))
-            {
-                // Fallback: current working directory
-                jsonPath = Path.Combine(Environment.CurrentDirectory, "profiles.json");
-                if (!File.Exists(jsonPath)) return;
-            }
+            if (!File.Exists(jsonPath)) return;
         }
         catch (Exception) { return; }
         if (jsonPath == null) return;
@@ -799,11 +795,15 @@ internal static unsafe partial class IthmbCodecPlugin
         if (pos >= json.Length || json[pos] != '[') return;
         pos++; // skip '['
 
+        int objectsRead = 0;
         while (pos < json.Length)
         {
             SkipWhitespace(json, ref pos);
             if (pos >= json.Length) break;
             if (json[pos] == ']') { pos++; break; }
+
+            // Limit object count to prevent CPU DoS from crafted JSON
+            if (objectsRead++ > 100) return;
 
             // Parse object
             if (json[pos] != '{') return;

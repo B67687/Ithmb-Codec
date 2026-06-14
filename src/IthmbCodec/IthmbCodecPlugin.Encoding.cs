@@ -236,32 +236,35 @@ internal static unsafe partial class IthmbCodecPlugin
             src = rotatedBuf;
         }
 
-        // 2. Encode pixels to the raw format
-        byte[] encoded = profile.Encoding switch
-        {
-            IthmbEncoding.Rgb565 => EncodeRgb565(src, fw, fh, !profile.LittleEndian),
-            IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian),
-            IthmbEncoding.Yuv422 => EncodeUyvy(src, fw, fh),
-            IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh),
-            _ => throw new ArgumentException($"Unknown encoding: {profile.Encoding}")
-        };
-
-        // 3. Handle interlaced reordering (F1019: even fields first, then odd fields)
-        if (profile.IsInterlaced)
-        {
-            encoded = InterlaceFields(encoded, fw, fh, profile.Encoding);
-        }
-
-        // 4. Handle CL/CLCL chroma packing
+        // 2. Encode pixels. CL/CLCL chroma packing replaces the initial encode
+        //    (they re-encode from original BGRA with different chroma precision).
+        //    Interlacing is applied AFTER chroma packing so field order is correct.
+        byte[] encoded;
         if (profile.ClChroma)
         {
-            // Per-pixel nibble chroma (Keith's CL, Methods 3/4)
             encoded = EncodeCl(src, fw, fh);
         }
         else if (profile.ClclChroma)
         {
-            // Shared 2-pixel nibble chroma
             encoded = EncodeClcl(src, fw, fh);
+        }
+        else
+        {
+            encoded = profile.Encoding switch
+            {
+                IthmbEncoding.Rgb565 => EncodeRgb565(src, fw, fh, !profile.LittleEndian),
+                IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian),
+                IthmbEncoding.Yuv422 => EncodeUyvy(src, fw, fh),
+                IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh),
+                _ => throw new ArgumentException($"Unknown encoding: {profile.Encoding}")
+            };
+        }
+
+        // 3. Handle interlaced reordering (F1019: even fields first, then odd fields)
+        //    Applied after chroma packing — field data is the final pixel format.
+        if (profile.IsInterlaced)
+        {
+            encoded = InterlaceFields(encoded, fw, fh, profile.Encoding);
         }
 
         // 5. Pad to FrameByteLength if needed
