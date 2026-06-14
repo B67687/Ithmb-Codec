@@ -13,14 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Broken link checker (`.github/workflows/links.yml`) — weekly scan of all docs
 - Conventional commit enforcement (`.github/workflows/commits.yml`)
 - `.commitlintrc.json` — custom type-enum matching project convention
-- `review.sh` — 4-layer review pipeline (EditorConfig → Test → OCR → CodeQL)
+- `review.sh` — 7-stage unified quality pipeline orchestrator (`--list`, `--fix`, stage selection)
 - CHANGELOG.md and PR template with documentation checklist
 - Test CI workflow with live status badge
 - `.editorconfig` + Roslyn analyzer enforcement (`TreatWarningsAsErrors`)
 - Standalone Acknowledgments section in README
+- AI transparency declaration in README (DeepSeek V4 Flash, Opencode-Go, Opencode TUI)
+- Determinism tests for RGB555, YUV422, YCbCr420 decoders (+3 tests, total 332)
+- `AssertDeterminism` shared test helper — eliminates alloc×2+compare boilerplate
+- `review.sh editor codeql` syntax — run specific pipeline stages
 
 ### Changed
 
+- `review.sh` rewritten as unified orchestrator with 7 named stages, `--list`, `--fix`
+- `Property_Determinism_AllDecoders` now covers all 7 decoders via shared helper
 - README now uses live badge for test count instead of hardcoded number
 - SVGs updated to avoid specific counts — diagrams stay current without edits
 - DEVELOPMENT.md links to README for test count (single source of truth)
@@ -33,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - README line counts updated (~933→~1015, ~613→~660, added Encoding.cs)
 - Architecture SVG: sizes, profile counts updated (47→48, 25→26)
 - Pipeline SVG: "317 tests" → current
+- Ghost heading `// ---- P4f: Determinism ----` removed from Exhaustive.cs (no test)
 
 ## [1.0.0] — 2026-06-14
 

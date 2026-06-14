@@ -184,24 +184,16 @@ public unsafe partial class IthmbCodecTests
         var rng = new Random(99);
         var buf = new byte[64];
         rng.NextBytes(buf);
+        var buf16 = new byte[6]; // 2×2 block = 4 Y + 1 Cb + 1 Cr
+        rng.NextBytes(buf16);
 
-        byte* dst1 = (byte*)NativeMemory.Alloc(256);
-        byte* dst2 = (byte*)NativeMemory.Alloc(256);
-
-        try
-        {
-            // RGB565
-            NativeMemory.Clear(dst1, 256); NativeMemory.Clear(dst2, 256);
-            IthmbCodecPlugin.DecodeRgb565(buf, dst1, 4, 4, true);
-            IthmbCodecPlugin.DecodeRgb565(buf, dst2, 4, 4, true);
-            Assert.True(MemCmp(dst1, dst2, 64));
-
-            // YUV422
-            NativeMemory.Clear(dst1, 256); NativeMemory.Clear(dst2, 256);
-            IthmbCodecPlugin.DecodeYuv422(buf, dst1, 4, 4);
-            IthmbCodecPlugin.DecodeYuv422(buf, dst2, 4, 4);
-            Assert.True(MemCmp(dst1, dst2, 64));
-        }
-        finally { NativeMemory.Free(dst1); NativeMemory.Free(dst2); }
+        // Each decoder with random input must produce identical output on repeat
+        AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeRgb565(buf, (byte*)(void*)dst, 4, 4, true));
+        AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeRgb555(buf, (byte*)(void*)dst, 4, 4, true));
+        AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeYuv422(buf, (byte*)(void*)dst, 4, 4));
+        AssertDeterminism(16,  dst => IthmbCodecPlugin.DecodeYcbcr420(buf16, (byte*)(void*)dst, 2, 2));
+        AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeYuv422Interlaced(buf, (byte*)(void*)dst, 4, 4));
+        AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeYuv422Clcl(buf, (byte*)(void*)dst, 4, 4));
+        AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeYuv422Cl(buf, (byte*)(void*)dst, 4, 4));
     }
 }
