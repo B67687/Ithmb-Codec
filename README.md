@@ -117,6 +117,19 @@ The plugin was developed through iterative research, implementation, review, and
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 
+### Review pipeline
+
+The project has a 4-layer review pipeline automated in `review.sh`:
+
+```bash
+bash review.sh
+```
+
+1. **Editor layer** — `.editorconfig` + Roslyn analyzers (`dotnet format --verify-no-changes`)
+2. **Test layer** — `dotnet test -c Release`
+3. **LLM review** — Alibaba OCR (if installed)
+4. **Security** — CodeQL (in CI or local)
+
 ---
 
 ## Architecture
