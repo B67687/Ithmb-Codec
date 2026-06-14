@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace IthmbCodec;
@@ -23,10 +24,12 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
-        // SIMD path: process 8 pixels per iteration on x64 (SSE2).
-        // Requires w % 4 == 0 for 16-byte aligned Sse2.Store (movdqa).
+        // SIMD path: process 8 pixels per iteration.
+        // x64: SSE2 (Sse2.Store/Shuffle). ARM64: NEON (AdvSimd).
         if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb565_Sse2(src, dst, w, h, littleEndian);
+        else if (AdvSimd.IsSupported && w >= 8 && (w & 3) == 0)
+            DecodeRgb565_Neon(src, dst, w, h, littleEndian);
         else
             DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
         return true;
@@ -94,6 +97,75 @@ internal static unsafe partial class IthmbCodecPlugin
         }
     }
 
+    /// <summary>ARM64 NEON-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
+    /// <remarks>Direct transliteration of DecodeRgb565_Sse2 using AdvSimd intrinsics.
+    /// Uses ShiftRightLogicalAndNarrowSaturateUnsigned for pack (SQXTUN) and
+    /// ZipLow/ZipHigh for interleave (ZIP1/ZIP2).</remarks>
+    private static void DecodeRgb565_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    {
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                byte* pSrcRow = pSrc + y * w * 2;
+                byte* pDstRow = dst + y * w * 4;
+                int x = 0;
+
+                for (; x + 7 < w; x += 8)
+                {
+                    Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                    Vector128<ushort> v = raw.AsUInt16();
+
+                    // Byte-swap for big-endian profiles
+                    if (!littleEndian)
+                    {
+                        v = AdvSimd.Or(
+                            AdvSimd.ShiftRightLogical(v, 8),
+                            AdvSimd.ShiftLeftLogical(v, 8)).AsUInt16();
+                    }
+
+                    // Extract 5/6/5 bit fields
+                    var b5 = AdvSimd.And(v,          Vector128.Create((ushort)0x001F));
+                    var g6 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x003F));
+                    var r5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 11), Vector128.Create((ushort)0x001F));
+
+                    // MSB replicate to 8-bit: (val << k) | (val >> (8-k))
+                    var b8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(b5, 3), AdvSimd.ShiftRightLogical(b5, 2));
+                    var g8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(g6, 2), AdvSimd.ShiftRightLogical(g6, 4));
+                    var r8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(r5, 3), AdvSimd.ShiftRightLogical(r5, 2));
+
+                    // Pack 16-bit → 8-bit via unsigned saturating narrow: SQXTUN
+                    // Input is signed short (NEON instruction requires signed source),
+                    // output is unsigned byte (values ≤ 255 so saturation is safe).
+                    var b64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(b8.AsInt16()); // Vector64<byte>
+                    var g64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(g8.AsInt16());
+                    var r64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(r8.AsInt16());
+
+                    // Duplicate into full 128-bit: same layout as SSE2 PackUnsignedSaturate(v, v)
+                    var bp = Vector128.Create(b64, b64); // [B0..B7, B0..B7]
+                    var gp = Vector128.Create(g64, g64); // [G0..G7, G0..G7]
+                    var rp = Vector128.Create(r64, r64); // [R0..R7, R0..R7]
+
+                    var alpha = Vector128.Create((byte)255);
+
+                    // Level 1: (B,R) and (G,A) interleaved
+                    var br = AdvSimd.Arm64.ZipLow(bp, rp);  // [B0,R0,…,B3,R3, B4,R4,…,B7,R7]
+                    var ga = AdvSimd.Arm64.ZipLow(gp, alpha); // [G0,255,…,G3,255, G4,255,…,G7,255]
+
+                    // Level 2: (BR, GA) interleaved → BGRA quads
+                    var pxLo = AdvSimd.Arm64.ZipLow(br, ga);  // pixels 0-3: [B0,G0,R0,255, …]
+                    var pxHi = AdvSimd.Arm64.ZipHigh(br, ga); // pixels 4-7: [B4,G4,R4,255, …]
+
+                    Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                    Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                }
+
+                // Scalar tail: remaining <8 pixels
+                DecodeRgb565_Tail(pSrcRow, pDstRow, x, w, littleEndian);
+            }
+        }
+    }
+
     /// <summary>Scalar fallback for RGB565 decode (pure pointer-based).</summary>
     private static void DecodeRgb565_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
@@ -137,10 +209,11 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
-        // SIMD path: process 8 pixels per iteration on x64 (SSE2).
-        // Requires w % 4 == 0 for 16-byte aligned Sse2.Store (movdqa).
+        // SIMD path: process 8 pixels per iteration.
         if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb555_Sse2(src, dst, w, h, littleEndian);
+        else if (AdvSimd.IsSupported && w >= 8 && (w & 3) == 0)
+            DecodeRgb555_Neon(src, dst, w, h, littleEndian);
         else
             DecodeRgb555_Scalar(src, dst, w, h, littleEndian);
         return true;
@@ -202,6 +275,66 @@ internal static unsafe partial class IthmbCodecPlugin
         }
     }
 
+    /// <summary>ARM64 NEON-accelerated RGB555→BGRA: 8 pixels (16B→32B) per iteration.</summary>
+    /// <remarks>RGB555 bit layout: xRRRRRGGGGGBBBBB (bit 15 unused).
+    /// Differences from RGB565 NEON:
+    ///   - Red:  >> 10 (not >> 11) — skips unused bit 15
+    ///   - Green: &amp; 0x001F (5 bits, not 6)
+    ///   - Green MSB-replication: (val &lt;&lt; 3) | (val &gt;&gt; 2) — 5→8 bits (same as R/B)</remarks>
+    private static void DecodeRgb555_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    {
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                byte* pSrcRow = pSrc + y * w * 2;
+                byte* pDstRow = dst + y * w * 4;
+                int x = 0;
+
+                for (; x + 7 < w; x += 8)
+                {
+                    Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                    Vector128<ushort> v = raw.AsUInt16();
+
+                    if (!littleEndian)
+                        v = AdvSimd.Or(
+                            AdvSimd.ShiftRightLogical(v, 8),
+                            AdvSimd.ShiftLeftLogical(v, 8)).AsUInt16();
+
+                    // Extract 5-bit fields: RGB555 = x RRRRR GGGGG BBBBB
+                    var r5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
+                    var g5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
+                    var b5 = AdvSimd.And(v,                                Vector128.Create((ushort)0x001F));
+
+                    // MSB replicate to 8-bit: all 5-bit fields use (val << 3) | (val >> 2)
+                    var r8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(r5, 3), AdvSimd.ShiftRightLogical(r5, 2));
+                    var g8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(g5, 3), AdvSimd.ShiftRightLogical(g5, 2));
+                    var b8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(b5, 3), AdvSimd.ShiftRightLogical(b5, 2));
+
+                    // Pack 16-bit → 8-bit via unsigned saturating narrow
+                    var b64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(b8.AsInt16());
+                    var g64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(g8.AsInt16());
+                    var r64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(r8.AsInt16());
+
+                    var bp = Vector128.Create(b64, b64);
+                    var gp = Vector128.Create(g64, g64);
+                    var rp = Vector128.Create(r64, r64);
+
+                    var alpha = Vector128.Create((byte)255);
+                    var br = AdvSimd.Arm64.ZipLow(bp, rp);
+                    var ga = AdvSimd.Arm64.ZipLow(gp, alpha);
+                    var pxLo = AdvSimd.Arm64.ZipLow(br, ga);
+                    var pxHi = AdvSimd.Arm64.ZipHigh(br, ga);
+
+                    Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                    Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                }
+
+                DecodeRgb555_Tail(pSrcRow, pDstRow, x, w, littleEndian);
+            }
+        }
+    }
+
     /// <summary>Scalar fallback for RGB555 decode.</summary>
     private static void DecodeRgb555_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
@@ -242,9 +375,11 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
         if ((w & 1) != 0) return false; // pair processing requires even width
 
-        // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
+        // SIMD: requires SSSE3 (pshufb) on x64 or AdvSimd (VectorTableLookup) on ARM64
         if (Ssse3.IsSupported && (w & 7) == 0)
             DecodeYuv422_SIMD(src, dst, w, h);
+        else if (AdvSimd.IsSupported && (w & 7) == 0)
+            DecodeYuv422_Neon(src, dst, w, h);
         else
             DecodeYuv422_Scalar(src, dst, w, h);
         return true;
@@ -352,6 +487,116 @@ internal static unsafe partial class IthmbCodecPlugin
         }
     }
 
+    /// <summary>ARM64 NEON-accelerated UYVY→BGRA. Same shuffle masks as SSE2 (VectorTableLookup).</summary>
+    private static void DecodeYuv422_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
+        // Same shuffle masks as SSE2 — byte indices for VectorTableLookup are identical to pshufb
+        var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
+        var shufU = Vector128.Create((byte)0, 0x80, 0, 0x80, 4, 0x80, 4, 0x80, 8, 0x80, 8, 0x80, 12, 0x80, 12, 0x80);
+        var shufV = Vector128.Create((byte)2, 0x80, 2, 0x80, 6, 0x80, 6, 0x80, 10, 0x80, 10, 0x80, 14, 0x80, 14, 0x80);
+        var zeroI = Vector128<int>.Zero;
+        var max255 = Vector128.Create(255);
+        var alpha = Vector128.Create(255 << 24);
+        var rCoef = Vector128.Create(YuvRCoef);
+        var gCoefCb = Vector128.Create(YuvGCoefCb);
+        var gCoefCr = Vector128.Create(YuvGCoefCr);
+        var bCoef = Vector128.Create(YuvBCoef);
+
+        fixed (byte* pSrc = src)
+            for (int y = 0; y < h; y++)
+                ProcessUyvyRow_Neon(pSrc + y * w * 2, dst + y * w * 4, w,
+                    shufY, shufU, shufV, zeroI, max255, alpha,
+                    rCoef, gCoefCb, gCoefCr, bCoef);
+    }
+
+    /// <summary>Processes one row of UYVY data using NEON AdvSimd with VectorTableLookup (TBL / pshufb equivalent).</summary>
+    /// <remarks>Mirrors ProcessUyvyRow but uses AdvSimd intrinsics for the architecture-specific parts.</remarks>
+    private static void ProcessUyvyRow_Neon(byte* pSrcRow, byte* pDstRow, int w,
+        Vector128<byte> shufY, Vector128<byte> shufU, Vector128<byte> shufV,
+        Vector128<int> zeroI, Vector128<int> max255, Vector128<int> alpha,
+        Vector128<int> rCoef, Vector128<int> gCoefCb, Vector128<int> gCoefCr, Vector128<int> bCoef)
+    {
+        for (int x = 0; x < w; x += 8)
+        {
+            var raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+
+            // VectorTableLookup (Arm64 overload) = ARM TBL = SSSE3 pshufb — same shuffle masks.
+            // The Vector128,Vector128 overload is AdvSimd.Arm64-only (full 128-bit TBL).
+            var y16 = AdvSimd.Arm64.VectorTableLookup(raw, shufY).AsInt16();
+            var u16 = AdvSimd.Arm64.VectorTableLookup(raw, shufU).AsInt16();
+            var v16 = AdvSimd.Arm64.VectorTableLookup(raw, shufV).AsInt16();
+
+            var zero16 = Vector128<short>.Zero;
+            for (int hIdx = 0; hIdx < 2; hIdx++)
+            {
+                // ZipLow/ZipHigh = ARM ZIP1/ZIP2 = SSE2 UnpackLow/UnpackHigh
+                var yI = (hIdx == 0
+                    ? AdvSimd.Arm64.ZipLow(y16, zero16)
+                    : AdvSimd.Arm64.ZipHigh(y16, zero16)).AsInt32();
+                var uI = (hIdx == 0
+                    ? AdvSimd.Arm64.ZipLow(u16, zero16)
+                    : AdvSimd.Arm64.ZipHigh(u16, zero16)).AsInt32();
+                var vI = (hIdx == 0
+                    ? AdvSimd.Arm64.ZipLow(v16, zero16)
+                    : AdvSimd.Arm64.ZipHigh(v16, zero16)).AsInt32();
+
+                // Unbias chroma: subtract 128 after widening
+                uI = AdvSimd.Subtract(uI, Vector128.Create(128));
+                vI = AdvSimd.Subtract(vI, Vector128.Create(128));
+
+                // BT.601 fixed-point arithmetic (cross-platform Vector128)
+                var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
+                var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
+                           - Vector128.ShiftRightArithmetic(vI * gCoefCr, 8);
+                var bI = yI + Vector128.ShiftRightArithmetic(uI * bCoef, 8);
+
+                rI = Vector128.Max(zeroI, Vector128.Min(rI, max255));
+                gI = Vector128.Max(zeroI, Vector128.Min(gI, max255));
+                bI = Vector128.Max(zeroI, Vector128.Min(bI, max255));
+
+                var px = bI | Vector128.ShiftLeft(gI, 8)
+                    | Vector128.ShiftLeft(rI, 16) | alpha;
+
+                int* pRow = (int*)(pDstRow + x * 4 + hIdx * 16);
+                pRow[0] = px.GetElement(0);
+                pRow[1] = px.GetElement(1);
+                pRow[2] = px.GetElement(2);
+                pRow[3] = px.GetElement(3);
+            }
+        }
+    }
+
+    /// <summary>ARM64 NEON-accelerated interlaced UYVY (F1019).</summary>
+    private static void DecodeYuv422Interlaced_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h)
+    {
+        int half = ((h + 1) / 2) * w * 2;
+        int rowStride = w * 2;
+
+        var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
+        var shufU = Vector128.Create((byte)0, 0x80, 0, 0x80, 4, 0x80, 4, 0x80, 8, 0x80, 8, 0x80, 12, 0x80, 12, 0x80);
+        var shufV = Vector128.Create((byte)2, 0x80, 2, 0x80, 6, 0x80, 6, 0x80, 10, 0x80, 10, 0x80, 14, 0x80, 14, 0x80);
+        var zeroI = Vector128<int>.Zero;
+        var max255 = Vector128.Create(255);
+        var alpha = Vector128.Create(255 << 24);
+        var rCoef = Vector128.Create(YuvRCoef);
+        var gCoefCb = Vector128.Create(YuvGCoefCb);
+        var gCoefCr = Vector128.Create(YuvGCoefCr);
+        var bCoef = Vector128.Create(YuvBCoef);
+
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                int fieldOffset = (y % 2 == 0) ? 0 : half;
+                int rowInField = y / 2;
+                int rowStart = fieldOffset + rowInField * rowStride;
+                ProcessUyvyRow_Neon(pSrc + rowStart, dst + y * w * 4, w,
+                    shufY, shufU, shufV, zeroI, max255, alpha,
+                    rCoef, gCoefCb, gCoefCr, bCoef);
+            }
+        }
+    }
+
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
     internal static bool DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
@@ -359,9 +604,11 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
         if ((w & 1) != 0) return false; // pair processing requires even width
 
-        // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
+        // SIMD: requires SSSE3 on x64 or AdvSimd on ARM64
         if (Ssse3.IsSupported && (w & 7) == 0)
             DecodeYuv422Interlaced_SIMD(src, dst, w, h);
+        else if (AdvSimd.IsSupported && (w & 7) == 0)
+            DecodeYuv422Interlaced_Neon(src, dst, w, h);
         else
             DecodeYuv422Interlaced_Scalar(src, dst, w, h);
         return true;
