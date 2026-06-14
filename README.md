@@ -10,8 +10,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 **F-prefix** (e.g. `F1019_1.ithmb`) — raw uncompressed thumbnails (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma). ⚠️ Best-effort.
 
-Tested with **956 T-prefix files** from an iPhone 5 (iOS 7) — **100% extraction rate**.
-
+Tested with **956 T-prefix files** from an iPhone 5 (iOS 7) — **100% extraction rate**.<br>
 Additionally validated against **227 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
 
 ---
