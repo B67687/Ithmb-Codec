@@ -139,4 +139,25 @@ public unsafe partial class IthmbCodecTests
     private static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
 
     private static int Clamp(int v) => Clamp(v, 0, 255);
+
+    /// <summary>Shared determinism helper: decode twice into separate buffers, compare byte-for-byte.</summary>
+    /// <remarks>Uses <c>IntPtr</c> instead of <c>byte*</c> because C# forbids pointer types as generic arguments.</remarks>
+    private static void AssertDeterminism(int dstByteCount, Func<IntPtr, bool> decode)
+    {
+        byte* dst1 = (byte*)NativeMemory.Alloc((nuint)dstByteCount);
+        byte* dst2 = (byte*)NativeMemory.Alloc((nuint)dstByteCount);
+        try
+        {
+            NativeMemory.Clear(dst1, (nuint)dstByteCount);
+            NativeMemory.Clear(dst2, (nuint)dstByteCount);
+            Assert.True(decode((IntPtr)dst1));
+            Assert.True(decode((IntPtr)dst2));
+            Assert.True(MemCmp(dst1, dst2, dstByteCount));
+        }
+        finally
+        {
+            NativeMemory.Free(dst1);
+            NativeMemory.Free(dst2);
+        }
+    }
 }

@@ -9,18 +9,29 @@ public unsafe partial class IthmbCodecTests
     [Fact]
     public void Property_Determinism_Rgb565()
     {
-        // Same input must produce same output every time
         byte[] src = [0x00, 0xF8]; // 16-bit LE = 0xF800 = pure red
-        byte* dst1 = (byte*)NativeMemory.Alloc(4);
-        byte* dst2 = (byte*)NativeMemory.Alloc(4);
-        try
-        {
-            IthmbCodecPlugin.DecodeRgb565(src, dst1, 1, 1, littleEndian: true);
-            IthmbCodecPlugin.DecodeRgb565(src, dst2, 1, 1, littleEndian: true);
-            for (int i = 0; i < 4; i++)
-                Assert.Equal(dst1[i], dst2[i]);
-        }
-        finally { NativeMemory.Free(dst1); NativeMemory.Free(dst2); }
+        AssertDeterminism(4, dst => IthmbCodecPlugin.DecodeRgb565(src, (byte*)(void*)dst, 1, 1, littleEndian: true));
+    }
+
+    [Fact]
+    public void Property_Determinism_Rgb555()
+    {
+        byte[] src = [0x00, 0x7C]; // 16-bit LE = 0x7C00 = red (xRRRRR=11111)
+        AssertDeterminism(4, dst => IthmbCodecPlugin.DecodeRgb555(src, (byte*)(void*)dst, 1, 1, littleEndian: true));
+    }
+
+    [Fact]
+    public void Property_Determinism_Yuv422()
+    {
+        byte[] src = [128, 128, 128, 128]; // neutral chroma + mid-gray
+        AssertDeterminism(8, dst => IthmbCodecPlugin.DecodeYuv422(src, (byte*)(void*)dst, 2, 1));
+    }
+
+    [Fact]
+    public void Property_Determinism_Ycbcr420()
+    {
+        byte[] src = [128, 128, 128, 128, 128, 128]; // 2x2 neutral
+        AssertDeterminism(16, dst => IthmbCodecPlugin.DecodeYcbcr420(src, (byte*)(void*)dst, 2, 2));
     }
 
     [Fact]

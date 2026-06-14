@@ -117,18 +117,40 @@ The plugin was developed through iterative research, implementation, review, and
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 
-### Review pipeline
+### Quality pipeline
 
-The project has a 4-layer review pipeline automated in `review.sh`:
+All quality checks are unified in `review.sh` — the single source of truth for what the project checks and how:
 
 ```bash
-bash review.sh
+bash review.sh            # run all available stages
+bash review.sh test codeql  # run specific stages
+bash review.sh --list       # enumerate stages with descriptions
 ```
 
-1. **Editor layer** — `.editorconfig` + Roslyn analyzers (`dotnet format --verify-no-changes`)
-2. **Test layer** — `dotnet test -c Release`
-3. **LLM review** — Alibaba OCR (if installed)
-4. **Security** — CodeQL (in CI or local)
+The pipeline covers **7 stages**, each usable independently:
+
+| Stage        | What it checks                                                                    | CI equivalent                   |
+| ------------ | --------------------------------------------------------------------------------- | ------------------------------- |
+| `editor`     | EditorConfig + Roslyn analyzers (`dotnet format --verify-no-changes`)             | pre-commit                      |
+| `precommit`  | Trailing whitespace, JSON/YAML lint, markdown, large files                        | pre-commit hooks                |
+| `commitlint` | Conventional commit format (type-enum: feat/fix/docs/refactor/test/chore/cleanup) | `.github/workflows/commits.yml` |
+| `test`       | Full test suite: `dotnet test -c Release` (329 tests)                             | `.github/workflows/test.yml`    |
+| `ocr`        | LLM code review via Alibaba OCR (if installed locally)                            | —                               |
+| `codeql`     | Security analysis via GitHub CodeQL                                               | `.github/workflows/codeql.yml`  |
+| `links`      | Broken link check via lychee                                                      | `.github/workflows/links.yml`   |
+
+Use `review.sh --fix` to auto-apply fixes for the editor layer.
+
+### AI-assisted development
+
+This project was developed entirely with AI assistance:
+
+- **Model:** DeepSeek V4 Flash
+- **Platform:** Opencode-Go subscription on Opencode TUI
+- **Role:** Specification drafting, code generation, review, refactoring, testing, documentation, and pipeline configuration — all done through AI pair-programming sessions.
+- **Human role:** Architecture decisions, validation against real hardware samples, acceptance testing, and release management.
+
+Every line of code was reviewed, tested, and verified by both AI and human before commit.
 
 ---
 

@@ -184,8 +184,6 @@ public unsafe partial class IthmbCodecTests
         finally { NativeMemory.Free(dst); }
     }
 
-    // ---- P4f: Determinism ----
-
     // ---- P4g: Roundtrip ----
 
     [Fact]
