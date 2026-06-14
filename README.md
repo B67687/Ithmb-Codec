@@ -26,6 +26,7 @@ Additionally validated against **227 publicly available T-prefix files** from an
 - [Profile Reference](#profile-reference)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
+- [Acknowledgments](#acknowledgments)
 - [License](#license)
 
 ---
@@ -172,8 +173,14 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
 
 ---
 
+## Acknowledgments
+
+25 open-source .ithmb implementations were surveyed during development. See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for the full list of credited projects, sample file sources, academic references, and color conversion standards.
+
+---
+
 ## License
 
-MIT — see [LICENSE](LICENSE). See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for full acknowledgments, sample file sources, and academic references.
+MIT — see [LICENSE](LICENSE).
 
 The original IthmbDecoder reference implementation (PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316)) was GPL-3.0. This plugin is a clean-room implementation for the v10 SDK ABI, informed by format behavior described in that PR but using no GPL code.
