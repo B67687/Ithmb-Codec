@@ -9,37 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Pre-commit hooks (.pre-commit-config.yaml) — trailing whitespace, JSON/YAML, markdown lint
-- Broken link checker (`.github/workflows/links.yml`) — weekly scan of all docs
-- Conventional commit enforcement (`.github/workflows/commits.yml`)
-- `.commitlintrc.json` — custom type-enum matching project convention
-- `review.sh` — 7-stage unified quality pipeline orchestrator (`--list`, `--fix`, stage selection)
-- CHANGELOG.md and PR template with documentation checklist
-- Test CI workflow with live status badge
-- `.editorconfig` + Roslyn analyzer enforcement (`TreatWarningsAsErrors`)
-- Standalone Acknowledgments section in README
-- AI transparency declaration in README (DeepSeek V4 Flash, Opencode-Go, Opencode TUI)
-- Determinism tests for RGB555, YUV422, YCbCr420 decoders (+3 tests, total 332)
-- `AssertDeterminism` shared test helper — eliminates alloc×2+compare boilerplate
-- `review.sh editor codeql` syntax — run specific pipeline stages
+- **CI/CD infrastructure:** Test workflow with live badge, CodeQL security scanning (weekly + push/PR), conventional commit enforcement on PR, weekly broken-link check
+- **Quality enforcement:** `.editorconfig` + Roslyn analyzer rules (`TreatWarningsAsErrors`), pre-commit hooks (whitespace, JSON/YAML/markdown lint, large-file guard), `.commitlintrc.json` with custom type-enum
+- **Review pipeline:** `review.sh` — unified 7-stage orchestrator (`editor`, `precommit`, `commitlint`, `test`, `ocr`, `codeql`, `links`), runnable individually or in bulk, with `--list` and `--fix`
+- CHANGELOG.md (Keep a Changelog format) and GitHub PR template with documentation checklist
+- Standalone Acknowledgments section and AI-assisted development disclosure in README
+- `AssertDeterminism` shared test helper — eliminates alloc×2+compare boilerplate pattern
+- Determinism tests for RGB555, YUV422, YCbCr420 decoders (+3 tests, 332 total)
+- `profiles.json` encoding descriptions added to existing profile table
 
 ### Changed
 
-- `review.sh` rewritten as unified orchestrator with 7 named stages, `--list`, `--fix`
-- `Property_Determinism_AllDecoders` now covers all 7 decoders via shared helper
-- README now uses live badge for test count instead of hardcoded number
-- SVGs updated to avoid specific counts — diagrams stay current without edits
-- DEVELOPMENT.md links to README for test count (single source of truth)
-- pipeline.svg: "329 tests" → "✓" (change-agnostic)
+- **Docs as source of truth:** README now uses live badge for test count; SVG diagrams, DEVELOPMENT.md, and pipeline.svg all reference README instead of hardcoding counts — single source of truth
+- **Pipeline unified:** `review.sh` rewritten as composable 7-stage orchestrator with `--list`, `--fix`, and stage-selection syntax; replaces ad-hoc 4-layer script
+- **Determinism coverage:** `Property_Determinism_AllDecoders` now covers all 7 decoders (was 2); per-decoder determinism tests added for RGB555, YUV422, YCbCr420
+- Monolithic test file (1908 lines) split into 7 partial class files
+- SVGs: image sizes, profile counts (47→48, 25→26), test counts removed in favor of change-agnostic checkmark
+
+### Cleaned
+
+- Removed stale files: `RESEARCH.md`, `SOURCES.md`, `ACADEMIC.md`, `src/README.md`, `*.mmd` diagrams, `tools/decode-pipeline-test/`
+- Scrubbed `REVIEW_PLAN.md` from all commit history via `git filter-repo`
+- Removed `// ---- P4f: Determinism ----` ghost heading (had no test)
 
 ### Fixed
 
-- CodeQL useless-assignment-to-local: restructured JSON parser loop exit
-- CodeQL path-combine: `Path.Combine` → `Path.Join`
-- README line counts updated (~933→~1015, ~613→~660, added Encoding.cs)
-- Architecture SVG: sizes, profile counts updated (47→48, 25→26)
-- Pipeline SVG: "317 tests" → current
-- Ghost heading `// ---- P4f: Determinism ----` removed from Exhaustive.cs (no test)
+- **CodeQL:** useless-assignment-to-local (JSON parser loop exit restructuring) and path-combine (`Path.Combine` → `Path.Join`)
+- README line counts synced with actual source sizes; profiles.json examples corrected (endianness)
+- Architecture and pipeline SVGs refreshed to match current profile/test counts
 
 ## [1.0.0] — 2026-06-14
 
