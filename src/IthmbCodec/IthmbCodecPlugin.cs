@@ -796,11 +796,12 @@ internal static unsafe partial class IthmbCodecPlugin
         pos++; // skip '['
 
         int objectsRead = 0;
-        while (pos < json.Length)
+        bool foundEnd = false;
+        while (pos < json.Length && !foundEnd)
         {
             SkipWhitespace(json, ref pos);
             if (pos >= json.Length) break;
-            if (json[pos] == ']') { pos++; break; }
+            if (json[pos] == ']') { pos++; foundEnd = true; continue; }
 
             // Limit object count to prevent CPU DoS from crafted JSON
             if (objectsRead++ > 100) return;
