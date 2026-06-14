@@ -1,5 +1,3 @@
-// Licensed under MIT. See LICENSE in the repository root.
-// 
 // Decode algorithms for .ithmb raw profiles.
 // Separated from plugin ABI glue for independent AOT compilation.
 using System;
@@ -242,6 +240,7 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
+        if ((w & 1) != 0) return false; // pair processing requires even width
 
         // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
         if (Ssse3.IsSupported && (w & 7) == 0)
@@ -358,6 +357,7 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
+        if ((w & 1) != 0) return false; // pair processing requires even width
 
         // SIMD: requires SSSE3 (pshufb for UYVY deinterleave) and w divisible by 8
         if (Ssse3.IsSupported && (w & 7) == 0)
@@ -445,6 +445,7 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
+        if ((w & 1) != 0) return false; // pair processing requires even width
 
         for (int y = 0; y < h; y++)
         {
@@ -507,9 +508,10 @@ internal static unsafe partial class IthmbCodecPlugin
     internal static bool DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h,
         bool swapChromaPlanes = false)
     {
-        int ySize = w * h;
+        long totalPixels = (long)w * h;
+        int ySize = (int)totalPixels; // ≤ 25M due to 50 MB file limit
         int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
-        long expectedBytes = (long)ySize + uvSize * 2;
+        long expectedBytes = totalPixels + (long)uvSize * 2;
         if (src.Length < expectedBytes) return false;
 
         // SIMD path: requires even dimensions (2×2 blocks fit perfectly in Vector128<int>)
