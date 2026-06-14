@@ -28,6 +28,16 @@
 
     <!-- Plugin: do not produce a NuGet package. -->
     <IsPackable>false</IsPackable>
+
+    <!-- Enforce deterministic code style during build (using built-in Roslyn analyzers) -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-Recommended</AnalysisLevel>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+
+    <!-- Treat style warnings as errors in CI — opt out per-file with #pragma if needed -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Exclude specific analyzer rules that conflict with Native AOT patterns -->
+    <NoWarn>$(NoWarn);CA2007;CA1062;CA1303;CA2101;CA5400</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
