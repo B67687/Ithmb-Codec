@@ -353,7 +353,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
-                // fileSize ≤ 50 MB (guarded at line 298), safe for int
+                // fileSize ≤ 50 MB (guarded at MaxDecodeFileSize check above), safe for int
                     return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }
@@ -488,7 +488,7 @@ internal static unsafe partial class IthmbCodecPlugin
         int frameSize = profile.FrameByteLength;
 
         int requiredSize = profile.IsPadded
-            ? Math.Min(frameSize, w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2)
+            ? Math.Min(frameSize, (int)((long)w * h + (long)((w + 1) / 2) * ((h + 1) / 2) * 2))
             : frameSize;
         if (data.Length < 4 || data.Length - 4 < requiredSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
 
