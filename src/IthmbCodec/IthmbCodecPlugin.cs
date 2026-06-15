@@ -594,8 +594,8 @@ internal static unsafe partial class IthmbCodecPlugin
                 {
                     int srcIdx = (y * srcW + x) * 4;
                     int dstIdx = rotation == 90
-                        ? (x * dstW + (srcH - 1 - y)) * 4
-                        : ((srcW - 1 - x) * dstW + y) * 4;
+                        ? (y * dstW + (srcW - 1 - x)) * 4
+                        : ((srcW - 1 - y) * dstW + x) * 4;
 
                     rotated[dstIdx]     = pixels[srcIdx];
                     rotated[dstIdx + 1] = pixels[srcIdx + 1];
