@@ -279,6 +279,71 @@ public unsafe partial class IthmbCodecTests
         Assert.Equal(orientation, orient);
     }
 
+    // ===================== Buffer-too-small guards =====================
+
+    [Fact]
+    public void DecodeRgb565_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0x00, 0xF8];
+        byte* dst = (byte*)NativeMemory.Alloc(4);
+        try { Assert.False(IthmbCodecPlugin.DecodeRgb565(src, dst, 2, 2, true)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeRgb555_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0x00, 0x7C];
+        byte* dst = (byte*)NativeMemory.Alloc(4);
+        try { Assert.False(IthmbCodecPlugin.DecodeRgb555(src, dst, 2, 2, true)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeYuv422_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0, 0, 0, 0];
+        byte* dst = (byte*)NativeMemory.Alloc(8);
+        try { Assert.False(IthmbCodecPlugin.DecodeYuv422(src, dst, 4, 2)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeYuv422Clcl_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0, 0, 0, 0];
+        byte* dst = (byte*)NativeMemory.Alloc(8);
+        try { Assert.False(IthmbCodecPlugin.DecodeYuv422Clcl(src, dst, 4, 2)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeYuv422Cl_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0, 0];
+        byte* dst = (byte*)NativeMemory.Alloc(4);
+        try { Assert.False(IthmbCodecPlugin.DecodeYuv422Cl(src, dst, 2, 2)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeYcbcr420_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0, 0, 0, 0, 0, 0];
+        byte* dst = (byte*)NativeMemory.Alloc(16);
+        try { Assert.False(IthmbCodecPlugin.DecodeYcbcr420(src, dst, 4, 4)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void DecodeYuv422Interlaced_BufferTooSmall_ReturnsFalse()
+    {
+        byte[] src = [0, 0, 0, 0];
+        byte* dst = (byte*)NativeMemory.Alloc(8);
+        try { Assert.False(IthmbCodecPlugin.DecodeYuv422Interlaced(src, dst, 4, 2)); }
+        finally { NativeMemory.Free(dst); }
+    }
+
     [Fact]
     public void ReadExifOrientation_BigEndianTiff_ReturnsValue()
     {
