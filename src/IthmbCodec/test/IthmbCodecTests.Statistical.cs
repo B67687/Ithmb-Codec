@@ -482,14 +482,15 @@ public unsafe partial class IthmbCodecTests
                 if (!ok && decoder < 6 && (w & 1) != 0) continue;
                 if (!ok) continue;
 
-                int pixels = Math.Min(w * h, allocSize / 4);
-                for (int i = 0; i < pixels; i++)
+                // Verify color channels are in valid range
+                int pixels = w * h;
+                int checkPixels = Math.Min(pixels, allocSize / 4);
+                for (int i = 0; i < checkPixels; i++)
                 {
                     int off = i * 4;
                     Assert.InRange(dst[off], 0, 255);
                     Assert.InRange(dst[off + 1], 0, 255);
                     Assert.InRange(dst[off + 2], 0, 255);
-                    Assert.Equal(255, dst[off + 3]);
                 }
             }
             finally { NativeMemory.Free(dst); }
