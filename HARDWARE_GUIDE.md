@@ -59,10 +59,10 @@ Skip to Step 2.
 2. The iPod appears as a removable drive in My Computer
 3. Navigate to `iPod_Control\Photos\Thumbs\`
 4. You'll see files like:
-   - `F1019_1.ithmb` — YUV422 interlaced (720×480)
-   - `F1015_1.ithmb` — RGB565 (130×88)
-   - `F1024_1.ithmb` — RGB565 (320×240)
-   - `F1066_1.ithmb` — RGB565 (64×64)
+    - `F1019_1.ithmb` — YUV422 interlaced (720×480)
+    - `F1015_1.ithmb` — RGB565 (130×88)
+    - `F1024_1.ithmb` — RGB565 (320×240)
+    - `F1066_1.ithmb` — RGB565 (64×64)
 5. Copy all `.ithmb` files to a folder on your PC
 6. Also copy `Photos\Photo Database` (the index file)
 
@@ -125,29 +125,29 @@ For YUV: ±1-3 per channel due to BT.601 rounding differences.
 
 1. **Check the file prefix** — first 4 bytes as big-endian int32:
 
-   ```bash
-   xxd -l 4 F1019_1.ithmb
-   ```
+    ```bash
+    xxd -l 4 F1019_1.ithmb
+    ```
 
-   Should match a profile in our table (e.g., 1019 = `0x000003FB`)
+    Should match a profile in our table (e.g., 1019 = `0x000003FB`)
 
 2. **Check file size** — Does it match `frameBytes` in our profile table?
 
-   ```bash
-   stat -c %s F1019_1.ithmb
-   ```
+    ```bash
+    stat -c %s F1019_1.ithmb
+    ```
 
 3. **Check for embedded JPEG** (T-prefix inside F-named file):
 
-   ```bash
-   xxd F1019_1.ithmb | grep "ffd8"
-   ```
+    ```bash
+    xxd F1019_1.ithmb | grep "ffd8"
+    ```
 
 4. **Hex dump the first 128 bytes** — compare against the format spec in the README:
 
-   ```bash
-   xxd -l 128 F1019_1.ithmb
-   ```
+    ```bash
+    xxd -l 128 F1019_1.ithmb
+    ```
 
 5. **Open an issue** on GitHub with the hex dump, file size, and iPod model.
    Or fix the decoder yourself and submit a PR.
@@ -156,14 +156,16 @@ For YUV: ±1-3 per channel due to BT.601 rounding differences.
 
 ## Quick Reference: Which Format Each iPod Produces
 
-| iPod Model             | Likely formats                     | Decoder tested          |
-| ---------------------- | ---------------------------------- | ----------------------- |
-| **iPod Photo 4G**      | 1009, 1013, 1015, 1019, 1016, 1017 | RGB565 ✅               |
-| **iPod Video 5G/5.5G** | 1036, 1024, 1015, 1019, 1028, 1029 | YUV422 ⚠️ untested      |
-| **iPod Classic 5G/6G** | 1067, 1024, 1066, 1055, 1060       | YCbCr 4:2:0 ⚠️ untested |
-| **iPod Nano 3G**       | 1067, 1024, 1066                   | YCbCr 4:2:0 ⚠️ untested |
-| **iPod Nano 4G**       | 1024, 1066, 1079, 1083             | RGB565 ✅               |
-| **iPod Nano 6G**       | 1092, 1093                         | RGB565 ✅               |
+| iPod Model              | Likely formats                                                  | Decoder tested          |
+| ----------------------- | --------------------------------------------------------------- | ----------------------- |
+| **iPod Photo 4G**       | 1009, 1013, 1015, 1019, 1016, 1017                              | RGB565 ✅               |
+| **iPod Video 5G/5.5G**  | 1036, 1024, 1015, 1019, 1028, 1029                              | YUV422 ⚠️ untested      |
+| **iPod Classic 5G/6G**  | 1067, 1024, 1066, 1055, 1060                                    | YCbCr 4:2:0 ⚠️ untested |
+| **iPod Nano 3G**        | 1067, 1024, 1066                                                | YCbCr 4:2:0 ⚠️ untested |
+| **iPod Nano 4G**        | 1024, 1066, 1079, 1083                                          | RGB565 ✅               |
+| **iPod Nano 6G**        | 1092, 1093                                                      | RGB565 ✅               |
+| **iPhone 2G/3G**        | 3004, 3008, 3009, 3011 (RGB555)                                 | RGB555 ⚠️ untested      |
+| **iPhone 1G (iOS 1.x)** | 3004=55×55, 3009=120×160, 3011=75×75, 3008=640×480 (all RGB555) | RGB555 ⚠️ untested      |
 
 ✅ = Unit-tested with synthetic data (roundtrip proven)
 ⚠️ = Codec exists but never validated against real hardware
@@ -182,7 +184,7 @@ Once you've validated (or fixed) a decoder, consider:
 
 ## Summary Checklist
 
-- [ ] Buy iPod Classic 5.5G (or Nano 3G) with working HDD + battery
+- [ ] Buy iPod Classic 5.5G (or Nano 3G, or iPhone 2G) with working HDD + battery
 - [ ] Sync photos via iTunes (or find existing photos on device)
 - [ ] Enable disk mode, extract `iPod_Control/Photos/Thumbs/`
 - [ ] Run `IthmbDecoder` on each `.ithmb` file

@@ -43,7 +43,7 @@ Format behavior was studied from these implementations; no code was copied.
 
 ### Lost / unrecoverable
 
-- **iThmbConv** (C, 2007) — host behind Captcha, source lost. [Whirlpool forum thread](https://forums.whirlpool.net.au/archive/661720)
+- **iThmbConv** (C, 2007) — Windows CLI tool by "Anywho" (Whirlpool). First working F3008 (iPhone RGB565) and F1067 (Nano YCbCr 4:2:0) decoder. Source lost behind Captcha. [Whirlpool forum thread](https://forums.whirlpool.net.au/archive/661720)
 
 ### Commercial / closed-source (reference only)
 
@@ -54,16 +54,17 @@ Format behavior was studied from these implementations; no code was copied.
 
 ## Format Documentation Sources
 
-| Source                 | URL                                                                                                             | Content                                 |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| iLounge "Gory Details" | https://web.archive.org/web/20090120040252/http://forums.ilounge.com/showthread.php?t=66435                     | Per-device format ID table (2005)       |
-| iLounge hacking thread | https://web.archive.org/web/20191225184817/https://forums.ilounge.com/threads/hacking-ithmb-file-format.110066/ | Original YUV 4:2:2 RE with working code |
-| keyj.emphy.de blog     | https://web.archive.org/web/2024*/https://keyj.emphy.de/an-ipod-hackers-diary/                                  | ArtworkDB reverse engineering           |
-| iPodLinux Wiki         | http://www.ipodlinux.org/ITunesDB/                                                                              | iTunesDB/ArtworkDB binary spec          |
-| Just Solve wiki        | http://fileformats.archiveteam.org/wiki/IThmb                                                                   | Format overview, sample links           |
-| ithmb.org              | https://ithmb.org                                                                                               | Browser-based decoder                   |
-| MyBroadband forum      | https://mybroadband.co.za/forum/threads/iphone-ipad-recover-deleted-images-through-ithmb-files.1298535/         | 3 sample files + reference JPEGs        |
-| XnView forum           | https://newsgroup.xnview.com/viewtopic.php?t=32698                                                              | Sample discussion                       |
+| Source                 | URL                                                                                                             | Content                                                                                                                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| iLounge "Gory Details" | https://web.archive.org/web/20090120040252/http://forums.ilounge.com/showthread.php?t=66435                     | Per-device format ID table (2005)                                                                                                                                                               |
+| iLounge hacking thread | https://web.archive.org/web/20191225184817/https://forums.ilounge.com/threads/hacking-ithmb-file-format.110066/ | Original YUV 4:2:2 RE with working code                                                                                                                                                         |
+| keyj.emphy.de blog     | https://web.archive.org/web/2024*/https://keyj.emphy.de/an-ipod-hackers-diary/                                  | ArtworkDB reverse engineering                                                                                                                                                                   |
+| iPodLinux Wiki         | http://www.ipodlinux.org/ITunesDB/                                                                              | iTunesDB/ArtworkDB binary spec                                                                                                                                                                  |
+| Just Solve wiki        | http://fileformats.archiveteam.org/wiki/IThmb                                                                   | Format overview, sample links                                                                                                                                                                   |
+| ithmb.org              | https://ithmb.org                                                                                               | Browser-based decoder                                                                                                                                                                           |
+| MyBroadband forum      | https://mybroadband.co.za/forum/threads/iphone-ipad-recover-deleted-images-through-ithmb-files.1298535/         | 3 sample files + reference JPEGs                                                                                                                                                                |
+| XnView forum           | https://newsgroup.xnview.com/viewtopic.php?t=32698                                                              | Sample discussion                                                                                                                                                                               |
+| Whirlpool forum thread | https://forums.whirlpool.net.au/archive/661720                                                                  | F3008 (iPhone RGB565) and F1067 (Nano YCbCr 4:2:0) first decoders, 4G vs 5G size differences, 500 MB file-split threshold. Contributors: Anywho (iThmbConv), stringpower, machstem, vaz, Dash-2 |
 
 ---
 

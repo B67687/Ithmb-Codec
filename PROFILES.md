@@ -58,6 +58,8 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 3011    | 80×79      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb)           |
 
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
+>
+> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. Most are already covered by our 48 profiles. One potentially undocumented entry: **F1064** (~320×240, iPod Nano 8GB) — may be a YCbCr 4:2:0 or RGB565 variant. If encountered, try the F1067 or F1024 decoder with custom dimensions via `profiles.json`.
 
 > The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets orientation (1–8). ImageGlass uses this to auto-rotate.
 
