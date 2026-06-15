@@ -349,5 +349,5 @@ if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static byte ClampU8(int v) => (byte)(v < 0 ? 0 : v > 255 ? 255 : v);
+    private static byte ClampU8(int v) => (byte)Clamp(v);
 }
