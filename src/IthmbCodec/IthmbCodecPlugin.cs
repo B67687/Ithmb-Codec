@@ -70,7 +70,7 @@ internal static unsafe partial class IthmbCodecPlugin
         new Dictionary<int, IthmbVariantProfile>
         {
             [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2),
-            // iPod Nano 7G photo thumbnail (from iOpenPod)
+            // iPod Nano 7G full-resolution photo (from iOpenPod)
             [1005] = new(1005, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1009] = new(1009, 42, 30, IthmbEncoding.Rgb565, 42 * 30 * 2),
             // iPod Photo 4G full-screen (big-endian, per iOpenPod/libgpod)
@@ -357,7 +357,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
                 // fileSize ≤ 50 MB (guarded at MaxDecodeFileSize check above), safe for int
-                    return DecodeJpegSlice(jpegSlice, 0, jpegLength, (int)fileSize,
+                    return DecodeJpegSlice(jpegSlice, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }
 
@@ -419,16 +419,14 @@ internal static unsafe partial class IthmbCodecPlugin
         return false;
     }
 
-    private static IGStatus DecodeJpegSlice(byte[] data, int offset, int length, int fileSize,
+    private static IGStatus DecodeJpegSlice(byte[] data, int length, int fileSize,
         void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf)
     {
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
-        if (offset < 0 || length <= 0 || offset + length > data.Length)
+        if (length <= 0 || length > data.Length)
             return IGStatus.DecodeFailed;
 
-        // data is already an exact JPEG slice (caller at line 345 allocates jpegSlice with offset=0)
-        // Use it directly to avoid doubling peak memory for large embedded JPEGs.
         var jpegSlice = data;
         ImageResult result;
         try
@@ -446,7 +444,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
         int w = result.Width, h = result.Height;
         int hasAlpha = 0; // stb_image always outputs alpha channel (RGBA) — we treat it as opaque
-        FillImageInfo(outInfo, w, h, hasAlpha, ReadExifOrientation(data, offset, length), fileSize);
+        FillImageInfo(outInfo, w, h, hasAlpha, ReadExifOrientation(data, 0, length), fileSize);
 
         if (outBuf == null) return IGStatus.OK; // metadata-only
         if (IsCanceled(cancellation)) return IGStatus.Canceled;

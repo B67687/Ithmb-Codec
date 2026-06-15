@@ -284,14 +284,15 @@ internal static unsafe partial class IthmbCodecPlugin
         }
 
         // 5. Pad to FrameByteLength if needed
-        if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
+        
+if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
         {
             var padded = new byte[profile.FrameByteLength];
             encoded.CopyTo(padded, 0);
             encoded = padded;
         }
 
-        // 5. Prepend 4-byte big-endian prefix
+        // 6. Prepend 4-byte big-endian prefix
         var result = new byte[4 + encoded.Length];
         result[0] = (byte)(profile.Prefix >> 24);
         result[1] = (byte)(profile.Prefix >> 16);
