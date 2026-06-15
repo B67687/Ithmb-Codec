@@ -115,9 +115,16 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 The plugin was developed through iterative research, implementation, review, and release cycles:
 
+1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
+2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 48 profiles
+3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
+4. **Testing** — 338 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, and speculative paths
+5. **Review cycles** — 4 rounds of multi-agent review: ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth
+6. **Release** — Windows Native AOT binary published via GitHub Releases
+
 <div align="center"><img src="docs/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for milestones and detailed history.
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ### Quality pipeline
 
