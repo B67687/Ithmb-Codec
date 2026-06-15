@@ -105,7 +105,8 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     // ---- YCbCr 4:2:0 encoder (BT.601, planar) ----
-    internal static byte[] EncodeYcbcr420(ReadOnlySpan<byte> bgra, int w, int h)
+    internal static byte[] EncodeYcbcr420(ReadOnlySpan<byte> bgra, int w, int h,
+        bool swapChromaPlanes = false)
     {
         int ySize = w * h;
         int uvW = (w + 1) / 2;
@@ -121,6 +122,8 @@ internal static unsafe partial class IthmbCodecPlugin
         }
 
         // Cb, Cr planes (2×2 averaged chroma)
+        // When swapChromaPlanes is true, exchange storage order so the decoder
+        // reading Cr from uvIdx and Cb from uvIdx+uvSize gets the correct values.
         for (int y = 0; y < h; y += 2)
         {
             for (int x = 0; x < w; x += 2)
@@ -137,8 +140,18 @@ internal static unsafe partial class IthmbCodecPlugin
                     }
                 }
                 int uvIdx = ySize + (y / 2) * uvW + (x / 2);
-                result[uvIdx] = ClampU8((sumCb + count / 2) / count);
-                result[uvIdx + uvSize] = ClampU8((sumCr + count / 2) / count);
+                byte cbVal = ClampU8((sumCb + count / 2) / count);
+                byte crVal = ClampU8((sumCr + count / 2) / count);
+                if (swapChromaPlanes)
+                {
+                    result[uvIdx] = crVal;
+                    result[uvIdx + uvSize] = cbVal;
+                }
+                else
+                {
+                    result[uvIdx] = cbVal;
+                    result[uvIdx + uvSize] = crVal;
+                }
             }
         }
         return result;
@@ -150,7 +163,9 @@ internal static unsafe partial class IthmbCodecPlugin
         // CLCL: 2-bytes-per-pixel, chroma packed as 4-bit nibbles
         // Byte layout per macropixel (2 pixels): [CbCr_nibbles] [Y0] [CbCr_nibbles] [Y1] — 4 bytes
         // See Decoding.cs DecodeYuv422Clcl for the inverse
+        // Requires even width (matching decoder's (w & 1) guard).
         int pixelCount = w * h;
+        if ((w & 1) != 0) return Array.Empty<byte>();
         var result = new byte[pixelCount * 2];
 
         for (int i = 0; i < pixelCount; i += 2)
@@ -231,6 +246,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     // Reverse rotation: decode rotation + encode = identity
                     int revRotation = (360 - profile.Rotation) % 360;
                     RotateBgra(p, ref rw, ref rh, revRotation);
+                    fw = rw; fh = rh; // Update dimensions after rotation
                 }
             }
             src = rotatedBuf;
@@ -255,7 +271,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 IthmbEncoding.Rgb565 => EncodeRgb565(src, fw, fh, !profile.LittleEndian),
                 IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian),
                 IthmbEncoding.Yuv422 => EncodeUyvy(src, fw, fh),
-                IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh),
+                IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh, profile.SwapChromaPlanes),
                 _ => throw new ArgumentException($"Unknown encoding: {profile.Encoding}")
             };
         }
@@ -289,7 +305,7 @@ internal static unsafe partial class IthmbCodecPlugin
     // ---- Helper: interleave fields for interlaced formats ----
     private static byte[] InterlaceFields(byte[] planar, int w, int h, IthmbEncoding enc)
     {
-        int bpp = 2; // both RGB565 and UYVY are 2 Bpp
+        int bpp = enc == IthmbEncoding.Ycbcr420 ? 1 : 2; // YCbCr420 is planar (1 Bpp luma), others are 2 Bpp
         int rowStride = w * bpp;
         int halfRows = (h + 1) / 2;
         var result = new byte[planar.Length];

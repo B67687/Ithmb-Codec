@@ -508,7 +508,11 @@ internal static unsafe partial class IthmbCodecPlugin
             // For padded profiles, trim to the valid pixel data portion
             if (profile.IsPadded)
             {
-                int validSize = w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2;
+                int validSize = profile.Encoding switch
+                {
+                    IthmbEncoding.Ycbcr420 => w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2,
+                    _ => w * h * 2 // RGB565/RGB555/YUV422 are all 2 Bpp
+                };
                 if (raw.Length > validSize) raw = raw[..validSize];
             }
             bool ok = profile.Encoding switch
@@ -854,7 +858,8 @@ internal static unsafe partial class IthmbCodecPlugin
             if (prefix > 0 && width > 0 && height > 0 && frameBytes > 0)
             {
                 var enc = string.Equals(encoding, "yuv422", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
-                    : string.Equals(encoding, "yuv422clcl", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
+                    : string.Equals(encoding, "yuv422clcl", StringComparison.OrdinalIgnoreCase) ? (clcl = true, IthmbEncoding.Yuv422).Item2
+                    : string.Equals(encoding, "yuv422cl", StringComparison.OrdinalIgnoreCase) ? (clSingle = true, IthmbEncoding.Yuv422).Item2
                     : string.Equals(encoding, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
                     : string.Equals(encoding, "rgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb555
                     : IthmbEncoding.Rgb565;
