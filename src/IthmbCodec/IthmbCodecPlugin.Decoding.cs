@@ -44,8 +44,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + y * w * 2;
-                byte* pDstRow = dst + y * w * 4;
+                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
                     // Main SIMD loop: 8 pixels per iteration
@@ -107,8 +107,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + y * w * 2;
-                byte* pDstRow = dst + y * w * 4;
+                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
                 for (; x + 7 < w; x += 8)
@@ -173,8 +173,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pDstRow = dst + y * w * 4;
-                DecodeRgb565_Tail(pSrc + y * w * 2, pDstRow, 0, w, littleEndian);
+                byte* pDstRow = dst + (nint)(y * w * 4);
+                DecodeRgb565_Tail(pSrc + (nint)(y * w * 2), pDstRow, 0, w, littleEndian);
             }
         }
     }
@@ -233,8 +233,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + y * w * 2;
-                byte* pDstRow = dst + y * w * 4;
+                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
                 for (; x + 7 < w; x += 8)
@@ -287,8 +287,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + y * w * 2;
-                byte* pDstRow = dst + y * w * 4;
+                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
                 for (; x + 7 < w; x += 8)
@@ -341,7 +341,7 @@ internal static unsafe partial class IthmbCodecPlugin
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
-                DecodeRgb555_Tail(pSrc + y * w * 2,
+                DecodeRgb555_Tail(pSrc + (nint)(y * w * 2),
                     dst + y * w * 4, 0, w, littleEndian);
         }
     }
@@ -390,7 +390,7 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int y = 0; y < h; y++)
         {
             int rowStart = y * w * 2;
-            byte* pDstRow = dst + y * w * 4;
+            byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x += 2)
             {
                 int idx = rowStart + x * 2;
@@ -425,7 +425,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
         fixed (byte* pSrc = src)
             for (int y = 0; y < h; y++)
-                ProcessUyvyRow(pSrc + y * w * 2, dst + y * w * 4, w,
+                ProcessUyvyRow(pSrc + (nint)(y * w * 2), dst + (nint)(y * w * 4), w,
                     shufY, shufU, shufV, zeroI, max255, alpha,
                     rCoef, gCoefCb, gCoefCr, bCoef);
     }
@@ -504,7 +504,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
         fixed (byte* pSrc = src)
             for (int y = 0; y < h; y++)
-                ProcessUyvyRow_Neon(pSrc + y * w * 2, dst + y * w * 4, w,
+                ProcessUyvyRow_Neon(pSrc + (nint)(y * w * 2), dst + (nint)(y * w * 4), w,
                     shufY, shufU, shufV, zeroI, max255, alpha,
                     rCoef, gCoefCb, gCoefCr, bCoef);
     }
@@ -590,7 +590,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 int fieldOffset = (y % 2 == 0) ? 0 : half;
                 int rowInField = y / 2;
                 int rowStart = fieldOffset + rowInField * rowStride;
-                ProcessUyvyRow_Neon(pSrc + rowStart, dst + y * w * 4, w,
+                ProcessUyvyRow_Neon(pSrc + rowStart, dst + (nint)(y * w * 4), w,
                     shufY, shufU, shufV, zeroI, max255, alpha,
                     rCoef, gCoefCb, gCoefCr, bCoef);
             }
@@ -623,7 +623,7 @@ internal static unsafe partial class IthmbCodecPlugin
             int fieldOffset = (y % 2 == 0) ? 0 : half;
             int rowInField = y / 2;
             int rowStart = fieldOffset + rowInField * rowStride;
-            byte* pDstRow = dst + y * w * 4;
+            byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x += 2)
             {
                 int idx = rowStart + x * 2;
@@ -662,7 +662,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 int fieldOffset = (y % 2 == 0) ? 0 : half;
                 int rowInField = y / 2;
                 int rowStart = fieldOffset + rowInField * rowStride;
-                ProcessUyvyRow(pSrc + rowStart, dst + y * w * 4, w,
+                ProcessUyvyRow(pSrc + rowStart, dst + (nint)(y * w * 4), w,
                     shufY, shufU, shufV, zeroI, max255, alpha,
                     rCoef, gCoefCb, gCoefCr, bCoef);
             }
@@ -697,7 +697,7 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int y = 0; y < h; y++)
         {
             int rowStart = y * w * 2;
-            byte* pDstRow = dst + y * w * 4;
+            byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x += 2)
             {
                 int idx = rowStart + x * 2;
@@ -733,7 +733,7 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int y = 0; y < h; y++)
         {
             int rowStart = y * w * 2;
-            byte* pDstRow = dst + y * w * 4;
+            byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x++)
             {
                 int idx = rowStart + x * 2;
@@ -831,8 +831,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             int yRow0 = y * w;
             int yRow1 = (y + 1) * w;
-            byte* dstRow0 = dst + y * w * 4;
-            byte* dstRow1 = dst + (y + 1) * w * 4;
+            byte* dstRow0 = dst + (nint)(y * w * 4);
+            byte* dstRow1 = dst + (nint)((y + 1) * w) * 4;
 
             for (int x = 0; x < w; x += 2)
             {

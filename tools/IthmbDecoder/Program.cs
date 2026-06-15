@@ -32,6 +32,8 @@ unsafe class Program
         }
 
         string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(inputPath, ".bmp");
+        // Resolve to full path to prevent path traversal
+        outputPath = Path.GetFullPath(outputPath);
 
         // Build an IGStringRef for the file path (UTF-16, as expected by the plugin)
         char[] pathChars = (inputPath + "\0").ToCharArray();
@@ -40,6 +42,11 @@ unsafe class Program
             var filePath = new IGStringRef { Data = pPath, Length = pathChars.Length - 1 };
             var outInfo = (IGImageInfo*)NativeMemory.AllocZeroed((nuint)sizeof(IGImageInfo));
             var outBuf = (IGPixelBuffer*)NativeMemory.AllocZeroed((nuint)sizeof(IGPixelBuffer));
+            if (outInfo == null || outBuf == null)
+            {
+                Console.Error.WriteLine("Out of memory");
+                return 1;
+            }
 
             try
             {
@@ -81,8 +88,7 @@ unsafe class Program
             finally
             {
                 NativeMemory.Free(outInfo);
-                if (outBuf->Data != null)
-                    NativeMemory.Free(outBuf->Data);
+                IthmbCodecPlugin.FreePixelBuffer(outBuf);
                 NativeMemory.Free(outBuf);
             }
         }

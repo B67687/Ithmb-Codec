@@ -275,8 +275,8 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static void CodecFreePixelBuffer(IGPixelBuffer* buf)
+    /// <summary>Frees a pixel buffer allocated during decode. Thread-safe via ConcurrentDictionary.</summary>
+    internal static void FreePixelBuffer(IGPixelBuffer* buf)
     {
         if (buf == null || buf->Data == null) return;
         nint key = (nint)buf->Data;
@@ -285,6 +285,9 @@ internal static unsafe partial class IthmbCodecPlugin
         buf->Data = null;
         buf->ReleaseContext = null;
     }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static void CodecFreePixelBuffer(IGPixelBuffer* buf) => FreePixelBuffer(buf);
 
     // ------------------------------ Core decode pipeline ------------------------------
     internal static IGStatus DecodeInternal(IGStringRef filePath, void* cancellation,
@@ -456,9 +459,9 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             var srcData = result.Data;
             long totalPixels = (long)w * h;
-            for (long i = 0; i < totalPixels; i++)
+            for (int i = 0; i < totalPixels; i++)
             {
-                long si = i * 4;
+                int si = i * 4;
                 pixels[si + 0] = srcData[si + 2]; // B = R
                 pixels[si + 1] = srcData[si + 1]; // G = G
                 pixels[si + 2] = srcData[si + 0]; // R = B
@@ -489,8 +492,9 @@ internal static unsafe partial class IthmbCodecPlugin
         int frameSize = profile.FrameByteLength;
 
         int requiredSize = profile.IsPadded
-            ? Math.Min(frameSize, (int)((long)w * h + (long)((w + 1) / 2) * ((h + 1) / 2) * 2))
+            ? Math.Min(frameSize, (int)Math.Min((long)w * h + (long)((w + 1) / 2) * ((h + 1) / 2) * 2, int.MaxValue))
             : frameSize;
+        if (requiredSize < 0) requiredSize = int.MaxValue;
         if (data.Length < 4 || data.Length - 4 < requiredSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
 
         int fileSize = data.Length; // actual file bytes read (available before FillImageInfo)
@@ -590,6 +594,7 @@ internal static unsafe partial class IthmbCodecPlugin
         int dstW = srcH, dstH = srcW;
         int newSize = dstW * dstH * 4;
         byte* rotated = (byte*)NativeMemory.Alloc((nuint)newSize);
+        if (rotated == null) { w = dstW; h = dstH; return; } // OOM: skip rotation
         try
         {
             for (int y = 0; y < srcH; y++)
@@ -962,6 +967,7 @@ internal static unsafe partial class IthmbCodecPlugin
         var count = SupportedExtensions.Length;
         _bufExtensions = (char**)NativeMemory.AllocZeroed((nuint)(sizeof(nint) * count));
         _extArray = (IGStringRef*)NativeMemory.AllocZeroed((nuint)(sizeof(IGStringRef) * count));
+        if (_bufExtensions == null || _extArray == null) return;
         for (var i = 0; i < count; i++)
         {
             var ext = SupportedExtensions[i];
