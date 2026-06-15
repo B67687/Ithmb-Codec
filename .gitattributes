@@ -4,6 +4,9 @@
 # C# source
 *.cs text diff=csharp
 
+# Shell scripts (enforce LF line endings)
+*.sh text eol=lf
+
 # Project files
 *.csproj text
 *.sln text
