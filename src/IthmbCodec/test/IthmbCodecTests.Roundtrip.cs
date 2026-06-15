@@ -313,7 +313,7 @@ public unsafe partial class IthmbCodecTests
         // For a flat-color image, interlaced and non-interlaced decode should match.
         // This validates the field-split logic is correct.
         int w = 4, h = 4;
-        int bytesPerField = (h / 2) * w * 2; // 16 bytes per field
+        int bytesPerField = ((h + 1) / 2) * w * 2; // field split matches production formula
         int totalBytes = bytesPerField * 2;   // 32 bytes
         byte[] flatSrc = new byte[totalBytes];
 

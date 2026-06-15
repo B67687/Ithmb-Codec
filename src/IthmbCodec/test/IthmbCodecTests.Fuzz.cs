@@ -56,6 +56,8 @@ public unsafe partial class IthmbCodecTests
     public static IEnumerable<object[]> GetBuffers_Ycbcr420() => GetBuffers(44);
     public static IEnumerable<object[]> GetBuffers_Interlaced() => GetBuffers(45);
     public static IEnumerable<object[]> GetBuffers_Rgb555() => GetBuffers(46);
+    public static IEnumerable<object[]> GetBuffers_Clcl() => GetBuffers(47);
+    public static IEnumerable<object[]> GetBuffers_Cl() => GetBuffers(48);
 
     [Theory]
     [MemberData(nameof(GetBuffers_Rgb565))]
@@ -137,6 +139,53 @@ public unsafe partial class IthmbCodecTests
         {
             NativeMemory.Clear(dst, (nuint)allocSize);
             IthmbCodecPlugin.DecodeYuv422Interlaced(buf, dst, w, h);
+            int pixels = Math.Min(w * h, allocSize / 4);
+            for (int i = 0; i < pixels; i++)
+            {
+                int offset = i * 4;
+                Assert.InRange(dst[offset], 0, 255);
+                Assert.InRange(dst[offset + 1], 0, 255);
+                Assert.InRange(dst[offset + 2], 0, 255);
+                Assert.Equal(255, dst[offset + 3]);
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetBuffers_Clcl))]
+    public void Fuzz_Clcl_NoCrash(byte[] buf, int w, int h)
+    {
+        if ((w & 1) != 0) return; // CLCL requires even width
+        int allocSize = Math.Max(4096, w * h * 4);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)allocSize);
+            IthmbCodecPlugin.DecodeYuv422Clcl(buf, dst, w, h);
+            int pixels = Math.Min(w * h, allocSize / 4);
+            for (int i = 0; i < pixels; i++)
+            {
+                int offset = i * 4;
+                Assert.InRange(dst[offset], 0, 255);
+                Assert.InRange(dst[offset + 1], 0, 255);
+                Assert.InRange(dst[offset + 2], 0, 255);
+                Assert.Equal(255, dst[offset + 3]);
+            }
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Theory]
+    [MemberData(nameof(GetBuffers_Cl))]
+    public void Fuzz_Cl_NoCrash(byte[] buf, int w, int h)
+    {
+        int allocSize = Math.Max(4096, w * h * 4);
+        byte* dst = (byte*)NativeMemory.Alloc((nuint)allocSize);
+        try
+        {
+            NativeMemory.Clear(dst, (nuint)allocSize);
+            IthmbCodecPlugin.DecodeYuv422Cl(buf, dst, w, h);
             int pixels = Math.Min(w * h, allocSize / 4);
             for (int i = 0; i < pixels; i++)
             {

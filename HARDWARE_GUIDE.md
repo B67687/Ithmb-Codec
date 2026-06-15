@@ -10,7 +10,7 @@ Buy an old iPod → extract `.ithmb` files → validate every decoder in our cod
 
 - **Model:** A1136 (80GB) or A1238 (160GB)
 - **Why:** 720×480 TV-out photos produce F1019 (YUV422 interlaced) — our most complex untested decoder
-- **Price:** ~$20-40 USD / ~PHP 1,000-2,000 / ~RM 60-150
+- **Price:** ~$20-80 USD / ~PHP 1,500-4,500 / ~RM 80-250 (2026 secondhand market)
 - **Also validates:** F1015, F1024, F1028, F1029, F1036, F1066, F1016, F1017, F1031 (RGB565 profiles)
 
 ### Secondary target: iPod Nano 3G
@@ -177,8 +177,7 @@ For YUV: ±1-3 per channel due to BT.601 rounding differences.
 Once you've validated (or fixed) a decoder, consider:
 
 1. Opening a PR with your test files and findings
-2. Publishing the F-prefix sample files as a public corpus (they're your own photos — your choice)
-3. Publishing sample files (your own photos — your choice)
+2. Publishing the F-prefix sample files as a public corpus (your own photos — your choice)
 
 ---
 

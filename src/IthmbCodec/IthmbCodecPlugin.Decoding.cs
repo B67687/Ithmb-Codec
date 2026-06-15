@@ -26,9 +26,9 @@ internal static unsafe partial class IthmbCodecPlugin
 
         // SIMD path: process 8 pixels per iteration.
         // x64: SSE2 (Sse2.Store/Shuffle). ARM64: NEON (AdvSimd).
-        if (Sse2.IsSupported && w >= 8)
+        if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb565_Sse2(src, dst, w, h, littleEndian);
-        else if (AdvSimd.IsSupported && w >= 8)
+        else if (AdvSimd.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb565_Neon(src, dst, w, h, littleEndian);
         else
             DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
@@ -210,9 +210,9 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
 
         // SIMD path: process 8 pixels per iteration.
-        if (Sse2.IsSupported && w >= 8)
+        if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb555_Sse2(src, dst, w, h, littleEndian);
-        else if (AdvSimd.IsSupported && w >= 8)
+        else if (AdvSimd.IsSupported && w >= 8 && (w & 3) == 0)
             DecodeRgb555_Neon(src, dst, w, h, littleEndian);
         else
             DecodeRgb555_Scalar(src, dst, w, h, littleEndian);
