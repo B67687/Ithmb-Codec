@@ -39,7 +39,7 @@ Additionally validated against **227 publicly available T-prefix files** from an
 
 1. **Peek read** — reads the first 4 MB of the file for JPEG scanning, then seeks the exact JPEG byte range from the FileStream (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos).
 2. **JPEG scan** — SIMD-accelerated `Span.IndexOf` (SSE2 on x64, NEON on ARM64) locates a SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via StbImageSharp, and its EXIF orientation tag (0x0112) is parsed for auto-rotation in ImageGlass.
-3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 48 known profiles and runs the appropriate raw decoder (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is rejected as unrecognized. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, and padded frame handling.
+3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 48 known profiles and runs the appropriate raw decoder (RGB565, RGB555, UYVY, YCbCr420, YUV422 interlaced, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is rejected as unrecognized. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, and padded frame handling.
 
 ### File size guard
 
@@ -101,7 +101,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**332 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250 inputs across 5 decoders), SIMD identity (10 tests), YUV tolerance, parsers, and speculative decoder paths (CL, CLCL, rotation, swapped chroma), plus per-decoder determinism verification.
+**345 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), and per-decoder determinism + statistical verification.
 
 **Real-device validation:**
 
@@ -118,7 +118,7 @@ The plugin was developed through iterative research, implementation, review, and
 1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 48 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
-4. **Testing** — 338 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, and speculative paths
+4. **Testing** — 345 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, and speculative paths
 5. **Review cycles** — 4 rounds of multi-agent review: ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth
 6. **Release** — Windows Native AOT binary published via GitHub Releases
 
@@ -143,7 +143,7 @@ The pipeline covers **7 stages**, each usable independently:
 | `editor`     | EditorConfig + Roslyn analyzers (`dotnet format --verify-no-changes`)             | pre-commit                      |
 | `precommit`  | Trailing whitespace, JSON/YAML lint, markdown, large files                        | pre-commit hooks                |
 | `commitlint` | Conventional commit format (type-enum: feat/fix/docs/refactor/test/chore/cleanup) | `.github/workflows/commits.yml` |
-| `test`       | Full test suite: `dotnet test -c Release` (329 tests)                             | `.github/workflows/test.yml`    |
+| `test`       | Full test suite: `dotnet test -c Release` (345 tests)                             | `.github/workflows/test.yml`    |
 | `ocr`        | LLM code review via Alibaba OCR (if installed locally)                            | —                               |
 | `codeql`     | Security analysis via GitHub CodeQL                                               | `.github/workflows/codeql.yml`  |
 | `links`      | Broken link check via lychee                                                      | `.github/workflows/links.yml`   |
