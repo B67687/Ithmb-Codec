@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Trailing bytes tolerance:** `DecodeRawProfile` now accepts files up to 256 bytes smaller than `FrameByteLength`, zero-padding undersized data. Handles real device alignment quirks where the encoder wrote fewer bytes than the expected frame size. Inspired by iOpenPod's `_resolve_packed_geometry` trailing-trim approach. (+2 tests)
+- **JPEG carving fallback:** When a file has an unknown profile prefix, scan the entire file for embedded JPEG markers before giving up. Enables decoding of .ithmb files whose prefix is unknown but which contain JPEG data beyond the 4 MB peek buffer. Mimics File Juicer's byte-level carving approach. (+2 tests)
+- **Centered crop infrastructure:** Added `CropX`/`CropY`/`CropWidth`/`CropHeight` fields to `IthmbVariantProfile` with full `profiles.json` parser support and post-decode cropping logic (applied after rotation). Ready for centered-padding photo formats (1007, 1015, 1024, 1093) once sample files validate exact crop dimensions. Based on iOpenPod's `_crop_visible_region`.
 - **Quality pipeline:** `review.sh` unified 7-stage orchestrator (`editor`, `precommit`, `commitlint`, `test`, `ocr`, `codeql`, `links`) with `--list`, `--fix`, and stage-selection
 - `AssertDeterminism` shared test helper — eliminates alloc×2+compare boilerplate in determinism tests
 - Determinism tests for RGB555, YUV422, YCbCr420 decoders (+3 tests, 332 total)

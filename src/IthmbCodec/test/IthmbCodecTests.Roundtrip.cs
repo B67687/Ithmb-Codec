@@ -654,6 +654,61 @@ public unsafe partial class IthmbCodecTests
     }
 
     [Fact]
+    public void DecodeRawProfile_TrailingPaddingTolerance_SlightlySmaller_Succeeds()
+    {
+        // Tests that files slightly smaller than FrameByteLength (within TrailingPaddingTolerance=256)
+        // are accepted and decoded. This handles real device alignment quirks where the encoder
+        // wrote fewer bytes than expected. Behavior informed by iOpenPod's trailing-trim approach.
+        int frameSize = 100 * 100 * 2; // 20,000 bytes for a 100×100 RGB565 frame
+        int actualSize = frameSize - 128; // 128 bytes short — within 256-byte tolerance
+        var data = new byte[4 + actualSize];
+        // Write prefix (1005 in big-endian)
+        data[0] = 0x00; data[1] = 0x00; data[2] = 0x03; data[3] = 0xED; // 1005 = 0x03ED
+        // Fill pixel data with neutral values
+        for (int i = 4; i < data.Length; i++) data[i] = 128;
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1005, Width: 100, Height: 100,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: frameSize);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.NotEqual((nint)0, (nint)outBuf->Data);
+            // Zero-padded pixels should decode to near-black (padded bytes are 0)
+            // but the middle of the image had valid data
+            Assert.Equal(100, outBuf->Width);
+            Assert.Equal(100, outBuf->Height);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_TrailingPaddingTolerance_TooSmall_Fails()
+    {
+        // Beyond tolerance (512 bytes short) should still fail
+        int frameSize = 100 * 100 * 2;
+        var data = new byte[4 + frameSize - 512]; // 512 bytes short — beyond 256-byte tolerance
+        data[0] = 0x00; data[1] = 0x00; data[2] = 0x03; data[3] = 0xED;
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1005, Width: 100, Height: 100,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: frameSize);
+
+        var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
+            cancellation: null, outInfo: null, outBuf: null);
+        Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+    }
+
+    [Fact]
     public void DecodeRawProfile_ClChroma_DecodeOnly()
     {
         // Test that CL decoder path at least doesn't crash (speculative)

@@ -45,6 +45,12 @@ internal static unsafe partial class IthmbCodecPlugin
     private const int PeekBufferSize = 4 * 1024 * 1024;           // 4 MB: covers thumbnail JPEG headers + embedded JPEGs
     private const int MaxSignatureProbe = 4096;                    // 4 KB: covers JPEG SOI + marker segments
 
+    // Tolerance for trailing alignment padding bytes. Real .ithmb files from some devices
+    // may be slightly smaller than FrameByteLength due to device alignment quirks or
+    // incomplete padding. Allow up to 256 bytes slack before rejecting as too small.
+    // Based on analysis of iOpenPod's _resolve_packed_geometry trailing-trim approach.
+    private const int TrailingPaddingTolerance = 256;
+
     // JFIF/Exif probe window after SOI (must cover DQT, DHT, COM before APP0/APP1)
     private const int JfifExifScanWindow = 512;
 
@@ -55,6 +61,18 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <param name="SwapChromaPlanes">If true, swaps Cb/Cr order in YCbCr 4:2:0 (some iPod variants).</param>
     /// <param name="ClChroma">Per-pixel 4-bit nibble chroma (Keith CL, not CLCL).</param>
     /// <param name="Rotation">Clockwise rotation in degrees (0, 90, 180, 270). Applied post-decode to BGRA output.</param>
+    /// <param name="CropX">X offset of visible region within decoded frame (0 = no crop).</param>
+    /// <param name="CropY">Y offset of visible region within decoded frame (0 = no crop).</param>
+    /// <param name="CropWidth">Width of visible region (0 = no crop, uses full Width).</param>
+    /// <param name="CropHeight">Height of visible region (0 = no crop, uses full Height).</param>
+    /// <remarks>
+    /// Crop fields support centered-padding photo formats where the visible image is
+    /// smaller than the stored frame (e.g., format 1007 480×864 may have centered
+    /// padding). When CropWidth/CropHeight are non-zero, the decoder crops the BGRA
+    /// output to the specified region after decode and rotation. This avoids the
+    /// black-border artifact visible in some photo formats.
+    /// Based on iOpenPod's _crop_visible_region approach (48-profile analysis).
+    /// </remarks>
     internal readonly record struct IthmbVariantProfile(
         int Prefix, int Width, int Height, IthmbEncoding Encoding,
         int FrameByteLength,
@@ -62,7 +80,9 @@ internal static unsafe partial class IthmbCodecPlugin
         bool IsPadded = false, bool IsInterlaced = false,
         bool ClclChroma = false,
         bool SwapChromaPlanes = false, bool ClChroma = false,
-        int Rotation = 0);
+        int Rotation = 0,
+        int CropX = 0, int CropY = 0,
+        int CropWidth = 0, int CropHeight = 0);
 
     internal static volatile FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
@@ -361,7 +381,7 @@ internal static unsafe partial class IthmbCodecPlugin
                         cancellation, outInfo, outBuf);
                 }
 
-                // No embedded JPEG found — read full file for raw profile fallback
+                // No embedded JPEG found in peek buffer — read full file for raw profile fallback
                 byte[] fileBytes = new byte[(int)fileSize];
             fs.Seek(0, SeekOrigin.Begin);
             fs.ReadExactly(fileBytes, 0, (int)fileSize);
@@ -372,7 +392,20 @@ internal static unsafe partial class IthmbCodecPlugin
                 return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf);
             }
 
-            Log(4, $"ITHMB: '{Path.GetFileName(path)}' no embedded JPEG found, unknown profile prefix {prefix}");
+                // Unknown prefix — try JPEG carving on the full file before giving up.
+                // Many .ithmb files from newer devices embed JPEGs regardless of prefix,
+                // and the JPEG may start beyond the 4 MB peek buffer or lack standard
+                // JFIF/Exif markers in the first scan window. File Juicer uses this
+                // byte-level carving approach successfully for unknown variants.
+                Log(4, $"ITHMB: '{Path.GetFileName(path)}' unknown prefix {prefix}, trying JPEG carving fallback");
+                if (TryFindJpegSlice(fileBytes, out var carveOffset, out var carveLength, cancellation))
+                {
+                    Log(4, $"ITHMB: JPEG carving found slice at offset {carveOffset}, length {carveLength}");
+                    return DecodeJpegSlice(fileBytes, carveLength, (int)fileSize,
+                        cancellation, outInfo, outBuf);
+                }
+
+            Log(4, $"ITHMB: '{Path.GetFileName(path)}' no embedded JPEG or known profile (prefix {prefix})");
             return IGStatus.DecodeFailed;
         }
         catch (IOException ex) { Log(4, $"ITHMB: read failed '{path}' ({ex.Message})"); return IGStatus.IoError; }
@@ -489,11 +522,21 @@ internal static unsafe partial class IthmbCodecPlugin
         if (profile.SwapsDimensions) (w, h) = (h, w);
         int frameSize = profile.FrameByteLength;
 
+        // Compute the minimum size we need. For padded profiles, the valid pixel data
+        // may be smaller than FrameByteLength (padding was added by the device).
+        // For non-padded profiles, apply TrailingPaddingTolerance to handle device
+        // alignment quirks where the encoder wrote fewer bytes than expected.
         int requiredSize = profile.IsPadded
             ? Math.Min(frameSize, (int)Math.Min((long)w * h + (long)((w + 1) / 2) * ((h + 1) / 2) * 2, int.MaxValue))
             : frameSize;
         if (requiredSize < 0) requiredSize = int.MaxValue;
-        if (data.Length < 4 || data.Length - 4 < requiredSize) { Log(4, "ITHMB: raw file too small for profile"); return IGStatus.DecodeFailed; }
+        int actualDataLen = data.Length - 4;
+        if (actualDataLen < 0) { Log(4, "ITHMB: raw file too small (no prefix)"); return IGStatus.DecodeFailed; }
+        if (actualDataLen < requiredSize - TrailingPaddingTolerance)
+        {
+            Log(4, $"ITHMB: raw file too small ({actualDataLen} < {requiredSize})");
+            return IGStatus.DecodeFailed;
+        }
 
         int fileSize = data.Length; // actual file bytes read (available before FillImageInfo)
         FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1, fileSize: fileSize);
@@ -516,6 +559,15 @@ internal static unsafe partial class IthmbCodecPlugin
                     _ => w * h * 2 // RGB565/RGB555/YUV422 are all 2 Bpp
                 };
                 if (raw.Length > validSize) raw = raw[..validSize];
+            }
+            // For non-padded profiles, handle trailing alignment tolerance:
+            // if raw is slightly shorter than frameSize (within TrailingPaddingTolerance),
+            // zero-pad it to frameSize so the decoder can read the expected number of bytes.
+            else if (raw.Length < frameSize && raw.Length >= frameSize - TrailingPaddingTolerance)
+            {
+                var padded = new byte[frameSize];
+                raw.CopyTo(padded);
+                raw = padded;
             }
             bool ok = profile.Encoding switch
             {
@@ -553,6 +605,33 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             RotateBgra(pixels, ref w, ref h, profile.Rotation);
             stride = (ulong)w * 4UL;
+        }
+
+        // Apply post-decode crop for centered-padding photo formats.
+        // Crop is applied AFTER rotation so the crop region references the final orientation.
+        // When CropWidth/CropHeight are non-zero, copy the visible region into a new
+        // buffer and free the full-frame buffer. Based on iOpenPod's _crop_visible_region.
+        if (profile.CropWidth > 0 && profile.CropHeight > 0 &&
+            profile.CropX + profile.CropWidth <= w &&
+            profile.CropY + profile.CropHeight <= h)
+        {
+            int cropW = profile.CropWidth, cropH = profile.CropHeight;
+            byte* cropped = (byte*)NativeMemory.AllocZeroed((nuint)(cropW * 4 * cropH));
+            if (cropped != null)
+            {
+                for (int y = 0; y < cropH; y++)
+                {
+                    int srcOff = ((profile.CropY + y) * w + profile.CropX) * 4;
+                    int dstOff = y * cropW * 4;
+                    NativeMemory.Copy(pixels + srcOff, cropped + dstOff, (nuint)(cropW * 4));
+                }
+                NativeMemory.Free(pixels);
+                _liveBuffers.TryRemove((nint)pixels, out _);
+                pixels = cropped;
+                w = cropW;
+                h = cropH;
+                stride = (ulong)cropW * 4UL;
+            }
         }
 
         _liveBuffers[(nint)pixels] = 0;
@@ -820,7 +899,7 @@ internal static unsafe partial class IthmbCodecPlugin
             int prefix = 0, width = 0, height = 0, frameBytes = 0;
             string encoding = "rgb565";
             bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false;
-            int rotationDeg = 0;
+            int rotationDeg = 0, cropX = 0, cropY = 0, cropW = 0, cropH = 0;
 
             while (pos < json.Length)
             {
@@ -851,6 +930,10 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "isCl": clSingle = ParseJsonBool(json, ref pos); break;
                     case "swapChromaPlanes": swapPlanes = ParseJsonBool(json, ref pos); break;
                     case "rotation": rotationDeg = ParseJsonInt(json, ref pos); break;
+                    case "cropX": cropX = ParseJsonInt(json, ref pos); break;
+                    case "cropY": cropY = ParseJsonInt(json, ref pos); break;
+                    case "cropWidth": cropW = ParseJsonInt(json, ref pos); break;
+                    case "cropHeight": cropH = ParseJsonInt(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos); break;
                 }
 
@@ -868,7 +951,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl,
-                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle, Rotation: rotationDeg);
+                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle, Rotation: rotationDeg,
+                    CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH);
             }
 
             SkipWhitespace(json, ref pos);

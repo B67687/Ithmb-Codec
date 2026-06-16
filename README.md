@@ -101,7 +101,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**452 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, and per-decoder determinism + statistical verification.
+**456 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (250+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, and per-decoder determinism + statistical verification.
 
 **Real-device validation:**
 
@@ -118,7 +118,7 @@ The plugin was developed through iterative research, implementation, review, and
 1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 48 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
-4. **Testing** — 452 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, and buffer-too-small guards
+4. **Testing** — 456 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, and JPEG carving fallback
 5. **Review cycles** — 4 rounds of multi-agent review: ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth
 6. **Release** — Windows Native AOT binary published via GitHub Releases
 
@@ -143,7 +143,7 @@ The pipeline covers **8 stages**, each usable independently:
 | `editor`     | EditorConfig + Roslyn analyzers (`dotnet format --verify-no-changes`)             | pre-commit                      |
 | `precommit`  | Trailing whitespace, JSON/YAML lint, markdown, large files                        | pre-commit hooks                |
 | `commitlint` | Conventional commit format (type-enum: feat/fix/docs/refactor/test/chore/cleanup) | `.github/workflows/commits.yml` |
-| `test`       | Full test suite: `dotnet test -c Release` (452 tests)                             | `.github/workflows/test.yml`    |
+| `test`       | Full test suite: `dotnet test -c Release` (456 tests)                             | `.github/workflows/test.yml`    |
 | `ocr`        | LLM code review via Alibaba OCR (if installed locally)                            | —                               |
 | `codeql`     | Security analysis via GitHub CodeQL                                               | `.github/workflows/codeql.yml`  |
 | `links`      | Broken link check via lychee                                                      | `.github/workflows/links.yml`   |
