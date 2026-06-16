@@ -37,7 +37,10 @@ internal static unsafe partial class IthmbCodecPlugin
 
     /// <summary>SSE2-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
     /// <remarks>Uses Vector128.StoreUnsafe (movdqu, no alignment required). The (w &amp; 3) == 0 guard
-    /// is retained for correctness equivalence with the scalar tail handler.</remarks>
+    /// is retained because some widths where w ≥ 8 but not a multiple of 4 (e.g. 10, 14, 18) expose
+    /// a pre-existing SSE2 output buffer overrun that overwrites the next row's start. The scalar
+    /// tail handles <8 remaining pixels correctly after the SIMD loop. Width sensitivity noted but
+    /// root cause not yet isolated (all known profiles use standard dimensions that satisfy the guard).</remarks>
     private static void DecodeRgb565_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
         fixed (byte* pSrc = src)
