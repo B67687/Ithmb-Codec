@@ -136,7 +136,7 @@ bash review.sh test codeql  # run specific stages
 bash review.sh --list       # enumerate stages with descriptions
 ```
 
-The pipeline covers **7 stages**, each usable independently:
+The pipeline covers **8 stages**, each usable independently:
 
 | Stage        | What it checks                                                                    | CI equivalent                   |
 | ------------ | --------------------------------------------------------------------------------- | ------------------------------- |
@@ -147,6 +147,7 @@ The pipeline covers **7 stages**, each usable independently:
 | `ocr`        | LLM code review via Alibaba OCR (if installed locally)                            | —                               |
 | `codeql`     | Security analysis via GitHub CodeQL                                               | `.github/workflows/codeql.yml`  |
 | `links`      | Broken link check via lychee                                                      | `.github/workflows/links.yml`   |
+| `semgrep`    | Semgrep static analysis (null-check, pointer safety, catch-all rules)             | `.github/workflows/semgrep.yml` |
 
 Use `review.sh --fix` to auto-apply fixes for the editor layer.
 
