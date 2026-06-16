@@ -344,6 +344,38 @@ public unsafe partial class IthmbCodecTests
         finally { NativeMemory.Free(dst); }
     }
 
+    // ===================== JPEG carving fallback =====================
+
+    [Fact]
+    public void Carving_UnknownPrefixWithEmbeddedJpeg_DecodesSuccessfully()
+    {
+        // When a file has an unknown prefix but contains an embedded JPEG,
+        // the carving fallback in DecodeInternal should find and decode it.
+        // This mimics File Juicer's approach of byte-level JPEG detection.
+        var jpeg = BuildMinimalJpeg(Jfif: true);
+        // Wrap with unknown prefix (0xDEADBEEF) + padding + embedded JPEG deeper in file
+        var data = new byte[4 + 256 + jpeg.Length];
+        // Unknown prefix
+        data[0] = 0xDE; data[1] = 0xAD; data[2] = 0xBE; data[3] = 0xEF;
+        // Fill padding with zeros
+        // Insert JPEG at offset 260 (after prefix + 256 bytes padding)
+        Array.Copy(jpeg, 0, data, 260, jpeg.Length);
+        // Verify TryFindJpegSlice finds it (carving path used by DecodeInternal for unknown prefixes)
+        bool found = IthmbCodecPlugin.TryFindJpegSlice(data, out int offset, out int length, null);
+        Assert.True(found);
+        Assert.Equal(260, offset);
+        Assert.Equal(jpeg.Length, length);
+    }
+
+    [Fact]
+    public void Carving_NoJpeg_UnknownPrefix_ReturnsFalse()
+    {
+        // File with unknown prefix and no embedded JPEG — carving should fail
+        byte[] data = [0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05];
+        bool found = IthmbCodecPlugin.TryFindJpegSlice(data, out _, out _, null);
+        Assert.False(found);
+    }
+
     [Fact]
     public void ReadExifOrientation_BigEndianTiff_ReturnsValue()
     {
