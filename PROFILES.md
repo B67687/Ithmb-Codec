@@ -1,6 +1,6 @@
 # Profiles
 
-48 known raw-format profiles covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+49 known raw-format profiles covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
@@ -30,6 +30,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1056    | 128×128    | RGB565           | Nano 5G (cover art)                              |
 | 1060    | 320×320    | RGB565           | Classic/Nano3G (cover art)                       |
 | 1044    | 128×128    | RGB565           | Compatibility alias for 1055                     |
+| 1064    | 320×240    | YCbCr 4:2:0      | iPod Nano 8GB 3G (photo library, speculative)    |
 | 1061    | 56×56      | RGB565           | Classic (cover art small)                        |
 | 1066    | 64×64      | RGB565           | iPod Classic 6G (square photo)                   |
 | 1067    | 720×480    | YCbCr 4:2:0      | iPod Classic 6G / Nano 3G (padded)               |
@@ -59,7 +60,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 >
-> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. Most are already covered by our 48 profiles. One potentially undocumented entry: **F1064** (~320×240, iPod Nano 8GB) — may be a YCbCr 4:2:0 or RGB565 variant. If encountered, try the F1067 or F1024 decoder with custom dimensions via `profiles.json`.
+> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are now covered by our 49 profiles. The formerly undocumented **F1064** (320×240, iPod Nano 8GB) was added as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis. If real samples differ, override via `profiles.json`.
 
 > The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets orientation (1–8). ImageGlass uses this to auto-rotate.
 
@@ -76,5 +77,9 @@ These flags can be set in `profiles.json` for fine-tuning raw decoder behavior:
 | `isClcl`           | bool | `false` | CLCL nibble-chroma: 4-bit chroma shared across 2 pixels (4 bytes per macropixel).                                 |
 | `isCl`             | bool | `false` | CL per-pixel nibble-chroma: each pixel has its own 4-bit chroma (2 bytes per pixel). Keith's Methods 3/4.         |
 | `swapChromaPlanes` | bool | `false` | Swaps Cb/Cr order in YCbCr 4:2:0 planar decode (Keith's Method 6). For iPod variants with reversed chroma planes. |
+| `cropX`            | int  | `0`     | X offset of visible region within decoded frame (0 = no crop). For centered-padding photo formats.                |
+| `cropY`            | int  | `0`     | Y offset of visible region within decoded frame (0 = no crop).                                                    |
+| `cropWidth`        | int  | `0`     | Width of visible region (0 = no crop, uses full frame width).                                                     |
+| `cropHeight`       | int  | `0`     | Height of visible region (0 = no crop, uses full frame height).                                                   |
 
 > **Speculative decoders:** The `isClcl`, `isCl`, and `swapChromaPlanes` flags are based on Keith Wiley's original 2005 reverse engineering (Methods 1–6). No other open-source ithmb implementation (iOpenPod, libgpod, andrewmalta/ithmb, etc.) independently confirms these byte layouts or chroma orderings. No known built-in profiles use them — they are safety nets for undocumented iPod variants. If you encounter a file that decodes with wrong colors, try toggling these flags via `profiles.json`.

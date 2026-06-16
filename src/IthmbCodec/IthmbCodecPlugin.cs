@@ -110,6 +110,10 @@ internal static unsafe partial class IthmbCodecPlugin
             // iPod Nano 1G/2G photo list thumbnail
             [1032] = new(1032, 42, 37, IthmbEncoding.Rgb565, 42 * 37 * 2),
             [1036] = new(1036, 50, 41, IthmbEncoding.Rgb565, 50 * 41 * 2),
+            // iPod Nano 8GB (3G) photo library — 320×240 YCbCr 4:2:0, padded
+            // Documented in Whirlpool forum thread (Anywho's iThmbConv, 2007).
+            // No sample files exist for validation. Speculative — override via profiles.json if wrong.
+            [1064] = new(1064, 320, 240, IthmbEncoding.Ycbcr420, 320 * 240 * 2, IsPadded: true),
             // iPod Classic 6G square photo thumbnail
             [1066] = new(1066, 64, 64, IthmbEncoding.Rgb565, 64 * 64 * 2),
             // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame

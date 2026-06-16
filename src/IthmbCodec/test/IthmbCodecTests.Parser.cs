@@ -35,4 +35,19 @@ public unsafe class ParserTests
         IthmbCodecPlugin.ParseProfilesJson("{bad json}", output);
         Assert.Empty(output);
     }
+
+    [Fact]
+    public void ParseProfilesJson_WithCropFields_ParsesCorrectly()
+    {
+        string json = "[\n  {\n    \"prefix\": 1007,\n    \"width\": 480,\n    \"height\": 864,\n    \"encoding\": \"rgb565\",\n    \"frameBytes\": 829440,\n    \"cropX\": 20,\n    \"cropY\": 30,\n    \"cropWidth\": 440,\n    \"cropHeight\": 804\n  }\n]";
+        var output = new Dictionary<int, IthmbCodecPlugin.IthmbVariantProfile>();
+        IthmbCodecPlugin.ParseProfilesJson(json, output);
+
+        Assert.Single(output);
+        Assert.True(output.ContainsKey(1007));
+        Assert.Equal(20, output[1007].CropX);
+        Assert.Equal(30, output[1007].CropY);
+        Assert.Equal(440, output[1007].CropWidth);
+        Assert.Equal(804, output[1007].CropHeight);
+    }
 }

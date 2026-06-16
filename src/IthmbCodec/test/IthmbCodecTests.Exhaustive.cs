@@ -229,6 +229,7 @@ public unsafe partial class IthmbCodecTests
     {
         // Verify all newly added profiles are in the KnownProfiles dictionary
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1005));
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1064));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1032));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1092));
         Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1093));

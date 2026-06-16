@@ -797,4 +797,137 @@ public unsafe partial class IthmbCodecTests
         }
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
+
+    // ===================== Centered crop infrastructure =====================
+
+    [Fact]
+    public void DecodeRawProfile_Crop_ExtractsCorrectRegion()
+    {
+        // 4×4 RGB565 image with a recognizable pattern. Crop to 2×2 center region.
+        // Layout (BGRA values):
+        // [r0,g0,b0] [r1,g1,b1] [r2,g2,b2] [r3,g3,b3]
+        // [r4,g4,b4] [r5,g5,b5] [r6,g6,b6] [r7,g7,b7]
+        // [r8,g8,b8] [r9,g9,b9] [ra,ga,ba] [rb,gb,bb]
+        // [rc,gc,bc] [rd,gd,bd] [re,ge,be] [rf,gf,bf]
+        // Crop region: CropX=1, CropY=1, CropWidth=2, CropHeight=2
+        // Expected: pixels at (1,1), (2,1), (1,2), (2,2) = r5, r6, r9, ra
+        int w = 4, h = 4;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h; i++)
+        {
+            bgra[i * 4]     = (byte)(i * 3);       // B
+            bgra[i * 4 + 1] = (byte)(i * 7);       // G
+            bgra[i * 4 + 2] = (byte)(i * 11);      // R
+            bgra[i * 4 + 3] = 255;
+        }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9995, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: w * h * 2,
+            CropX: 1, CropY: 1, CropWidth: 2, CropHeight: 2);
+
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.Equal(2, outBuf->Width);
+            Assert.Equal(2, outBuf->Height);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, 2 * 2 * 4);
+            // Expected pixels: index 5 (1,1), index 6 (2,1), index 9 (1,2), index 10 (2,2)
+            int[] expectedIndices = [5, 6, 9, 10];
+            for (int px = 0; px < 4; px++)
+            {
+                int srcIdx = expectedIndices[px];
+                int off = px * 4;
+                // Allow ±4 tolerance for RGB565 lossy roundtrip
+                Assert.InRange(decoded[off],     bgra[srcIdx * 4] - 8,     bgra[srcIdx * 4] + 8);
+                Assert.InRange(decoded[off + 1], bgra[srcIdx * 4 + 1] - 8, bgra[srcIdx * 4 + 1] + 8);
+                Assert.InRange(decoded[off + 2], bgra[srcIdx * 4 + 2] - 8, bgra[srcIdx * 4 + 2] + 8);
+                Assert.Equal(255, decoded[off + 3]);
+            }
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_CropWithRotation_CropsAfterRotation()
+    {
+        // Profile with both Rotation=90 and Crop. Verify crop dimensions are in the
+        // rotated space (crop happens after rotate). 4×2 image rotated 90° → 2×4.
+        // Crop to 2×2 from rotated space.
+        int w = 4, h = 2;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h; i++)
+        {
+            bgra[i * 4]     = (byte)(i * 5);
+            bgra[i * 4 + 1] = (byte)(i * 9);
+            bgra[i * 4 + 2] = (byte)(i * 13);
+            bgra[i * 4 + 3] = 255;
+        }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9994, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: w * h * 2,
+            Rotation: 90, CropWidth: 2, CropHeight: 2);
+
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            // After 90° rotation: 4×2 → 2×4. Crop to 2×2 from top-left.
+            Assert.Equal(2, outBuf->Width);
+            Assert.Equal(2, outBuf->Height);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_Crop_InvalidBounds_ReturnsFullImage()
+    {
+        // Crop bounds outside the image — should fall through and return full image.
+        int w = 4, h = 4;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h * 4; i++) bgra[i] = 128;
+        for (int i = 3; i < w * h * 4; i += 4) bgra[i] = 255;
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9993, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: w * h * 2,
+            CropX: 10, CropY: 10, CropWidth: 2, CropHeight: 2); // Outside bounds
+
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            // Should return full uncropped image
+            Assert.Equal(w, outBuf->Width);
+            Assert.Equal(h, outBuf->Height);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
 }
