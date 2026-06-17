@@ -1,3 +1,5 @@
+<div align="center">
+
 # ITHMB Codec for ImageGlass v10
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -6,6 +8,8 @@
 [![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20win--arm64%20%7C%20linux--x64%20%7C%20osx--arm64-lightgrey)](README.md#cross-platform)
 <br>
 <a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek V4 Flash"></a>
+
+</div>
 
 **Goal:** The best open-source decoder for iPod Classic/Nano `.ithmb` thumbnail cache files (2005–2010), packaged as a Native AOT plugin for ImageGlass v10. 48 known profiles, 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON), and full roundtrip-proven correctness. Not an iOS 13+ thumbnail decoder — those are handled natively by Apple's software.
 
