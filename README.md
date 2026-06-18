@@ -6,7 +6,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/download)
-[![tests](https://img.shields.io/github/actions/workflow/status/B67687/ithmb-codec/test.yml?label=tests)](https://github.com/B67687/ithmb-codec/actions/workflows/test.yml)
 [![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20win--arm64%20%7C%20linux--x64%20%7C%20osx--arm64-lightgrey)](README.md#cross-platform)
 
 <a href="./docs/badges/showcase.svg"><img src="docs/badges/showcase.svg" alt="Decode showcase" width="100%" max-width="720"></a>
@@ -14,6 +13,7 @@
 <sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
 <br>
 <a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek V4 Flash"></a>
+<a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode TUI"></a>
 
 </div>
 
@@ -148,18 +148,23 @@ bash review.sh test codeql  # run specific stages
 bash review.sh --list       # enumerate stages with descriptions
 ```
 
-The pipeline covers **8 stages**, each usable independently:
+The pipeline covers **11 stages**, organized by check depth:
 
-| Stage        | What it checks                                                                    | CI equivalent                   |
-| ------------ | --------------------------------------------------------------------------------- | ------------------------------- |
-| `editor`     | EditorConfig + Roslyn analyzers (`dotnet format --verify-no-changes`)             | pre-commit                      |
-| `precommit`  | Trailing whitespace, JSON/YAML lint, markdown, large files                        | pre-commit hooks                |
-| `commitlint` | Conventional commit format (type-enum: feat/fix/docs/refactor/test/chore/cleanup) | `.github/workflows/commits.yml` |
-| `test`       | Full test suite: `dotnet test -c Release` (456 tests)                             | `.github/workflows/test.yml`    |
-| `ocr`        | LLM code review via Alibaba OCR (if installed locally)                            | —                               |
-| `codeql`     | Security analysis via GitHub CodeQL                                               | `.github/workflows/codeql.yml`  |
-| `links`      | Broken link check via lychee                                                      | `.github/workflows/links.yml`   |
-| `semgrep`    | Semgrep static analysis (null-check, pointer safety, catch-all rules)             | `.github/workflows/semgrep.yml` |
+| Stage        | Mode  | What it checks                                                                    |
+| ------------ | ----- | --------------------------------------------------------------------------------- |
+| `editor`     | full  | EditorConfig + Roslyn analyzers (`dotnet format --verify-no-changes`)             |
+| `precommit`  | quick | Trailing whitespace, JSON/YAML lint, markdown, large files                        |
+| `commitlint` | quick | Conventional commit format (type-enum: feat/fix/docs/refactor/perf/test/...)      |
+| `gitleaks`   | quick | Secret scanning — API keys, tokens, credentials                                  |
+| `test`       | full  | Full test suite: `dotnet test -c Release` (456 tests)                             |
+| `ocr`        | full  | LLM code review via Alibaba OCR (if installed locally)                            |
+| `codeql`     | full  | Security analysis via GitHub CodeQL CLI (if installed)                            |
+| `links`      | full  | Broken link check via lychee                                                      |
+| `semgrep`    | full  | Semgrep static analysis (null-check, pointer safety, catch-all rules)             |
+| `deps`       | deep  | Dependency vulnerability scan via trivy                                           |
+| `codeql-full`| deep  | CodeQL full database analysis (deep scan)                                         |
+
+**Modes:** `bash review.sh --quick` (pre-commit gate) / `bash review.sh` (full) / `bash review.sh --deep` (weekly cron).
 
 Use `review.sh --fix` to auto-apply fixes for the editor layer.
 

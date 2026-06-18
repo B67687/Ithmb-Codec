@@ -1,17 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 130">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 130">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#1a1a2e"/>
       <stop offset="100%" stop-color="#16213e"/>
     </linearGradient>
-    <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#e94560"/>
-      <stop offset="50%" stop-color="#533483"/>
-      <stop offset="100%" stop-color="#0f3460"/>
-    </linearGradient>
   </defs>
   <!-- Card bg -->
-  <rect width="400" height="130" rx="14" fill="url(#bg)" stroke="#2a2a4e" stroke-width="1"/>
+  <rect width="520" height="130" rx="14" fill="url(#bg)" stroke="#2a2a4e" stroke-width="1"/>
   <!-- Icon: 4-panel grid representing 4 pixel formats (RGB565, RGB555, UYVY, YCbCr420) -->
   <rect x="18" y="16" width="44" height="44" rx="6" fill="#e94560" opacity="0.9"/>
   <rect x="66" y="16" width="44" height="44" rx="6" fill="#0f3460" opacity="0.9"/>
@@ -36,8 +31,11 @@
   <text x="222" y="97" font-family="system-ui,sans-serif" font-size="10" fill="#6688aa">Native AOT</text>
   <rect x="294" y="84" height="20" rx="4" fill="#2a2a4e"/>
   <text x="300" y="97" font-family="system-ui,sans-serif" font-size="10" fill="#6688aa">MIT</text>
-  <!-- Decode pipeline icon at bottom right -->
-  <g transform="translate(352, 92)" opacity="0.15">
+  <!-- ImageGlass -->
+  <rect x="330" y="84" height="20" rx="4" fill="#2a2a4e"/>
+  <text x="336" y="97" font-family="system-ui,sans-serif" font-size="10" fill="#6688aa">ImageGlass</text>
+  <!-- Pipeline icon at bottom right -->
+  <g transform="translate(470, 92)" opacity="0.15">
     <rect x="0" y="0" width="8" height="6" rx="1" fill="#fff"/>
     <rect x="10" y="0" width="8" height="6" rx="1" fill="#fff"/>
     <rect x="20" y="0" width="8" height="6" rx="1" fill="#fff"/>

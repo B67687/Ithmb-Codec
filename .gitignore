@@ -12,9 +12,6 @@
 !/.editorconfig
 !/.github/**
 !/review.sh
-!/.pre-commit-config.yaml
-!/.commitlintrc.json
-!/.lycheeignore
 !/.github/
 !/.github/**/*
 !/scripts/
@@ -96,3 +93,16 @@ docs/*.mmd
 !/samples/synthetic/**
 *.ithmb
 !/samples/synthetic/*.ithmb
+
+# Local CI — never pushed to GitHub
+.pre-commit-config.yaml
+.commitlintrc.json
+.semgrep.yml
+.lycheeignore
+review.sh
+.github/PULL_REQUEST_TEMPLATE.md
+
+# Local CI scripts — MiniPC only
+scripts/local-ci-deep.sh
+scripts/setup-local-ci.sh
+scripts/generate-badges.sh
