@@ -16,6 +16,8 @@
 ![runtime](docs/badges/runtime.svg)
 ![license](docs/badges/license.svg)
 
+<a href="./docs/badges/showcase.svg"><img src="docs/badges/showcase.svg" alt="Decode showcase" width="100%" max-width="720"></a>
+
 <sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
 <br>
 <a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek V4 Flash"></a>
