@@ -1,78 +1,125 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 720 480">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 820 480">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#1a1a2e"/>
       <stop offset="100%" stop-color="#0f0f23"/>
     </linearGradient>
-    <linearGradient id="bar" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#e94560"/>
-      <stop offset="50%" stop-color="#533483"/>
-      <stop offset="100%" stop-color="#0f3460"/>
-    </linearGradient>
   </defs>
 
   <!-- Outer card -->
-  <rect width="720" height="480" rx="12" fill="url(#bg)" stroke="#2a2a4e" stroke-width="1.5"/>
+  <rect width="820" height="480" rx="12" fill="url(#bg)" stroke="#2a2a4e" stroke-width="1.5"/>
 
   <!-- Title bar -->
-  <rect x="0" y="0" width="720" height="40" rx="12" fill="#16213e"/>
-  <rect x="0" y="20" width="720" height="20" fill="#16213e"/>
+  <rect x="0" y="0" width="820" height="40" rx="12" fill="#16213e"/>
+  <rect x="0" y="20" width="820" height="20" fill="#16213e"/>
 
   <!-- Window control dots -->
-  <circle cx="20" cy="20" r="6" fill="#e94560" opacity="0.8"/>
-  <circle cx="40" cy="20" r="6" fill="#f0c040" opacity="0.8"/>
-  <circle cx="60" cy="20" r="6" fill="#40c060" opacity="0.8"/>
+  <circle cx="24" cy="20" r="6" fill="#e94560" opacity="0.8"/>
+  <circle cx="44" cy="20" r="6" fill="#f0c040" opacity="0.8"/>
+  <circle cx="64" cy="20" r="6" fill="#40c060" opacity="0.8"/>
 
   <!-- Title text -->
-  <text x="340" y="25" text-anchor="middle" font-family="system-ui,sans-serif" font-size="12" fill="#667788">sample.ithmb — 320×240 RGB565 — ithmb-codec</text>
+  <text x="410" y="25" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#667788">sample.ithmb — 320×240 RGB565 — ithmb-codec for ImageGlass v10</text>
 
   <!-- Decoded image area -->
-  <rect x="30" y="60" width="320" height="240" rx="4" fill="#000"/>
+  <rect x="30" y="60" width="320" height="240" rx="6" fill="#111"/>
+  <rect x="30" y="60" width="320" height="240" rx="6" fill="none" stroke="#333" stroke-width="1"/>
   <image href="../samples/synthetic/sample_decoded.png" x="30" y="60" width="320" height="240" preserveAspectRatio="xMidYMid meet"/>
 
-  <!-- Image info panel -->
-  <rect x="370" y="60" width="320" height="240" rx="4" fill="#1e1e38"/>
+  <!-- Image caption -->
+  <text x="190" y="315" text-anchor="middle" font-family="system-ui,sans-serif" font-size="10" fill="#556677">Decoded output — 320 × 240 pixels</text>
 
-  <!-- Info text -->
-  <text x="390" y="85" font-family="'JetBrains Mono','Fira Code',monospace" font-size="11" fill="#8899bb">Profile</text>
-  <text x="460" y="85" font-family="system-ui,sans-serif" font-size="11" fill="#e0e0e0">1024 (iPod Classic 5G)</text>
+  <!-- Info panel -->
+  <rect x="380" y="60" width="410" height="240" rx="6" fill="#1a1a35"/>
+  <rect x="380" y="60" width="410" height="240" rx="6" fill="none" stroke="#2a2a50" stroke-width="1"/>
 
-  <text x="390" y="105" font-family="monospace" font-size="11" fill="#8899bb">Format</text>
-  <text x="460" y="105" font-family="system-ui,sans-serif" font-size="11" fill="#e0e0e0">RGB565 (16-bit LE)</text>
+  <!-- Info rows -->
+  <!-- Row template: label at x=400, value at x=490 -->
+  <!-- Row 1: Profile -->
+  <rect x="400" y="75" width="80" height="18" rx="3" fill="#252545"/>
+  <text x="406" y="88" font-family="'JetBrains Mono','Fira Code',monospace" font-size="10" fill="#6677aa">Profile</text>
+  <text x="490" y="88" font-family="system-ui,sans-serif" font-size="12" fill="#e0e0e0">1024 — iPod Classic 5G/6G full-screen</text>
 
-  <text x="390" y="125" font-family="monospace" font-size="11" fill="#8899bb">Dimensions</text>
-  <text x="460" y="125" font-family="system-ui,sans-serif" font-size="11" fill="#e0e0e0">320 × 240 pixels</text>
+  <!-- Row 2: Format -->
+  <rect x="400" y="100" width="80" height="18" rx="3" fill="#252545"/>
+  <text x="406" y="113" font-family="monospace" font-size="10" fill="#6677aa">Format</text>
+  <text x="490" y="113" font-family="system-ui,sans-serif" font-size="12" fill="#e0e0e0">RGB565 (16-bit little-endian)</text>
 
-  <text x="390" y="145" font-family="monospace" font-size="11" fill="#8899bb">SIMD path</text>
-  <text x="460" y="145" font-family="system-ui,sans-serif" font-size="11" fill="#e0e0e0">SSE2 / ARM64 NEON</text>
+  <!-- Row 3: SIMD -->
+  <rect x="400" y="125" width="80" height="18" rx="3" fill="#252545"/>
+  <text x="406" y="138" font-family="monospace" font-size="10" fill="#6677aa">SIMD</text>
+  <text x="490" y="138" font-family="system-ui,sans-serif" font-size="12" fill="#e0e0e0">SSE2 (x64) + ARM64 NEON — 8 pixels/iteration</text>
 
-  <text x="390" y="165" font-family="monospace" font-size="11" fill="#8899bb">File size</text>
-  <text x="460" y="165" font-family="system-ui,sans-serif" font-size="11" fill="#e0e0e0">153,604 bytes</text>
+  <!-- Row 4: File -->
+  <rect x="400" y="150" width="80" height="18" rx="3" fill="#252545"/>
+  <text x="406" y="163" font-family="monospace" font-size="10" fill="#6677aa">File</text>
+  <text x="490" y="163" font-family="system-ui,sans-serif" font-size="12" fill="#e0e0e0">153,604 bytes (4-byte prefix + 320×240×2)</text>
 
-  <text x="390" y="185" font-family="monospace" font-size="11" fill="#8899bb">Test status</text>
-  <text x="460" y="185" font-family="system-ui,sans-serif" font-size="11" fill="#40c060">460 / 460 passing</text>
+  <!-- Row 5: Tests -->
+  <rect x="400" y="175" width="80" height="18" rx="3" fill="#252545"/>
+  <text x="406" y="188" font-family="monospace" font-size="10" fill="#6677aa">Tests</text>
+  <text x="490" y="188" font-family="system-ui,sans-serif" font-size="12" fill="#40c060">460 / 460 passing — 0 warnings</text>
 
-  <text x="390" y="210" font-family="monospace" font-size="11" fill="#8899bb">Content</text>
-  <text x="460" y="210" font-family="system-ui,sans-serif" font-size="11" fill="#e0e0e0">Synthetic test pattern</text>
-  <text x="460" y="228" font-family="system-ui,sans-serif" font-size="10" fill="#667788">(no personal data)</text>
+  <!-- Row 6: Content -->
+  <rect x="400" y="200" width="80" height="18" rx="3" fill="#252545"/>
+  <text x="406" y="213" font-family="monospace" font-size="10" fill="#6677aa">Content</text>
+  <text x="490" y="213" font-family="system-ui,sans-serif" font-size="12" fill="#e0e0e0">Synthetic test pattern</text>
+  <text x="490" y="230" font-family="system-ui,sans-serif" font-size="10" fill="#556677">Color wheel · encoding bands · grid — 100% our own IP</text>
 
-  <!-- Color space legend -->
-  <rect x="390" y="248" width="60" height="14" rx="3" fill="#e94560"/>
-  <text x="400" y="258" font-family="system-ui,sans-serif" font-size="9" fill="#fff">RGB565</text>
-  <rect x="456" y="248" width="60" height="14" rx="3" fill="#0f3460"/>
-  <text x="466" y="258" font-family="system-ui,sans-serif" font-size="9" fill="#fff">RGB555</text>
-  <rect x="522" y="248" width="60" height="14" rx="3" fill="#533483"/>
-  <text x="532" y="258" font-family="system-ui,sans-serif" font-size="9" fill="#fff">UYVY</text>
-  <rect x="588" y="248" width="60" height="14" rx="3" fill="#009688"/>
-  <text x="598" y="258" font-family="system-ui,sans-serif" font-size="9" fill="#fff">YUV420</text>
+  <!-- Color space legend strip -->
+  <rect x="400" y="255" width="370" height="22" rx="4" fill="#252545"/>
+  <rect x="410" y="259" width="75" height="14" rx="3" fill="#e94560"/>
+  <text x="419" y="269" font-family="system-ui,sans-serif" font-size="9" fill="#fff">RGB565</text>
+  <rect x="492" y="259" width="75" height="14" rx="3" fill="#0f3460"/>
+  <text x="501" y="269" font-family="system-ui,sans-serif" font-size="9" fill="#fff">RGB555</text>
+  <rect x="574" y="259" width="75" height="14" rx="3" fill="#533483"/>
+  <text x="583" y="269" font-family="system-ui,sans-serif" font-size="9" fill="#fff">UYVY</text>
+  <rect x="656" y="259" width="75" height="14" rx="3" fill="#009688"/>
+  <text x="665" y="269" font-family="system-ui,sans-serif" font-size="9" fill="#fff">YUV420</text>
 
-  <!-- Bottom status bar -->
-  <rect x="0" y="460" width="720" height="20" rx="0" fill="#16213e"/>
-  <rect x="0" y="468" width="720" height="12" rx="6" fill="#16213e"/>
+  <!-- Bottom: decoder pipeline flow -->
+  <rect x="0" y="460" width="820" height="20" rx="0" fill="#111122"/>
+  <rect x="0" y="468" width="820" height="12" rx="6" fill="#111122"/>
 
-  <text x="20" y="474" font-family="system-ui,sans-serif" font-size="10" fill="#556677">Decode pipeline: JPEG extraction → raw profile lookup → SIMD RGB565 decode → BGRA output</text>
+  <!-- Pipeline steps -->
+  <rect x="20" y="440" width="60" height="14" rx="3" fill="#2a2a50"/>
+  <text x="24" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#8899bb">.ithmb file</text>
 
-  <!-- Synthetic badge -->
-  <rect x="620" y="465" height="14" rx="3" fill="#e94560" opacity="0.8"/>
-  <text x="628" y="475" font-family="system-ui,sans-serif" font-size="9" fill="#fff">SYNTHETIC TEST FILE</text>
+  <text x="88" y="450" font-family="system-ui,sans-serif" font-size="10" fill="#556677">→</text>
+
+  <rect x="105" y="440" width="70" height="14" rx="3" fill="#2a2a50"/>
+  <text x="109" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#8899bb">4-byte prefix</text>
+
+  <text x="183" y="450" font-family="system-ui,sans-serif" font-size="10" fill="#556677">→</text>
+
+  <rect x="200" y="440" width="50" height="14" rx="3" fill="#e94560"/>
+  <text x="204" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#fff">Profile 1024</text>
+
+  <text x="258" y="450" font-family="system-ui,sans-serif" font-size="10" fill="#556677">→</text>
+
+  <rect x="275" y="440" width="75" height="14" rx="3" fill="#2a2a50"/>
+  <text x="279" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#8899bb">RGB565 decode</text>
+
+  <text x="358" y="450" font-family="system-ui,sans-serif" font-size="10" fill="#556677">→</text>
+
+  <rect x="375" y="440" width="50" height="14" rx="3" fill="#533483"/>
+  <text x="379" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#fff">SSE2/NEON</text>
+
+  <text x="433" y="450" font-family="system-ui,sans-serif" font-size="10" fill="#556677">→</text>
+
+  <rect x="450" y="440" width="55" height="14" rx="3" fill="#2a2a50"/>
+  <text x="454" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#8899bb">BGRA output</text>
+
+  <text x="513" y="450" font-family="system-ui,sans-serif" font-size="10" fill="#556677">→</text>
+
+  <rect x="530" y="440" width="50" height="14" rx="3" fill="#009688"/>
+  <text x="534" y="450" font-family="system-ui,sans-serif" font-size="8" fill="#fff">ImageGlass</text>
+
+  <!-- Synthetic badge on right -->
+  <rect x="680" y="465" height="14" rx="3" fill="#e94560" opacity="0.7"/>
+  <text x="688" y="475" font-family="system-ui,sans-serif" font-size="8" fill="#fff">SYNTHETIC TEST FILE</text>
+
+  <!-- GitHub badge -->
+  <rect x="740" y="442" height="14" rx="3" fill="#40c060" opacity="0.6"/>
+  <text x="746" y="452" font-family="system-ui,sans-serif" font-size="8" fill="#fff">MIT</text>
 </svg>
