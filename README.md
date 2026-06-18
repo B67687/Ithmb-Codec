@@ -2,18 +2,27 @@
 
 # ITHMB Codec for ImageGlass v10
 
+<a href="./docs/badges/ithmb-codec-logo.svg"><img src="docs/badges/ithmb-codec-logo.svg" alt="ithmb-codec" width="400"></a>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/download)
 [![tests](https://img.shields.io/github/actions/workflow/status/B67687/ithmb-codec/test.yml?label=tests)](https://github.com/B67687/ithmb-codec/actions/workflows/test.yml)
 [![Platform](https://img.shields.io/badge/platform-win--x64%20%7C%20win--arm64%20%7C%20linux--x64%20%7C%20osx--arm64-lightgrey)](README.md#cross-platform)
-<br>
+
+![tests](docs/badges/tests.svg)
+![profiles](docs/badges/profiles.svg)
+![commits](docs/badges/commits.svg)
+![version](docs/badges/version.svg)
+![runtime](docs/badges/runtime.svg)
+![license](docs/badges/license.svg)
+
 <sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
 <br>
 <a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek V4 Flash"></a>
 
 </div>
 
-**Goal:** The best open-source decoder for iPod Classic/Nano `.ithmb` thumbnail cache files (2005–2010), packaged as a Native AOT plugin for ImageGlass v10. 48 known profiles, 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON), and full roundtrip-proven correctness. Not an iOS 13+ thumbnail decoder — those are handled natively by Apple's software.
+**Goal:** The best open-source decoder for iPod Classic/Nano `.ithmb` thumbnail cache files (2005–2010), packaged as a Native AOT plugin for ImageGlass v10. 49 known profiles, 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON), and full roundtrip-proven correctness. Not an iOS 13+ thumbnail decoder — those are handled natively by Apple's software.
 
 A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files — the format used by iOS devices (iPhones, iPod Touches) and iPods to store photo thumbnails for syncing with iTunes. Two format categories exist:
 
@@ -161,12 +170,7 @@ Use `review.sh --fix` to auto-apply fixes for the editor layer.
 
 ### AI-assisted development
 
-This project was developed entirely with AI assistance:
-
-- **Model:** DeepSeek V4 Flash
-- **Reasoning:** Chain-of-thought via sequential-thinking tool, multi-agent delegation (explore/worker/review/plan/scout/architect), context budgeting for cost-optimized model allocation
-- **Platform:** Opencode-Go subscription on Opencode TUI
-- **Workflow:** Specification, implementation, review, testing, documentation, and pipeline configuration were carried out through AI pair-programming sessions. The AI generated all code and tests; human oversight focused on architecture decisions, validation against real hardware samples, and release management.
+This project was developed entirely with AI assistance. See [**CREDITS.md**](./CREDITS.md) for full details on the model, reasoning approach, platform, and workflow.
 
 ---
 
