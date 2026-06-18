@@ -17,6 +17,10 @@
 !/.lycheeignore
 !/.github/
 !/.github/**/*
+!/scripts/
+!/scripts/**
+!/samples/
+!/samples/**
 
 # ----------------------
 # Documentation
@@ -85,12 +89,10 @@ propagated/
 docs/*.mmd
 
 # ----------------------
-# Sample .ithmb files (downloaded from public sources, not redistributed)
+# Sample .ithmb files — external downloads ignored; our synthetic samples tracked.
 # ----------------------
-samples/
+/samples/*
+!/samples/synthetic/
+!/samples/synthetic/**
 *.ithmb
-
-# ----------------------
-# Sample download utilities (not part of the plugin distribution)
-# ----------------------
-scripts/
+!/samples/synthetic/*.ithmb

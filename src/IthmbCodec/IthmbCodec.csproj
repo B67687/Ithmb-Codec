@@ -50,6 +50,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="IthmbCodec.Tests" />
     <InternalsVisibleTo Include="IthmbDecoder" />
+    <InternalsVisibleTo Include="IthmbSampleGenerator" />
   </ItemGroup>
 
   <ItemGroup>
