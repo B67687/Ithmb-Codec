@@ -1,47 +1,20 @@
-# ==============================================================
-# WHITELIST: Ignore everything by default, only allow specific files.
-# New files won't be tracked unless explicitly un-ignored below.
-# ==============================================================
-
-# ----------------------
-# Ignore everything by default
-# ----------------------
 /*
 !/.gitignore
 !/.gitattributes
-!/.editorconfig
+!.editorconfig
 !/.github/**
-!/review.sh
-!/.github/
-!/.github/**/*
-!/scripts/
-!/scripts/**
-!/samples/
-!/samples/**
-
-# ----------------------
-# Documentation
-# ----------------------
 !/LICENSE
 !/*.md
 !/docs/
 !/docs/*
-
-# ----------------------
-# Source code
-# ----------------------
 !/src/
 !/src/**/*
-
-# ----------------------
-# Tools
-# ----------------------
 !/tools/
 !/tools/**/*
+!/samples/
+!/samples/**
 
-# ----------------------
-# Build outputs (must stay ignored despite whitelist)
-# ----------------------
+# Blacklists — only what's needed to counteract whitelist entries above
 bin/
 obj/
 *.dll
@@ -49,60 +22,11 @@ obj/
 *.dylib
 *.exe
 *.pdb
-
-# ----------------------
-# IDE and editors
-# ----------------------
-.vscode/
-.idea/
-*.swp
-*~
-.DS_Store
-Thumbs.db
-
-# ----------------------
-# Release artifacts
-# ----------------------
-*.zip
-
-# ----------------------
-# Internal/handover docs (not part of the plugin distribution)
-# ----------------------
-
-
-# ----------------------
-# Agentic workflows propagated shims
-# ----------------------
-propagated/
-
-# ----------------------
-# Python Ruff linter cache
-# ----------------------
-
-
-# ----------------------
-# Mermaid diagram sources (regenerate from local mmdc tooling)
-# ----------------------
-docs/*.mmd
-
-# ----------------------
-# Sample .ithmb files — external downloads ignored; our synthetic samples tracked.
-# ----------------------
+*.ithmb
 /samples/*
 !/samples/synthetic/
 !/samples/synthetic/**
-*.ithmb
-!/samples/synthetic/*.ithmb
+docs/*.mmd
 
-# Local CI — never pushed to GitHub
-.pre-commit-config.yaml
-.commitlintrc.json
-.semgrep.yml
-.lycheeignore
-review.sh
-.github/PULL_REQUEST_TEMPLATE.md
-
-# Local CI scripts — MiniPC only
-scripts/local-ci-deep.sh
-scripts/setup-local-ci.sh
-scripts/generate-badges.sh
+.vscode/
+.idea/
