@@ -28,6 +28,8 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 Tested with **956 T-prefix files** from an iPhone 5 (iOS 7) — **100% extraction rate**.<br>
 Additionally validated against **227 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
 
+<sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
+
 ---
 
 ## Table of Contents
@@ -167,12 +169,6 @@ The pipeline covers **11 stages**, organized by check depth:
 **Modes:** `bash review.sh --quick` (pre-commit gate) / `bash review.sh` (full) / `bash review.sh --deep` (weekly cron).
 
 Use `review.sh --fix` to auto-apply fixes for the editor layer.
-
-### AI-assisted development
-
-This project was developed entirely with AI assistance. See [**CREDITS.md**](./CREDITS.md) for full details on the model, reasoning approach, platform, and workflow.
-
----
 
 ## Architecture
 
