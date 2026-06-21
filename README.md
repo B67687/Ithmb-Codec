@@ -14,7 +14,6 @@
 <br>
 <a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek V4 Flash"></a>
 <a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode TUI"></a>
-
 </div>
 
 **Goal:** The best open-source decoder for iPod Classic/Nano `.ithmb` thumbnail cache files (2005–2010), packaged as a Native AOT plugin for ImageGlass v10. 49 known profiles, 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON), and full roundtrip-proven correctness. Not an iOS 13+ thumbnail decoder — those are handled natively by Apple's software.
@@ -27,8 +26,6 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 Tested with **956 T-prefix files** from an iPhone 5 (iOS 7) — **100% extraction rate**.<br>
 Additionally validated against **227 publicly available T-prefix files** from an iPod Photo Cache (100% JPEG detection rate).
-
-<sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
 
 ---
 
@@ -136,39 +133,13 @@ The plugin was developed through iterative research, implementation, review, and
 5. **Review cycles** — 4 rounds of multi-agent review: ~42 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, and defense-in-depth
 6. **Release** — Windows Native AOT binary published via GitHub Releases
 
-<div align="center"><img src="docs/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
+<div align="center"><img src="docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ### Quality pipeline
 
-All quality checks are unified in `review.sh` — the single source of truth for what the project checks and how:
-
-```bash
-bash review.sh            # run all available stages
-bash review.sh test codeql  # run specific stages
-bash review.sh --list       # enumerate stages with descriptions
-```
-
-The pipeline covers **11 stages**, organized by check depth:
-
-| Stage        | Mode  | What it checks                                                                    |
-| ------------ | ----- | --------------------------------------------------------------------------------- |
-| `editor`     | full  | EditorConfig + Roslyn analyzers (`dotnet format --verify-no-changes`)             |
-| `precommit`  | quick | Trailing whitespace, JSON/YAML lint, markdown, large files                        |
-| `commitlint` | quick | Conventional commit format (type-enum: feat/fix/docs/refactor/perf/test/...)      |
-| `gitleaks`   | quick | Secret scanning — API keys, tokens, credentials                                  |
-| `test`       | full  | Full test suite: `dotnet test -c Release` (456 tests)                             |
-| `ocr`        | full  | LLM code review via Alibaba OCR (if installed locally)                            |
-| `codeql`     | full  | Security analysis via GitHub CodeQL CLI (if installed)                            |
-| `links`      | full  | Broken link check via lychee                                                      |
-| `semgrep`    | full  | Semgrep static analysis (null-check, pointer safety, catch-all rules)             |
-| `deps`       | deep  | Dependency vulnerability scan via trivy                                           |
-| `codeql-full`| deep  | CodeQL full database analysis (deep scan)                                         |
-
-**Modes:** `bash review.sh --quick` (pre-commit gate) / `bash review.sh` (full) / `bash review.sh --deep` (weekly cron).
-
-Use `review.sh --fix` to auto-apply fixes for the editor layer.
+Quality checks run locally before release: linting, secret scanning, tests, static analysis, dependency audit, and link checking.
 
 ## Architecture
 
@@ -191,7 +162,7 @@ Use `review.sh --fix` to auto-apply fixes for the editor layer.
 
 **Single-frame, single-codec** — each `.ithmb` contains one image; no multi-frame support.
 
-<div align="center"><img src="docs/architecture.svg" alt="Architecture diagram" width="100%"></div>
+<div align="center"><img src="docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
 
 ---
 
