@@ -930,4 +930,133 @@ public unsafe partial class IthmbCodecTests
         }
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
+
+    // ===================== Multi-frame raw decode =====================
+
+    [Fact]
+    public void MultiFrame_RawDecode_ThreeFrames_DecodesAllIndependently()
+    {
+        // F-prefix .ithmb files can contain multiple concatenated raw frames.
+        // This verifies that DecodeRawProfile seeks to and decodes each frame independently.
+        int w = 4, h = 4;
+        int frameSize = w * h * 2;
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1007, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: frameSize);
+
+        // Three distinct BGRA images: solid red, solid green, solid blue
+        var frameBgra = new byte[3 * w * h * 4];
+        for (int i = 0; i < w * h; i++)
+            { frameBgra[i * 4] = 0; frameBgra[i * 4 + 1] = 0; frameBgra[i * 4 + 2] = 255; frameBgra[i * 4 + 3] = 255; }
+        int off1 = w * h * 4;
+        for (int i = 0; i < w * h; i++)
+            { frameBgra[off1 + i * 4] = 0; frameBgra[off1 + i * 4 + 1] = 255; frameBgra[off1 + i * 4 + 2] = 0; frameBgra[off1 + i * 4 + 3] = 255; }
+        int off2 = 2 * w * h * 4;
+        for (int i = 0; i < w * h; i++)
+            { frameBgra[off2 + i * 4] = 255; frameBgra[off2 + i * 4 + 1] = 0; frameBgra[off2 + i * 4 + 2] = 0; frameBgra[off2 + i * 4 + 3] = 255; }
+
+        // Each BuildIthmbFile returns [4-byte prefix][encoded data]; extract encoded portion
+        byte[] frame0 = IthmbCodecPlugin.BuildIthmbFile(frameBgra.AsSpan(0, w * h * 4), w, h, profile);
+        byte[] frame1 = IthmbCodecPlugin.BuildIthmbFile(frameBgra.AsSpan(off1, w * h * 4), w, h, profile);
+        byte[] frame2 = IthmbCodecPlugin.BuildIthmbFile(frameBgra.AsSpan(off2, w * h * 4), w, h, profile);
+        var enc0 = frame0.AsSpan(4);
+        var enc1 = frame1.AsSpan(4);
+        var enc2 = frame2.AsSpan(4);
+
+        // Build multi-frame file: one prefix + 3 encoded frames concatenated
+        var combined = new byte[4 + enc0.Length + enc1.Length + enc2.Length];
+        Array.Copy(frame0, 0, combined, 0, 4);
+        enc0.CopyTo(combined.AsSpan(4));
+        enc1.CopyTo(combined.AsSpan(4 + enc0.Length));
+        enc2.CopyTo(combined.AsSpan(4 + enc0.Length + enc1.Length));
+
+        Assert.Equal(3, (combined.Length - 4) / frameSize);
+
+        for (int fi = 0; fi < 3; fi++)
+        {
+            var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+                (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+            var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+                (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+            try
+            {
+                var status = IthmbCodecPlugin.DecodeRawProfile(combined, profile,
+                    cancellation: null, outInfo, outBuf, frameIndex: fi);
+                Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+                Assert.NotEqual((nint)0, (nint)outBuf->Data);
+                Assert.Equal(3, outInfo->FrameCount);
+
+                var decoded = new Span<byte>((void*)outBuf->Data, w * h * 4);
+                for (int i = 0; i < w * h; i++)
+                {
+                    int px = i * 4;
+                    int expectedR = fi == 0 ? 255 : fi == 1 ? 0 : 0;
+                    int expectedG = fi == 0 ? 0 : fi == 1 ? 255 : 0;
+                    int expectedB = fi == 0 ? 0 : fi == 1 ? 0 : 255;
+                    Assert.InRange(Math.Abs(decoded[px + 2] - expectedR), 0, 8);
+                    Assert.InRange(Math.Abs(decoded[px + 1] - expectedG), 0, 8);
+                    Assert.InRange(Math.Abs(decoded[px] - expectedB), 0, 8);
+                    Assert.Equal(255, decoded[px + 3]);
+                }
+            }
+            finally
+            {
+                if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data);
+                NativeMemory.Free(outInfo);
+                NativeMemory.Free(outBuf);
+            }
+        }
+    }
+
+    [Fact]
+    public void MultiFrame_RawDecode_OutOfRangeIndex_ReturnsDecodeFailed()
+    {
+        int w = 4, h = 4;
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1007, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: w * h * 2);
+
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h * 4; i++) bgra[i] = 128;
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf, frameIndex: 1);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void MultiFrame_RawDecode_NegativeIndex_ReturnsDecodeFailed()
+    {
+        int w = 4, h = 4;
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1007, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: w * h * 2);
+
+        var bgra = new byte[w * h * 4];
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf, frameIndex: -1);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
 }

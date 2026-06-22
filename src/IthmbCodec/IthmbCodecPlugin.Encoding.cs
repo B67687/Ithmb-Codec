@@ -306,22 +306,68 @@ if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
     // ---- Helper: interleave fields for interlaced formats ----
     private static byte[] InterlaceFields(byte[] planar, int w, int h, IthmbEncoding enc)
     {
-        int bpp = enc == IthmbEncoding.Ycbcr420 ? 1 : 2; // YCbCr420 is planar (1 Bpp luma), others are 2 Bpp
-        int rowStride = w * bpp;
-        int halfRows = (h + 1) / 2;
-        var result = new byte[planar.Length];
+        if (enc != IthmbEncoding.Ycbcr420)
+        {
+            // 2 Bpp interlace: each row is w * 2 bytes, just reorder rows
+            int rowStride = w * 2;
+            int halfRows = (h + 1) / 2;
+            var result = new byte[planar.Length];
+            for (int y = 0; y < h; y++)
+            {
+                int srcOff = y * rowStride;
+                int dstOff = y % 2 == 0
+                    ? (y / 2) * rowStride
+                    : (halfRows + y / 2) * rowStride;
+                Array.Copy(planar, srcOff, result, dstOff, rowStride);
+            }
+            return result;
+        }
 
-        // Even fields first, then odd fields
+        // YCbCr 4:2:0 planar — 3 planes: Y (w*h), Cb (w/2*h/2), Cr (w/2*h/2)
+        int ySize = w * h;
+        int cSize = (w / 2) * (h / 2);
+        int yRow = w;
+        int cRow = w / 2;
+        int halfH = (h + 1) / 2;
+        int halfH_uv = ((h / 2) + 1) / 2;  // half rows for chroma (quarter-height rounded up)
+
+        var result2 = new byte[planar.Length];
+
+        // --- Interlace Y plane (full resolution) ---
         for (int y = 0; y < h; y++)
         {
-            int srcRow = y * rowStride;
-            int dstRow = y % 2 == 0
-                ? (y / 2) * rowStride
-                : (halfRows + y / 2) * rowStride;
-
-            Array.Copy(planar, srcRow, result, dstRow, rowStride);
+            int srcOff = y * yRow;
+            int dstOff = y % 2 == 0
+                ? (y / 2) * yRow
+                : (halfH + y / 2) * yRow;
+            Array.Copy(planar, srcOff, result2, dstOff, yRow);
         }
-        return result;
+
+        // --- Interlace Cb plane (half resolution) ---
+        int cbOff = ySize;
+        int cbDstBase = ySize;  // Cb starts after Y in the interlaced result
+        for (int y = 0; y < h / 2; y++)
+        {
+            int srcOff = cbOff + y * cRow;
+            int dstOff = cbDstBase + (y % 2 == 0
+                ? (y / 2) * cRow
+                : (halfH_uv + y / 2) * cRow);
+            Array.Copy(planar, srcOff, result2, dstOff, cRow);
+        }
+
+        // --- Interlace Cr plane (half resolution) ---
+        int crOff = ySize + cSize;
+        int crDstBase = ySize + cSize;  // Cr starts after Cb
+        for (int y = 0; y < h / 2; y++)
+        {
+            int srcOff = crOff + y * cRow;
+            int dstOff = crDstBase + (y % 2 == 0
+                ? (y / 2) * cRow
+                : (halfH_uv + y / 2) * cRow);
+            Array.Copy(planar, srcOff, result2, dstOff, cRow);
+        }
+
+        return result2;
     }
 
     // ---- BT.601 forward transform helpers (fixed-point, same precision as decoder) ----

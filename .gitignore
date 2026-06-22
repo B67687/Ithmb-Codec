@@ -2,6 +2,7 @@
 !/.gitignore
 !/.gitattributes
 !.editorconfig
+!/.github/
 !/.github/**
 !/LICENSE
 !/*.md
@@ -13,6 +14,8 @@
 !/tools/**/*
 !/samples/
 !/samples/**
+!/scripts/
+!/scripts/**
 
 # Blacklists — only what's needed to counteract whitelist entries above
 bin/
