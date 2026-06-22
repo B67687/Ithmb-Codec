@@ -115,6 +115,43 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(0, SeekOrigin.Begin);
                 fs.ReadExactly(fileBytes, 0, (int)fileSize);
 
+                // PhotoDB/ArtworkDB container check — iPod thumbnail databases embed raw .ithmb blobs
+                if (fileBytes.Length >= 4 && CanOpenPhotoDb(fileBytes))
+                {
+                    if (!TryParsePhotoDb(fileBytes, out var pdEntries, out var pdFrameCount))
+                    {
+                        Log(4, "ITHMB: PhotoDB parse failed");
+                        return IGStatus.DecodeFailed;
+                    }
+
+                    if (frameIndex >= pdFrameCount)
+                    {
+                        FillImageInfo(outInfo, 0, 0, hasAlpha: 0, orientation: 1,
+                            fileSize: (int)fileSize, frameCount: pdFrameCount);
+                        return IGStatus.InvalidArg;
+                    }
+
+                    var (pdFormatId, pdRawData) = pdEntries[frameIndex];
+                    if (!KnownProfiles.TryGetValue(pdFormatId, out var pdProfile))
+                    {
+                        Log(4, $"ITHMB: PhotoDB format_id {pdFormatId} has no decoder profile");
+                        return IGStatus.DecodeFailed;
+                    }
+
+                    // Construct synthetic .ithmb buffer: 4-byte placeholder prefix + raw pixel data.
+                    // DecodeRawProfile expects frameStart = 4 + frameIndex * frameSize.
+                    // With prefix_bytes|raw_data and frameIndex=0, frameStart=4 skips the prefix.
+                    byte[] synthetic = new byte[4 + pdRawData.Length];
+                    pdRawData.CopyTo(synthetic, 4);
+
+                    FillImageInfo(outInfo, pdProfile.Width, pdProfile.Height, hasAlpha: 0, orientation: 1,
+                        fileSize: synthetic.Length, frameCount: pdFrameCount);
+                    if (outBuf == null) return IGStatus.OK;
+
+                    // frameIndex=0 for the synthetic buffer (it contains exactly one frame)
+                    return DecodeRawProfile(synthetic, pdProfile, cancellation, outInfo, outBuf, frameIndex: 0);
+                }
+
             // Validate that the first byte is an ASCII format tag ('F' for raw, 'T' for JPEG).
             // This catches files whose first 4 bytes happen to match a KnownProfiles key
             // by coincidence but are actually corrupted or invalid data.
