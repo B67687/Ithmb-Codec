@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Refactored monolithic source files into domain-focused partial classes.** 6 oversized files (all 900-1200 LOC) split into 15 targeted files. Plugin.cs → Plugin.cs + DecodePipeline.cs + JpegDecode.cs + ProfileSystem.cs. Decoding.cs → Rgb565Rgb555.cs + UyvyYuv.cs + ClclCl.cs. Roundtrip.cs → 3 specialized test files. Statistical.cs → 2 focused test files. Fuzz.cs → base + SimdTail.cs. EncoderHelpers.cs extracted from Encoding.cs. Build clean, 498 tests pass. Total source lines unchanged; no behavioral change.
+
 ## [1.1.0] — 2026-06-22
 
 ### Added

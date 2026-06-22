@@ -112,7 +112,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**466 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, and rotation roundtrip.
+**498 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), and rotation roundtrip.
 
 **Real-device validation:**
 
@@ -129,7 +129,7 @@ The plugin was developed through iterative research, implementation, review, and
 1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 48 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
-4. **Testing** — 466 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, and rotation roundtrip
+4. **Testing** — 498 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, and rotation roundtrip
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, rotation buffer overflow, crop integer overflow, and defense-in-depth
 6. **Release** — Windows Native AOT binary published via GitHub Releases
 
@@ -145,11 +145,19 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — three partial class files:
+**Source layout** — 10 partial class files organized by domain:
 
-- `IthmbCodecPlugin.cs` — ABI, init, JPEG pipeline, EXIF parsing, JSON profile loader (~1015 lines)
-- `IthmbCodecPlugin.Decoding.cs` — all decode algorithms + SIMD intrinsics (~660 lines)
-- `IthmbCodecPlugin.Encoding.cs` — synthetic encoder for all raw formats (~335 lines)
+| File | Purpose | Size |
+|------|---------|------|
+| `IthmbCodecPlugin.cs` | ABI entry point, init, API surface | ~471 lines |
+| `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate | ~320 lines |
+| `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp | ~117 lines |
+| `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser | ~309 lines |
+| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) | ~92 lines |
+| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2 SIMD | ~370 lines |
+| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD | ~316 lines |
+| `IthmbCodecPlugin.ClclCl.cs` | CLCL nibble-chroma, CL per-pixel chroma decoders | ~251 lines |
+| `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats | ~310 lines |
 
 **Data flow:**
 
