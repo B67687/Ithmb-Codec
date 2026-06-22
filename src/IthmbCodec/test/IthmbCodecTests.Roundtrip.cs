@@ -798,6 +798,111 @@ public unsafe partial class IthmbCodecTests
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
+    [Fact]
+    public void RotateBgra_90_Correctness()
+    {
+        // Direct RotateBgra test: 2×4 image, 90° CW → 4×2
+        // marker index = x*srcH + (srcH-1-y) = 0*4+3 = 3 (byte offset 12)
+        int w = 2, h = 4;
+        byte[] bgra = new byte[w * h * 4];
+        bgra[0] = 255; bgra[1] = 0; bgra[2] = 0; bgra[3] = 255; // blue at (0,0)
+        for (int i = 1; i < w * h; i++)
+        {
+            bgra[i * 4]     = 0;     // all others: red (B=0, G=0, R=255)
+            bgra[i * 4 + 1] = 0;
+            bgra[i * 4 + 2] = 255;
+            bgra[i * 4 + 3] = 255;
+        }
+
+        unsafe
+        {
+            fixed (byte* p = bgra)
+            {
+                int rw = w, rh = h;
+                IthmbCodecPlugin.RotateBgra(p, ref rw, ref rh, 90);
+                Assert.Equal(4, rw);
+                Assert.Equal(2, rh);
+                // Blue marker moved to position 3 (byte 12-15)
+                Assert.Equal(255, p[12]); Assert.Equal(0, p[13]);
+                Assert.Equal(0,   p[14]); Assert.Equal(255, p[15]);
+                // Position 0 = source (0,3) which was red (byte 0-3)
+                Assert.Equal(0,   p[0]);  Assert.Equal(0, p[1]);
+                Assert.Equal(255, p[2]);  Assert.Equal(255, p[3]);
+            }
+        }
+    }
+
+    [Fact]
+    public void RotateBgra_270_Correctness()
+    {
+        // 4×2 image, 270° CW → 2×4
+        // marker index = (srcW-1-x)*srcH + y = (3-0)*2+0 = 6 (byte offset 24)
+        int w = 4, h = 2;
+        byte[] bgra = new byte[w * h * 4];
+        bgra[0] = 255; bgra[1] = 0; bgra[2] = 0; bgra[3] = 255; // blue at (0,0)
+        for (int i = 1; i < w * h; i++)
+        {
+            bgra[i * 4]     = 0;
+            bgra[i * 4 + 1] = 0;
+            bgra[i * 4 + 2] = 255;
+            bgra[i * 4 + 3] = 255;
+        }
+
+        unsafe
+        {
+            fixed (byte* p = bgra)
+            {
+                int rw = w, rh = h;
+                IthmbCodecPlugin.RotateBgra(p, ref rw, ref rh, 270);
+                Assert.Equal(2, rw);
+                Assert.Equal(4, rh);
+                // Blue marker at position 6 (byte 24-27)
+                Assert.Equal(255, p[24]); Assert.Equal(0, p[25]);
+                Assert.Equal(0,   p[26]); Assert.Equal(255, p[27]);
+            }
+        }
+    }
+
+    [Fact]
+    public void RotateBgra_90_Roundtrip_Identity()
+    {
+        // Roundtrip without rotation: BuildIthmbFile populates pixels then
+        // DecodeRawProfile decodes them. Uses Rotation=0 so no pre-rotation.
+        int w = 2, h = 4;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h; i++)
+        {
+            bgra[i * 4]     = (byte)(i * 5);
+            bgra[i * 4 + 1] = (byte)(i * 9);
+            bgra[i * 4 + 2] = (byte)(i * 13);
+            bgra[i * 4 + 3] = 255;
+        }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9997, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: w * h * 2, Rotation: 0);
+
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.Equal(w, outBuf->Width);
+            Assert.Equal(h, outBuf->Height);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, w * h * 4);
+            for (int i = 0; i < w * h * 4; i++)
+                Assert.InRange(decoded[i], bgra[i] - 8, bgra[i] + 8);
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
     // ===================== Centered crop infrastructure =====================
 
     [Fact]
@@ -1030,13 +1135,13 @@ public unsafe partial class IthmbCodecTests
         {
             var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
                 cancellation: null, outInfo, outBuf, frameIndex: 1);
-            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.InvalidArg, status);
         }
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
-    public void MultiFrame_RawDecode_NegativeIndex_ReturnsDecodeFailed()
+    public void MultiFrame_RawDecode_NegativeIndex_ReturnsInvalidArg()
     {
         int w = 4, h = 4;
         var profile = new IthmbCodecPlugin.IthmbVariantProfile(
@@ -1055,7 +1160,7 @@ public unsafe partial class IthmbCodecTests
         {
             var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
                 cancellation: null, outInfo, outBuf, frameIndex: -1);
-            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.InvalidArg, status);
         }
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }

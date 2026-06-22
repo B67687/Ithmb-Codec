@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Multi-frame raw decode:** F-prefix `.ithmb` files may contain multiple concatenated raw frames. Added `_rawFileCache` (ConcurrentDictionary) for read-once decode-many access, `DecodeRawProfile` frame slicing (frameStart = 4 + frameIndex * frameSize), `FillImageInfo` FrameCount propagation, and `frameIndex >= 0` acceptance in `CodecDecodeStaticRaster`. 3 multi-frame tests (+7 tests total). Confirmed by Keith's iPod Photo Reader, ithmbrdr, libgpod, and iOpenPod.
+- **Rotation roundtrip tests:** Added `RotateBgra_90_Correctness`, `RotateBgra_270_Correctness`, and `RotateBgra_90_Roundtrip_Identity` — verify rotated output pixel correctness and encode→decode→rotate identity. (+3 tests)
+- **ARM64 NEON CI:** `.github/workflows/test-neon.yml` runs all tests on native `ubuntu-24.04-arm` GitHub Actions runners, exercising `AdvSimd.IsSupported` code paths. `scripts/test-neon-locally.sh` for local QEMU user-mode NEON validation.
+
+### Fixed
+
+- **CRITICAL — SSE2 buffer overrun:** Removed overly conservative `(w & 3) == 0` guard from RGB565/RGB555 SIMD dispatchers. The `x + 7 < w` loop bound plus scalar tail handler (`DecodeRgb565_Tail`, `DecodeRgb555_Tail`) already prevent any buffer overrun. The old guard masked a phantom bug and blocked SIMD for widths like 10, 14, 18. (`IthmbCodecPlugin.Decoding.cs` lines 29, 214)
+- **CRITICAL — RotateBgra heap buffer overflow:** 90° CW formula `y * dstW + (srcW - 1 - x)` wrote past the allocated buffer for non-square images (h > w). 270° CW formula had the same bug for w > h. Corrected to: 90° CW = `x * srcH + (srcH - 1 - y)`, 270° CW = `(srcW - 1 - x) * srcH + y`. Both produce indices strictly within `[0, srcH*srcW - 1]`. Confirmed crash in isolation via `malloc(): unaligned tcache chunk detected`. (`IthmbCodecPlugin.cs:742`)
+- **SECURITY — Integer overflow in crop bounds check:** `profile.CropX + profile.CropWidth` used unchecked int addition. A crafted `profiles.json` with max-value offsets could bypass the `<= w` guard and cause OOB heap read. Fixed with `(long)` cast. (`IthmbCodecPlugin.cs:674-675`)
+- **YCbCr420 interlaced encoder:** `InterlaceFields` only copied Y luminance for YCbCr420, producing green-tinted output. Changed to 3-plane interlace (Y + Cb + Cr) independently. Using ceiling division for chroma dimensions to match encoder plane size. (`IthmbCodecPlugin.Encoding.cs:326-368`)
+- **Error code consistency:** `DecodeRawProfile` returned `DecodeFailed` for out-of-range frameIndex, while the cache-path in `DecodeInternal` returned `InvalidArg`. Unified to `InvalidArg`. (`IthmbCodecPlugin.cs:578`)
+
+### Removed
+
+- **F1064 speculative profile:** Commented out — no real-world sample has been found across iOpenPod, Keith's iPod Photo Reader, libgpod, or any public iPod Photo Cache dump. Asserting test updated. (`IthmbCodecPlugin.cs:116-120`, `IthmbCodecTests.Exhaustive.cs:232-233`)
+
+### Changed
+
+- **Documentation updated:** README.md test count (456→466), profile count (49→48), multi-frame statement, review cycles count; PROFILES.md F1064 marked disabled, count corrected; HARDWARE_GUIDE.md multi-frame support note; badge SVGs (tests.svg, showcase.svg) test count 460→466; InterlaceFields uses ceiling division for odd-dimension chroma compatibility; BuildIthmbFile comment step numbering fixed.
+
 - **Trailing bytes tolerance:** `DecodeRawProfile` now accepts files up to 256 bytes smaller than `FrameByteLength`, zero-padding undersized data. Handles real device alignment quirks where the encoder wrote fewer bytes than the expected frame size. Inspired by iOpenPod's `_resolve_packed_geometry` trailing-trim approach. (+2 tests)
 - **JPEG carving fallback:** When a file has an unknown profile prefix, scan the entire file for embedded JPEG markers before giving up. Enables decoding of .ithmb files whose prefix is unknown but which contain JPEG data beyond the 4 MB peek buffer. Mimics File Juicer's byte-level carving approach. (+2 tests)
 - **Centered crop infrastructure:** Added `CropX`/`CropY`/`CropWidth`/`CropHeight` fields to `IthmbVariantProfile` with full `profiles.json` parser support and post-decode cropping logic (applied after rotation). Ready for centered-padding photo formats (1007, 1015, 1024, 1093) once sample files validate exact crop dimensions. Based on iOpenPod's `_crop_visible_region`.

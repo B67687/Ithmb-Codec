@@ -58,7 +58,7 @@
   <!-- Row 5: Tests -->
   <rect x="400" y="175" width="80" height="18" rx="3" fill="#252545"/>
   <text x="406" y="188" font-family="monospace" font-size="10" fill="#6677aa">Tests</text>
-  <text x="490" y="188" font-family="system-ui,sans-serif" font-size="12" fill="#40c060">460 / 460 passing — 0 warnings</text>
+  <text x="490" y="188" font-family="system-ui,sans-serif" font-size="12" fill="#40c060">466 / 466 passing — 0 warnings</text>
 
   <!-- Row 6: Content -->
   <rect x="400" y="200" width="80" height="18" rx="3" fill="#252545"/>

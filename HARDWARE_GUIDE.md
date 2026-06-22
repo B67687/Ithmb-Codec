@@ -73,6 +73,9 @@ Linux: Use `ifuse` to mount the iPod filesystem (requires libimobiledevice).
 
 ---
 
+> [!NOTE]
+> **Multi-frame support:** F-prefix files often contain multiple concatenated raw frames (e.g., a single `F1019_1.ithmb` may hold 5 separate 720×480 frames). The codec detects this automatically — `GetPageCount()` returns the total frame count, and each frame is accessible via `SetFrame(n)`. When testing with `IthmbDecoder`, the CLI decodes frame 0 by default; add `--frame N` to decode a specific frame.
+
 ## Step 3: Decode with Our Codec
 
 Run the CLI decoder tool on each `.ithmb` file:

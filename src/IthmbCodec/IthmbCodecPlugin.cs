@@ -405,8 +405,8 @@ internal static unsafe partial class IthmbCodecPlugin
 
                 // No embedded JPEG found in peek buffer — read full file for raw profile fallback
                 byte[] fileBytes = new byte[(int)fileSize];
-            fs.Seek(0, SeekOrigin.Begin);
-            fs.ReadExactly(fileBytes, 0, (int)fileSize);
+                fs.Seek(0, SeekOrigin.Begin);
+                fs.ReadExactly(fileBytes, 0, (int)fileSize);
 
             int prefix = ReadInt32BigEndian(fileBytes, 0);
             if (KnownProfiles.TryGetValue(prefix, out var profile))
@@ -425,8 +425,9 @@ internal static unsafe partial class IthmbCodecPlugin
                 int frameCount = frameSize > 0 ? dataLen / frameSize : 1;
                 if (frameCount < 1) frameCount = 1;
 
-                // Evict previous entries (cache bounded to most recent file)
-                _rawFileCache.Clear();
+                // Atomically store — ConcurrentDictionary indexer is thread-safe per-key.
+                // No Clear(): a concurrent Clear()+Set() for another path could interleave
+                // and overwrite our entry, losing that path's cached data.
                 _rawFileCache[path] = new RawFileCacheEntry(fileBytes, profile, frameCount, frameSize);
 
                 if (frameIndex >= frameCount) return IGStatus.InvalidArg;
@@ -575,7 +576,7 @@ internal static unsafe partial class IthmbCodecPlugin
         if (frameIndex < 0 || frameIndex >= frameCount)
         {
             Log(4, $"ITHMB: frameIndex {frameIndex} out of range (0-{frameCount - 1})");
-            return IGStatus.DecodeFailed;
+            return IGStatus.InvalidArg;
         }
 
         // Compute the minimum size we need. For padded profiles, the valid pixel data
@@ -671,8 +672,8 @@ internal static unsafe partial class IthmbCodecPlugin
         // When CropWidth/CropHeight are non-zero, copy the visible region into a new
         // buffer and free the full-frame buffer. Based on iOpenPod's _crop_visible_region.
         if (profile.CropWidth > 0 && profile.CropHeight > 0 &&
-            profile.CropX + profile.CropWidth <= w &&
-            profile.CropY + profile.CropHeight <= h)
+            (long)profile.CropX + profile.CropWidth <= w &&
+            (long)profile.CropY + profile.CropHeight <= h)
         {
             int cropW = profile.CropWidth, cropH = profile.CropHeight;
             byte* cropped = (byte*)NativeMemory.AllocZeroed((nuint)(cropW * 4 * cropH));
@@ -706,7 +707,7 @@ internal static unsafe partial class IthmbCodecPlugin
     // ------------------------------ Helpers ------------------------------
 
     /// <summary>Rotates a BGRA pixel buffer in place (90, 180, or 270 degrees clockwise). Updates w/h.</summary>
-    private static void RotateBgra(byte* pixels, ref int w, ref int h, int rotation)
+    internal static void RotateBgra(byte* pixels, ref int w, ref int h, int rotation)
     {
         if (rotation == 0) return;
         int srcW = w, srcH = h;
@@ -739,8 +740,8 @@ internal static unsafe partial class IthmbCodecPlugin
                 {
                     int srcIdx = (y * srcW + x) * 4;
                     int dstIdx = rotation == 90
-                        ? (y * dstW + (srcW - 1 - x)) * 4
-                        : ((srcW - 1 - y) * dstW + x) * 4;
+                        ? (x * srcH + (srcH - 1 - y)) * 4
+                        : ((srcW - 1 - x) * srcH + y) * 4;
 
                     rotated[dstIdx]     = pixels[srcIdx];
                     rotated[dstIdx + 1] = pixels[srcIdx + 1];

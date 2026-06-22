@@ -283,7 +283,7 @@ internal static unsafe partial class IthmbCodecPlugin
             encoded = InterlaceFields(encoded, fw, fh, profile.Encoding);
         }
 
-        // 5. Pad to FrameByteLength if needed
+        // 4. Pad to FrameByteLength if needed
         
 if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
         {
@@ -324,12 +324,15 @@ if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
         }
 
         // YCbCr 4:2:0 planar — 3 planes: Y (w*h), Cb (w/2*h/2), Cr (w/2*h/2)
+        // Use ceiling division for chroma dimensions to match the encoder's plane size
         int ySize = w * h;
-        int cSize = (w / 2) * (h / 2);
+        int uvW = (w + 1) / 2;
+        int uvH = (h + 1) / 2;
+        int cSize = uvW * uvH;
         int yRow = w;
-        int cRow = w / 2;
+        int cRow = uvW;
         int halfH = (h + 1) / 2;
-        int halfH_uv = ((h / 2) + 1) / 2;  // half rows for chroma (quarter-height rounded up)
+        int halfH_uv = (uvH + 1) / 2;
 
         var result2 = new byte[planar.Length];
 
