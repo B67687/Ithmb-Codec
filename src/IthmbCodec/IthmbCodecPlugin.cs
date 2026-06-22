@@ -408,6 +408,16 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(0, SeekOrigin.Begin);
                 fs.ReadExactly(fileBytes, 0, (int)fileSize);
 
+            // Validate that the first byte is an ASCII format tag ('F' for raw, 'T' for JPEG).
+            // This catches files whose first 4 bytes happen to match a KnownProfiles key
+            // by coincidence but are actually corrupted or invalid data.
+            byte firstByte = fileBytes[0];
+            if (firstByte != (byte)'F' && firstByte != (byte)'T')
+            {
+                Log(4, $"ITHMB: unknown format tag byte 0x{firstByte:X2} (expected 'F' or 'T')");
+                return IGStatus.DecodeFailed;
+            }
+
             int prefix = ReadInt32BigEndian(fileBytes, 0);
             if (KnownProfiles.TryGetValue(prefix, out var profile))
             {

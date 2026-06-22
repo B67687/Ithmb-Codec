@@ -52,6 +52,17 @@ Format behavior was studied from these implementations; no code was copied.
 
 ---
 
+## Firmware Decryption
+
+The iPhone OS 1.x–3.x IPSW DMG encryption keys used for firmware extraction are publicly documented:
+
+- **The iPhone Wiki** — [theiphonewiki.com](https://www.theiphonewiki.com/) — VFDecrypt keys for all iPhone OS 1.x–3.x builds, publicly documented since 2009.
+- **xpwn** — [GitHub](https://github.com/planetbeing/xpwn) — Cross-platform IPSW extraction toolkit (dmg, img3, VFDecrypt).
+
+These keys were used solely for the purpose of extracting `.ithmb` files from 2007–2009 firmware for decoder validation. Only archived firmware images from Apple's public CDN were processed.
+
+---
+
 ## Format Documentation Sources
 
 | Source                 | URL                                                                                                             | Content                                                                                                                                                                                         |
