@@ -26,9 +26,9 @@ internal static unsafe partial class IthmbCodecPlugin
 
         // SIMD path: process 8 pixels per iteration.
         // x64: SSE2 (Sse2.Store/Shuffle). ARM64: NEON (AdvSimd).
-        if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
+        if (Sse2.IsSupported && w >= 8)
             DecodeRgb565_Sse2(src, dst, w, h, littleEndian);
-        else if (AdvSimd.IsSupported && w >= 8 && (w & 3) == 0)
+        else if (AdvSimd.IsSupported && w >= 8)
             DecodeRgb565_Neon(src, dst, w, h, littleEndian);
         else
             DecodeRgb565_Scalar(src, dst, w, h, littleEndian);
@@ -36,11 +36,9 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>SSE2-accelerated RGB565→BGRA: 8 pixels (16B→32B) per iteration.</summary>
-    /// <remarks>Uses Vector128.StoreUnsafe (movdqu, no alignment required). The (w &amp; 3) == 0 guard
-    /// is retained because some widths where w ≥ 8 but not a multiple of 4 (e.g. 10, 14, 18) expose
-    /// a pre-existing SSE2 output buffer overrun that overwrites the next row's start. The scalar
-    /// tail handles <8 remaining pixels correctly after the SIMD loop. Width sensitivity noted but
-    /// root cause not yet isolated (all known profiles use standard dimensions that satisfy the guard).</remarks>
+    /// <remarks>Uses Vector128.StoreUnsafe (movdqu, no alignment required).
+    /// The scalar tail (DecodeRgb565_Tail) handles any remaining &lt;8 pixels after the SIMD loop.
+    /// Widths smaller than 8 pixels fall through to the scalar fallback path.</remarks>
     private static void DecodeRgb565_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
         fixed (byte* pSrc = src)
@@ -213,9 +211,9 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
 
         // SIMD path: process 8 pixels per iteration.
-        if (Sse2.IsSupported && w >= 8 && (w & 3) == 0)
+        if (Sse2.IsSupported && w >= 8)
             DecodeRgb555_Sse2(src, dst, w, h, littleEndian);
-        else if (AdvSimd.IsSupported && w >= 8 && (w & 3) == 0)
+        else if (AdvSimd.IsSupported && w >= 8)
             DecodeRgb555_Neon(src, dst, w, h, littleEndian);
         else
             DecodeRgb555_Scalar(src, dst, w, h, littleEndian);
@@ -224,6 +222,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
     /// <summary>SSE2-accelerated RGB555→BGRA: 8 pixels (16B→32B) per iteration.</summary>
     /// <remarks>Uses Vector128.StoreUnsafe (movdqu, no alignment required).
+    /// The scalar tail (DecodeRgb555_Tail) handles any remaining &lt;8 pixels after the SIMD loop.
     /// RGB555 bit layout: xRRRRRGGGGGBBBBB (bit 15 unused)
     /// Differences from RGB565:
     ///   - Red:  >> 10 (not >> 11) — skips unused bit 15

@@ -113,7 +113,11 @@ internal static unsafe partial class IthmbCodecPlugin
             // iPod Nano 8GB (3G) photo library — 320×240 YCbCr 4:2:0, padded
             // Documented in Whirlpool forum thread (Anywho's iThmbConv, 2007).
             // No sample files exist for validation. Speculative — override via profiles.json if wrong.
-            [1064] = new(1064, 320, 240, IthmbEncoding.Ycbcr420, 320 * 240 * 2, IsPadded: true),
+            // [1064] speculated as 320×240 YCbCr420 padded — disabled: no real sample has ever
+            // been found to validate. Not present in any known iPod Photo Cache dump, iOpenPod's
+            // 50+ profiles, Keith's iPod Photo Reader, libgpod, etc. Re-enable only after
+            // verifying against a real F1064 .ithmb file from actual hardware.
+            // [1064] = new(1064, 320, 240, IthmbEncoding.Ycbcr420, 320 * 240 * 2, IsPadded: true),
             // iPod Classic 6G square photo thumbnail
             [1066] = new(1066, 64, 64, IthmbEncoding.Rgb565, 64 * 64 * 2),
             // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame
@@ -190,6 +194,20 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly ConcurrentDictionary<nint, byte> _liveBuffers = new();
     // Indexer overwrite is intentional — buffer pointers are unique per NativeMemory.AllocZeroed call.
     // CodecFreePixelBuffer uses TryRemove + null-Data guard for double-free safety.
+
+    // Cache for multi-frame raw .ithmb files. Populated by the first DecodeInternal
+    // call for a raw file, reused across subsequent frameIndex values without re-reading.
+    // Read-once, decode-many: the ithmb file is read in full once and cached here.
+    // Only the most recent file is kept (evicted when a different path is encountered).
+    private static readonly ConcurrentDictionary<string, RawFileCacheEntry> _rawFileCache = new();
+
+    private readonly struct RawFileCacheEntry(byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
+    {
+        public readonly byte[] Data = data;
+        public readonly IthmbVariantProfile Profile = profile;
+        public readonly int FrameCount = frameCount;
+        public readonly int FrameSize = frameSize;
+    }
 
     // ------------------------------ Entry point ------------------------------
     [UnmanagedCallersOnly(EntryPoint = IGNativeAbi.ENTRY_POINT_NAME, CallConvs = [typeof(CallConvCdecl)])]
@@ -293,9 +311,9 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         if (outBuf == null) return IGStatus.InvalidArg;
         *outBuf = default;
-        if (frameIndex != 0) return IGStatus.InvalidArg; // single-frame
+        if (frameIndex < 0) return IGStatus.InvalidArg;
         IGImageInfo info = default;
-        return DecodeInternal(filePath, cancellation, &info, outBuf);
+        return DecodeInternal(filePath, cancellation, &info, outBuf, frameIndex);
     }
 
 
@@ -315,7 +333,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ------------------------------ Core decode pipeline ------------------------------
     internal static IGStatus DecodeInternal(IGStringRef filePath, void* cancellation,
-        IGImageInfo* outInfo, IGPixelBuffer* outBuf)
+        IGImageInfo* outInfo, IGPixelBuffer* outBuf, int frameIndex = 0)
     {
         if (filePath.Data == null || filePath.Length <= 0) return IGStatus.InvalidArg;
         var path = new string(filePath.Data, 0, filePath.Length);
@@ -393,7 +411,26 @@ internal static unsafe partial class IthmbCodecPlugin
             int prefix = ReadInt32BigEndian(fileBytes, 0);
             if (KnownProfiles.TryGetValue(prefix, out var profile))
             {
-                return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf);
+                // Check cache first (populated by a previous frameIndex or metadata call)
+                if (_rawFileCache.TryGetValue(path, out var cached))
+                {
+                    if (frameIndex >= cached.FrameCount) return IGStatus.InvalidArg;
+                    return DecodeRawProfile(cached.Data, cached.Profile, cancellation, outInfo, outBuf, frameIndex);
+                }
+
+                // First time: compute frame count and cache the raw data.
+                // F-prefix .ithmb files can contain multiple concatenated raw frames.
+                int frameSize = profile.FrameByteLength;
+                int dataLen = fileBytes.Length - 4;
+                int frameCount = frameSize > 0 ? dataLen / frameSize : 1;
+                if (frameCount < 1) frameCount = 1;
+
+                // Evict previous entries (cache bounded to most recent file)
+                _rawFileCache.Clear();
+                _rawFileCache[path] = new RawFileCacheEntry(fileBytes, profile, frameCount, frameSize);
+
+                if (frameIndex >= frameCount) return IGStatus.InvalidArg;
+                return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf, frameIndex);
             }
 
                 // Unknown prefix — try JPEG carving on the full file before giving up.
@@ -520,11 +557,26 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ------------------------------ Raw profile decoding ------------------------------
     internal static IGStatus DecodeRawProfile(byte[] data, IthmbVariantProfile profile,
-        void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf)
+        void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf, int frameIndex = 0)
     {
         int w = profile.Width, h = profile.Height;
         if (profile.SwapsDimensions) (w, h) = (h, w);
         int frameSize = profile.FrameByteLength;
+
+        // Compute frame count for multi-image support.
+        // F-prefix .ithmb files can contain multiple concatenated raw frames,
+        // each exactly FrameByteLength bytes (confirmed by Keith's iPod Photo Reader,
+        // ithmbrdr, libgpod, and iOpenPod).
+        int dataAfterPrefix = data.Length - 4;
+        int frameCount = frameSize > 0 ? dataAfterPrefix / frameSize : 1;
+        if (frameCount < 1) frameCount = 1;
+
+        // Validate frameIndex
+        if (frameIndex < 0 || frameIndex >= frameCount)
+        {
+            Log(4, $"ITHMB: frameIndex {frameIndex} out of range (0-{frameCount - 1})");
+            return IGStatus.DecodeFailed;
+        }
 
         // Compute the minimum size we need. For padded profiles, the valid pixel data
         // may be smaller than FrameByteLength (padding was added by the device).
@@ -534,8 +586,11 @@ internal static unsafe partial class IthmbCodecPlugin
             ? Math.Min(frameSize, (int)Math.Min((long)w * h + (long)((w + 1) / 2) * ((h + 1) / 2) * 2, int.MaxValue))
             : frameSize;
         if (requiredSize < 0) requiredSize = int.MaxValue;
-        int actualDataLen = data.Length - 4;
-        if (actualDataLen < 0) { Log(4, "ITHMB: raw file too small (no prefix)"); return IGStatus.DecodeFailed; }
+
+        // Slice to the requested frame
+        int frameStart = 4 + frameIndex * frameSize;
+        int actualDataLen = data.Length - frameStart;
+        if (actualDataLen < 0) { Log(4, "ITHMB: frame offset past file end"); return IGStatus.DecodeFailed; }
         if (actualDataLen < requiredSize - TrailingPaddingTolerance)
         {
             Log(4, $"ITHMB: raw file too small ({actualDataLen} < {requiredSize})");
@@ -543,7 +598,7 @@ internal static unsafe partial class IthmbCodecPlugin
         }
 
         int fileSize = data.Length; // actual file bytes read (available before FillImageInfo)
-        FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1, fileSize: fileSize);
+        FillImageInfo(outInfo, w, h, hasAlpha: 0, orientation: 1, fileSize: fileSize, frameCount: frameCount);
 
         if (outBuf == null) return IGStatus.OK;
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
@@ -553,7 +608,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
         try
         {
-            var raw = data.AsSpan(4);
+            var raw = data.AsSpan(frameStart);
             // For padded profiles, trim to the valid pixel data portion
             if (profile.IsPadded)
             {
@@ -704,7 +759,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>Populates an IGImageInfo with common defaults.</summary>
-    private static void FillImageInfo(IGImageInfo* info, int w, int h, int hasAlpha, int orientation, long fileSize = -1)
+    private static void FillImageInfo(IGImageInfo* info, int w, int h, int hasAlpha, int orientation, long fileSize = -1, int frameCount = 1)
     {
         info->Width = w;
         info->Height = h;
@@ -713,7 +768,7 @@ internal static unsafe partial class IthmbCodecPlugin
         info->HdrTransferFn = (int)IGHdrTransferFn.None;
         info->ColorSpace = (int)IGColorSpace.Srgb;
         info->Orientation = orientation;
-        info->FrameCount = 1;
+        info->FrameCount = frameCount;
         info->FileSizeBytes = fileSize;
         info->IccProfileData = null;
         info->IccProfileSize = 0;
