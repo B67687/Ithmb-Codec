@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-06-22
+
 ### Added
 
 - **Multi-frame raw decode:** F-prefix `.ithmb` files may contain multiple concatenated raw frames. Added `_rawFileCache` (ConcurrentDictionary) for read-once decode-many access, `DecodeRawProfile` frame slicing (frameStart = 4 + frameIndex * frameSize), `FillImageInfo` FrameCount propagation, and `frameIndex >= 0` acceptance in `CodecDecodeStaticRaster`. 3 multi-frame tests (+7 tests total). Confirmed by Keith's iPod Photo Reader, ithmbrdr, libgpod, and iOpenPod.
@@ -134,5 +136,6 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/B67687/ithmb-codec/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/B67687/ithmb-codec/releases/tag/v1.0.0
