@@ -29,6 +29,23 @@ unsafe class Program
                 listPd = true;
             else if (args[i] == "--pd-index" && i + 1 < args.Length)
                 pdIndex = int.Parse(args[++i]);
+            else if (args[i] == "--check-pd" && i + 1 < args.Length)
+            {
+                string pdPath = args[++i];
+                byte[] pdData = File.ReadAllBytes(pdPath);
+                var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb(pdData);
+                if (issues.Count == 0)
+                {
+                    Console.WriteLine("PhotoDB integrity check: PASSED — 0 issues found.");
+                }
+                else
+                {
+                    Console.WriteLine($"PhotoDB integrity check: FAILED — {issues.Count} issue(s):");
+                    foreach (var issue in issues)
+                        Console.WriteLine($"  - {issue}");
+                }
+                return 0;
+            }
             else if (args[i] == "--help" || args[i] == "-h")
             {
                 PrintUsage();
@@ -126,6 +143,7 @@ unsafe class Program
         Console.Error.WriteLine("  IthmbDecoder <input.ithmb> [output.bmp]    Decode .ithmb file to BMP");
         Console.Error.WriteLine("  IthmbDecoder --list-pd <PhotoDB|ArtworkDB>  List PhotoDB/ArtworkDB entries");
         Console.Error.WriteLine("  IthmbDecoder --pd-index <N> <PhotoDB> [output.bmp]  Extract entry N from PhotoDB");
+        Console.Error.WriteLine("  IthmbDecoder --check-pd <PhotoDB|ArtworkDB>  Validate PhotoDB/ArtworkDB structural integrity");
         Console.Error.WriteLine();
         Console.Error.WriteLine("PhotoDB/ArtworkDB are Apple's iPod/iPhone thumbnail database files");
         Console.Error.WriteLine("(typically named \"Photo Database\" or \"Artwork Database\" with no extension).");
