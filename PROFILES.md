@@ -1,6 +1,6 @@
 # Profiles
 
-48 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+49 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
@@ -40,6 +40,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1074    | 50×50      | RGB565           | Nano 4G/5G/6G (cover art xsmall)                 |
 | 1078    | 80×80      | RGB565           | Nano 4G/5G (cover art small)                     |
 | 1079    | 80×80      | RGB565           | iPod Nano 4G (photo)                             |
+| 1081    | 640×480    | RGB565           | iPod Classic/Nano (cover art large)              |
 | 1083    | 240×320    | RGB565           | iPod Nano 4G (photo)                             |
 | 1084    | 240×240    | RGB565           | Nano 4G (cover art alt)                          |
 | 1085    | 88×88      | RGB565           | Nano 6G (cover art medium)                       |
@@ -60,7 +61,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 >
-> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are covered by our 48 active profiles. **F1064** (320×240, iPod Nano 8GB) was previously included as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis, but has been disabled — no real-world sample has ever been found across any surveyed implementation (iOpenPod, Keith's iPod Photo Reader, libgpod, ithmbrdr). If real samples emerge, re-enable via `profiles.json`.
+> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are covered by our 49 active profiles. **F1064** (320×240, iPod Nano 8GB) was previously included as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis, but has been disabled — no real-world sample has ever been found across any surveyed implementation (iOpenPod, Keith's iPod Photo Reader, libgpod, ithmbrdr). If real samples emerge, re-enable via `profiles.json`.
 
 > The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets orientation (1–8). ImageGlass uses this to auto-rotate.
 
@@ -76,6 +77,7 @@ These flags can be set in `profiles.json` for fine-tuning raw decoder behavior:
 | `isInterlaced`     | bool | `false` | Even/odd rows stored separately (used by profile 1019 UYVY interlaced).                                           |
 | `isClcl`           | bool | `false` | CLCL nibble-chroma: 4-bit chroma shared across 2 pixels (4 bytes per macropixel).                                 |
 | `isCl`             | bool | `false` | CL per-pixel nibble-chroma: each pixel has its own 4-bit chroma (2 bytes per pixel). Keith's Methods 3/4.         |
+| `swapRgbChannels`  | bool | `false` | When true, the RGB555 decoder reads `xBBBBBGGGGGRRRRR` (BGR;15) instead of standard `xRRRRRGGGGGBBBBB`. For iPhone 2G thumbnail compatibility (Steee29/ithmb_converter). |
 | `swapChromaPlanes` | bool | `false` | Swaps Cb/Cr order in YCbCr 4:2:0 planar decode (Keith's Method 6). For iPod variants with reversed chroma planes. |
 | `cropX`            | int  | `0`     | X offset of visible region within decoded frame (0 = no crop). For centered-padding photo formats.                |
 | `cropY`            | int  | `0`     | Y offset of visible region within decoded frame (0 = no crop).                                                    |

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **BGR;15 channel-swapped RGB555 (`SwapRgbChannels`):** Added `SwapRgbChannels` bool parameter to `IthmbVariantProfile` and `profiles.json` parser, new `swapRgbChannels` JSON field. When true, the RGB555 decoder reads `xBBBBBGGGGGRRRRR` (BGR;15) layout for iPhone 2G thumbnail compatibility. Applied to all 5 decoder paths (Tail, Scalar, SSE2, NEON, public DecodeRgb555 entry point) and encoder (`EncodeRgb555`, `BuildIthmbFile`). SIMD uses a conditional branch outside the pixel loop (zero overhead on the hot path). (+3 tests, 517 total)
+- **PhotoDB/ArtworkDB writer (`TryBuildPhotoDb`):** Added `TryBuildPhotoDb` to `IthmbCodecPlugin.PhotoDb.cs` — builds complete ArtworkDB binary from a list of (format_id, pixel_data, width, height) entries. Writes MHFD header → MHSD section → MHNI entries → pixel data (all entries first, then all pixel data for correct multi-entry roundtrip). Enables artwork sync to iPod without external tools. (+3 tests)
+- **PhotoDB integrity checker (`IntegrityCheckPhotoDb`):** Added `IntegrityCheckPhotoDb` + `IntegrityWalkTree` to PhotoDb.cs — validates chunk structure sanity, MHNI overlapping ranges, known format ID checks, trailing garbage detection. CLI `--check-pd` flag for stand-alone verification. (+3 tests)
+- **Device-specific format tables (`DeviceProfiles.cs`):** New `IthmbCodecPlugin.DeviceProfiles.cs` with static format tables for 18 iPod generations: Classic (5G, 5.5G, 6G), Nano (1G-7G), iPod Touch (1G-4G), iPhone (1G-2G), iPod Mini (1G-2G), iPod Photo (4G), iPod Video (5G), and iPod Mobile (Motorola). Each entry lists the format IDs required by that device for thumbnail display and cover art. (+5 tests)
+- **Format 1081 (640×480 RGB565):** New built-in profile for iPod Classic/Nano cover art large variant, documented in the consolidated format table from multiple sources. (+0 tests, 49 profiles total)
+
 ### Changed
 
 - **Refactored monolithic source files into domain-focused partial classes.** 6 oversized files (all 900-1200 LOC) split into 15 targeted files. Plugin.cs → Plugin.cs + DecodePipeline.cs + JpegDecode.cs + ProfileSystem.cs. Decoding.cs → Rgb565Rgb555.cs + UyvyYuv.cs + ClclCl.cs. Roundtrip.cs → 3 specialized test files. Statistical.cs → 2 focused test files. Fuzz.cs → base + SimdTail.cs. EncoderHelpers.cs extracted from Encoding.cs. Build clean, 498 tests pass. Total source lines unchanged; no behavioral change.
