@@ -459,4 +459,129 @@ public unsafe partial class IthmbCodecTests
         }
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
+
+    // ===================== SwapRgbChannels (BGR;15) =====================
+
+    [Fact]
+    public void SwapRgbChannels_KnownValue()
+    {
+        // BGR;15 word 0x7C01 (binary: 0111_1100_0000_0001 = 0 11111 00000 00001)
+        // Layout: xBBBBB GGGGG RRRRR → B=31, G=0, R=1
+        ushort bgr15 = 0x7C01;
+        byte leLow = (byte)(bgr15 & 0xFF);
+        byte leHigh = (byte)(bgr15 >> 8);
+        byte[] src = [leLow, leHigh];
+
+        byte* dst = (byte*)NativeMemory.Alloc(4);
+        try
+        {
+            IthmbCodecPlugin.DecodeRgb555(src, dst, 1, 1, littleEndian: true, swapRgbChannels: true);
+
+            // B=31 → (31<<3)|(31>>2) = 248|7 = 255
+            Assert.Equal(255, dst[0]);
+            // G=0 → 0
+            Assert.Equal(0, dst[1]);
+            // R=1 → (1<<3)|(1>>2) = 8|0 = 8
+            Assert.Equal(8, dst[2]);
+            Assert.Equal(255, dst[3]);
+        }
+        finally { NativeMemory.Free(dst); }
+    }
+
+    [Fact]
+    public void SwapRgbChannels_Roundtrip()
+    {
+        int w = 4, h = 4;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h; i++)
+        {
+            bgra[i * 4]     = (byte)((i * 17) & 0xFF);
+            bgra[i * 4 + 1] = (byte)((i * 31) & 0xFF);
+            bgra[i * 4 + 2] = (byte)((i * 53) & 0xFF);
+            bgra[i * 4 + 3] = 255;
+        }
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9999, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb555,
+            FrameByteLength: w * h * 2,
+            SwapRgbChannels: true);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.NotEqual((nint)0, (nint)outBuf->Data);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, w * h * 4);
+            for (int i = 0; i < w * h * 4; i++)
+            {
+                int px = i / 4;
+                int ch = i % 4;
+                if (ch == 3)
+                {
+                    Assert.Equal(255, decoded[i]);
+                }
+                else
+                {
+                    int err = Math.Abs(decoded[i] - bgra[i]);
+                    Assert.True(err <= 8, $"Pixel {px} channel {ch}: original={bgra[i]}, decoded={decoded[i]} (Δ{err})");
+                }
+            }
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void SwapRgbChannels_DefaultFalse_RGB555_Unchanged()
+    {
+        int w = 4, h = 4;
+        var bgra = new byte[w * h * 4];
+        for (int i = 0; i < w * h; i++)
+        {
+            bgra[i * 4]     = (byte)((i * 23) & 0xF8);
+            bgra[i * 4 + 1] = (byte)((i * 37) & 0xF8);
+            bgra[i * 4 + 2] = (byte)((i * 61) & 0xF8);
+            bgra[i * 4 + 3] = 255;
+        }
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 9998, Width: w, Height: h,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb555,
+            FrameByteLength: w * h * 2);
+        byte[] ithmbFile = IthmbCodecPlugin.BuildIthmbFile(bgra, w, h, profile);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(ithmbFile, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.NotEqual((nint)0, (nint)outBuf->Data);
+
+            var decoded = new Span<byte>((void*)outBuf->Data, w * h * 4);
+            for (int i = 0; i < w * h * 4; i++)
+            {
+                int ch = i % 4;
+                if (ch == 3)
+                {
+                    Assert.Equal(255, decoded[i]);
+                }
+                else
+                {
+                    int err = Math.Abs(decoded[i] - bgra[i]);
+                    Assert.True(err <= 8, $"Pixel {i / 4} ch {ch}: orig={bgra[i]}, dec={decoded[i]} (Δ{err})");
+                }
+            }
+        }
+        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
 }

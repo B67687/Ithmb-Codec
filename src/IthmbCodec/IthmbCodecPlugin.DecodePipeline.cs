@@ -284,7 +284,7 @@ internal static unsafe partial class IthmbCodecPlugin
             bool ok = profile.Encoding switch
             {
                 IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
-                IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian),
+                IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian, profile.SwapRgbChannels),
                 IthmbEncoding.Yuv422 => profile.ClChroma
                     ? DecodeYuv422Cl(raw, pixels, w, h)
                     : profile.ClclChroma

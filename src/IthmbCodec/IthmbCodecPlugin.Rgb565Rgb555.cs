@@ -205,18 +205,18 @@ internal static unsafe partial class IthmbCodecPlugin
     // ---------- RGB555 ----------
 
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
-    internal static bool DecodeRgb555(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    internal static bool DecodeRgb555(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels = false)
     {
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
         // SIMD path: process 8 pixels per iteration.
         if (Sse2.IsSupported && w >= 8)
-            DecodeRgb555_Sse2(src, dst, w, h, littleEndian);
+            DecodeRgb555_Sse2(src, dst, w, h, littleEndian, swapRgbChannels);
         else if (AdvSimd.IsSupported && w >= 8)
-            DecodeRgb555_Neon(src, dst, w, h, littleEndian);
+            DecodeRgb555_Neon(src, dst, w, h, littleEndian, swapRgbChannels);
         else
-            DecodeRgb555_Scalar(src, dst, w, h, littleEndian);
+            DecodeRgb555_Scalar(src, dst, w, h, littleEndian, swapRgbChannels);
         return true;
     }
 
@@ -229,7 +229,7 @@ internal static unsafe partial class IthmbCodecPlugin
     ///   - Green: &amp; 0x001F (5 bits, not 6) — was 0x003F, now same mask as R/B
     ///   - Green MSB-replication: (val &lt;&lt; 3) | (val &gt;&gt; 2) — 5→8 bits (same as R/B)
     /// </remarks>
-    private static void DecodeRgb555_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    private static void DecodeRgb555_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
         fixed (byte* pSrc = src)
         {
@@ -239,40 +239,78 @@ internal static unsafe partial class IthmbCodecPlugin
                 byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
-                for (; x + 7 < w; x += 8)
+                if (swapRgbChannels)
                 {
-                    Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
-                    Vector128<ushort> v = raw.AsUInt16();
+                    // BGR;15 layout: x BBBBB GGGGG RRRRR
+                    for (; x + 7 < w; x += 8)
+                    {
+                        Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                        Vector128<ushort> v = raw.AsUInt16();
 
-                    if (!littleEndian)
-                        v = Sse2.Or(Sse2.ShiftRightLogical(v, 8), Sse2.ShiftLeftLogical(v, 8)).AsUInt16();
+                        if (!littleEndian)
+                            v = Sse2.Or(Sse2.ShiftRightLogical(v, 8), Sse2.ShiftLeftLogical(v, 8)).AsUInt16();
 
-                    // Extract 5-bit fields: RGB555 = x RRRRR GGGGG BBBBB
-                    var r5 = Sse2.And(Sse2.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
-                    var g5 = Sse2.And(Sse2.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
-                    var b5 = Sse2.And(v,                              Vector128.Create((ushort)0x001F));
+                        // BGR;15: x BBBBB GGGGG RRRRR — swap R↔B extraction
+                        var b5 = Sse2.And(Sse2.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
+                        var g5 = Sse2.And(Sse2.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
+                        var r5 = Sse2.And(v,                              Vector128.Create((ushort)0x001F));
 
-                    // MSB replicate to 8-bit: (val << 3) | (val >> 2) — same for all 5-bit fields
-                    var r8 = Sse2.Or(Sse2.ShiftLeftLogical(r5, 3), Sse2.ShiftRightLogical(r5, 2));
-                    var g8 = Sse2.Or(Sse2.ShiftLeftLogical(g5, 3), Sse2.ShiftRightLogical(g5, 2));
-                    var b8 = Sse2.Or(Sse2.ShiftLeftLogical(b5, 3), Sse2.ShiftRightLogical(b5, 2));
+                        var r8 = Sse2.Or(Sse2.ShiftLeftLogical(r5, 3), Sse2.ShiftRightLogical(r5, 2));
+                        var g8 = Sse2.Or(Sse2.ShiftLeftLogical(g5, 3), Sse2.ShiftRightLogical(g5, 2));
+                        var b8 = Sse2.Or(Sse2.ShiftLeftLogical(b5, 3), Sse2.ShiftRightLogical(b5, 2));
 
-                    // Pack to bytes
-                    var bp = Sse2.PackUnsignedSaturate(b8.AsInt16(), b8.AsInt16());
-                    var gp = Sse2.PackUnsignedSaturate(g8.AsInt16(), g8.AsInt16());
-                    var rp = Sse2.PackUnsignedSaturate(r8.AsInt16(), r8.AsInt16());
+                        var bp = Sse2.PackUnsignedSaturate(b8.AsInt16(), b8.AsInt16());
+                        var gp = Sse2.PackUnsignedSaturate(g8.AsInt16(), g8.AsInt16());
+                        var rp = Sse2.PackUnsignedSaturate(r8.AsInt16(), r8.AsInt16());
 
-                    var alpha = Vector128.Create((byte)255);
-                    var br = Sse2.UnpackLow(bp, rp);
-                    var ga = Sse2.UnpackLow(gp, alpha);
-                    var pxLo = Sse2.UnpackLow(br, ga);
-                    var pxHi = Sse2.UnpackHigh(br, ga);
+                        var alpha = Vector128.Create((byte)255);
+                        var br = Sse2.UnpackLow(bp, rp);
+                        var ga = Sse2.UnpackLow(gp, alpha);
+                        var pxLo = Sse2.UnpackLow(br, ga);
+                        var pxHi = Sse2.UnpackHigh(br, ga);
 
-                    Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
-                    Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                        Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                        Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                    }
+                }
+                else
+                {
+                    // Standard RGB555: x RRRRR GGGGG BBBBB
+                    for (; x + 7 < w; x += 8)
+                    {
+                        Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                        Vector128<ushort> v = raw.AsUInt16();
+
+                        if (!littleEndian)
+                            v = Sse2.Or(Sse2.ShiftRightLogical(v, 8), Sse2.ShiftLeftLogical(v, 8)).AsUInt16();
+
+                        // Extract 5-bit fields: RGB555 = x RRRRR GGGGG BBBBB
+                        var r5 = Sse2.And(Sse2.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
+                        var g5 = Sse2.And(Sse2.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
+                        var b5 = Sse2.And(v,                              Vector128.Create((ushort)0x001F));
+
+                        // MSB replicate to 8-bit: (val << 3) | (val >> 2) — same for all 5-bit fields
+                        var r8 = Sse2.Or(Sse2.ShiftLeftLogical(r5, 3), Sse2.ShiftRightLogical(r5, 2));
+                        var g8 = Sse2.Or(Sse2.ShiftLeftLogical(g5, 3), Sse2.ShiftRightLogical(g5, 2));
+                        var b8 = Sse2.Or(Sse2.ShiftLeftLogical(b5, 3), Sse2.ShiftRightLogical(b5, 2));
+
+                        // Pack to bytes
+                        var bp = Sse2.PackUnsignedSaturate(b8.AsInt16(), b8.AsInt16());
+                        var gp = Sse2.PackUnsignedSaturate(g8.AsInt16(), g8.AsInt16());
+                        var rp = Sse2.PackUnsignedSaturate(r8.AsInt16(), r8.AsInt16());
+
+                        var alpha = Vector128.Create((byte)255);
+                        var br = Sse2.UnpackLow(bp, rp);
+                        var ga = Sse2.UnpackLow(gp, alpha);
+                        var pxLo = Sse2.UnpackLow(br, ga);
+                        var pxHi = Sse2.UnpackHigh(br, ga);
+
+                        Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                        Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                    }
                 }
 
-                DecodeRgb555_Tail(pSrcRow, pDstRow, x, w, littleEndian);
+                DecodeRgb555_Tail(pSrcRow, pDstRow, x, w, littleEndian, swapRgbChannels);
             }
         }
     }
@@ -283,7 +321,7 @@ internal static unsafe partial class IthmbCodecPlugin
     ///   - Red:  >> 10 (not >> 11) — skips unused bit 15
     ///   - Green: &amp; 0x001F (5 bits, not 6)
     ///   - Green MSB-replication: (val &lt;&lt; 3) | (val &gt;&gt; 2) — 5→8 bits (same as R/B)</remarks>
-    private static void DecodeRgb555_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    private static void DecodeRgb555_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
         fixed (byte* pSrc = src)
         {
@@ -293,63 +331,107 @@ internal static unsafe partial class IthmbCodecPlugin
                 byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
-                for (; x + 7 < w; x += 8)
+                if (swapRgbChannels)
                 {
-                    Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
-                    Vector128<ushort> v = raw.AsUInt16();
+                    // BGR;15 layout: x BBBBB GGGGG RRRRR
+                    for (; x + 7 < w; x += 8)
+                    {
+                        Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                        Vector128<ushort> v = raw.AsUInt16();
 
-                    if (!littleEndian)
-                        v = AdvSimd.Or(
-                            AdvSimd.ShiftRightLogical(v, 8),
-                            AdvSimd.ShiftLeftLogical(v, 8)).AsUInt16();
+                        if (!littleEndian)
+                            v = AdvSimd.Or(
+                                AdvSimd.ShiftRightLogical(v, 8),
+                                AdvSimd.ShiftLeftLogical(v, 8)).AsUInt16();
 
-                    // Extract 5-bit fields: RGB555 = x RRRRR GGGGG BBBBB
-                    var r5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
-                    var g5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
-                    var b5 = AdvSimd.And(v,                                Vector128.Create((ushort)0x001F));
+                        // BGR;15: x BBBBB GGGGG RRRRR — swap R↔B extraction
+                        var b5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
+                        var g5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
+                        var r5 = AdvSimd.And(v,                                Vector128.Create((ushort)0x001F));
 
-                    // MSB replicate to 8-bit: all 5-bit fields use (val << 3) | (val >> 2)
-                    var r8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(r5, 3), AdvSimd.ShiftRightLogical(r5, 2));
-                    var g8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(g5, 3), AdvSimd.ShiftRightLogical(g5, 2));
-                    var b8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(b5, 3), AdvSimd.ShiftRightLogical(b5, 2));
+                        var r8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(r5, 3), AdvSimd.ShiftRightLogical(r5, 2));
+                        var g8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(g5, 3), AdvSimd.ShiftRightLogical(g5, 2));
+                        var b8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(b5, 3), AdvSimd.ShiftRightLogical(b5, 2));
 
-                    // Pack 16-bit → 8-bit via unsigned saturating narrow
-                    var b64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(b8.AsInt16());
-                    var g64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(g8.AsInt16());
-                    var r64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(r8.AsInt16());
+                        var b64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(b8.AsInt16());
+                        var g64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(g8.AsInt16());
+                        var r64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(r8.AsInt16());
 
-                    var bp = Vector128.Create(b64, b64);
-                    var gp = Vector128.Create(g64, g64);
-                    var rp = Vector128.Create(r64, r64);
+                        var bp = Vector128.Create(b64, b64);
+                        var gp = Vector128.Create(g64, g64);
+                        var rp = Vector128.Create(r64, r64);
 
-                    var alpha = Vector128.Create((byte)255);
-                    var br = AdvSimd.Arm64.ZipLow(bp, rp);
-                    var ga = AdvSimd.Arm64.ZipLow(gp, alpha);
-                    var pxLo = AdvSimd.Arm64.ZipLow(br, ga);
-                    var pxHi = AdvSimd.Arm64.ZipHigh(br, ga);
+                        var alpha = Vector128.Create((byte)255);
+                        var br = AdvSimd.Arm64.ZipLow(bp, rp);
+                        var ga = AdvSimd.Arm64.ZipLow(gp, alpha);
+                        var pxLo = AdvSimd.Arm64.ZipLow(br, ga);
+                        var pxHi = AdvSimd.Arm64.ZipHigh(br, ga);
 
-                    Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
-                    Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                        Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                        Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                    }
+                }
+                else
+                {
+                    // Standard RGB555: x RRRRR GGGGG BBBBB
+                    for (; x + 7 < w; x += 8)
+                    {
+                        Vector128<byte> raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                        Vector128<ushort> v = raw.AsUInt16();
+
+                        if (!littleEndian)
+                            v = AdvSimd.Or(
+                                AdvSimd.ShiftRightLogical(v, 8),
+                                AdvSimd.ShiftLeftLogical(v, 8)).AsUInt16();
+
+                        // Extract 5-bit fields: RGB555 = x RRRRR GGGGG BBBBB
+                        var r5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 10), Vector128.Create((ushort)0x001F));
+                        var g5 = AdvSimd.And(AdvSimd.ShiftRightLogical(v, 5),  Vector128.Create((ushort)0x001F));
+                        var b5 = AdvSimd.And(v,                                Vector128.Create((ushort)0x001F));
+
+                        // MSB replicate to 8-bit: all 5-bit fields use (val << 3) | (val >> 2)
+                        var r8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(r5, 3), AdvSimd.ShiftRightLogical(r5, 2));
+                        var g8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(g5, 3), AdvSimd.ShiftRightLogical(g5, 2));
+                        var b8 = AdvSimd.Or(AdvSimd.ShiftLeftLogical(b5, 3), AdvSimd.ShiftRightLogical(b5, 2));
+
+                        // Pack 16-bit → 8-bit via unsigned saturating narrow
+                        var b64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(b8.AsInt16());
+                        var g64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(g8.AsInt16());
+                        var r64 = AdvSimd.ExtractNarrowingSaturateUnsignedLower(r8.AsInt16());
+
+                        var bp = Vector128.Create(b64, b64);
+                        var gp = Vector128.Create(g64, g64);
+                        var rp = Vector128.Create(r64, r64);
+
+                        var alpha = Vector128.Create((byte)255);
+                        var br = AdvSimd.Arm64.ZipLow(bp, rp);
+                        var ga = AdvSimd.Arm64.ZipLow(gp, alpha);
+                        var pxLo = AdvSimd.Arm64.ZipLow(br, ga);
+                        var pxHi = AdvSimd.Arm64.ZipHigh(br, ga);
+
+                        Vector128.StoreUnsafe(pxLo, ref *pDstRow, (nuint)(x * 4));
+                        Vector128.StoreUnsafe(pxHi, ref *pDstRow, (nuint)((x + 4) * 4));
+                    }
                 }
 
-                DecodeRgb555_Tail(pSrcRow, pDstRow, x, w, littleEndian);
+                DecodeRgb555_Tail(pSrcRow, pDstRow, x, w, littleEndian, swapRgbChannels);
             }
         }
     }
 
     /// <summary>Scalar fallback for RGB555 decode.</summary>
-    private static void DecodeRgb555_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    private static void DecodeRgb555_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
                 DecodeRgb555_Tail(pSrc + (nint)(y * w * 2),
-                    dst + y * w * 4, 0, w, littleEndian);
+                    dst + y * w * 4, 0, w, littleEndian, swapRgbChannels);
         }
     }
 
     /// <summary>Inner row decoder — used by both SIMD (tail) and scalar paths.</summary>
-    private static void DecodeRgb555_Tail(byte* pSrc, byte* pDstRow, int xStart, int w, bool littleEndian)
+    private static void DecodeRgb555_Tail(byte* pSrc, byte* pDstRow, int xStart, int w, bool littleEndian, bool swapRgbChannels)
     {
         for (int x = xStart; x < w; x++)
         {
@@ -357,9 +439,21 @@ internal static unsafe partial class IthmbCodecPlugin
             ushort rgb = littleEndian
                 ? (ushort)(pSrc[idx] | (pSrc[idx + 1] << 8))
                 : (ushort)((pSrc[idx] << 8) | pSrc[idx + 1]);
-            int r5 = (rgb >> 10) & 0x1F;  // bits 14-10 (skip unused bit 15)
-            int g5 = (rgb >> 5)  & 0x1F;  // bits 9-5
-            int b5 = rgb         & 0x1F;  // bits 4-0
+            int r5, g5, b5;
+            if (swapRgbChannels)
+            {
+                // BGR;15: x BBBBB GGGGG RRRRR
+                b5 = (rgb >> 10) & 0x1F;
+                g5 = (rgb >> 5)  & 0x1F;
+                r5 = rgb         & 0x1F;
+            }
+            else
+            {
+                // Standard RGB555: x RRRRR GGGGG BBBBB
+                r5 = (rgb >> 10) & 0x1F;
+                g5 = (rgb >> 5)  & 0x1F;
+                b5 = rgb         & 0x1F;
+            }
             pDstRow[0] = (byte)((b5 << 3) | (b5 >> 2));
             pDstRow[1] = (byte)((g5 << 3) | (g5 >> 2));
             pDstRow[2] = (byte)((r5 << 3) | (r5 >> 2));

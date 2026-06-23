@@ -45,7 +45,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     // ---- RGB555 encoder ----
-    internal static byte[] EncodeRgb555(ReadOnlySpan<byte> bgra, int w, int h, bool bigEndian)
+    internal static byte[] EncodeRgb555(ReadOnlySpan<byte> bgra, int w, int h, bool bigEndian, bool swapRgbChannels = false)
     {
         int pixelCount = w * h;
         var result = new byte[pixelCount * 2];
@@ -55,7 +55,9 @@ internal static unsafe partial class IthmbCodecPlugin
             int r = bgra[srcOff + 2] >> 3;  // R: top 5 bits
             int g = bgra[srcOff + 1] >> 3;  // G: top 5 bits
             int b = bgra[srcOff] >> 3;      // B: top 5 bits
-            ushort pixel = (ushort)(r << 10 | g << 5 | b); // bit 15 unused
+            ushort pixel = swapRgbChannels
+                ? (ushort)(b << 10 | g << 5 | r)  // BGR;15: B in high bits, R in low bits
+                : (ushort)(r << 10 | g << 5 | b); // RGB555: R in high bits, B in low bits
 
             int dstOff = i * 2;
             if (bigEndian)
@@ -269,7 +271,7 @@ internal static unsafe partial class IthmbCodecPlugin
             encoded = profile.Encoding switch
             {
                 IthmbEncoding.Rgb565 => EncodeRgb565(src, fw, fh, !profile.LittleEndian),
-                IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian),
+                IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian, profile.SwapRgbChannels),
                 IthmbEncoding.Yuv422 => EncodeUyvy(src, fw, fh),
                 IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh, profile.SwapChromaPlanes),
                 _ => throw new ArgumentException($"Unknown encoding: {profile.Encoding}")

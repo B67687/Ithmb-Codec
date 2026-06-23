@@ -78,6 +78,7 @@ internal static unsafe partial class IthmbCodecPlugin
         bool IsPadded = false, bool IsInterlaced = false,
         bool ClclChroma = false,
         bool SwapChromaPlanes = false, bool ClChroma = false,
+        bool SwapRgbChannels = false,
         int Rotation = 0,
         int CropX = 0, int CropY = 0,
         int CropWidth = 0, int CropHeight = 0);

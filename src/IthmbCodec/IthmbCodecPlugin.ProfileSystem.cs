@@ -58,6 +58,7 @@ internal static unsafe partial class IthmbCodecPlugin
             [1078] = new(1078, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             // iPod Nano 4G photo thumbnails
             [1079] = new(1079, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
+            [1081] = new(1081, 640, 480, IthmbEncoding.Rgb565, 640 * 480 * 2),
             [1083] = new(1083, 240, 320, IthmbEncoding.Rgb565, 240 * 320 * 2),
             // Nano 4G/6G cover art variants (iOpenPod)
             [1084] = new(1084, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
@@ -168,7 +169,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
             int prefix = 0, width = 0, height = 0, frameBytes = 0;
             string encoding = "rgb565";
-            bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false;
+            bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false, swapRgb = false;
             int rotationDeg = 0, cropX = 0, cropY = 0, cropW = 0, cropH = 0;
 
             while (pos < json.Length)
@@ -199,6 +200,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "isClcl": clcl = ParseJsonBool(json, ref pos); break;
                     case "isCl": clSingle = ParseJsonBool(json, ref pos); break;
                     case "swapChromaPlanes": swapPlanes = ParseJsonBool(json, ref pos); break;
+                    case "swapRgbChannels": swapRgb = ParseJsonBool(json, ref pos); break;
                     case "rotation": rotationDeg = ParseJsonInt(json, ref pos); break;
                     case "cropX": cropX = ParseJsonInt(json, ref pos); break;
                     case "cropY": cropY = ParseJsonInt(json, ref pos); break;
@@ -221,7 +223,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl,
-                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle, Rotation: rotationDeg,
+                    SwapChromaPlanes: swapPlanes, ClChroma: clSingle, SwapRgbChannels: swapRgb, Rotation: rotationDeg,
                     CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH);
             }
 
