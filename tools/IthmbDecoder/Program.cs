@@ -3,6 +3,8 @@
 //
 // Usage:
 //   dotnet run --project tools/IthmbDecoder -- <input.ithmb> [output.bmp]
+//   dotnet run --project tools/IthmbDecoder -- --list-pd <PhotoDB|ArtworkDB>
+//   dotnet run --project tools/IthmbDecoder -- --pd-index <N> <PhotoDB> [output.bmp]
 //
 // If output path is omitted, writes to <input>.bmp in the same directory.
 
@@ -16,23 +18,47 @@ unsafe class Program
 {
     static int Main(string[] args)
     {
-        if (args.Length < 1 || args[0] == "--help" || args[0] == "-h")
+        bool listPd = false;
+        int? pdIndex = null;
+        string? inputPath = null;
+        string? outputPath = null;
+
+        for (int i = 0; i < args.Length; i++)
         {
-            Console.Error.WriteLine("Usage: IthmbDecoder <input.ithmb> [output.bmp]");
-            Console.Error.WriteLine("Decodes an Apple .ithmb thumbnail-cache file to BMP.");
-            Console.Error.WriteLine("If output path is omitted, writes to <input>.bmp in the same directory.");
-            return 0;
+            if (args[i] == "--list-pd")
+                listPd = true;
+            else if (args[i] == "--pd-index" && i + 1 < args.Length)
+                pdIndex = int.Parse(args[++i]);
+            else if (args[i] == "--help" || args[i] == "-h")
+            {
+                PrintUsage();
+                return 0;
+            }
+            else if (inputPath == null)
+                inputPath = args[i];
+            else if (outputPath == null)
+                outputPath = args[i];
         }
 
-        string inputPath = args[0];
+        if (inputPath == null)
+        {
+            PrintUsage();
+            return 1;
+        }
+
         if (!File.Exists(inputPath))
         {
             Console.Error.WriteLine($"File not found: {inputPath}");
             return 1;
         }
 
-        string outputPath = args.Length > 1 ? args[1] : Path.ChangeExtension(inputPath, ".bmp");
-        // Resolve to full path to prevent path traversal
+        if (listPd)
+            return ListPhotoDbEntries(inputPath);
+
+        if (pdIndex.HasValue)
+            return DecodePhotoDbEntry(inputPath, pdIndex.Value, outputPath);
+
+        outputPath ??= Path.ChangeExtension(inputPath, ".bmp");
         outputPath = Path.GetFullPath(outputPath);
 
         // Build an IGStringRef for the file path (UTF-16, as expected by the plugin)
@@ -68,7 +94,6 @@ unsafe class Program
                 int h = outInfo->Height;
                 Console.Error.WriteLine($"Decoded: {w}x{h}, orientation={outInfo->Orientation}");
 
-                // Convert BGRA to RGBA for StbImageSharp
                 int pixelCount = w * h;
                 var rgba = new byte[pixelCount * 4];
                 var src = new Span<byte>((void*)outBuf->Data, pixelCount * 4);
@@ -81,7 +106,6 @@ unsafe class Program
                     rgba[off + 3] = 255;           // A
                 }
 
-                // Write as BMP (no external dependencies, natively supported by Windows/ImageGlass)
                 WriteRgbaAsBmp(rgba, w, h, outputPath);
                 Console.Error.WriteLine($"Written: {outputPath}");
             }
@@ -91,6 +115,134 @@ unsafe class Program
                 IthmbCodecPlugin.FreePixelBuffer(outBuf);
                 NativeMemory.Free(outBuf);
             }
+        }
+
+        return 0;
+    }
+
+    static void PrintUsage()
+    {
+        Console.Error.WriteLine("Usage:");
+        Console.Error.WriteLine("  IthmbDecoder <input.ithmb> [output.bmp]    Decode .ithmb file to BMP");
+        Console.Error.WriteLine("  IthmbDecoder --list-pd <PhotoDB|ArtworkDB>  List PhotoDB/ArtworkDB entries");
+        Console.Error.WriteLine("  IthmbDecoder --pd-index <N> <PhotoDB> [output.bmp]  Extract entry N from PhotoDB");
+        Console.Error.WriteLine();
+        Console.Error.WriteLine("PhotoDB/ArtworkDB are Apple's iPod/iPhone thumbnail database files");
+        Console.Error.WriteLine("(typically named \"Photo Database\" or \"Artwork Database\" with no extension).");
+    }
+
+    /// <summary>Lists all entries in a PhotoDB/ArtworkDB file.</summary>
+    static int ListPhotoDbEntries(string path)
+    {
+        byte[] data = File.ReadAllBytes(path);
+        if (!IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out var frameCount))
+        {
+            Console.Error.WriteLine("Not a valid PhotoDB/ArtworkDB file (no MHFD magic found).");
+            return 1;
+        }
+
+        Console.Error.WriteLine($"PhotoDB entries: {frameCount}");
+        Console.Error.WriteLine($"{"Idx",4}  {"Format",8}  {"Width",6}  {"Height",6}  {"Size (B)",8}  {"Description"}");
+        Console.Error.WriteLine(new string('-', 70));
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var (fmtId, entryData) = entries[i];
+            string fmtName = IthmbCodecPlugin.GetFormatIdName(fmtId);
+            if (IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
+            {
+                Console.Error.WriteLine($"{i,4}  {fmtId,8}  {profile.Width,6}  {profile.Height,6}  {entryData.Length,8}  {profile.Encoding} (LE={profile.LittleEndian})");
+            }
+            else
+            {
+                Console.Error.WriteLine($"{i,4}  {fmtId,8}  {"?",6}  {"?",6}  {entryData.Length,8}  Unknown format");
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>Decodes a single PhotoDB entry by index and writes it as BMP.</summary>
+    static int DecodePhotoDbEntry(string path, int index, string? outputPath)
+    {
+        byte[] data = File.ReadAllBytes(path);
+        if (!IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out var frameCount))
+        {
+            Console.Error.WriteLine("Not a valid PhotoDB/ArtworkDB file.");
+            return 1;
+        }
+
+        if (index < 0 || index >= entries.Count)
+        {
+            Console.Error.WriteLine($"Entry index {index} out of range (0-{entries.Count - 1}).");
+            return 1;
+        }
+
+        var (fmtId, rawData) = entries[index];
+
+        if (!IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
+        {
+            Console.Error.WriteLine($"Format {fmtId} is not a known profile. Cannot decode.");
+            return 1;
+        }
+
+        int w = profile.Width, h = profile.Height;
+        if (w <= 0 || h <= 0)
+        {
+            Console.Error.WriteLine($"Invalid dimensions: {w}x{h}");
+            return 1;
+        }
+
+        outputPath ??= Path.ChangeExtension(path, $".entry{index}.bmp");
+        outputPath = Path.GetFullPath(outputPath);
+
+        byte* pixels = (byte*)NativeMemory.AllocZeroed((nuint)(w * 4 * h));
+        if (pixels == null)
+        {
+            Console.Error.WriteLine("Out of memory");
+            return 1;
+        }
+
+        try
+        {
+            bool ok = profile.Encoding switch
+            {
+                IthmbCodecPlugin.IthmbEncoding.Rgb565 => IthmbCodecPlugin.DecodeRgb565(rawData, pixels, w, h, profile.LittleEndian),
+                IthmbCodecPlugin.IthmbEncoding.Rgb555 => IthmbCodecPlugin.DecodeRgb555(rawData, pixels, w, h, profile.LittleEndian),
+                IthmbCodecPlugin.IthmbEncoding.Yuv422 => profile.ClChroma
+                    ? IthmbCodecPlugin.DecodeYuv422Cl(rawData, pixels, w, h)
+                    : profile.ClclChroma
+                    ? IthmbCodecPlugin.DecodeYuv422Clcl(rawData, pixels, w, h)
+                    : profile.IsInterlaced
+                    ? IthmbCodecPlugin.DecodeYuv422Interlaced(rawData, pixels, w, h)
+                    : IthmbCodecPlugin.DecodeYuv422(rawData, pixels, w, h),
+                IthmbCodecPlugin.IthmbEncoding.Ycbcr420 => IthmbCodecPlugin.DecodeYcbcr420(rawData, pixels, w, h, profile.SwapChromaPlanes),
+                _ => false,
+            };
+
+            if (!ok)
+            {
+                Console.Error.WriteLine($"Decode failed for format {fmtId} ({profile.Encoding}).");
+                return 1;
+            }
+
+            int pixelCount = w * h;
+            var rgba = new byte[pixelCount * 4];
+            for (int i = 0; i < pixelCount; i++)
+            {
+                int off = i * 4;
+                rgba[off]     = pixels[off + 2];  // R
+                rgba[off + 1] = pixels[off + 1];  // G
+                rgba[off + 2] = pixels[off];      // B
+                rgba[off + 3] = 255;              // A
+            }
+
+            WriteRgbaAsBmp(rgba, w, h, outputPath);
+            Console.Error.WriteLine($"Entry {index}: format={fmtId} ({profile.Width}x{profile.Height}, {profile.Encoding}) -> {outputPath}");
+        }
+        finally
+        {
+            NativeMemory.Free(pixels);
         }
 
         return 0;
