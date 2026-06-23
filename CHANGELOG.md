@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **MaxDecodeFileSize 8 MB → 32 MB:** Increased file size guard from 8 MB to 32 MB after systematic research. All public real-world .ithmb files are under 1 MB (max: 852 KB). The 32 MB limit covers ~40 max-size (P1007) raw frames — far beyond any realistic thumbnail cache. Ratio-naled from scratch: 32 MB is a power of 2, covers all known data, and does not borrow authority from libgpod's commonly-repeated but uncorroborated 256 MB limit. Researched via profile frameBytes analysis (49 profiles, max 829 KB), multi-frame concatenation limits from 5 RE tools (Keith/ithmbrdr/iOpenPod/libgpod/clickwheel), and a public .ithmb file size survey (GitHub has zero .ithmb binary files; largest local sample = 852 KB).
+
 ## [1.3.0] — 2026-06-23
 
 ### Added

@@ -55,7 +55,7 @@ Additionally validated against **227 publicly available T-prefix files** from an
 ### File size guard
 
 > [!NOTE]
-> Files larger than **50 MB** are rejected before reading to prevent out-of-memory (OOM) from pathological input. All known real .ithmb files are under 2 MB; the most extreme theoretical case (48 MP iPhone JPEG) is ~30 MB.
+> Files larger than **32 MB** are rejected before reading to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB). The 32 MB limit covers ~40 max-size raw frames — far beyond any realistic thumbnail cache. Researched from scratch: no evidence that libgpod's commonly-cited 256 MB limit is a real firmware constant.
 
 ---
 
@@ -216,7 +216,7 @@ See [***REMOVED***](***REMOVED***) for full decoder benchmark results.
 | Plugin silently doesn't load | Missing `igplugin.json` or filename mismatch. Verify the `_plugins\IthmbCodec\` folder structure.                       |
 | File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/ithmb-codec/issues) with a sample.    |
 | Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/ithmb-codec/issues). |
-| "File too large" error       | File exceeds the **50 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.              |
+| "File too large" error       | File exceeds the **32 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.              |
 | Not in Open File dialog      | Add `.ithmb` to `FileFormats` in `igconfig.json`.                                                                       |
 
 > [!TIP]

@@ -36,10 +36,13 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly byte[] JpegEoiMarker = [0xFF, 0xD9];
     private static readonly byte[] App1Marker = [0xFF, 0xE1];
 
-    // Size limit: 50 MB prevents OOM on corrupt/malicious files while providing
-    // 32× headroom over the largest known real file (1.55 MB, FAU T412.ithmb)
-    // and 1.67× over the most extreme theoretical iPhone JPEG (30 MB, 48 MP).
-    private const long MaxDecodeFileSize = 50L * 1024 * 1024;
+    // Size limit: prevents OOM/DoS on corrupt/malicious files. Largest single raw
+    // Largest single frame: 829 KB (P1007 480×864). Largest real .ithmb observed:
+    // 852 KB (T-prefix JPEG). No .ithmb file > 1 MB exists in any public repo.
+    // Multi-frame concatenation: worst-case 40 frames of the largest profile fit
+    // within 32 MB. This covers all plausible real-world usage with generous margin.
+    // See research notes in  for the full evidence chain.
+    private const long MaxDecodeFileSize = 32L * 1024 * 1024;
     private const int PeekBufferSize = 4 * 1024 * 1024;           // 4 MB: covers thumbnail JPEG headers + embedded JPEGs
     private const int MaxSignatureProbe = 4096;                    // 4 KB: covers JPEG SOI + marker segments
 

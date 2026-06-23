@@ -100,7 +100,7 @@ internal static unsafe partial class IthmbCodecPlugin
         bool swapChromaPlanes = false)
     {
         long totalPixels = (long)w * h;
-        int ySize = (int)totalPixels; // ≤ 25M due to 50 MB file limit
+        int ySize = (int)totalPixels; // ≤ 4M due to MaxDecodeFileSize (32 MB)
         int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
         long expectedBytes = totalPixels + (long)uvSize * 2;
         if (src.Length < expectedBytes) return false;
