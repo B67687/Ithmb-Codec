@@ -1,6 +1,6 @@
 # Acknowledgments
 
-Every known open-source `.ithmb` implementation (25 total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge during development.
+Every known open-source `.ithmb` implementation (30+ total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge during development.
 
 ---
 
@@ -37,6 +37,11 @@ Format behavior was studied from these implementations; no code was copied.
 | devm18426/mhfd_extractor          | devm18426          | https://github.com/devm18426/mhfd_extractor                                    | Python     | —       | MHFD chunk → UYVY interlaced format              |
 | pygpod                            | Bionded            | https://github.com/Bionded/pygpod                                              | Python     | —       | Pure-Python libgpod port                         |
 | Keipydesu/ipod-convert            | Keipydesu          | https://github.com/Keipydesu/ipod-convert                                      | Python     | MIT     | F1067 padded YCbCr support                       |
+| **clickwheel**                    | dstaley            | https://github.com/dstaley/clickwheel                                          | C#         | MIT     | 40+ format ID table, per-generation device capabilities, full ArtworkDB read/write |
+| **OrgZ**                          | FoxCouncil         | https://github.com/FoxCouncil/OrgZ                                             | C#         | MIT     | IPodCapabilities.cs device tables, ArtworkDB+ithmb read/write, album art sync |
+| **podkit**                        | jvgomg             | https://github.com/jvgomg/podkit                                               | TypeScript | MIT     | ArtworkDB CLI diagnostics, offset validation, MHII/MHNI linking integrity checks |
+| **gnupod**                        | richvdh            | https://github.com/richvdh/gnupod                                              | Perl       | GPLv2   | Per-device format tables (nano_4g, nano_3g, classic, video, nano, mini), ImageMagick pipeline |
+| cardner/playlist-generator        | cardner            | https://github.com/cardner/playlist-generator                                  | TypeScript | —       | Pure-TS iPod DB with detailed iTunesDB dbversion comparison |
 | moerdowo/Minpod                   | moerdowo           | https://github.com/moerdowo/Minpod                                             | Swift      | MIT     | iPod sync tool, ArtworkDB ithmb creation         |
 | atimevil/Ithmb-Converter          | atimevil           | https://github.com/atimevil/Ithmb-Converter                                    | Python     | MIT     | Korean converter with AI upscaling               |
 | yosoyemi/ithmb-converter-a-jpg    | yosoyemi           | https://github.com/yosoyemi/ithmb-converter-a-jpg                              | Python     | MIT     | UYVY big-endian decode, BT.601-like coefficients |
