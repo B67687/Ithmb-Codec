@@ -42,7 +42,7 @@ internal static unsafe partial class IthmbCodecPlugin
     // Multi-frame concatenation: worst-case 40 frames of the largest profile fit
     // within 32 MB. This covers all plausible real-world usage with generous margin.
     // See research notes in  for the full evidence chain.
-    private const long MaxDecodeFileSize = 32L * 1024 * 1024;
+    internal const long MaxDecodeFileSize = 32L * 1024 * 1024;
     private const int PeekBufferSize = 4 * 1024 * 1024;           // 4 MB: covers thumbnail JPEG headers + embedded JPEGs
     private const int MaxSignatureProbe = 4096;                    // 4 KB: covers JPEG SOI + marker segments
 
@@ -54,37 +54,6 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // JFIF/Exif probe window after SOI (must cover DQT, DHT, COM before APP0/APP1)
     private const int JfifExifScanWindow = 512;
-
-    // ------------------------------ Raw profile enums ------------------------------
-    internal enum IthmbEncoding { Rgb565, Rgb555, Yuv422, Ycbcr420 }
-
-    /// <summary>Raw profile for F-prefix .ithmb files (single image, no container).</summary>
-    /// <param name="SwapChromaPlanes">If true, swaps Cb/Cr order in YCbCr 4:2:0 (some iPod variants).</param>
-    /// <param name="ClChroma">Per-pixel 4-bit nibble chroma (Keith CL, not CLCL).</param>
-    /// <param name="Rotation">Clockwise rotation in degrees (0, 90, 180, 270). Applied post-decode to BGRA output.</param>
-    /// <param name="CropX">X offset of visible region within decoded frame (0 = no crop).</param>
-    /// <param name="CropY">Y offset of visible region within decoded frame (0 = no crop).</param>
-    /// <param name="CropWidth">Width of visible region (0 = no crop, uses full Width).</param>
-    /// <param name="CropHeight">Height of visible region (0 = no crop, uses full Height).</param>
-    /// <remarks>
-    /// Crop fields support centered-padding photo formats where the visible image is
-    /// smaller than the stored frame (e.g., format 1007 480×864 may have centered
-    /// padding). When CropWidth/CropHeight are non-zero, the decoder crops the BGRA
-    /// output to the specified region after decode and rotation. This avoids the
-    /// black-border artifact visible in some photo formats.
-    /// Based on iOpenPod's _crop_visible_region approach (48-profile analysis).
-    /// </remarks>
-    internal readonly record struct IthmbVariantProfile(
-        int Prefix, int Width, int Height, IthmbEncoding Encoding,
-        int FrameByteLength,
-        bool SwapsDimensions = false, bool LittleEndian = true,
-        bool IsPadded = false, bool IsInterlaced = false,
-        bool ClclChroma = false,
-        bool SwapChromaPlanes = false, bool ClChroma = false,
-        bool SwapRgbChannels = false,
-        int Rotation = 0,
-        int CropX = 0, int CropY = 0,
-        int CropWidth = 0, int CropHeight = 0);
 
     private static volatile bool _profilesLoaded;
 
