@@ -174,6 +174,23 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 ---
 
+## Tooling
+
+The repository includes several CLI tools under [`tools/`](tools/):
+
+| Tool | Description |
+|------|-------------|
+| [`IthmbDecoder`](tools/IthmbDecoder/) | Decode .ithmb files or PhotoDB/ArtworkDB entries to BMP |
+| [`IthmbBenchmark`](tools/IthmbBenchmark/) | [Performance benchmark](***REMOVED***) suite for all 7 decoders |
+| [`IthmbSampleGenerator`](tools/IthmbSampleGenerator/) | Generate synthetic .ithmb files for testing |
+| [`fetch_jakarade.sh`](tools/fetch_jakarade.sh) | Download T-prefix .ithmb files from jakarade.com |
+| [`ithmb2img.sh`](tools/ithmb2img.sh) | Batch convert .ithmb files to images via ImageMagick |
+| [`extract_hfsplus.py`](tools/extract_hfsplus.py) | Extract files from iPhone OS 1.x-3.x IPSW root filesystem DMGs |
+
+See [***REMOVED***](***REMOVED***) for full decoder benchmark results.
+
+---
+
 ## Profile Reference
 
 **48 known profiles** (22 photo + 26 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
