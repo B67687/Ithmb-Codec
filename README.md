@@ -145,7 +145,7 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 12 partial class files organized by domain:
+**Source layout** — 11 partial class files organized by domain:
 
 | File | Purpose | Size |
 |------|---------|------|
@@ -153,10 +153,10 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 | `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate | ~320 lines |
 | `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp | ~117 lines |
 | `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser | ~309 lines |
-| `IthmbCodecPlugin.PhotoDb.cs` | PhotoDB/ArtworkDB chunk parser, writer, integrity checker | ~540 lines |
-| `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) | ~180 lines |
-| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) | ~92 lines |
-| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD | ~370 lines |
+| `IthmbCodecPlugin.PhotoDb.cs` | PhotoDB/ArtworkDB chunk parser, writer, integrity checker | ~524 lines |
+| `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) | ~173 lines |
+| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) | ~77 lines |
+| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD | ~327 lines |
 | `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD | ~316 lines |
 | `IthmbCodecPlugin.ClclCl.cs` | CLCL nibble-chroma, CL per-pixel chroma decoders | ~251 lines |
 | `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats | ~310 lines |

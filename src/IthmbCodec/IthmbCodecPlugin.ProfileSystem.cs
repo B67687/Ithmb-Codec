@@ -1,5 +1,5 @@
 // Known profile definitions and external profiles.json loader for .ithmb raw profiles.
-// Provides the built-in 48-profile table and a minimal AOT-safe JSON parser for
+// Provides the built-in 49-profile table and a minimal AOT-safe JSON parser for
 // user-provided profile overrides.
 // Separated from plugin ABI glue for independent AOT compilation.
 
