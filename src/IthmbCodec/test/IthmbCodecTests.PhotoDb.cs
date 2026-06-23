@@ -130,4 +130,84 @@ public unsafe partial class IthmbCodecTests
             NativeMemory.Free(dst);
         }
     }
+
+    // ===================== Builder tests =====================
+
+    [Fact]
+    public void PhotoDb_Build_Roundtrip_MultipleEntries()
+    {
+        // Build with 2 entries: format 1017 (56x56 RGB565) and 1024 (320x240 RGB565)
+        var entry1 = new byte[56 * 56 * 2]; // red pixels
+        Array.Fill<byte>(entry1, 0x00); // fill all zeros first, then set odd bytes for RGB565 red
+        for (int i = 0; i < entry1.Length; i += 2)
+        {
+            entry1[i] = 0x00;     // Lo byte: R=0, G=0
+            entry1[i + 1] = 0xF8; // Hi byte: R=31, G=0 → RGB565 red (0xF800)
+        }
+
+        var entry2 = new byte[320 * 240 * 2]; // checkerboard pattern
+        for (int i = 0; i < entry2.Length; i += 4)
+        {
+            entry2[i] = 0xFF;     // white pixel lo
+            entry2[i + 1] = 0xFF; // white pixel hi
+            entry2[i + 2] = 0x00; // black pixel lo
+            entry2[i + 3] = 0x00; // black pixel hi
+        }
+
+        var entries = new List<(int, byte[])> { (1017, entry1), (1024, entry2) };
+        bool built = IthmbCodecPlugin.TryBuildPhotoDb(entries, out var photoDb);
+        Assert.True(built);
+        Assert.NotNull(photoDb);
+
+        // Parse the result and verify roundtrip
+        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(photoDb, out var parsedEntries, out var frameCount);
+        Assert.True(parsed);
+        Assert.Equal(2, frameCount);
+        Assert.Equal(1017, parsedEntries[0].FormatId);
+        Assert.Equal(1024, parsedEntries[1].FormatId);
+        Assert.Equal(entry1.Length, parsedEntries[0].Data.Length);
+        Assert.Equal(entry2.Length, parsedEntries[1].Data.Length);
+    }
+
+    [Fact]
+    public void PhotoDb_Build_EmptyList_ReturnsFalse()
+    {
+        bool built = IthmbCodecPlugin.TryBuildPhotoDb([], out var output);
+        Assert.False(built);
+        Assert.Null(output);
+    }
+
+    [Fact]
+    public void PhotoDb_Build_UnknownFormatId_ReturnsFalse()
+    {
+        var entries = new List<(int, byte[])> { (9999, [0x00, 0x00]) };
+        bool built = IthmbCodecPlugin.TryBuildPhotoDb(entries, out var output);
+        Assert.False(built);
+        Assert.Null(output);
+    }
+
+    // ===================== Integrity check tests =====================
+
+    [Fact]
+    public void IntegrityCheck_ValidPhotoDb_ReturnsNoIssues()
+    {
+        byte[] photoDb = BuildSyntheticPhotoDb();
+        var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb(photoDb);
+        Assert.Empty(issues);
+    }
+
+    [Fact]
+    public void IntegrityCheck_EmptyData_ReturnsIssue()
+    {
+        var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb([]);
+        Assert.NotEmpty(issues);
+    }
+
+    [Fact]
+    public void IntegrityCheck_BadMagic_ReturnsIssue()
+    {
+        byte[] data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb(data);
+        Assert.NotEmpty(issues);
+    }
 }
