@@ -16,6 +16,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
     internal static bool DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        if (w <= 0 || h <= 0) return false;
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
         if ((w & 1) != 0) return false; // pair processing requires even width
@@ -245,6 +246,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
     internal static bool DecodeYuv422Interlaced(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        if (w <= 0 || h <= 0) return false;
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
         if ((w & 1) != 0) return false; // pair processing requires even width

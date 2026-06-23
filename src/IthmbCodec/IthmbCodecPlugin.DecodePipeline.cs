@@ -105,7 +105,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
-                // fileSize ≤ MaxDecodeFileSize (guarded above), safe for int
+                // fileSize ≤ MaxDecodeFileSize, safe for int
                     return DecodeJpegSlice(jpegSlice, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }

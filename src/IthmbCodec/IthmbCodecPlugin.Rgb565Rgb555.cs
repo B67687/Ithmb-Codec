@@ -21,6 +21,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
     internal static bool DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
     {
+        if (w <= 0 || h <= 0) return false;
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
@@ -207,6 +208,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
     internal static bool DecodeRgb555(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels = false)
     {
+        if (w <= 0 || h <= 0) return false;
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 

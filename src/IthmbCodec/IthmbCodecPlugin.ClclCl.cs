@@ -34,6 +34,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// </summary>
     internal static bool DecodeYuv422Clcl(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        if (w <= 0 || h <= 0) return false;
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
         if ((w & 1) != 0) return false; // pair processing requires even width
@@ -71,6 +72,7 @@ internal static unsafe partial class IthmbCodecPlugin
     // Confirmed against Keith's iPod Photo Reader source (Methods 3 and 4).
     internal static bool DecodeYuv422Cl(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        if (w <= 0 || h <= 0) return false;
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
@@ -99,8 +101,9 @@ internal static unsafe partial class IthmbCodecPlugin
     internal static bool DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h,
         bool swapChromaPlanes = false)
     {
+        if (w <= 0 || h <= 0) return false;
         long totalPixels = (long)w * h;
-        int ySize = (int)totalPixels; // ≤ 4M due to MaxDecodeFileSize (32 MB)
+        int ySize = (int)totalPixels; // ≤ MaxDecodeFileSize, safe for int
         int uvSize = ((w + 1) / 2) * ((h + 1) / 2);
         long expectedBytes = totalPixels + (long)uvSize * 2;
         if (src.Length < expectedBytes) return false;
