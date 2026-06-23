@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-06-23
+
 ### Added
 
 - **BGR;15 channel-swapped RGB555 (`SwapRgbChannels`):** Added `SwapRgbChannels` bool parameter to `IthmbVariantProfile` and `profiles.json` parser, new `swapRgbChannels` JSON field. When true, the RGB555 decoder reads `xBBBBBGGGGGRRRRR` (BGR;15) layout for iPhone 2G thumbnail compatibility. Applied to all 5 decoder paths (Tail, Scalar, SSE2, NEON, public DecodeRgb555 entry point) and encoder (`EncodeRgb555`, `BuildIthmbFile`). SIMD uses a conditional branch outside the pixel loop (zero overhead on the hot path). (+3 tests, 517 total)
@@ -148,6 +150,7 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/B67687/ithmb-codec/compare/v1.1.0...v1.3.0
 [1.1.0]: https://github.com/B67687/ithmb-codec/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/B67687/ithmb-codec/releases/tag/v1.0.0
