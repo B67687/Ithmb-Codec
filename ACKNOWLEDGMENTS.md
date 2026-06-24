@@ -45,6 +45,7 @@ Format behavior was studied from these implementations; no code was copied.
 | moerdowo/Minpod                   | moerdowo           | https://github.com/moerdowo/Minpod                                             | Swift      | MIT     | iPod sync tool, ArtworkDB ithmb creation         |
 | atimevil/Ithmb-Converter          | atimevil           | https://github.com/atimevil/Ithmb-Converter                                    | Python     | MIT     | Korean converter with AI upscaling               |
 | yosoyemi/ithmb-converter-a-jpg    | yosoyemi           | https://github.com/yosoyemi/ithmb-converter-a-jpg                              | Python     | MIT     | UYVY big-endian decode, BT.601-like coefficients |
+| **Reuhno** (iPod Classic 6G) | Renaud             | https://reddit.com/u/Reuhno                                                     | Python     | —       | First known real F-prefix samples from iPod Classic 6G (F1055, F1060, F1061). Confirmed decoder correctness on real hardware. ArtworkDB analysis with mhni field offsets, stored_width formula (size/2/height), UTF-16LE .ithmb filenames, and iPod Classic 6G generation-specific format table (F1061=56×55, F1055=128×128, F1060=320×320). |
 
 ### Lost / unrecoverable
 
