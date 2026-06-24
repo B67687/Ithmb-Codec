@@ -9,10 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **F1061 profile dimensions corrected:** Width/Height changed from 56×56 to 55×55, FrameByteLength changed from 6272 to 6160 (56×55×2) to match real data from Reuhno's iPod Classic 6G. The slot is 56-pixel rows × 55 rows, not 56×56. The stride fix (src.Length/h = 112) correctly reads 55 pixels from each 112-byte row.
 - **Input row stride computed from actual data size instead of declared width:** All decoders (RGB565/RGB555 SSE2, NEON, Scalar, Tail × UYVY SIMD, NEON, Scalar, interlaced SIMD/NEON/Scalar × CLCL, CL) now compute input row stride as `src.Length / h` instead of `w * 2`. This fixes padded formats like F1061 (55×55 nominal, 56-pixel rows = 112-byte stride vs the old 110-byte stride that misaligned every row past row 0). Discovered via Reuhno's real iPod Classic 6G samples. (+0 tests, behavior-preserving for unpadded formats)
 - **Tail destination offset in SSE2/NEON paths:** `DecodeRgb565_Tail` and `DecodeRgb555_Tail` wrote to `pDstRow` instead of `pDstRow + xStart * 4`. Pre-existing bug that only manifests when `w % 8 != 0` with the SIMD path (e.g., F1061 at w=55). All previous test widths were powers of 2 or <8 (falling through to scalar). (+3 stride tests, 520 total)
 - **Multi-frame decode span slicing:** `DecodeRawProfile` sliced the source buffer with `data.AsSpan(frameStart)`, passing the entire remaining buffer tail instead of just the current frame. Exposed by the stride fix (old `w*2` stride ignored `src.Length`). Now correctly trims to `frameSize` bytes.
 - **Interlaced UYVY field offset:** `DecodeYuv422Interlaced` methods computed the second-field offset using `(h+1)/2 * w * 2` instead of `(h+1)/2 * rowStride`. Fixed to use data-derived stride for consistency.
+
+### Validation
+
+- **First real F-prefix .ithmb samples decoded successfully:** 5/5 frames from Reuhno's iPod Classic 6G (F1061 at 4 offsets + F1055 at offset 0) confirmed working. Validates the stride fix, tail destination fix, and F1061 profile correction against real hardware data for the first time.
 
 ### Added
 

@@ -183,7 +183,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf, frameIndex);
             }
 
-                // Unknown prefix — try JPEG carving on the full file before giving up.
+                    // Unknown prefix — try JPEG carving on the full file before giving up.
                 // Many .ithmb files from newer devices embed JPEGs regardless of prefix,
                 // and the JPEG may start beyond the 4 MB peek buffer or lack standard
                 // JFIF/Exif markers in the first scan window. File Juicer uses this

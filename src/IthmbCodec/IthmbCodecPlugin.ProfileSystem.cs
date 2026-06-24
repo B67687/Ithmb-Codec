@@ -75,8 +75,8 @@ internal static unsafe partial class IthmbCodecPlugin
             // Nano 5G cover art medium (iOpenPod)
             [1056] = new(1056, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
             [1060] = new(1060, 320, 320, IthmbEncoding.Rgb565, 320 * 320 * 2),
-            // Classic cover art small (iOpenPod)
-            [1061] = new(1061, 56, 56, IthmbEncoding.Rgb565, 56 * 56 * 2),
+            // Classic cover art small: 55×55 nominal, 56-pixel rows (Reuhno)
+            [1061] = new(1061, 55, 55, IthmbEncoding.Rgb565, 56 * 55 * 2),
             // iPod Nano 6G photo thumbnail and full-screen
             [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
