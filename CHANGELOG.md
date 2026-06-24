@@ -7,9 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Input row stride computed from actual data size instead of declared width:** All decoders (RGB565/RGB555 SSE2, NEON, Scalar, Tail × UYVY SIMD, NEON, Scalar, interlaced SIMD/NEON/Scalar × CLCL, CL) now compute input row stride as `src.Length / h` instead of `w * 2`. This fixes padded formats like F1061 (55×55 nominal, 56-pixel rows = 112-byte stride vs the old 110-byte stride that misaligned every row past row 0). Discovered via Reuhno's real iPod Classic 6G samples. (+0 tests, behavior-preserving for unpadded formats)
+- **Tail destination offset in SSE2/NEON paths:** `DecodeRgb565_Tail` and `DecodeRgb555_Tail` wrote to `pDstRow` instead of `pDstRow + xStart * 4`. Pre-existing bug that only manifests when `w % 8 != 0` with the SIMD path (e.g., F1061 at w=55). All previous test widths were powers of 2 or <8 (falling through to scalar). (+3 stride tests, 520 total)
+- **Multi-frame decode span slicing:** `DecodeRawProfile` sliced the source buffer with `data.AsSpan(frameStart)`, passing the entire remaining buffer tail instead of just the current frame. Exposed by the stride fix (old `w*2` stride ignored `src.Length`). Now correctly trims to `frameSize` bytes.
+- **Interlaced UYVY field offset:** `DecodeYuv422Interlaced` methods computed the second-field offset using `(h+1)/2 * w * 2` instead of `(h+1)/2 * rowStride`. Fixed to use data-derived stride for consistency.
+
+### Added
+
+- **`swapRgbChannels` support completed for RGB565:** Scalar and Tail decode paths now accept the `swapRgbChannels` parameter (matching existing SSE2/NEON coverage). Completes BGR;15 support for all 5 DecodeRgb565 paths. (+0 new tests)
+- **Padded row stride tests:** 3 new tests verify correct decode for padded (55×55 nominal, 56-pixel rows), unpadded square, and non-square padded dimensions through both SSE2 and Scalar paths.
+- **Reuhno sample validation script:** `tools/***REMOVED***` — decodes F1061/F1055/F1060 head files from Reuhno's iPod Classic 6G through IthmbDecoder and validates against reference PNGs.
+
 ### Changed
 
 - **MaxDecodeFileSize 8 MB → 32 MB:** Increased file size guard from 8 MB to 32 MB after systematic research. All public real-world .ithmb files are under 1 MB (max: 852 KB). The 32 MB limit covers ~40 max-size (P1007) raw frames — far beyond any realistic thumbnail cache. Ratio-naled from scratch: 32 MB is a power of 2, covers all known data, and does not borrow authority from libgpod's commonly-repeated but uncorroborated 256 MB limit. Researched via profile frameBytes analysis (49 profiles, max 829 KB), multi-frame concatenation limits from 5 RE tools (Keith/ithmbrdr/iOpenPod/libgpod/clickwheel), and a public .ithmb file size survey (GitHub has zero .ithmb binary files; largest local sample = 852 KB).
+
+### Maintenance
+
+- **Reuhno credit updated:** ACKNOWLEDGMENTS.md now links to github.com/reuhno instead of reuhno.fr.
 
 ## [1.3.0] — 2026-06-23
 
