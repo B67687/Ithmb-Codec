@@ -152,16 +152,11 @@ internal static unsafe partial class IthmbCodecPlugin
                     return DecodeRawProfile(synthetic, pdProfile, cancellation, outInfo, outBuf, frameIndex: 0);
                 }
 
-            // Validate that the first byte is an ASCII format tag ('F' for raw, 'T' for JPEG).
-            // This catches files whose first 4 bytes happen to match a KnownProfiles key
-            // by coincidence but are actually corrupted or invalid data.
-            byte firstByte = fileBytes[0];
-            if (firstByte != (byte)'F' && firstByte != (byte)'T')
-            {
-                Log(4, $"ITHMB: unknown format tag byte 0x{firstByte:X2} (expected 'F' or 'T')");
-                return IGStatus.DecodeFailed;
-            }
-
+            // Read the 4-byte big-endian prefix. This is either a format_id matched against
+            // KnownProfiles (for F-prefix raw decodes) or ignored for T-prefix JPEG blobs.
+            // No 'F'/'T' byte guard is needed — the KnownProfiles lookup and JPEG carving
+            // fallback below already handle unknown/corrupted files correctly, and the guard
+            // was blocking our own encoder output (format IDs < 65536 have first byte 0x00).
             int prefix = ReadInt32BigEndian(fileBytes, 0);
             if (KnownProfiles.TryGetValue(prefix, out var profile))
             {
