@@ -218,8 +218,8 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>ARM64 NEON-accelerated interlaced UYVY (F1019).</summary>
     private static void DecodeYuv422Interlaced_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int half = ((h + 1) / 2) * w * 2;
-        int rowStride = w * 2;
+        int rowStride = (int)((long)src.Length / h);
+        int half = ((h + 1) / 2) * rowStride;
 
         var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
         var shufU = Vector128.Create((byte)0, 0x80, 0, 0x80, 4, 0x80, 4, 0x80, 8, 0x80, 8, 0x80, 12, 0x80, 12, 0x80);
@@ -266,8 +266,8 @@ internal static unsafe partial class IthmbCodecPlugin
 
     private static void DecodeYuv422Interlaced_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int half = ((h + 1) / 2) * w * 2;
-        int rowStride = w * 2;
+        int rowStride = (int)((long)src.Length / h);
+        int half = ((h + 1) / 2) * rowStride;
         for (int y = 0; y < h; y++)
         {
             int fieldOffset = (y % 2 == 0) ? 0 : half;
@@ -291,8 +291,8 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>SIMD-accelerated interlaced UYVY (F1019). Inner loop identical to non-interlaced.</summary>
     private static void DecodeYuv422Interlaced_SIMD(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
-        int half = ((h + 1) / 2) * w * 2;
-        int rowStride = w * 2;
+        int rowStride = (int)((long)src.Length / h);
+        int half = ((h + 1) / 2) * rowStride;
 
         var shufY = Vector128.Create((byte)1, 0x80, 3, 0x80, 5, 0x80, 7, 0x80, 9, 0x80, 11, 0x80, 13, 0x80, 15, 0x80);
         var shufU = Vector128.Create((byte)0, 0x80, 0, 0x80, 4, 0x80, 4, 0x80, 8, 0x80, 8, 0x80, 12, 0x80, 12, 0x80);

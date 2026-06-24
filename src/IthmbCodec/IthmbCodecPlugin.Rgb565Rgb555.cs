@@ -271,6 +271,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// this by fixing up the span pointer via a GCHandle internally.</remarks>
     private static void DecodeRgb565_Tail(byte* pSrc, byte* pDstRow, int xStart, int w, bool littleEndian, bool swapRgbChannels = false)
     {
+        byte* pDst = pDstRow + xStart * 4;
         for (int x = xStart; x < w; x++)
         {
             int idx = x * 2;
@@ -283,18 +284,18 @@ internal static unsafe partial class IthmbCodecPlugin
             if (swapRgbChannels)
             {
                 // BGR565: output B->R slot, R->B slot
-                pDstRow[0] = (byte)((r5 << 3) | (r5 >> 2));
-                pDstRow[1] = (byte)((g6 << 2) | (g6 >> 4));
-                pDstRow[2] = (byte)((b5 << 3) | (b5 >> 2));
+                pDst[0] = (byte)((r5 << 3) | (r5 >> 2));
+                pDst[1] = (byte)((g6 << 2) | (g6 >> 4));
+                pDst[2] = (byte)((b5 << 3) | (b5 >> 2));
             }
             else
             {
-                pDstRow[0] = (byte)((b5 << 3) | (b5 >> 2));
-                pDstRow[1] = (byte)((g6 << 2) | (g6 >> 4));
-                pDstRow[2] = (byte)((r5 << 3) | (r5 >> 2));
+                pDst[0] = (byte)((b5 << 3) | (b5 >> 2));
+                pDst[1] = (byte)((g6 << 2) | (g6 >> 4));
+                pDst[2] = (byte)((r5 << 3) | (r5 >> 2));
             }
-            pDstRow[3] = 255;
-            pDstRow += 4;
+            pDst[3] = 255;
+            pDst += 4;
         }
     }
 
@@ -533,6 +534,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Inner row decoder — used by both SIMD (tail) and scalar paths.</summary>
     private static void DecodeRgb555_Tail(byte* pSrc, byte* pDstRow, int xStart, int w, bool littleEndian, bool swapRgbChannels)
     {
+        byte* pDst = pDstRow + xStart * 4;
         for (int x = xStart; x < w; x++)
         {
             int idx = x * 2;
@@ -554,11 +556,11 @@ internal static unsafe partial class IthmbCodecPlugin
                 g5 = (rgb >> 5)  & 0x1F;
                 b5 = rgb         & 0x1F;
             }
-            pDstRow[0] = (byte)((b5 << 3) | (b5 >> 2));
-            pDstRow[1] = (byte)((g5 << 3) | (g5 >> 2));
-            pDstRow[2] = (byte)((r5 << 3) | (r5 >> 2));
-            pDstRow[3] = 255;
-            pDstRow += 4;
+            pDst[0] = (byte)((b5 << 3) | (b5 >> 2));
+            pDst[1] = (byte)((g5 << 3) | (g5 >> 2));
+            pDst[2] = (byte)((r5 << 3) | (r5 >> 2));
+            pDst[3] = 255;
+            pDst += 4;
         }
     }
 }
