@@ -33,9 +33,10 @@ internal static unsafe partial class IthmbCodecPlugin
 
     private static void DecodeYuv422_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
+        int rowStride = (int)((long)src.Length / h);
         for (int y = 0; y < h; y++)
         {
-            int rowStart = y * w * 2;
+            int rowStart = y * rowStride;
             byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x += 2)
             {
@@ -69,9 +70,10 @@ internal static unsafe partial class IthmbCodecPlugin
         var gCoefCr = Vector128.Create(YuvGCoefCr);
         var bCoef = Vector128.Create(YuvBCoef);
 
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
             for (int y = 0; y < h; y++)
-                ProcessUyvyRow(pSrc + (nint)(y * w * 2), dst + (nint)(y * w * 4), w,
+                ProcessUyvyRow(pSrc + (nint)(y * rowStride), dst + (nint)(y * w * 4), w,
                     shufY, shufU, shufV, zeroI, max255, alpha,
                     rCoef, gCoefCb, gCoefCr, bCoef);
     }
@@ -148,9 +150,10 @@ internal static unsafe partial class IthmbCodecPlugin
         var gCoefCr = Vector128.Create(YuvGCoefCr);
         var bCoef = Vector128.Create(YuvBCoef);
 
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
             for (int y = 0; y < h; y++)
-                ProcessUyvyRow_Neon(pSrc + (nint)(y * w * 2), dst + (nint)(y * w * 4), w,
+                ProcessUyvyRow_Neon(pSrc + (nint)(y * rowStride), dst + (nint)(y * w * 4), w,
                     shufY, shufU, shufV, zeroI, max255, alpha,
                     rCoef, gCoefCb, gCoefCr, bCoef);
     }

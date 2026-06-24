@@ -256,7 +256,9 @@ internal static unsafe partial class IthmbCodecPlugin
 
         try
         {
-            var raw = data.AsSpan(frameStart);
+            // Slice to frame boundary (multi-frame .ithmb files concatenate frames)
+            int rawLen = Math.Min(frameSize, data.Length - frameStart);
+            var raw = data.AsSpan(frameStart, rawLen);
             // For padded profiles, trim to the valid pixel data portion
             if (profile.IsPadded)
             {

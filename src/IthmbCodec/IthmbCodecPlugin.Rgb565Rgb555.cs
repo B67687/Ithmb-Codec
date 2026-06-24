@@ -42,11 +42,12 @@ internal static unsafe partial class IthmbCodecPlugin
     /// Widths smaller than 8 pixels fall through to the scalar fallback path.</remarks>
     private static void DecodeRgb565_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pSrcRow = pSrc + (nint)(y * rowStride);
                 byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
@@ -144,11 +145,12 @@ internal static unsafe partial class IthmbCodecPlugin
     /// ZipLow/ZipHigh for interleave (ZIP1/ZIP2).</remarks>
     private static void DecodeRgb565_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pSrcRow = pSrc + (nint)(y * rowStride);
                 byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
@@ -253,12 +255,13 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Scalar fallback for RGB565 decode (pure pointer-based).</summary>
     private static void DecodeRgb565_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels = false)
     {
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
             {
                 byte* pDstRow = dst + (nint)(y * w * 4);
-                DecodeRgb565_Tail(pSrc + (nint)(y * w * 2), pDstRow, 0, w, littleEndian, swapRgbChannels);
+                DecodeRgb565_Tail(pSrc + (nint)(y * rowStride), pDstRow, 0, w, littleEndian, swapRgbChannels);
             }
         }
     }
@@ -325,11 +328,12 @@ internal static unsafe partial class IthmbCodecPlugin
     /// </remarks>
     private static void DecodeRgb555_Sse2(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pSrcRow = pSrc + (nint)(y * rowStride);
                 byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
@@ -417,11 +421,12 @@ internal static unsafe partial class IthmbCodecPlugin
     ///   - Green MSB-replication: (val &lt;&lt; 3) | (val &gt;&gt; 2) — 5→8 bits (same as R/B)</remarks>
     private static void DecodeRgb555_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
             {
-                byte* pSrcRow = pSrc + (nint)(y * w * 2);
+                byte* pSrcRow = pSrc + (nint)(y * rowStride);
                 byte* pDstRow = dst + (nint)(y * w * 4);
                 int x = 0;
 
@@ -516,10 +521,11 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <summary>Scalar fallback for RGB555 decode.</summary>
     private static void DecodeRgb555_Scalar(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
     {
+        int rowStride = (int)((long)src.Length / h);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
-                DecodeRgb555_Tail(pSrc + (nint)(y * w * 2),
+                DecodeRgb555_Tail(pSrc + (nint)(y * rowStride),
                     dst + y * w * 4, 0, w, littleEndian, swapRgbChannels);
         }
     }

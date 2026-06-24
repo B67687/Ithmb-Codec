@@ -39,9 +39,10 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
         if ((w & 1) != 0) return false; // pair processing requires even width
 
+        int rowStride = (int)((long)src.Length / h);
         for (int y = 0; y < h; y++)
         {
-            int rowStart = y * w * 2;
+            int rowStart = y * rowStride;
             byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x += 2)
             {
@@ -76,9 +77,10 @@ internal static unsafe partial class IthmbCodecPlugin
         long expectedBytes = (long)w * h * 2;
         if (src.Length < expectedBytes) return false;
 
+        int rowStride = (int)((long)src.Length / h);
         for (int y = 0; y < h; y++)
         {
-            int rowStart = y * w * 2;
+            int rowStart = y * rowStride;
             byte* pDstRow = dst + (nint)(y * w * 4);
             for (int x = 0; x < w; x++)
             {
