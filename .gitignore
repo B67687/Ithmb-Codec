@@ -36,6 +36,11 @@ docs/*.mmd
 
 .vscode/
 .idea/
+*.user
+*.suo
+*.DotSettings.user
+*.log
+
 
 # Privacy blacklists
 PERFORMANCE.md

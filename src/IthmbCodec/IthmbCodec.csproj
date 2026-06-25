@@ -28,6 +28,9 @@
     <!-- Plugin: do not produce a NuGet package. -->
     <IsPackable>false</IsPackable>
 
+    <!-- Lock NuGet dependency versions for supply-chain integrity -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+
     <!-- Enforce deterministic code style during build (using built-in Roslyn analyzers) -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-Recommended</AnalysisLevel>
