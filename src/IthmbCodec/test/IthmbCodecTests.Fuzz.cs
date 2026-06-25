@@ -216,4 +216,114 @@ public unsafe partial class IthmbCodecTests
         AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeYuv422Clcl(buf, (byte*)(void*)dst, 4, 4));
         AssertDeterminism(64,  dst => IthmbCodecPlugin.DecodeYuv422Cl(buf, (byte*)(void*)dst, 4, 4));
     }
+
+    [Fact]
+    public void Fuzz_Corruption_RandomByteMutations()
+    {
+        var rng = new Random(42);
+        for (int iter = 0; iter < 1000; iter++)
+        {
+            int w = rng.Next(4, 129);
+            int h = rng.Next(4, 129);
+            bool evenW = (w & 1) == 0;
+            int allocSize = Math.Max(4096, w * h * 4);
+            int rgbSize = w * h * 2;
+            int yuvSize = w * h * 2;
+            int ycbcrY = w * h;
+            int ycbcrUV = ((w + 1) / 2) * ((h + 1) / 2);
+            int ycbcrSize = ycbcrY + ycbcrUV * 2;
+            {
+                var buf = new byte[rgbSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeRgb565(buf, dst, w, h, true); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+            {
+                var buf = new byte[rgbSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeRgb555(buf, dst, w, h, true); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+            {
+                var buf = new byte[yuvSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeYuv422(buf, dst, w, h); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+            {
+                var buf = new byte[ycbcrSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeYcbcr420(buf, dst, w, h); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+            {
+                var buf = new byte[yuvSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeYuv422Interlaced(buf, dst, w, h); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+            if (evenW)
+            {
+                var buf = new byte[yuvSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeYuv422Clcl(buf, dst, w, h); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+            {
+                var buf = new byte[yuvSize];
+                rng.NextBytes(buf);
+                {
+                    double roll = rng.NextDouble();
+                    if (roll < 0.10) { int pos = rng.Next(buf.Length); int bit = rng.Next(8); buf[pos] ^= (byte)(1 << bit); }
+                    else if (roll < 0.15) { int a = rng.Next(buf.Length); int b = rng.Next(buf.Length); (buf[a], buf[b]) = (buf[b], buf[a]); }
+                    else if (roll < 0.20) { int newLen = rng.Next(4, buf.Length + 1); Array.Resize(ref buf, newLen); }
+                }
+                byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
+                try { bool ok = IthmbCodecPlugin.DecodeYuv422Cl(buf, dst, w, h); Assert.True(ok == true || ok == false); }
+                finally { NativeMemory.Free(dst); }
+            }
+        }
+    }
 }
