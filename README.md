@@ -112,7 +112,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**517 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), and rotation roundtrip.
+**528 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), and rotation roundtrip.
 
 **Real-device validation:**
 
@@ -129,7 +129,7 @@ The plugin was developed through iterative research, implementation, review, and
 1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 49 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
-4. **Testing** — 517 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, and device-specific format tables
+4. **Testing** — 528 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, and device-specific format tables
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, rotation buffer overflow, crop integer overflow, and defense-in-depth
 6. **Release** — Windows Native AOT binary published via GitHub Releases
 
@@ -216,7 +216,7 @@ All decoders produce BGRA 8-bit output. Zero heap allocations — output is writ
 ## Limitations
 
 > [!WARNING]
-> **Only T-prefix (JPEG-embedded) is validated on real hardware.** Raw decoders exist for 49 known profiles and pass roundtrip tests, multi-frame raw decode is synthetically tested, but no real F-prefix files have been obtained for hardware validation. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for a hardware validation plan.
+> **T-prefix (JPEG-embedded) validated on 227 real files; F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 49 known profiles and pass roundtrip tests (528 total). Multi-frame raw decode is synthetically tested. BGR;15 (iPhone 2G) and remaining profiles have no known real samples. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for details.
 
 - **F-prefix (raw) decoders are best-effort** — roundtrip-tested via synthetic encoder and multi-frame decode tested, but unverified against real iPod/iPhone hardware.
 - **JPEG SOI must be within the first 4 MB** of the file (covers all known real files).
