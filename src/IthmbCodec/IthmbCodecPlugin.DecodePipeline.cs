@@ -17,8 +17,23 @@ internal static unsafe partial class IthmbCodecPlugin
     // Cache for multi-frame raw .ithmb files. Populated by the first DecodeInternal
     // call for a raw file, reused across subsequent frameIndex values without re-reading.
     // Read-once, decode-many: the ithmb file is read in full once and cached here.
-    // Only the most recent file is kept (evicted when a different path is encountered).
+    //
+    // Eviction policy: simple bounded cache — when the number of cached paths exceeds
+    // MaxCachedPaths (16), the entire cache is cleared. Entries are recreated on the
+    // next access to the same path, so Clear() is safe. This bounds memory growth
+    // from every unique file path ever decoded accumulating a full byte[] (up to 32 MB).
+    private const int MaxCachedPaths = 16;
     private static readonly ConcurrentDictionary<string, RawFileCacheEntry> _rawFileCache = new();
+    private static void SetCachedFile(string path, byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
+    {
+        // Bounded eviction: when MaxCachedPaths is exceeded, clear all entries.
+        // Clear+Set interleaving (another thread's entry created between our Clear and Set)
+        // is harmless — that entry is recreated on its next access, and the cache is purely
+        // an optimization (read-once, decode-many).
+        if (_rawFileCache.Count >= MaxCachedPaths)
+            _rawFileCache.Clear();
+        _rawFileCache[path] = new RawFileCacheEntry(data, profile, frameCount, frameSize);
+    }
 
     private readonly struct RawFileCacheEntry(byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
     {
@@ -164,6 +179,7 @@ internal static unsafe partial class IthmbCodecPlugin
             // No 'F'/'T' byte guard is needed — the KnownProfiles lookup and JPEG carving
             // fallback below already handle unknown/corrupted files correctly, and the guard
             // was blocking our own encoder output (format IDs < 65536 have first byte 0x00).
+            if (fileBytes.Length < 4) return IGStatus.DecodeFailed;
             int prefix = BinaryPrimitives.ReadInt32BigEndian(fileBytes.AsSpan(0, 4));
             if (KnownProfiles.TryGetValue(prefix, out var profile))
             {
@@ -181,10 +197,8 @@ internal static unsafe partial class IthmbCodecPlugin
                 int frameCount = frameSize > 0 ? dataLen / frameSize : 1;
                 if (frameCount < 1) frameCount = 1;
 
-                // Atomically store — ConcurrentDictionary indexer is thread-safe per-key.
-                // No Clear(): a concurrent Clear()+Set() for another path could interleave
-                // and overwrite our entry, losing that path's cached data.
-                _rawFileCache[path] = new RawFileCacheEntry(fileBytes, profile, frameCount, frameSize);
+                // Atomically store via bounded LRU setter (evicts when MaxCachedPaths exceeded).
+                SetCachedFile(path, fileBytes, profile, frameCount, frameSize);
 
                 if (frameIndex >= frameCount) return IGStatus.InvalidArg;
                 return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf, frameIndex);
@@ -199,7 +213,8 @@ internal static unsafe partial class IthmbCodecPlugin
                 if (TryFindJpegSlice(fileBytes, out var carveOffset, out var carveLength, cancellation))
                 {
                     Log(4, $"ITHMB: JPEG carving found slice at offset {carveOffset}, length {carveLength}");
-                    return DecodeJpegSlice(fileBytes, carveLength, (int)fileSize,
+                    var carveSlice = fileBytes.AsSpan(carveOffset, carveLength).ToArray();
+                    return DecodeJpegSlice(carveSlice, carveLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
                 }
 

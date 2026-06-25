@@ -61,11 +61,10 @@ internal static unsafe partial class IthmbCodecPlugin
         if (length <= 0 || length > data.Length)
             return IGStatus.DecodeFailed;
 
-        var jpegSlice = data;
         ImageResult result;
         try
         {
-            result = ImageResult.FromMemory(jpegSlice, ColorComponents.RedGreenBlueAlpha);
+            result = ImageResult.FromMemory(data, ColorComponents.RedGreenBlueAlpha);
         }
         catch (Exception ex)
         {

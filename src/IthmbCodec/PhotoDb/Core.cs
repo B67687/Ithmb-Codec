@@ -412,8 +412,10 @@ internal static unsafe partial class PhotoDb
     }
 
     private static void WalkEntries(ReadOnlySpan<byte> data, int startOffset, int endOffset,
-        int endian, ref List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize)> entries)
+        int endian, ref List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize)> entries,
+        int depth = 0)
     {
+        if (depth > 64) return;
         int pos = startOffset;
 
         while (pos + 8 <= endOffset) // Minimum: magic (4) + headerSize (4)
@@ -461,7 +463,7 @@ internal static unsafe partial class PhotoDb
                 int childStart = pos + 16;
                 int childEnd = pos + (int)hdrSize;
                 if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
-                    WalkEntries(data, childStart, childEnd, endian, ref entries);
+                    WalkEntries(data, childStart, childEnd, endian, ref entries, depth + 1);
                 pos += (int)hdrSize;
                 continue;
             }
@@ -473,7 +475,7 @@ internal static unsafe partial class PhotoDb
                 int childStart = pos + 12;
                 int childEnd = pos + (int)hdrSize;
                 if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
-                    WalkEntries(data, childStart, childEnd, endian, ref entries);
+                    WalkEntries(data, childStart, childEnd, endian, ref entries, depth + 1);
                 pos += (int)hdrSize;
                 continue;
             }
@@ -487,7 +489,7 @@ internal static unsafe partial class PhotoDb
                 int childStart = pos + (int)hdrSize;
                 int childEnd = pos + (int)totalLen;
                 if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
-                    WalkEntries(data, childStart, childEnd, endian, ref entries);
+                    WalkEntries(data, childStart, childEnd, endian, ref entries, depth + 1);
                 pos += (int)totalLen;
                 continue;
             }
@@ -499,7 +501,7 @@ internal static unsafe partial class PhotoDb
                 int childStart = pos + 12;
                 int childEnd = pos + (int)hdrSize;
                 if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
-                    WalkEntries(data, childStart, childEnd, endian, ref entries);
+                    WalkEntries(data, childStart, childEnd, endian, ref entries, depth + 1);
                 pos += (int)hdrSize;
                 continue;
             }

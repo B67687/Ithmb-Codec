@@ -206,7 +206,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "cropY": cropY = ParseJsonInt(json, ref pos); break;
                     case "cropWidth": cropW = ParseJsonInt(json, ref pos); break;
                     case "cropHeight": cropH = ParseJsonInt(json, ref pos); break;
-                    default: SkipJsonValue(json, ref pos); break;
+                    default: SkipJsonValue(json, ref pos, 32); break;
                 }
 
                 SkipWhitespace(json, ref pos);
@@ -286,7 +286,7 @@ internal static unsafe partial class IthmbCodecPlugin
         return false; // default
     }
 
-    private static void SkipJsonValue(string s, ref int pos)
+    private static void SkipJsonValue(string s, ref int pos, int maxDepth = 32)
     {
         if (pos >= s.Length) return;
         if (s[pos] == '"') { ParseJsonString(s, ref pos); return; }
@@ -299,6 +299,8 @@ internal static unsafe partial class IthmbCodecPlugin
                 if (s[pos] == '{' || s[pos] == '[') depth++;
                 else if (s[pos] == '}' || s[pos] == ']') depth--;
                 pos++;
+                // Prevent CPU DoS from deeply nested JSON
+                if (depth > maxDepth) return;
             }
             return;
         }

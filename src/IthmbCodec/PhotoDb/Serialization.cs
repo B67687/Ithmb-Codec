@@ -115,8 +115,9 @@ internal static unsafe partial class PhotoDb
     private static void IntegrityWalkTree(ReadOnlySpan<byte> data, int startOffset, int endOffset,
         int endian, List<string> issues,
         List<(int FormatId, int IthmbOffset, int ImageSize, int ChunkOffset)> mhniEntries,
-        ref int maxChunkEnd)
+        ref int maxChunkEnd, int depth = 0)
     {
+        if (depth > 64) return;
         int pos = startOffset;
 
         while (pos + 8 <= endOffset)
@@ -213,7 +214,7 @@ internal static unsafe partial class PhotoDb
                     continue;
                 }
                 if (childStart < chunkEnd && HasChildChunks(data, childStart, (int)chunkEnd, endian))
-                    IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd);
+                    IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd, depth + 1);
                 pos = (int)chunkEnd;
                 continue;
             }
@@ -230,7 +231,7 @@ internal static unsafe partial class PhotoDb
                     continue;
                 }
                 if (childStart < chunkEnd && HasChildChunks(data, childStart, (int)chunkEnd, endian))
-                    IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd);
+                    IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd, depth + 1);
                 pos = (int)chunkEnd;
                 continue;
             }
@@ -250,7 +251,7 @@ internal static unsafe partial class PhotoDb
                     continue;
                 }
                 if (childStart < mhiiEnd && HasChildChunks(data, childStart, (int)mhiiEnd, endian))
-                    IntegrityWalkTree(data, childStart, (int)mhiiEnd, endian, issues, mhniEntries, ref maxChunkEnd);
+                    IntegrityWalkTree(data, childStart, (int)mhiiEnd, endian, issues, mhniEntries, ref maxChunkEnd, depth + 1);
                 pos = (int)mhiiEnd;
                 continue;
             }
@@ -266,7 +267,7 @@ internal static unsafe partial class PhotoDb
                     continue;
                 }
                 if (childStart < chunkEnd && HasChildChunks(data, childStart, (int)chunkEnd, endian))
-                    IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd);
+                    IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd, depth + 1);
                 pos = (int)chunkEnd;
                 continue;
             }
