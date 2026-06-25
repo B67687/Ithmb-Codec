@@ -191,6 +191,20 @@ The repository includes several CLI tools under [`tools/`](tools/):
 
 See [***REMOVED***](***REMOVED***) for full decoder benchmark results.
 
+### Decoder performance (720×480, AMD Ryzen AI 9 HX 370, .NET 10.0.9, AVX-512)
+
+| Decoder | Encoding | Width | Height | Mean time | Allocations |
+|---------|----------|-------|--------|-----------|-------------|
+| RGB565 | 16-bit RGB | 720 | 480 | 64.19 µs | 0 B |
+| RGB555 | 15-bit RGB | 720 | 480 | 65.90 µs | 0 B |
+| UYVY | YUV 4:2:2 | 720 | 480 | 189.61 µs | 0 B |
+| YCbCr 4:2:0 | YUV 4:2:0 | 720 | 480 | 221.36 µs | 0 B |
+| YUV422 Interlaced | YUV 4:2:2 (fields) | 720 | 480 | 190.22 µs | 0 B |
+| CLCL | Nibble-chroma YUV | 720 | 480 | 456.80 µs | 0 B |
+| CL | Per-pixel chroma YUV | 720 | 480 | 590.66 µs | 0 B |
+
+All decoders produce BGRA 8-bit output. Zero heap allocations — output is written directly to caller-provided native buffers. Full results at [***REMOVED***](***REMOVED***).
+
 ---
 
 ## Profile Reference
