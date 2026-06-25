@@ -10,6 +10,7 @@
 
 using System.Runtime.InteropServices;
 using IthmbCodec;
+using static IthmbCodec.PhotoDb.PhotoDb;
 using ImageGlass.SDK.Plugins;
 
 namespace IthmbDecoder;
@@ -45,7 +46,7 @@ unsafe class Program
             {
                 string pdPath = args[++i];
                 byte[] pdData = File.ReadAllBytes(pdPath);
-                var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb(pdData);
+                var issues = IntegrityCheckPhotoDb(pdData);
                 if (issues.Count == 0)
                 {
                     Console.WriteLine("PhotoDB integrity check: PASSED — 0 issues found.");
@@ -176,7 +177,7 @@ unsafe class Program
     static int ListPhotoDbEntries(string path)
     {
         byte[] data = File.ReadAllBytes(path);
-        if (!IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out var frameCount))
+        if (!TryParsePhotoDb(data, out var entries, out var frameCount))
         {
             Console.Error.WriteLine("Not a valid PhotoDB/ArtworkDB file (no MHFD magic found).");
             return 1;
@@ -189,7 +190,7 @@ unsafe class Program
         for (int i = 0; i < entries.Count; i++)
         {
             var (fmtId, entryData, _, _) = entries[i];
-            string fmtName = IthmbCodecPlugin.GetFormatIdName(fmtId);
+            string fmtName = GetFormatIdName(fmtId);
             if (IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
             {
                 Console.Error.WriteLine($"{i,4}  {fmtId,8}  {profile.Width,6}  {profile.Height,6}  {entryData.Length,8}  {profile.Encoding} (LE={profile.LittleEndian})");
@@ -207,7 +208,7 @@ unsafe class Program
     static int DecodePhotoDbEntry(string path, int index, string? outputPath)
     {
         byte[] data = File.ReadAllBytes(path);
-        if (!IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out var frameCount))
+        if (!TryParsePhotoDb(data, out var entries, out var frameCount))
         {
             Console.Error.WriteLine("Not a valid PhotoDB/ArtworkDB file.");
             return 1;
@@ -346,7 +347,7 @@ unsafe class Program
     static int ExtractAllPhotoDbEntries(string path, string? outputDir)
     {
         byte[] data = File.ReadAllBytes(path);
-        if (!IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out _))
+        if (!TryParsePhotoDb(data, out var entries, out _))
         {
             Console.Error.WriteLine("Not a valid PhotoDB/ArtworkDB file.");
             return 1;

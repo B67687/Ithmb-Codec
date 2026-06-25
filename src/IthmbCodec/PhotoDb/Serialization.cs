@@ -1,9 +1,11 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 
-namespace IthmbCodec;
+using IthmbCodec;
 
-internal static unsafe partial class IthmbCodecPlugin
+namespace IthmbCodec.PhotoDb;
+
+internal static unsafe partial class PhotoDb
 {
     // ============================== Integrity check ==============================
 
@@ -76,7 +78,7 @@ internal static unsafe partial class IthmbCodecPlugin
         // 6. Validate known format IDs for all MHNI entries
         foreach (var entry in mhniEntries)
         {
-            if (!KnownProfiles.ContainsKey(entry.FormatId))
+            if (!IthmbCodecPlugin.KnownProfiles.ContainsKey(entry.FormatId))
             {
                 issues.Add($"Format ID {entry.FormatId} not found in KnownProfiles (at chunk offset 0x{entry.ChunkOffset:x})");
             }
@@ -297,7 +299,7 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int i = 0; i < count; i++)
         {
             var (formatId, data) = entries[i];
-            if (!KnownProfiles.TryGetValue(formatId, out var profile))
+            if (!IthmbCodecPlugin.KnownProfiles.TryGetValue(formatId, out var profile))
                 return false;
             if (data == null || data.Length != profile.FrameByteLength)
                 return false;
@@ -345,7 +347,7 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int i = 0; i < count; i++)
         {
             var (formatId, _) = entries[i];
-            var profile = KnownProfiles[formatId];
+            var profile = IthmbCodecPlugin.KnownProfiles[formatId];
 
             bw.Write(MagicMhniLe);              // "mhni"
             bw.Write(76u);                      // headerSize

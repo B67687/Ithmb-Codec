@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using IthmbCodec;
+using static IthmbCodec.PhotoDb.PhotoDb;
 using Xunit;
 
 namespace IthmbCodec.Tests;
@@ -91,7 +92,7 @@ public unsafe partial class IthmbCodecTests
     {
         byte[] photoDb = BuildSyntheticPhotoDb();
 
-        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(photoDb, out var entries, out var frameCount);
+        bool parsed = TryParsePhotoDb(photoDb, out var entries, out var frameCount);
 
         Assert.True(parsed);
         Assert.Equal(1, frameCount);
@@ -104,7 +105,7 @@ public unsafe partial class IthmbCodecTests
     {
         byte[] data = [0x00, 0x00, 0x00, 0x00];
 
-        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out var frameCount);
+        bool parsed = TryParsePhotoDb(data, out var entries, out var frameCount);
 
         Assert.False(parsed);
         Assert.Empty(entries);
@@ -116,7 +117,7 @@ public unsafe partial class IthmbCodecTests
     {
         byte[] data = [];
 
-        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out var frameCount);
+        bool parsed = TryParsePhotoDb(data, out var entries, out var frameCount);
 
         Assert.False(parsed);
         Assert.Empty(entries);
@@ -130,7 +131,7 @@ public unsafe partial class IthmbCodecTests
     {
         byte[] photoDb = BuildSyntheticPhotoDb();
 
-        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(photoDb, out var entries, out var frameCount);
+        bool parsed = TryParsePhotoDb(photoDb, out var entries, out var frameCount);
         Assert.True(parsed);
         Assert.Equal(1, frameCount);
         Assert.Single(entries);
@@ -221,7 +222,7 @@ public unsafe partial class IthmbCodecTests
 
         bw.Write(jpegBlob);
 
-        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(ms.ToArray(), out var entries, out var frameCount);
+        bool parsed = TryParsePhotoDb(ms.ToArray(), out var entries, out var frameCount);
         Assert.True(parsed);
         Assert.Equal(1, frameCount);
         Assert.Single(entries);
@@ -260,21 +261,21 @@ public unsafe partial class IthmbCodecTests
         }
 
         var entries = new List<(int, byte[])> { (1017, entry1), (1024, entry2) };
-        bool built = IthmbCodecPlugin.TryBuildPhotoDb(entries, out var photoDb);
+        bool built = TryBuildPhotoDb(entries, out var photoDb);
         Assert.True(built);
         Assert.NotNull(photoDb);
 
         // Verify roundtrip: build validates correctly (format IDs + sizes).
         // Parsing the simplified layout returns 0 entries because the built
         // binary lacks MHLI/MHII containers (see BuildSyntheticPhotoDb).
-        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(photoDb, out var parsedEntries, out var frameCount);
+        bool parsed = TryParsePhotoDb(photoDb, out var parsedEntries, out var frameCount);
         Assert.True(parsed);
     }
 
     [Fact]
     public void PhotoDb_Build_EmptyList_ReturnsFalse()
     {
-        bool built = IthmbCodecPlugin.TryBuildPhotoDb([], out var output);
+        bool built = TryBuildPhotoDb([], out var output);
         Assert.False(built);
         Assert.Null(output);
     }
@@ -283,7 +284,7 @@ public unsafe partial class IthmbCodecTests
     public void PhotoDb_Build_UnknownFormatId_ReturnsFalse()
     {
         var entries = new List<(int, byte[])> { (9999, [0x00, 0x00]) };
-        bool built = IthmbCodecPlugin.TryBuildPhotoDb(entries, out var output);
+        bool built = TryBuildPhotoDb(entries, out var output);
         Assert.False(built);
         Assert.Null(output);
     }
@@ -294,7 +295,7 @@ public unsafe partial class IthmbCodecTests
     public void IntegrityCheck_ValidPhotoDb_ReturnsNoIssues()
     {
         byte[] photoDb = BuildSyntheticPhotoDb();
-        var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb(photoDb);
+        var issues = IntegrityCheckPhotoDb(photoDb);
         // Allow "trailing garbage" for inline pixel data (not part of chunk tree).
         var unexpected = issues.Where(i => !i.StartsWith("Trailing garbage")).ToList();
         Assert.Empty(unexpected);
@@ -303,7 +304,7 @@ public unsafe partial class IthmbCodecTests
     [Fact]
     public void IntegrityCheck_EmptyData_ReturnsIssue()
     {
-        var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb([]);
+        var issues = IntegrityCheckPhotoDb([]);
         Assert.NotEmpty(issues);
     }
 
@@ -311,7 +312,7 @@ public unsafe partial class IthmbCodecTests
     public void IntegrityCheck_BadMagic_ReturnsIssue()
     {
         byte[] data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
-        var issues = IthmbCodecPlugin.IntegrityCheckPhotoDb(data);
+        var issues = IntegrityCheckPhotoDb(data);
         Assert.NotEmpty(issues);
     }
 }

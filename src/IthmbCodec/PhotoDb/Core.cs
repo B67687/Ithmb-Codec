@@ -30,9 +30,11 @@ Parse tree for PhotoDB:
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
-namespace IthmbCodec;
+using IthmbCodec;
 
-internal static unsafe partial class IthmbCodecPlugin
+namespace IthmbCodec.PhotoDb;
+
+internal static unsafe partial class PhotoDb
 {
     // ============================== Endianness detection ==============================
 
@@ -369,13 +371,13 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
-            if (KnownProfiles.ContainsKey(entry.FormatId)) continue;
+            if (IthmbCodecPlugin.KnownProfiles.ContainsKey(entry.FormatId)) continue;
             if (entry.Data.Length >= 2 && entry.Data[0] == 0xFF && entry.Data[1] == 0xD8)
             {
-                int eoiRel = entry.Data.AsSpan(2).IndexOf(JpegEoiMarker);
+                int eoiRel = entry.Data.AsSpan(2).IndexOf(IthmbCodecPlugin.JpegEoiMarker);
                 if (eoiRel >= 0)
                 {
-                    int jpegLen = 2 + eoiRel + JpegEoiMarker.Length;
+                    int jpegLen = 2 + eoiRel + IthmbCodecPlugin.JpegEoiMarker.Length;
                     if (jpegLen < entry.Data.Length)
                     {
                         var trimmed = new byte[jpegLen];
@@ -516,7 +518,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// </summary>
     internal static string GetFormatIdName(int formatId)
     {
-        if (KnownProfiles.TryGetValue(formatId, out var profile))
+        if (IthmbCodecPlugin.KnownProfiles.TryGetValue(formatId, out var profile))
             return $"{formatId} ({profile.Width}x{profile.Height}, {profile.Encoding})";
         return formatId.ToString(CultureInfo.InvariantCulture);
     }

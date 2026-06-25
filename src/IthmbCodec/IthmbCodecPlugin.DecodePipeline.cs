@@ -2,11 +2,13 @@
 // decode fallback, multi-frame caching, and the DecodeRawProfile dispatch.
 // Separated from plugin ABI glue for independent AOT compilation.
 
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ImageGlass.SDK.Plugins;
+using static IthmbCodec.PhotoDb.PhotoDb;
 
 namespace IthmbCodec;
 
@@ -162,7 +164,7 @@ internal static unsafe partial class IthmbCodecPlugin
             // No 'F'/'T' byte guard is needed — the KnownProfiles lookup and JPEG carving
             // fallback below already handle unknown/corrupted files correctly, and the guard
             // was blocking our own encoder output (format IDs < 65536 have first byte 0x00).
-            int prefix = ReadInt32BigEndian(fileBytes, 0);
+            int prefix = BinaryPrimitives.ReadInt32BigEndian(fileBytes.AsSpan(0, 4));
             if (KnownProfiles.TryGetValue(prefix, out var profile))
             {
                 // Check cache first (populated by a previous frameIndex or metadata call)
