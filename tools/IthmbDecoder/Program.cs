@@ -165,7 +165,7 @@ unsafe class Program
 
         for (int i = 0; i < entries.Count; i++)
         {
-            var (fmtId, entryData) = entries[i];
+            var (fmtId, entryData, _, _) = entries[i];
             string fmtName = IthmbCodecPlugin.GetFormatIdName(fmtId);
             if (IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
             {
@@ -196,7 +196,7 @@ unsafe class Program
             return 1;
         }
 
-        var (fmtId, rawData) = entries[index];
+        var (fmtId, _, ithmbOffset, imageSize) = entries[index];
 
         if (!IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
         {
@@ -214,6 +214,44 @@ unsafe class Program
         outputPath ??= Path.ChangeExtension(path, $".entry{index}.bmp");
         outputPath = Path.GetFullPath(outputPath);
 
+        // PhotoDB entries store pixel data in separate .ithmb files.
+        // Derive the .ithmb filename from the format ID and look for it
+        // in the same directory as the ArtworkDB.
+        string? ithmbDir = Path.GetDirectoryName(Path.GetFullPath(path));
+        string? ithmbFile = null;
+        if (ithmbDir != null)
+        {
+            string stem = $"F{fmtId}_1";
+            // Try .ithmb first, then .head.ithmb (Reuhno's head file format)
+            string fullPath = Path.Combine(ithmbDir, stem + ".ithmb");
+            if (File.Exists(fullPath))
+                ithmbFile = fullPath;
+            else
+            {
+                fullPath = Path.Combine(ithmbDir, stem + ".head.ithmb");
+                if (File.Exists(fullPath))
+                    ithmbFile = fullPath;
+            }
+        }
+
+        byte[] pixelData;
+        if (ithmbFile != null)
+        {
+            // Read pixel data from the .ithmb file at the recorded offset
+            byte[] ithmbBytes = File.ReadAllBytes(ithmbFile);
+            if (ithmbOffset + imageSize > ithmbBytes.Length)
+            {
+                Console.Error.WriteLine($"Entry {index}: ithmbOffset ({ithmbOffset}) + imageSize ({imageSize}) exceeds {ithmbFile} length ({ithmbBytes.Length}).");
+                return 1;
+            }
+            pixelData = ithmbBytes.AsSpan(ithmbOffset, imageSize).ToArray();
+        }
+        else
+        {
+            // Fallback: use inline data from the ArtworkDB (Apple TV / Animal format)
+            pixelData = entries[index].Data;
+        }
+
         byte* pixels = (byte*)NativeMemory.AllocZeroed((nuint)(w * 4 * h));
         if (pixels == null)
         {
@@ -225,16 +263,16 @@ unsafe class Program
         {
             bool ok = profile.Encoding switch
             {
-                IthmbCodecPlugin.IthmbEncoding.Rgb565 => IthmbCodecPlugin.DecodeRgb565(rawData, pixels, w, h, profile.LittleEndian),
-                IthmbCodecPlugin.IthmbEncoding.Rgb555 => IthmbCodecPlugin.DecodeRgb555(rawData, pixels, w, h, profile.LittleEndian),
+                IthmbCodecPlugin.IthmbEncoding.Rgb565 => IthmbCodecPlugin.DecodeRgb565(pixelData, pixels, w, h, profile.LittleEndian),
+                IthmbCodecPlugin.IthmbEncoding.Rgb555 => IthmbCodecPlugin.DecodeRgb555(pixelData, pixels, w, h, profile.LittleEndian),
                 IthmbCodecPlugin.IthmbEncoding.Yuv422 => profile.ClChroma
-                    ? IthmbCodecPlugin.DecodeYuv422Cl(rawData, pixels, w, h)
+                    ? IthmbCodecPlugin.DecodeYuv422Cl(pixelData, pixels, w, h)
                     : profile.ClclChroma
-                    ? IthmbCodecPlugin.DecodeYuv422Clcl(rawData, pixels, w, h)
+                    ? IthmbCodecPlugin.DecodeYuv422Clcl(pixelData, pixels, w, h)
                     : profile.IsInterlaced
-                    ? IthmbCodecPlugin.DecodeYuv422Interlaced(rawData, pixels, w, h)
-                    : IthmbCodecPlugin.DecodeYuv422(rawData, pixels, w, h),
-                IthmbCodecPlugin.IthmbEncoding.Ycbcr420 => IthmbCodecPlugin.DecodeYcbcr420(rawData, pixels, w, h, profile.SwapChromaPlanes),
+                    ? IthmbCodecPlugin.DecodeYuv422Interlaced(pixelData, pixels, w, h)
+                    : IthmbCodecPlugin.DecodeYuv422(pixelData, pixels, w, h),
+                IthmbCodecPlugin.IthmbEncoding.Ycbcr420 => IthmbCodecPlugin.DecodeYcbcr420(pixelData, pixels, w, h, profile.SwapChromaPlanes),
                 _ => false,
             };
 

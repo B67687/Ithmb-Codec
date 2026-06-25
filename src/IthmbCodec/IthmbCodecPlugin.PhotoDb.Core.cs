@@ -264,14 +264,14 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     /// <summary>
-    /// MHNI — thumbnail info entry, 36 bytes.
+    /// MHNI — thumbnail info entry, 36 bytes (iPod Classic) or 76 bytes (Apple TV/Animal).
     /// This is the critical record that maps a format_id to a byte range
     /// within the corresponding .ithmb file.
     /// </summary>
     internal readonly struct MhniHeader
     {
         public readonly uint Magic;
-        public readonly uint HeaderSize;    // Always 36
+        public readonly uint HeaderSize;    // 36 (classic) or 76 (Apple TV/Animal)
         public readonly int FormatId;       // Matches KnownProfiles keys (e.g. 1019)
         public readonly int ImageSize;      // Byte count of the .ithmb data blob
         public readonly int IthmbOffset;    // Byte offset into the .ithmb file
@@ -284,13 +284,55 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             Magic = ReadU32(data, offset, endian);
             HeaderSize = ReadU32(data, offset + 4, endian);
-            FormatId = ReadS32(data, offset + 8, endian);
-            ImageSize = ReadS32(data, offset + 12, endian);
-            IthmbOffset = ReadS32(data, offset + 16, endian);
-            Width = ReadS32(data, offset + 20, endian);
-            Height = ReadS32(data, offset + 24, endian);
-            HPadding = ReadS32(data, offset + 28, endian);
-            VPadding = ReadS32(data, offset + 32, endian);
+
+            // Field layout verified against iPod Classic 6G (Reuhno's ArtworkDB) and
+            // Apple TV / Animal PhotoDB. Both use 76-byte headers but with different
+            // field offsets and semantics.
+            //
+            // iPod Classic 76B layout (verified):
+            //   +16 (0x10): FormatId (u32)
+            //   +20 (0x14): IthmbOffset (u32)
+            //   +24 (0x18): ImageSize (u32)
+            //   +32 (0x20): Height (s16)
+            //   +34 (0x22): Width  (s16)
+            //
+            // Apple TV / Animal 76B layout:
+            //   Same header size but values point to external F{id}_1.ithmb files.
+            //   Width/Height packed at +20.
+            //
+            // Detect variant: if IthmbOffset at +20 is reasonable (< data length)
+            // and ImageSize at +24 is > 0, treat as inline (iPod Classic).
+            // Otherwise mark as external (Apple TV / Animal).
+
+            int fmtId = ReadS32(data, offset + 16, endian);
+            int ithmbOff = ReadS32(data, offset + 20, endian);
+            int imgSize = ReadS32(data, offset + 24, endian);
+
+            // Validate IthmbOffset: must be non-negative and within data bounds
+            bool isInline = ithmbOff >= 0 && imgSize > 0
+                            && (long)ithmbOff + imgSize <= data.Length;
+
+            if (isInline)
+            {
+                // iPod Classic 6G/7G — inline data in .ithmb files
+                FormatId = fmtId;
+                IthmbOffset = ithmbOff;
+                ImageSize = imgSize;
+                Width = (short)ReadU16(data, offset + 34, endian);
+                Height = (short)ReadU16(data, offset + 32, endian);
+            }
+            else
+            {
+                // Apple TV / Animal — external .ithmb files or no data
+                FormatId = fmtId;
+                ImageSize = 0;
+                IthmbOffset = -1;
+                int packed = ReadS32(data, offset + 20, endian);
+                Width = packed & 0xFFFF;
+                Height = (packed >> 16) & 0xFFFF;
+            }
+            HPadding = 0;
+            VPadding = 0;
         }
     }
 
@@ -305,7 +347,7 @@ internal static unsafe partial class IthmbCodecPlugin
     /// <param name="frameCount">Total entries found; equals <c>entries.Count</c>.</param>
     /// <returns>true if the database was valid and parsed successfully; false otherwise.</returns>
     internal static bool TryParsePhotoDb(ReadOnlySpan<byte> data,
-        out List<(int FormatId, byte[] Data)> entries, out int frameCount)
+        out List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize)> entries, out int frameCount)
     {
         entries = [];
         frameCount = 0;
@@ -333,8 +375,21 @@ internal static unsafe partial class IthmbCodecPlugin
     /// Container chunks (MHSD, MHII, MHL, MHBA, MHIA) are descended into;
     /// leaf chunks and unknown magics are skipped by headerSize.
     /// </summary>
+    /// <summary>Validates that a range begins with at least one valid known chunk.</summary>
+    /// <remarks>Apple TV and Animal PhotoDB files may use MHSD/MHLI as leaf chunks
+    /// whose body contains entry data rather than child chunks. This gate prevents
+    /// recursing into non-container body data.</remarks>
+    private static bool HasChildChunks(ReadOnlySpan<byte> data, int start, int end, int endian)
+    {
+        if (start + 8 > end) return false;
+        uint magicLe = ReadU32(data, start, endian);
+        uint hdrSize = ReadU32(data, start + 4, endian);
+        if (hdrSize < 8 || start + hdrSize > end) return false;
+        return IsKnownMagic(magicLe);
+    }
+
     private static void WalkEntries(ReadOnlySpan<byte> data, int startOffset, int endOffset,
-        int endian, ref List<(int FormatId, byte[] Data)> entries)
+        int endian, ref List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize)> entries)
     {
         int pos = startOffset;
 
@@ -344,7 +399,13 @@ internal static unsafe partial class IthmbCodecPlugin
             uint hdrSize = ReadU32(data, pos + 4, endian);
 
             // Sanity check: headerSize must be >= 8 and within bounds
-            if (hdrSize < 8 || pos + hdrSize > endOffset) break;
+            if (hdrSize < 8 || pos + hdrSize > endOffset)
+            {
+                // Unknown bytes or padding between chunks — advance by 1 and re-scan.
+                // Breaking here would miss subsequent chunks (e.g. MHNI after padding).
+                pos++;
+                continue;
+            }
 
             if (!IsKnownMagic(magicLe))
             {
@@ -361,9 +422,9 @@ internal static unsafe partial class IthmbCodecPlugin
 
                 // Validate offset/size range before slicing
                 if (mhni.IthmbOffset >= 0 && mhni.ImageSize > 0 &&
-                    mhni.IthmbOffset + mhni.ImageSize <= data.Length)
+                    (long)mhni.IthmbOffset + mhni.ImageSize <= data.Length)
                 {
-                    entries.Add((mhni.FormatId, data.Slice(mhni.IthmbOffset, mhni.ImageSize).ToArray()));
+                    entries.Add((mhni.FormatId, data.Slice(mhni.IthmbOffset, mhni.ImageSize).ToArray(), mhni.IthmbOffset, mhni.ImageSize));
                 }
 
                 pos += (int)mhni.HeaderSize;
@@ -376,21 +437,35 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 int childStart = pos + 16;
                 int childEnd = pos + (int)hdrSize;
-                if (childStart < childEnd)
+                if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
                     WalkEntries(data, childStart, childEnd, endian, ref entries);
                 pos += (int)hdrSize;
                 continue;
             }
 
-            // ----- Container types (MHL, MHII) — may contain nested MHSD -----
-            // Fixed header is 12 bytes; children follow after the header.
-            if (magicLe == MagicMhlLe || magicLe == MagicMhiiLe)
+            // ----- MHL — photo list, fixed 12-byte header -----
+            // Total atom size is at offset +4 (hdrSize). Children follow the 12-byte header.
+            if (magicLe == MagicMhlLe)
             {
                 int childStart = pos + 12;
                 int childEnd = pos + (int)hdrSize;
-                if (childStart < childEnd)
+                if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
                     WalkEntries(data, childStart, childEnd, endian, ref entries);
                 pos += (int)hdrSize;
+                continue;
+            }
+
+            // ----- MHII — photo/item ID, variable-length header (typically 152 bytes) -----
+            // hdrSize at offset +4 is the header length (NOT total atom size).
+            // Total atom size is at offset +8 (total_len). Children start at pos + hdrSize.
+            if (magicLe == MagicMhiiLe)
+            {
+                uint totalLen = ReadU32(data, pos + 8, endian);
+                int childStart = pos + (int)hdrSize;
+                int childEnd = pos + (int)totalLen;
+                if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
+                    WalkEntries(data, childStart, childEnd, endian, ref entries);
+                pos += (int)totalLen;
                 continue;
             }
 
@@ -400,7 +475,7 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 int childStart = pos + 12;
                 int childEnd = pos + (int)hdrSize;
-                if (childStart < childEnd)
+                if (childStart < childEnd && HasChildChunks(data, childStart, childEnd, endian))
                     WalkEntries(data, childStart, childEnd, endian, ref entries);
                 pos += (int)hdrSize;
                 continue;

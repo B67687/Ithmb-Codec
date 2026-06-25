@@ -131,7 +131,7 @@ internal static unsafe partial class IthmbCodecPlugin
                         return IGStatus.InvalidArg;
                     }
 
-                    var (pdFormatId, pdRawData) = pdEntries[frameIndex];
+                    var (pdFormatId, pdRawData, _, _) = pdEntries[frameIndex];
                     if (!KnownProfiles.TryGetValue(pdFormatId, out var pdProfile))
                     {
                         Log(4, $"ITHMB: PhotoDB format_id {pdFormatId} has no decoder profile");

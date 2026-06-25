@@ -121,18 +121,23 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             uint magicLe = ReadU32(data, pos, endian);
             uint hdrSize = ReadU32(data, pos + 4, endian);
+            bool known = IsKnownMagic(magicLe);
 
             // Validate header size: must be >= 8 (magic + headerSize)
+            // Padding bytes between known chunks (e.g. zeros after MHOD before MHNI) may
+            // appear as unknown data with hdrSize=0. Skip them instead of breaking.
             if (hdrSize < 8)
             {
+                if (!known)
+                {
+                    pos++;
+                    continue;
+                }
                 issues.Add($"Invalid chunk header size ({hdrSize}) at offset 0x{pos:x}");
                 break;
             }
 
             long chunkEnd = pos + hdrSize;
-
-            // Check if this is a known magic
-            bool known = IsKnownMagic(magicLe);
 
             // For known chunks, header size must stay within bounds
             if (known && chunkEnd > endOffset)
@@ -141,10 +146,13 @@ internal static unsafe partial class IthmbCodecPlugin
                 break;
             }
 
-            // For unknown data (e.g. inline pixel data in MHSD), silently stop
-            // if the purported header exceeds the section boundary.
+            // For unknown data that exceeds the section boundary, it's likely
+            // padding between known chunks — advance by 1 and re-scan.
             if (!known && chunkEnd > endOffset)
-                break;
+            {
+                pos++;
+                continue;
+            }
 
             // Track furthest chunk boundary
             if (chunkEnd > maxChunkEnd)
@@ -202,25 +210,46 @@ internal static unsafe partial class IthmbCodecPlugin
                     pos = (int)chunkEnd;
                     continue;
                 }
-                if (childStart < chunkEnd)
+                if (childStart < chunkEnd && HasChildChunks(data, childStart, (int)chunkEnd, endian))
                     IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd);
                 pos = (int)chunkEnd;
                 continue;
             }
 
-            // ----- Container types (MHL, MHII) — 12-byte fixed header, recurse -----
-            if (magicLe == MagicMhlLe || magicLe == MagicMhiiLe)
+            // ----- MHL — photo list, fixed 12-byte header -----
+            // hdrSize at +4 is the total atom size. Children follow the 12-byte header.
+            if (magicLe == MagicMhlLe)
             {
                 int childStart = pos + 12;
                 if (hdrSize < 12)
                 {
-                    issues.Add($"Container at offset 0x{pos:x} has headerSize < 12 ({hdrSize})");
+                    issues.Add($"MHL at offset 0x{pos:x} has headerSize < 12 ({hdrSize})");
                     pos = (int)chunkEnd;
                     continue;
                 }
-                if (childStart < chunkEnd)
+                if (childStart < chunkEnd && HasChildChunks(data, childStart, (int)chunkEnd, endian))
                     IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd);
                 pos = (int)chunkEnd;
+                continue;
+            }
+
+            // ----- MHII — photo/item ID, variable-length header -----
+            // hdrSize at +4 is the header length (NOT total atom size).
+            // Total atom size is at offset +8 (total_len). Children start at pos + hdrSize.
+            if (magicLe == MagicMhiiLe)
+            {
+                uint totalLen = ReadU32(data, pos + 8, endian);
+                long mhiiEnd = pos + totalLen;
+                int childStart = pos + (int)hdrSize;
+                if (hdrSize < 12)
+                {
+                    issues.Add($"MHII at offset 0x{pos:x} has headerSize < 12 ({hdrSize})");
+                    pos = (int)mhiiEnd;
+                    continue;
+                }
+                if (childStart < mhiiEnd && HasChildChunks(data, childStart, (int)mhiiEnd, endian))
+                    IntegrityWalkTree(data, childStart, (int)mhiiEnd, endian, issues, mhniEntries, ref maxChunkEnd);
+                pos = (int)mhiiEnd;
                 continue;
             }
 
@@ -234,7 +263,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     pos = (int)chunkEnd;
                     continue;
                 }
-                if (childStart < chunkEnd)
+                if (childStart < chunkEnd && HasChildChunks(data, childStart, (int)chunkEnd, endian))
                     IntegrityWalkTree(data, childStart, (int)chunkEnd, endian, issues, mhniEntries, ref maxChunkEnd);
                 pos = (int)chunkEnd;
                 continue;
@@ -284,11 +313,12 @@ internal static unsafe partial class IthmbCodecPlugin
         for (int i = 0; i < count; i++)
             totalPixelData += entries[i].Data.Length;
 
-        int mhsdHeaderSize = 16 + count * 36 + totalPixelData;
+        int mhniTotalLen = 76 + 64; // 76-byte header + padding/filename area
+        int mhsdHeaderSize = 16 + count * mhniTotalLen + totalPixelData;
         int mhsdChildrenStart = 12 + 16; // after MHFD(12) + MHSD(16)
 
         int[] ithmbOffsets = new int[count];
-        int pixelDataStart = mhsdChildrenStart + count * 36;
+        int pixelDataStart = mhsdChildrenStart + count * mhniTotalLen;
         for (int i = 0; i < count; i++)
         {
             ithmbOffsets[i] = pixelDataStart;
@@ -310,21 +340,24 @@ internal static unsafe partial class IthmbCodecPlugin
         bw.Write((ushort)4);    // recordType = 4 (thumbnails)
         bw.Write((uint)count);  // entryCount
 
-        // Write all MHNI entries
+        // Write all MHNI entries (76-byte iPod Classic layout)
+        // mhniTotalLen defined above
         for (int i = 0; i < count; i++)
         {
             var (formatId, _) = entries[i];
             var profile = KnownProfiles[formatId];
 
             bw.Write(MagicMhniLe);              // "mhni"
-            bw.Write(36u);                      // headerSize
-            bw.Write(formatId);                 // formatId
-            bw.Write(entries[i].Data.Length);   // imageSize
-            bw.Write(ithmbOffsets[i]);          // ithmbOffset
-            bw.Write(profile.Width);            // width
-            bw.Write(profile.Height);           // height
-            bw.Write(0);                        // hPadding
-            bw.Write(0);                        // vPadding
+            bw.Write(76u);                      // headerSize
+            bw.Write((uint)mhniTotalLen);       // total_len at +8
+            bw.Write(1u);                       // entryIndex at +12
+            bw.Write(formatId);                 // formatId at +16
+            bw.Write(ithmbOffsets[i]);          // ithmbOffset at +20
+            bw.Write(entries[i].Data.Length);   // imageSize at +24
+            bw.Write(0u);                       // padding at +28
+            bw.Write((short)profile.Height);    // height at +32
+            bw.Write((short)profile.Width);     // width at +34
+            for (int j = 0; j < mhniTotalLen - 36; j++) bw.Write((byte)0); // padding/filename
         }
 
         // Write all pixel data blocks

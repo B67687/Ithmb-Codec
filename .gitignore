@@ -16,6 +16,8 @@
 !/samples/**
 !/scripts/
 !/scripts/**
+!/tests/
+!/tests/**
 
 # Blacklists — only what's needed to counteract whitelist entries above
 bin/
@@ -26,6 +28,7 @@ obj/
 *.exe
 *.pdb
 *.ithmb
+!/tests/samples/**/*.ithmb
 /samples/*
 !/samples/synthetic/
 !/samples/synthetic/**
