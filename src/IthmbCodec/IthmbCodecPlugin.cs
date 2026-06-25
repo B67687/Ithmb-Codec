@@ -11,6 +11,7 @@ path: decode known legacy raw thumbnail profiles (RGB565, YUV422, YCbCr420).
 Format behavior informed by the IthmbDecoder reference (ImageGlass PR #2316).
 This is a clean-room implementation for the v10 native codec plugin ABI.
 */
+using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -33,7 +34,7 @@ internal static unsafe partial class IthmbCodecPlugin
     private static readonly byte[] JfifMarker = "JFIF\0"u8.ToArray();
     private static readonly byte[] ExifMarker = "Exif\0\0"u8.ToArray();
     private static readonly byte[] JpegSoiMarker = [0xFF, 0xD8];
-    private static readonly byte[] JpegEoiMarker = [0xFF, 0xD9];
+    internal static readonly byte[] JpegEoiMarker = [0xFF, 0xD9];
     private static readonly byte[] App1Marker = [0xFF, 0xE1];
 
     // Size limit: prevents OOM/DoS on corrupt/malicious files. Largest single raw
@@ -269,27 +270,6 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ushort ReadU16LE(byte[] data, int offset) =>
-        (ushort)(data[offset] | (data[offset + 1] << 8));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ushort ReadU16BE(byte[] data, int offset) =>
-        (ushort)((data[offset] << 8) | data[offset + 1]);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static uint ReadU32LE(byte[] data, int offset) =>
-        (uint)(data[offset] | (data[offset + 1] << 8) |
-               (data[offset + 2] << 16) | (data[offset + 3] << 24));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static uint ReadU32BE(byte[] data, int offset) =>
-        (uint)((data[offset] << 24) | (data[offset + 1] << 16) |
-               (data[offset + 2] << 8) | data[offset + 3]);
-
-    private static int ReadInt32BigEndian(byte[] data, int offset) =>
-        (int)ReadU32BE(data, offset);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int IndexOf(byte[] haystack, byte[] needle, int start, int end)
     {
         int len = end - start;
@@ -312,7 +292,7 @@ internal static unsafe partial class IthmbCodecPlugin
 
         // APP1 segment: FF E1 len_len (big-endian 16-bit length including self)
         if (app1Start + 4 >= end) return 1;
-        int segEnd = app1Start + 2 + ReadU16BE(data, app1Start + 2);
+        int segEnd = app1Start + 2 + BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(app1Start + 2));
         if (segEnd > end) return 1;
 
         // Look for "Exif\0\0" header within APP1
@@ -330,28 +310,35 @@ internal static unsafe partial class IthmbCodecPlugin
         if (!le && !be) return 1;
 
         // TIFF magic: 0x002A
-        if ((le ? ReadU16LE(data, tiffStart + 2) : ReadU16BE(data, tiffStart + 2)) != 0x002A) return 1;
+        if ((le ? BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(tiffStart + 2))
+                : BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(tiffStart + 2))) != 0x002A) return 1;
 
         // IFD0 offset
         int ifdOff = tiffStart + 4;
-        int ifdPos = tiffStart + (int)(le ? ReadU32LE(data, ifdOff) : ReadU32BE(data, ifdOff));
+        int ifdPos = tiffStart + (int)(le ? BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(ifdOff))
+                                          : BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(ifdOff)));
         if (ifdPos < tiffStart + 8 || ifdPos + 2 > end) return 1;
 
         // Number of IFD entries (16-bit)
-        int numEntries = le ? ReadU16LE(data, ifdPos) : ReadU16BE(data, ifdPos);
+        int numEntries = le ? BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(ifdPos))
+                           : BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(ifdPos));
 
         // Scan IFD for Orientation tag (0x0112)
         int entryStart = ifdPos + 2;
         for (int e = 0; e < Math.Min(numEntries, 100) && entryStart + 12 <= end; e++, entryStart += 12)
         {
-            int tag = le ? ReadU16LE(data, entryStart) : ReadU16BE(data, entryStart);
+            int tag = le ? BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(entryStart))
+                        : BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(entryStart));
             if (tag != 0x0112) continue;
             // Type must be SHORT (3), count 1
-            int type = le ? ReadU16LE(data, entryStart + 2) : ReadU16BE(data, entryStart + 2);
-            int count = (int)(le ? ReadU32LE(data, entryStart + 4) : ReadU32BE(data, entryStart + 4));
+            int type = le ? BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(entryStart + 2))
+                         : BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(entryStart + 2));
+            int count = (int)(le ? BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(entryStart + 4))
+                                : BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(entryStart + 4)));
             if (type != 3 || count != 1) continue;
             // Orientation value is in the last 2 bytes (SHORT fits in 2 bytes)
-            int orient = le ? ReadU16LE(data, entryStart + 8) : ReadU16BE(data, entryStart + 8);
+            int orient = le ? BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(entryStart + 8))
+                           : BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(entryStart + 8));
             return orient is >= 1 and <= 8 ? orient : 1;
         }
         return 1;
