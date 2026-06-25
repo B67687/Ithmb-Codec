@@ -11,6 +11,12 @@ namespace IthmbCodec;
 
 internal static unsafe partial class IthmbCodecPlugin
 {
+    /// <summary>SIMD constants shared across UYVY row-processing methods.</summary>
+    private readonly record struct UyvySimdConstants(
+        Vector128<byte> ShufY, Vector128<byte> ShufU, Vector128<byte> ShufV,
+        Vector128<int> ZeroI, Vector128<int> Max255, Vector128<int> Alpha,
+        Vector128<int> RCoef, Vector128<int> GCoefCb, Vector128<int> GCoefCr, Vector128<int> BCoef);
+
     // ---------- YUV 4:2:2 (UYVY) ----------
 
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
@@ -71,29 +77,23 @@ internal static unsafe partial class IthmbCodecPlugin
         var bCoef = Vector128.Create(YuvBCoef);
 
         int rowStride = (int)((long)src.Length / h);
+        var c = new UyvySimdConstants(shufY, shufU, shufV, zeroI, max255, alpha,
+            rCoef, gCoefCb, gCoefCr, bCoef);
         fixed (byte* pSrc = src)
             for (int y = 0; y < h; y++)
-                ProcessUyvyRow(pSrc + (nint)(y * rowStride), dst + (nint)(y * w * 4), w,
-                    shufY, shufU, shufV, zeroI, max255, alpha,
-                    rCoef, gCoefCb, gCoefCr, bCoef);
+                ProcessUyvyRow(pSrc + (nint)(y * rowStride), dst + (nint)(y * w * 4), w, c);
     }
 
     /// <summary>Processes one row of UYVY data using SSSE3/SSE2 with 32-bit arithmetic (8 pixels per iteration).</summary>
     /// <remarks>32-bit Vector128&lt;int&gt;.Multiply, Max, Min map to pmulld/pmaxsd/pminsd (SSE4.1+).</remarks>
-    private static void ProcessUyvyRow(byte* pSrcRow, byte* pDstRow, int w,
-        Vector128<byte> shufY, Vector128<byte> shufU, Vector128<byte> shufV,
-        Vector128<int> zeroI, Vector128<int> max255, Vector128<int> alpha,
-        Vector128<int> rCoef, Vector128<int> gCoefCb, Vector128<int> gCoefCr, Vector128<int> bCoef)
+    private static void ProcessUyvyRow(byte* pSrcRow, byte* pDstRow, int w, UyvySimdConstants c)
     {
         for (int x = 0; x < w; x += 8)
         {
             var raw = Vector128.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
-            var y16 = Ssse3.Shuffle(raw, shufY).AsInt16();
-            var u16 = Ssse3.Shuffle(raw, shufU).AsInt16();
-            var v16 = Ssse3.Shuffle(raw, shufV).AsInt16();
-
-            // Defer chroma unbias to after 32-bit widening (see below).
-            // Applying -128 on 16-bit then zero-extending via UnpackLow loses the sign.
+            var y16 = Ssse3.Shuffle(raw, c.ShufY).AsInt16();
+            var u16 = Ssse3.Shuffle(raw, c.ShufU).AsInt16();
+            var v16 = Ssse3.Shuffle(raw, c.ShufV).AsInt16();
 
             var zero16 = Vector128<short>.Zero;
             for (int hIdx = 0; hIdx < 2; hIdx++)
@@ -108,23 +108,20 @@ internal static unsafe partial class IthmbCodecPlugin
                     ? Sse2.UnpackLow(v16, zero16)
                     : Sse2.UnpackHigh(v16, zero16)).AsInt32();
 
-                // Unbias chroma: subtract 128 after widening to preserve sign.
-                // UnpackLow zero-extends shorts — negative values would become
-                // large positive if we subtracted 128 before widening.
                 uI = Sse2.Subtract(uI, Vector128.Create(128));
                 vI = Sse2.Subtract(vI, Vector128.Create(128));
 
-                var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
-                var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
-                           - Vector128.ShiftRightArithmetic(vI * gCoefCr, 8);
-                var bI = yI + Vector128.ShiftRightArithmetic(uI * bCoef, 8);
+                var rI = yI + Vector128.ShiftRightArithmetic(vI * c.RCoef, 8);
+                var gI = yI - Vector128.ShiftRightArithmetic(uI * c.GCoefCb, 8)
+                           - Vector128.ShiftRightArithmetic(vI * c.GCoefCr, 8);
+                var bI = yI + Vector128.ShiftRightArithmetic(uI * c.BCoef, 8);
 
-                rI = Vector128.Max(zeroI, Vector128.Min(rI, max255));
-                gI = Vector128.Max(zeroI, Vector128.Min(gI, max255));
-                bI = Vector128.Max(zeroI, Vector128.Min(bI, max255));
+                rI = Vector128.Max(c.ZeroI, Vector128.Min(rI, c.Max255));
+                gI = Vector128.Max(c.ZeroI, Vector128.Min(gI, c.Max255));
+                bI = Vector128.Max(c.ZeroI, Vector128.Min(bI, c.Max255));
 
                 var px = bI | Vector128.ShiftLeft(gI, 8)
-                    | Vector128.ShiftLeft(rI, 16) | alpha;
+                    | Vector128.ShiftLeft(rI, 16) | c.Alpha;
 
                 int* pRow = (int*)(pDstRow + x * 4 + hIdx * 16);
                 pRow[0] = px.GetElement(0);
@@ -151,19 +148,16 @@ internal static unsafe partial class IthmbCodecPlugin
         var bCoef = Vector128.Create(YuvBCoef);
 
         int rowStride = (int)((long)src.Length / h);
+        var c = new UyvySimdConstants(shufY, shufU, shufV, zeroI, max255, alpha,
+            rCoef, gCoefCb, gCoefCr, bCoef);
         fixed (byte* pSrc = src)
             for (int y = 0; y < h; y++)
-                ProcessUyvyRow_Neon(pSrc + (nint)(y * rowStride), dst + (nint)(y * w * 4), w,
-                    shufY, shufU, shufV, zeroI, max255, alpha,
-                    rCoef, gCoefCb, gCoefCr, bCoef);
+                ProcessUyvyRow_Neon(pSrc + (nint)(y * rowStride), dst + (nint)(y * w * 4), w, c);
     }
 
     /// <summary>Processes one row of UYVY data using NEON AdvSimd with VectorTableLookup (TBL / pshufb equivalent).</summary>
     /// <remarks>Mirrors ProcessUyvyRow but uses AdvSimd intrinsics for the architecture-specific parts.</remarks>
-    private static void ProcessUyvyRow_Neon(byte* pSrcRow, byte* pDstRow, int w,
-        Vector128<byte> shufY, Vector128<byte> shufU, Vector128<byte> shufV,
-        Vector128<int> zeroI, Vector128<int> max255, Vector128<int> alpha,
-        Vector128<int> rCoef, Vector128<int> gCoefCb, Vector128<int> gCoefCr, Vector128<int> bCoef)
+    private static void ProcessUyvyRow_Neon(byte* pSrcRow, byte* pDstRow, int w, UyvySimdConstants c)
     {
         for (int x = 0; x < w; x += 8)
         {
@@ -171,14 +165,13 @@ internal static unsafe partial class IthmbCodecPlugin
 
             // VectorTableLookup (Arm64 overload) = ARM TBL = SSSE3 pshufb — same shuffle masks.
             // The Vector128,Vector128 overload is AdvSimd.Arm64-only (full 128-bit TBL).
-            var y16 = AdvSimd.Arm64.VectorTableLookup(raw, shufY).AsInt16();
-            var u16 = AdvSimd.Arm64.VectorTableLookup(raw, shufU).AsInt16();
-            var v16 = AdvSimd.Arm64.VectorTableLookup(raw, shufV).AsInt16();
+            var y16 = AdvSimd.Arm64.VectorTableLookup(raw, c.ShufY).AsInt16();
+            var u16 = AdvSimd.Arm64.VectorTableLookup(raw, c.ShufU).AsInt16();
+            var v16 = AdvSimd.Arm64.VectorTableLookup(raw, c.ShufV).AsInt16();
 
             var zero16 = Vector128<short>.Zero;
             for (int hIdx = 0; hIdx < 2; hIdx++)
             {
-                // ZipLow/ZipHigh = ARM ZIP1/ZIP2 = SSE2 UnpackLow/UnpackHigh
                 var yI = (hIdx == 0
                     ? AdvSimd.Arm64.ZipLow(y16, zero16)
                     : AdvSimd.Arm64.ZipHigh(y16, zero16)).AsInt32();
@@ -189,22 +182,20 @@ internal static unsafe partial class IthmbCodecPlugin
                     ? AdvSimd.Arm64.ZipLow(v16, zero16)
                     : AdvSimd.Arm64.ZipHigh(v16, zero16)).AsInt32();
 
-                // Unbias chroma: subtract 128 after widening
                 uI = AdvSimd.Subtract(uI, Vector128.Create(128));
                 vI = AdvSimd.Subtract(vI, Vector128.Create(128));
 
-                // BT.601 fixed-point arithmetic (cross-platform Vector128)
-                var rI = yI + Vector128.ShiftRightArithmetic(vI * rCoef, 8);
-                var gI = yI - Vector128.ShiftRightArithmetic(uI * gCoefCb, 8)
-                           - Vector128.ShiftRightArithmetic(vI * gCoefCr, 8);
-                var bI = yI + Vector128.ShiftRightArithmetic(uI * bCoef, 8);
+                var rI = yI + Vector128.ShiftRightArithmetic(vI * c.RCoef, 8);
+                var gI = yI - Vector128.ShiftRightArithmetic(uI * c.GCoefCb, 8)
+                           - Vector128.ShiftRightArithmetic(vI * c.GCoefCr, 8);
+                var bI = yI + Vector128.ShiftRightArithmetic(uI * c.BCoef, 8);
 
-                rI = Vector128.Max(zeroI, Vector128.Min(rI, max255));
-                gI = Vector128.Max(zeroI, Vector128.Min(gI, max255));
-                bI = Vector128.Max(zeroI, Vector128.Min(bI, max255));
+                rI = Vector128.Max(c.ZeroI, Vector128.Min(rI, c.Max255));
+                gI = Vector128.Max(c.ZeroI, Vector128.Min(gI, c.Max255));
+                bI = Vector128.Max(c.ZeroI, Vector128.Min(bI, c.Max255));
 
                 var px = bI | Vector128.ShiftLeft(gI, 8)
-                    | Vector128.ShiftLeft(rI, 16) | alpha;
+                    | Vector128.ShiftLeft(rI, 16) | c.Alpha;
 
                 int* pRow = (int*)(pDstRow + x * 4 + hIdx * 16);
                 pRow[0] = px.GetElement(0);
@@ -232,6 +223,8 @@ internal static unsafe partial class IthmbCodecPlugin
         var gCoefCr = Vector128.Create(YuvGCoefCr);
         var bCoef = Vector128.Create(YuvBCoef);
 
+        var c = new UyvySimdConstants(shufY, shufU, shufV, zeroI, max255, alpha,
+            rCoef, gCoefCb, gCoefCr, bCoef);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
@@ -239,9 +232,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 int fieldOffset = (y % 2 == 0) ? 0 : half;
                 int rowInField = y / 2;
                 int rowStart = fieldOffset + rowInField * rowStride;
-                ProcessUyvyRow_Neon(pSrc + rowStart, dst + (nint)(y * w * 4), w,
-                    shufY, shufU, shufV, zeroI, max255, alpha,
-                    rCoef, gCoefCb, gCoefCr, bCoef);
+                ProcessUyvyRow_Neon(pSrc + rowStart, dst + (nint)(y * w * 4), w, c);
             }
         }
     }
@@ -305,6 +296,8 @@ internal static unsafe partial class IthmbCodecPlugin
         var gCoefCr = Vector128.Create(YuvGCoefCr);
         var bCoef = Vector128.Create(YuvBCoef);
 
+        var c = new UyvySimdConstants(shufY, shufU, shufV, zeroI, max255, alpha,
+            rCoef, gCoefCb, gCoefCr, bCoef);
         fixed (byte* pSrc = src)
         {
             for (int y = 0; y < h; y++)
@@ -312,9 +305,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 int fieldOffset = (y % 2 == 0) ? 0 : half;
                 int rowInField = y / 2;
                 int rowStart = fieldOffset + rowInField * rowStride;
-                ProcessUyvyRow(pSrc + rowStart, dst + (nint)(y * w * 4), w,
-                    shufY, shufU, shufV, zeroI, max255, alpha,
-                    rCoef, gCoefCb, gCoefCr, bCoef);
+                ProcessUyvyRow(pSrc + rowStart, dst + (nint)(y * w * 4), w, c);
             }
         }
     }
