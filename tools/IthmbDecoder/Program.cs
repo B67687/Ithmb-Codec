@@ -20,6 +20,9 @@ unsafe class Program
     {
         bool listPd = false;
         int? pdIndex = null;
+        bool extractAllPd = false;
+        bool listDevices = false;
+        bool checkPd = false;
         string? inputPath = null;
         string? outputPath = null;
 
@@ -29,6 +32,15 @@ unsafe class Program
                 listPd = true;
             else if (args[i] == "--pd-index" && i + 1 < args.Length)
                 pdIndex = int.Parse(args[++i]);
+            else if (args[i] == "--extract-all-pd" && i + 1 < args.Length)
+            {
+                extractAllPd = true;
+                inputPath = args[++i];
+                if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                    outputPath = args[++i];
+            }
+            else if (args[i] == "--list-devices")
+                listDevices = true;
             else if (args[i] == "--check-pd" && i + 1 < args.Length)
             {
                 string pdPath = args[++i];
@@ -57,6 +69,12 @@ unsafe class Program
                 outputPath = args[i];
         }
 
+        if (listDevices)
+            return ListDevices();
+
+        if (checkPd)
+            return 0; // already handled above
+
         if (inputPath == null)
         {
             PrintUsage();
@@ -68,6 +86,9 @@ unsafe class Program
             Console.Error.WriteLine($"File not found: {inputPath}");
             return 1;
         }
+
+        if (extractAllPd)
+            return ExtractAllPhotoDbEntries(inputPath, outputPath);
 
         if (listPd)
             return ListPhotoDbEntries(inputPath);
@@ -140,10 +161,12 @@ unsafe class Program
     static void PrintUsage()
     {
         Console.Error.WriteLine("Usage:");
-        Console.Error.WriteLine("  IthmbDecoder <input.ithmb> [output.bmp]    Decode .ithmb file to BMP");
-        Console.Error.WriteLine("  IthmbDecoder --list-pd <PhotoDB|ArtworkDB>  List PhotoDB/ArtworkDB entries");
-        Console.Error.WriteLine("  IthmbDecoder --pd-index <N> <PhotoDB> [output.bmp]  Extract entry N from PhotoDB");
-        Console.Error.WriteLine("  IthmbDecoder --check-pd <PhotoDB|ArtworkDB>  Validate PhotoDB/ArtworkDB structural integrity");
+        Console.Error.WriteLine("  IthmbDecoder <input.ithmb> [output.bmp]        Decode .ithmb file to BMP");
+        Console.Error.WriteLine("  IthmbDecoder --list-pd <PhotoDB|ArtworkDB>      List PhotoDB/ArtworkDB entries");
+        Console.Error.WriteLine("  IthmbDecoder --pd-index <N> <PhotoDB> [bmp]     Extract entry N from PhotoDB");
+        Console.Error.WriteLine("  IthmbDecoder --extract-all-pd <PhotoDB> [dir]   Extract ALL entries from PhotoDB to BMPs");
+        Console.Error.WriteLine("  IthmbDecoder --list-devices                     List known iPod/iPhone device format tables");
+        Console.Error.WriteLine("  IthmbDecoder --check-pd <PhotoDB|ArtworkDB>     Validate PhotoDB/ArtworkDB structural integrity");
         Console.Error.WriteLine();
         Console.Error.WriteLine("PhotoDB/ArtworkDB are Apple's iPod/iPhone thumbnail database files");
         Console.Error.WriteLine("(typically named \"Photo Database\" or \"Artwork Database\" with no extension).");
@@ -302,6 +325,120 @@ unsafe class Program
         }
 
         return 0;
+    }
+
+    static int ListDevices()
+    {
+        Console.Error.WriteLine($"Known devices: {IthmbCodecPlugin.DeviceProfiles.Count}");
+        Console.Error.WriteLine(new string('-', 70));
+
+        foreach (var kv in IthmbCodecPlugin.DeviceProfiles)
+        {
+            var device = kv.Value;
+            Console.Error.WriteLine($"\n{device.Name} ({device.Formats.Length} formats):");
+            foreach (var fmt in device.Formats)
+                Console.Error.WriteLine($"  F{fmt.FormatId,4}  {fmt.Description}");
+        }
+
+        return 0;
+    }
+
+    static int ExtractAllPhotoDbEntries(string path, string? outputDir)
+    {
+        byte[] data = File.ReadAllBytes(path);
+        if (!IthmbCodecPlugin.TryParsePhotoDb(data, out var entries, out _))
+        {
+            Console.Error.WriteLine("Not a valid PhotoDB/ArtworkDB file.");
+            return 1;
+        }
+
+        if (entries.Count == 0)
+        {
+            Console.Error.WriteLine("No entries found in PhotoDB.");
+            return 0;
+        }
+
+        outputDir ??= Directory.GetCurrentDirectory();
+        Directory.CreateDirectory(outputDir);
+
+        int success = 0, fail = 0;
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var (fmtId, _, ithmbOffset, imageSize) = entries[i];
+            if (!IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
+            {
+                Console.Error.WriteLine($"Entry {i}: format {fmtId} unknown — skipping.");
+                fail++;
+                continue;
+            }
+
+            string? ithmbDir = Path.GetDirectoryName(Path.GetFullPath(path));
+            byte[] pixelData;
+            if (ithmbDir != null)
+            {
+                string stem = $"F{fmtId}_1";
+                string fullPath = Path.Combine(ithmbDir, stem + ".ithmb");
+                string headPath = Path.Combine(ithmbDir, stem + ".head.ithmb");
+                string? ithmbFile = File.Exists(fullPath) ? fullPath : File.Exists(headPath) ? headPath : null;
+
+                if (ithmbFile != null)
+                {
+                    byte[] ithmbBytes = File.ReadAllBytes(ithmbFile);
+                    if (ithmbOffset + imageSize <= ithmbBytes.Length)
+                    {
+                        pixelData = ithmbBytes.AsSpan(ithmbOffset, imageSize).ToArray();
+                        goto decode;
+                    }
+                }
+            }
+
+            pixelData = entries[i].Data;
+
+        decode:
+            int w = profile.Width, h = profile.Height;
+            if (w <= 0 || h <= 0) { fail++; continue; }
+
+            byte* pixels = (byte*)NativeMemory.AllocZeroed((nuint)(w * 4 * h));
+            if (pixels == null) { fail++; continue; }
+
+            try
+            {
+                bool ok = profile.Encoding switch
+                {
+                    IthmbCodecPlugin.IthmbEncoding.Rgb565 => IthmbCodecPlugin.DecodeRgb565(pixelData, pixels, w, h, profile.LittleEndian),
+                    IthmbCodecPlugin.IthmbEncoding.Rgb555 => IthmbCodecPlugin.DecodeRgb555(pixelData, pixels, w, h, profile.LittleEndian),
+                    IthmbCodecPlugin.IthmbEncoding.Yuv422 => profile.ClChroma
+                        ? IthmbCodecPlugin.DecodeYuv422Cl(pixelData, pixels, w, h)
+                        : profile.ClclChroma
+                        ? IthmbCodecPlugin.DecodeYuv422Clcl(pixelData, pixels, w, h)
+                        : profile.IsInterlaced
+                        ? IthmbCodecPlugin.DecodeYuv422Interlaced(pixelData, pixels, w, h)
+                        : IthmbCodecPlugin.DecodeYuv422(pixelData, pixels, w, h),
+                    IthmbCodecPlugin.IthmbEncoding.Ycbcr420 => IthmbCodecPlugin.DecodeYcbcr420(pixelData, pixels, w, h, profile.SwapChromaPlanes),
+                    _ => false,
+                };
+
+                if (!ok) { fail++; continue; }
+
+                string outPath = Path.Combine(outputDir, $"entry{i}_{fmtId}x{w}x{h}.bmp");
+                var rgba = new byte[w * h * 4];
+                for (int pi = 0; pi < w * h; pi++)
+                {
+                    int off = pi * 4;
+                    rgba[off]     = pixels[off + 2];
+                    rgba[off + 1] = pixels[off + 1];
+                    rgba[off + 2] = pixels[off];
+                    rgba[off + 3] = 255;
+                }
+                WriteRgbaAsBmp(rgba, w, h, outPath);
+                Console.Error.WriteLine($"  [{i}] {fmtId}x{w}x{h} -> {outPath}");
+                success++;
+            }
+            finally { NativeMemory.Free(pixels); }
+        }
+
+        Console.Error.WriteLine($"\nDone: {success} OK, {fail} failed");
+        return fail > 0 ? 1 : 0;
     }
 
     static void WriteRgbaAsBmp(byte[] rgba, int w, int h, string path)
