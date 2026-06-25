@@ -163,6 +163,79 @@ public unsafe partial class IthmbCodecTests
         }
     }
 
+    [Fact]
+    public void PhotoDb_EndToEnd_JpegBlobDecode()
+    {
+        byte[] jpegBlob = BuildMinimalJpeg(Jfif: true);
+        const int formatId = 9999;
+        int pixelDataSize = jpegBlob.Length;
+        const int mhniTotalLen = 140;
+        const int mhiiHdr = 152;
+        const int mhiiTotal = 320;
+        const int dataOffset = 640;
+
+        using var ms = new MemoryStream();
+        var bw = new BinaryWriter(ms);
+
+        bw.Write(0x6466686du);
+        bw.Write(132u);
+        for (int i = 0; i < 124; i++) bw.Write((byte)0);
+
+        bw.Write(0x6473686du);
+        bw.Write(96u);
+        bw.Write((ushort)0);
+        bw.Write((ushort)0);
+        bw.Write(0u);
+        for (int i = 0; i < 80; i++) bw.Write((byte)0);
+
+        bw.Write(0x696c686du);
+        bw.Write(92u);
+        bw.Write(1u);
+        for (int i = 0; i < 80; i++) bw.Write((byte)0);
+
+        bw.Write(0x6969686du);
+        bw.Write((uint)mhiiHdr);
+        bw.Write((uint)mhiiTotal);
+        bw.Write(2u);
+        bw.Write(0u);
+        bw.Write(0L);
+        for (int i = mhiiHdr - 28; i > 0; i--) bw.Write((byte)0);
+
+        bw.Write(0x646f686du);
+        bw.Write(24u);
+        for (int i = 0; i < 16; i++) bw.Write((byte)0);
+
+        for (int i = 0; i < 4; i++) bw.Write((byte)0);
+
+        bw.Write(0x696e686du);
+        bw.Write(76u);
+        bw.Write((uint)mhniTotalLen);
+        bw.Write(1u);
+        bw.Write(formatId);
+        bw.Write(dataOffset);
+        bw.Write(pixelDataSize);
+        bw.Write(0u);
+        bw.Write((short)1);
+        bw.Write((short)1);
+        for (int i = mhniTotalLen - 36; i > 0; i--) bw.Write((byte)0);
+
+        bw.Write(jpegBlob);
+
+        bool parsed = IthmbCodecPlugin.TryParsePhotoDb(ms.ToArray(), out var entries, out var frameCount);
+        Assert.True(parsed);
+        Assert.Equal(1, frameCount);
+        Assert.Single(entries);
+
+        var (fmtId, data, _, _) = entries[0];
+        Assert.Equal(9999, fmtId);
+        Assert.False(IthmbCodecPlugin.KnownProfiles.ContainsKey(9999));
+        Assert.True(data.Length >= 2);
+        Assert.Equal(0xFF, data[0]);
+        Assert.Equal(0xD8, data[1]);
+        Assert.Equal(0xFF, data[^2]);
+        Assert.Equal(0xD9, data[^1]);
+    }
+
     // ===================== Builder tests =====================
 
     [Fact]

@@ -134,6 +134,11 @@ internal static unsafe partial class IthmbCodecPlugin
                     var (pdFormatId, pdRawData, _, _) = pdEntries[frameIndex];
                     if (!KnownProfiles.TryGetValue(pdFormatId, out var pdProfile))
                     {
+                        if (pdRawData.Length >= 2 && pdRawData[0] == 0xFF && pdRawData[1] == 0xD8)
+                        {
+                            return DecodeJpegSlice(pdRawData, pdRawData.Length, (int)fileSize,
+                                cancellation, outInfo, outBuf);
+                        }
                         Log(4, $"ITHMB: PhotoDB format_id {pdFormatId} has no decoder profile");
                         return IGStatus.DecodeFailed;
                     }

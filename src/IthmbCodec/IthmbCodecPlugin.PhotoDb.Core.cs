@@ -365,6 +365,27 @@ internal static unsafe partial class IthmbCodecPlugin
 
         // Walk children starting after the MHFD header
         WalkEntries(data, (int)mhfd.HeaderSize, data.Length, endian, ref entries);
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            if (KnownProfiles.ContainsKey(entry.FormatId)) continue;
+            if (entry.Data.Length >= 2 && entry.Data[0] == 0xFF && entry.Data[1] == 0xD8)
+            {
+                int eoiRel = entry.Data.AsSpan(2).IndexOf(JpegEoiMarker);
+                if (eoiRel >= 0)
+                {
+                    int jpegLen = 2 + eoiRel + JpegEoiMarker.Length;
+                    if (jpegLen < entry.Data.Length)
+                    {
+                        var trimmed = new byte[jpegLen];
+                        Array.Copy(entry.Data, trimmed, jpegLen);
+                        entries[i] = (entry.FormatId, trimmed, entry.IthmbOffset, jpegLen);
+                    }
+                }
+            }
+        }
+
         frameCount = entries.Count;
         return true;
     }
