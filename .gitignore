@@ -36,3 +36,8 @@ docs/*.mmd
 
 .vscode/
 .idea/
+
+# Privacy blacklists
+PERFORMANCE.md
+tools/validate_reuhno_samples.sh
+tools/IthmbBenchmark/

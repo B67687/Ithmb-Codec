@@ -145,7 +145,7 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 15 source files organized by domain:
+**Source layout** — 15 files organized by domain (previously 11, split for single-responsibility):
 
 | File | Purpose | Size |
 |------|---------|------|
@@ -187,15 +187,12 @@ The repository includes several CLI tools under [`tools/`](tools/):
 | Tool | Description |
 |------|-------------|
 | [`IthmbDecoder`](tools/IthmbDecoder/) | Decode .ithmb files or PhotoDB/ArtworkDB entries to BMP; `--list-pd` enumerate PhotoDB entries, `--pd-index N` extract+decode entry N, `--check-pd` validate PhotoDB integrity |
-| [`IthmbBenchmark`](tools/IthmbBenchmark/) | [Performance benchmark](***REMOVED***) suite for all 7 decoders |
 | [`IthmbSampleGenerator`](tools/IthmbSampleGenerator/) | Generate synthetic .ithmb files for testing |
 | [`fetch_jakarade.sh`](tools/fetch_jakarade.sh) | Download T-prefix .ithmb files from jakarade.com |
 | [`ithmb2img.sh`](tools/ithmb2img.sh) | Batch convert .ithmb files to images via ImageMagick |
 | [`extract_hfsplus.py`](tools/extract_hfsplus.py) | Extract files from iPhone OS 1.x-3.x IPSW root filesystem DMGs |
 
-See [***REMOVED***](***REMOVED***) for full decoder benchmark results.
-
-### Decoder performance (720×480, AMD Ryzen AI 9 HX 370, .NET 10.0.9, AVX-512)
+### Decoder performance (720×480)
 
 | Decoder | Encoding | Width | Height | Mean time | Allocations |
 |---------|----------|-------|--------|-----------|-------------|
@@ -207,7 +204,7 @@ See [***REMOVED***](***REMOVED***) for full decoder benchmark results.
 | CLCL | Nibble-chroma YUV | 720 | 480 | 456.80 µs | 0 B |
 | CL | Per-pixel chroma YUV | 720 | 480 | 590.66 µs | 0 B |
 
-All decoders produce BGRA 8-bit output. Zero heap allocations — output is written directly to caller-provided native buffers. Full results at [***REMOVED***](***REMOVED***).
+All decoders produce BGRA 8-bit output. Zero heap allocations — output is written directly to caller-provided native buffers.
 
 ---
 
