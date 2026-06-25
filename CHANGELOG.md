@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **Reuhno credit updated:** ACKNOWLEDGMENTS.md now links to github.com/reuhno instead of reuhno.fr.
 
+### Refactored
+
+- **PhotoDB parser extracted to own namespace:** `IthmbCodecPlugin.PhotoDb.cs` split into `PhotoDb/Core.cs` + `PhotoDb/Serialization.cs` under `IthmbCodec.PhotoDb` namespace. No longer a partial class of `IthmbCodecPlugin`. (-0 LOC, cleaner separation).
+- **ClclCl.cs split by format:** Single 256-LOC file doing 4 things (CLCL, CL, YCbCr420, WriteYuvPixel) split into `DecodeFormatClcl.cs`, `DecodeFormatCl.cs`, `DecodeFormatYcbcr420.cs`, and `YuvUtils.cs`. Each file owns one decoder. (-0 LOC, single responsibility).
+- **Duplicate endian readers consolidated:** Five private helpers in Plugin.cs (ReadU16LE/BE, ReadU32LE/BE, ReadInt32BigEndian) replaced with `System.Buffers.Binary.BinaryPrimitives` calls. (-13 LOC).
+- **ProcessUyvyRow parameter count reduced:** 12-parameter signature packed into `UyvySimdConstants` readonly record struct. Method body unchanged. (-9 params, cleaner API).
+- **RGB565/RGB555 SSE2/NEON deduplicated:** 4 near-identical SIMD methods (340 LOC) merged into 2 parameterized `DecodeRgbX_Sse2`/`DecodeRgbX_Neon` methods with mask/shift constants. All 4 public wrappers are `[MethodImpl(AggressiveInlining)]` one-liners that JIT to the same assembly. (-260 LOC, -63% file size).
+
 ## [1.3.0] — 2026-06-23
 
 ### Added

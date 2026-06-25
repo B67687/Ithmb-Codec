@@ -112,7 +112,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**528 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), and rotation roundtrip.
+**528 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR;15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables.
 
 **Real-device validation:**
 
@@ -145,7 +145,7 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 11 partial class files organized by domain:
+**Source layout** — 15 source files organized by domain:
 
 | File | Purpose | Size |
 |------|---------|------|
@@ -153,12 +153,16 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 | `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate | ~320 lines |
 | `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp | ~117 lines |
 | `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser | ~309 lines |
-| `IthmbCodecPlugin.PhotoDb.cs` | PhotoDB/ArtworkDB chunk parser, writer, integrity checker | ~524 lines |
+| `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser, walker, data model | ~294 lines |
+| `PhotoDb/Serialization.cs` | PhotoDB writer (TryBuildPhotoDb) + integrity checker | ~235 lines |
 | `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) | ~173 lines |
 | `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) | ~77 lines |
-| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD | ~327 lines |
-| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD | ~316 lines |
-| `IthmbCodecPlugin.ClclCl.cs` | CLCL nibble-chroma, CL per-pixel chroma decoders | ~251 lines |
+| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD (shared params) | ~303 lines |
+| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD | ~265 lines |
+| `IthmbCodecPlugin.DecodeFormatClcl.cs` | CLCL nibble-chroma decoder | ~80 lines |
+| `IthmbCodecPlugin.DecodeFormatCl.cs` | CL per-pixel chroma decoder | ~60 lines |
+| `IthmbCodecPlugin.DecodeFormatYcbcr420.cs` | YCbCr420 decoder | ~60 lines |
+| `IthmbCodecPlugin.YuvUtils.cs` | Shared YUV pixel helpers (WriteYuvPixel) | ~20 lines |
 | `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats | ~310 lines |
 
 **Data flow:**
