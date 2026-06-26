@@ -35,7 +35,6 @@ obj/
 /samples/*
 !/samples/synthetic/
 !/samples/synthetic/**
-docs/*.mmd
 
 .vscode/
 .idea/
@@ -47,8 +46,3 @@ docs/*.mmd
 
 
 
-
-# Privacy blacklists
-PERFORMANCE.md
-tools/validate_reuhno_samples.sh
-tools/IthmbBenchmark/
