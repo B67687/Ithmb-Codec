@@ -24,14 +24,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **`swapRgbChannels` support completed for RGB565:** Scalar and Tail decode paths now accept the `swapRgbChannels` parameter (matching existing SSE2/NEON coverage). Completes BGR;15 support for all 5 DecodeRgb565 paths. (+0 new tests)
 - **Padded row stride tests:** 3 new tests verify correct decode for padded (55×55 nominal, 56-pixel rows), unpadded square, and non-square padded dimensions through both SSE2 and Scalar paths.
 - **Format IDs 1042, 1043, 3006, 3007:** Four additional built-in profiles — 1042 (320×240 RGB565, Classic photo alias for 1024), 1043 (130×88 RGB565, alias for 1015), 3006 (56×56 RGB555, iPod Touch cover art, slot-padded), 3007 (88×88 RGB555, slot-padded). Adds `SlotSize` field to `IthmbVariantProfile` for padded profiles. (+2 tests, 530 total)
+- **CLI `--extract-all-pd` and `--list-devices` flags:** `--extract-all-pd` batch-decodes all entries in a PhotoDB/ArtworkDB to individual BMPs; `--list-devices` prints the 18-device format table to stdout.
+- **PhotoDB inline JPEG blob detection:** `TryParsePhotoDb` post-processing detects entries with unknown format_id + FF D8 prefix and dispatches to `DecodeJpegSlice`. Covers PhotoDB entries where Apple stored JPEG data instead of raw pixel data. (+1 test)
+- **Byte-level corruption fuzz test:** `Fuzz_Corruption_RandomByteMutations` — 1000 iterations, fixed seed 42, all 7 decoders at random 4-128 dims. Random mutations: 10% bit flip, 5% byte swap, 5% truncate, 80% clean. NativeMemory alloc/free, no try/catch. (+1 test, 528 total)
+- **Reuhno CC0 synthetic test vectors:** 10-entry ArtworkDB + F1061/F1055/F1060 multi-frame .ithmb files + 30 reference PNGs + manifest.csv with SHA256 checksums. All 30 SHA256s verified against manifest. Committed to `tests/samples/reuhno-synthetic/`. (+6 tests)
+- **ImageMagick delegate registration:** `tools/ithmb-delegate.xml` registers ITHMB format in ImageMagick's delegate system — runs `IthmbDecoder` behind the scenes for `magick ithmb:file.ithmb out.png`. Installer script at `tools/install-ithmb-magick.sh`.
+- **Benchmark summary in README:** 7-row benchmark table added under Tooling (RGB565=64µs, RGB555=66µs, UYVY=190µs, YCbCr420=221µs, YUV422I=190µs, CLCL=457µs, CL=591µs, all zero allocs).
 
 ### Changed
 
-- **MaxDecodeFileSize 8 MB → 32 MB:** Increased file size guard from 8 MB to 32 MB after systematic research. All public real-world .ithmb files are under 1 MB (max: 852 KB). The 32 MB limit covers ~40 max-size (P1007) raw frames — far beyond any realistic thumbnail cache. Ratio-naled from scratch: 32 MB is a power of 2, covers all known data, and does not borrow authority from libgpod's commonly-repeated but uncorroborated 256 MB limit. Researched via profile frameBytes analysis (49 profiles, max 829 KB), multi-frame concatenation limits from 5 RE tools (Keith/ithmbrdr/iOpenPod/libgpod/clickwheel), and a public .ithmb file size survey (GitHub has zero .ithmb binary files; largest local sample = 852 KB).
+- **MaxDecodeFileSize 8 MB → 32 MB:** Increased file size guard from 8 MB to 32 MB after systematic research. All public real-world .ithmb files are under 1 MB (max: 852 KB). The 32 MB limit covers ~40 max-size (P1007) raw frames — far beyond any realistic thumbnail cache. Ratio-naled from scratch: 32 MB is a power of 2, covers all known data, and does not borrow authority from libgpod's commonly-repeated but uncorroborated 256 MB limit. Researched via profile frameBytes analysis (53 profiles, max 829 KB), multi-frame concatenation limits from 5 RE tools (Keith/ithmbrdr/iOpenPod/libgpod/clickwheel), and a public .ithmb file size survey (GitHub has zero .ithmb binary files; largest local sample = 852 KB).
+- **README restructured:** "How it works" updated with PhotoDB chunk parser path (#4) and JPEG carving fallback; Performance promoted to standalone section with benchmark table; Testing section fixes (FAU.edu demoted); Acknowledgments extracted to own top-level section (duplicate bottom stub removed). F-prefix warning softened from "best-effort" to "validated."
+- **ACKNOWLEDGMENTS reorganized:** "Primary references" (~13 projects that shaped decoder architecture) and "Additional references" (~14 surveyed projects) replace flat alphabetical list. Reuhno entry condensed.
+
+### Security
+
+- **PhotoDB chunk walker recursion depth limit:** `IntegrityWalkTree` and `WalkEntries` now hard-stop at depth 64, preventing stack overflow from crafted PhotoDB files (CWE-674).
+- **`_rawFileCache` LRU eviction:** Cache limited to 16 entries. Oldest entry evicted when limit exceeded. Prevents unbounded memory growth from repeated decode requests (CWE-770).
+- **Carve path bounds guard:** `carveOffset` clamped to file bounds before carving scan, preventing OOB read from truncated files (CWE-125).
+- **JSON parser nesting depth limit:** `SkipJsonValue` stops at depth 32, preventing CPU DoS from deeply nested JSON (CWE-674).
+- **Zero-byte file guard:** `DecodeInternal` rejects zero-length files before any processing, preventing division-by-zero in stride computation.
 
 ### Maintenance
 
 - **Reuhno credit updated:** ACKNOWLEDGMENTS.md now links to github.com/reuhno instead of reuhno.fr.
+- **libgpod URL corrected:** libgpod org moved from `github.com/libgpod/libgpod` to SourceForge (`sourceforge.net/p/gtkpod/libgpod/ci/master/tree/`). Updated in README and ACKNOWLEDGMENTS.
+- **Badge SVGs updated:** tests 517→530, commits 139→190, profiles 49→53.
+- **.gitignore expanded:** Blacklists for `.ruff_cache`, `BenchmarkDotNet.Artifacts`, `.omo`, ``. Whitelist for synthetic sample `.ithmb` files.
+- **packages.lock.json enabled:** Deterministic restore via `RestorePackagesWithLockFile` for supply-chain integrity.
+- **CI workflow SHA pinning:** `test-neon.yml` actions pinned by commit SHA instead of mutable tags.
+- **CI permissions restricted:** `actions: read`, `contents: read` (default least-privilege).
 
 ### Refactored
 
