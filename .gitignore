@@ -30,6 +30,7 @@ obj/
 *.exe
 *.pdb
 *.ithmb
+!/samples/synthetic/*.ithmb
 !/tests/samples/**/*.ithmb
 /samples/*
 !/samples/synthetic/
