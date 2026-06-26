@@ -231,11 +231,13 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         int w = profile.Width, h = profile.Height;
         if (profile.SwapsDimensions) (w, h) = (h, w);
-        int frameSize = profile.FrameByteLength;
+        // SlotSize overrides FrameByteLength for frame slicing when set (padded profiles
+        // with fixed slot boundaries, e.g., iPod Touch cover art at 8192/16384 byte slots).
+        int frameSize = profile.SlotSize > 0 ? profile.SlotSize : profile.FrameByteLength;
 
         // Compute frame count for multi-image support.
         // F-prefix .ithmb files can contain multiple concatenated raw frames,
-        // each exactly FrameByteLength bytes (confirmed by Keith's iPod Photo Reader,
+        // each exactly frameSize bytes (confirmed by Keith's iPod Photo Reader,
         // ithmbrdr, libgpod, and iOpenPod).
         int dataAfterPrefix = data.Length - 4;
         int frameCount = frameSize > 0 ? dataAfterPrefix / frameSize : 1;
@@ -249,12 +251,12 @@ internal static unsafe partial class IthmbCodecPlugin
         }
 
         // Compute the minimum size we need. For padded profiles, the valid pixel data
-        // may be smaller than FrameByteLength (padding was added by the device).
+        // may be smaller than the slot size (padding was added by the device).
         // For non-padded profiles, apply TrailingPaddingTolerance to handle device
         // alignment quirks where the encoder wrote fewer bytes than expected.
         int requiredSize = profile.IsPadded
-            ? Math.Min(frameSize, (int)Math.Min((long)w * h + (long)((w + 1) / 2) * ((h + 1) / 2) * 2, int.MaxValue))
-            : frameSize;
+            ? profile.FrameByteLength  // actual pixel data size (smaller than slot)
+            : frameSize;                // same as slot for non-padded
         if (requiredSize < 0) requiredSize = int.MaxValue;
 
         // Slice to the requested frame

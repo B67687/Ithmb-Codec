@@ -84,6 +84,15 @@ internal static unsafe partial class IthmbCodecPlugin
             // Compatibility alias for 1055 (same 128×128 cover art, older iTunes versions)
             [1044] = new(1044, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
 
+            // iPod Classic photo thumbnail aliases (pygpod photodb.py — likely identical to 1024/1015)
+            [1042] = new(1042, 320, 240, IthmbEncoding.Rgb565, 320 * 240 * 2),
+            [1043] = new(1043, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
+
+            // iPod Touch cover art with slot padding (libgpod itdb_device.c)
+            // Each slot is padded to fixed byte boundaries regardless of image data size.
+            [3006] = new(3006, 56, 56, IthmbEncoding.Rgb555, 56 * 56 * 2, IsPadded: true, SlotSize: 8192),
+            [3007] = new(3007, 88, 88, IthmbEncoding.Rgb555, 88 * 88 * 2, IsPadded: true, SlotSize: 16384),
+
             // iPod Mobile (Motorola ROKR/SLVR/RAZR) cover art — big-endian (iOpenPod)
             [2002] = new(2002, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2, LittleEndian: false),
             [2003] = new(2003, 150, 150, IthmbEncoding.Rgb565, 150 * 150 * 2, LittleEndian: false),

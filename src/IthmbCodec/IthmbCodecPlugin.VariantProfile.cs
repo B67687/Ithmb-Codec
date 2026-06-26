@@ -34,5 +34,5 @@ internal static unsafe partial class IthmbCodecPlugin
         bool SwapRgbChannels = false,
         int Rotation = 0,
         int CropX = 0, int CropY = 0,
-        int CropWidth = 0, int CropHeight = 0);
+        int CropWidth = 0, int CropHeight = 0, int SlotSize = 0);
 }

@@ -62,6 +62,36 @@ public unsafe partial class IthmbCodecTests
     }
 
     [Fact]
+    public void KnownProfiles_1042_1043_HaveCorrectDimensions()
+    {
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1042));
+        Assert.Equal(320, IthmbCodecPlugin.KnownProfiles[1042].Width);
+        Assert.Equal(240, IthmbCodecPlugin.KnownProfiles[1042].Height);
+        Assert.Equal(IthmbCodecPlugin.IthmbEncoding.Rgb565, IthmbCodecPlugin.KnownProfiles[1042].Encoding);
+
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(1043));
+        Assert.Equal(130, IthmbCodecPlugin.KnownProfiles[1043].Width);
+        Assert.Equal(88, IthmbCodecPlugin.KnownProfiles[1043].Height);
+        Assert.Equal(IthmbCodecPlugin.IthmbEncoding.Rgb565, IthmbCodecPlugin.KnownProfiles[1043].Encoding);
+    }
+
+    [Fact]
+    public void KnownProfiles_3006_3007_HaveSlotPadding()
+    {
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(3006));
+        Assert.Equal(56, IthmbCodecPlugin.KnownProfiles[3006].Width);
+        Assert.Equal(56, IthmbCodecPlugin.KnownProfiles[3006].Height);
+        Assert.True(IthmbCodecPlugin.KnownProfiles[3006].IsPadded);
+        Assert.Equal(8192, IthmbCodecPlugin.KnownProfiles[3006].SlotSize);
+
+        Assert.True(IthmbCodecPlugin.KnownProfiles.ContainsKey(3007));
+        Assert.Equal(88, IthmbCodecPlugin.KnownProfiles[3007].Width);
+        Assert.Equal(88, IthmbCodecPlugin.KnownProfiles[3007].Height);
+        Assert.True(IthmbCodecPlugin.KnownProfiles[3007].IsPadded);
+        Assert.Equal(16384, IthmbCodecPlugin.KnownProfiles[3007].SlotSize);
+    }
+
+    [Fact]
     public void DeviceProfiles_NoDuplicateFormatsWithinDevice()
     {
         foreach (var (name, profile) in IthmbCodecPlugin.DeviceProfiles)
