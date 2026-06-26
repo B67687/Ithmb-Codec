@@ -33,7 +33,7 @@ obj/
 *.exe
 *.pdb
 *.ithmb
-!/samples/synthetic/*.ithmb
+# Note: !/samples/synthetic/** below already covers .ithmb files under synthetic/
 !/tests/samples/**/*.ithmb
 /samples/*
 !/samples/synthetic/
