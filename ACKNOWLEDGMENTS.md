@@ -20,7 +20,7 @@ The following projects were the most studied during development and directly inf
 | clickwheel | dstaley | https://github.com/dstaley/clickwheel | 40+ format ID table, per-generation device capabilities, ArtworkDB read/write |
 | OrgZ | FoxCouncil | https://github.com/FoxCouncil/OrgZ | Device capability tables, ArtworkDB serialization reference |
 | podkit | jvgomg | https://github.com/jvgomg/podkit | MHII/MHNI integrity validation, CLI diagnostics |
-| libgpod/gtkpod | gtkpod team | https://github.com/gtkpod/libgpod | PhotoDB chunk structure (8 chunk types, format_id linkage). C reference. |
+| libgpod/gtkpod | gtkpod team | https://sourceforge.net/p/gtkpod/libgpod/ci/master/tree/ | PhotoDB chunk structure (8 chunk types, format_id linkage). C reference. |
 | gnupod | richvdh | https://github.com/richvdh/gnupod | Per-device format tables (nano_4g, classic, video, mini). Base for DeviceProfiles. |
 | Reuhno (iPod Classic 6G) | Renaud | https://github.com/reuhno | First real F-prefix samples (F1055, F1060, F1061). Validated decoders against real hardware. |
 | shinyquagsire23 gist | shinyquagsire23 | https://gist.github.com/shinyquagsire23/5ac38487b4c8f9252e78e0275814c90b | F1093 512×512 RGB565 decode |
