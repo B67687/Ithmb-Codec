@@ -116,6 +116,8 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 **Real-device validation:**
 
+- **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR;15 channel-swap, MSB replication — both confirmed correct). 30 reference PNGs match decoder output.
+- **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 49 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 - **iPhone 5 (iOS 7):** 956 T-prefix files — 100% extraction
 - **Jakarade.com F00-F08:** 227 public T-prefix files — 100% JPEG+EXIF detection
 - **FAU.edu F00-F50:** ~500 T-prefix files — unavailable (directory only, downloads return 404)
@@ -136,6 +138,21 @@ The plugin was developed through iterative research, implementation, review, and
 <div align="center"><img src="docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+### Acknowledgments
+
+This project builds on the work of the iPod reverse-engineering community. Key references:
+
+| Project | Author | Role |
+|---------|--------|------|
+| [iOpenPod](https://github.com/TheRealSavi/iOpenPod) | Savi | Primary format profile reference (50+ entries, empirically validated across multiple iPod models) |
+| [libgpod](https://github.com/libgpod/libgpod) | community | PhotoDB/ArtworkDB chunk parser, format ID tables |
+| [Keith's iPod Photo Reader](https://github.com/kebwi/Keiths_iPod_Photo_Reader) | kebwi | Original RE (2005), multi-frame confirmation, 13 decode methods |
+| [clickwheel](https://github.com/dstaley/clickwheel) | dstaley | C# ArtworkDB read/write, 40+ format IDs |
+| [OrgZ](https://github.com/FoxCouncil/OrgZ) | Fox | C# ArtworkDB+ithmb read/write |
+| [pyithmb](https://github.com/wrinklykong/pyithmb) | wrinklykong | Python YUV reference decoder |
+
+See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for the full list (25+ projects referenced).
 
 ### Quality pipeline
 
@@ -217,9 +234,9 @@ All decoders produce BGRA 8-bit output. Zero heap allocations — output is writ
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 227 real files; F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 49 known profiles and pass roundtrip tests (528 total). Multi-frame raw decode is synthetically tested. BGR;15 (iPhone 2G) and remaining profiles have no known real samples. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for details.
+> **T-prefix (JPEG-embedded) validated on 227 real files; F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 49 known profiles and pass roundtrip tests (530 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR;15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for details.
 
-- **F-prefix (raw) decoders are best-effort** — roundtrip-tested via synthetic encoder and multi-frame decode tested, but unverified against real iPod/iPhone hardware.
+- **F-prefix (raw) decoders are best-effort** — roundtrip-tested and validated against real iPod Classic 6G samples. Hardware validation of the profile set (dimensions/encoding for all 49 formats) covered by iOpenPod's empirical testing across multiple iPod models. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 - **JPEG SOI must be within the first 4 MB** of the file (covers all known real files).
 
 ---
