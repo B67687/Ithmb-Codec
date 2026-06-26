@@ -1,6 +1,6 @@
 # Acknowledgments
 
-Every known open-source `.ithmb` implementation (30+ total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge during development.
+Every known open-source `.ithmb` implementation (35+ total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge during development.
 
 ---
 
@@ -25,6 +25,11 @@ The following projects were the most studied during development and directly inf
 | Reuhno (iPod Classic 6G) | Renaud | https://github.com/reuhno | First real F-prefix samples (F1055, F1060, F1061). Validated decoders against real hardware. |
 | shinyquagsire23 gist | shinyquagsire23 | https://gist.github.com/shinyquagsire23/5ac38487b4c8f9252e78e0275814c90b | F1093 512×512 RGB565 decode |
 | Steee29/ithmb_converter | Steee29 | https://github.com/Steee29/ithmb_converter | iOS 1.x format table (F3004=55×55) |
+| Mixtape | fgs8z2n9qh-tech | https://github.com/fgs8z2n9qh-tech/Mixtape | C# iPod manager with ArtworkDB support |
+| classick | itsmichaelwest | https://github.com/itsmichaelwest/classick | Rust iPod sync tool (iTunesDB + ArtworkDB) |
+| podscribe | menor | https://github.com/menor/podscribe | TypeScript iTunesDB writer with PhotoDB types |
+| gpod-utils | whatdoineed2do | https://github.com/whatdoineed2do/gpod-utils | CLI tools for gtkpod/libgpod |
+| libgpod-0.8.3 Python 3 bindings | john8675309 | https://github.com/john8675309/libgpod-0.8.3 | Python 3 port of libgpod with format constants |
 
 ### Additional references
 
@@ -49,7 +54,7 @@ These projects were surveyed during research. Their format behavior was studied 
  
 ### Lost / unrecoverable
 
-- **iThmbConv** (C, 2007) — Windows CLI tool by "Anywho" (Whirlpool). First working F3008 (iPhone RGB565) and F1067 (Nano YCbCr 4:2:0) decoder. Source lost behind Captcha. [Whirlpool forum thread](https://forums.whirlpool.net.au/archive/661720)
+- **iThmbConv** (C, 2007) — Windows CLI tool by "Anywho" (Whirlpool). First working F3008 (iPhone RGB565) and F1067 (Nano YCbCr 4:2:0) decoder. Source hosted on quicksharing.com (dead ~15 years). [Whirlpool forum thread](https://forums.whirlpool.net.au/archive/661720)
 
 ### Commercial / closed-source (reference only)
 
