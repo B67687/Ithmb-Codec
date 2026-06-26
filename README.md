@@ -64,14 +64,14 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 ### Requirements
 
-- [ImageGlass v10](https://imageglass.org) or later (Windows 10/11 64-bit)
+- [ImageGlass v10](https://imageglass.org) (Windows 10/11 64-bit)
 - An `.ithmb` file from an iOS device photo cache
 
 ### Steps
 
 1. Download `IthmbCodec_win-x64.zip` from the [latest release](https://github.com/B67687/ithmb-codec/releases) — it contains `IthmbCodec.dll`, `igplugin.json`, and `profiles.json`.
 2. Create the `IthmbCodec` folder if it doesn't exist, then extract to `%LocalAppData%\ImageGlass_10\_plugins\IthmbCodec\`.
-3. Verify the folder contains: `IthmbCodec.dll` (1.4 MB Native AOT), `igplugin.json`, `profiles.json`.
+3. Verify the folder contains: `IthmbCodec.dll` (~1.5 MB Native AOT), `igplugin.json`, `profiles.json`.
 4. Restart ImageGlass.
 
 > [!TIP]
@@ -131,7 +131,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 The plugin was developed through iterative research, implementation, review, and release cycles:
 
-1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
+1. **Format survey** — 35+ open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 49 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
 4. **Testing** — 530 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, and format ID profile tests
@@ -154,21 +154,21 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 | File | Purpose | Size |
 |------|---------|------|
-| `IthmbCodecPlugin.cs` | ABI entry point, init, API surface | ~471 lines |
-| `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate | ~320 lines |
-| `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp | ~117 lines |
-| `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser | ~309 lines |
-| `IthmbCodecPlugin.VariantProfile.cs` | IthmbVariantProfile + IthmbEncoding types | ~38 lines |
-| `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser, walker, data model | ~294 lines |
-| `PhotoDb/Serialization.cs` | PhotoDB writer (TryBuildPhotoDb) + integrity checker | ~235 lines |
-| `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) | ~173 lines |
-| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) | ~77 lines |
-| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD (shared params) | ~303 lines |
-| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD | ~265 lines |
-| `IthmbCodecPlugin.DecodeFormatClcl.cs` | CLCL nibble-chroma decoder | ~80 lines |
-| `IthmbCodecPlugin.DecodeFormatCl.cs` | CL per-pixel chroma decoder | ~60 lines |
-| `IthmbCodecPlugin.DecodeFormatYcbcr420.cs` | YCbCr420 decoder | ~60 lines |
-| `IthmbCodecPlugin.YuvUtils.cs` | Shared YUV pixel helpers (WriteYuvPixel) | ~20 lines |
+| `IthmbCodecPlugin.cs` | ABI entry point, init, API surface | ~430 lines |
+| `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate | ~380 lines |
+| `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp | ~120 lines |
+| `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser | ~320 lines |
+| `IthmbCodecPlugin.VariantProfile.cs` | IthmbVariantProfile + IthmbEncoding types | ~40 lines |
+| `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser, walker, data model | ~530 lines |
+| `PhotoDb/Serialization.cs` | PhotoDB writer (TryBuildPhotoDb) + integrity checker | ~370 lines |
+| `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) | ~200 lines |
+| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) | ~100 lines |
+| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD (shared params) | ~310 lines |
+| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD | ~310 lines |
+| `IthmbCodecPlugin.DecodeFormatClcl.cs` | CLCL nibble-chroma decoder | ~60 lines |
+| `IthmbCodecPlugin.DecodeFormatCl.cs` | CL per-pixel chroma decoder | ~50 lines |
+| `IthmbCodecPlugin.DecodeFormatYcbcr420.cs` | YCbCr420 decoder | ~150 lines |
+| `IthmbCodecPlugin.YuvUtils.cs` | Shared YUV pixel helpers (WriteYuvPixel) | ~25 lines |
 | `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats | ~310 lines |
 
 **Data flow:**
@@ -221,14 +221,14 @@ All decoders produce BGRA 8-bit output. Zero heap allocations — output is writ
 
 ## Profile Reference
 
-**49 known profiles** (22 photo + 26 cover art + 1 new 640×480 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
+**49 known profiles** (22 photo + 27 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
 
 ---
 
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 227 real files; F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 49 known profiles and pass roundtrip tests (530 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR;15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for details.
+> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 49 known profiles and pass roundtrip tests (530 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR;15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for details.
 
 - **F-prefix decoder coverage is broad but not exhaustive** — 49 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Profiles are cross-referenced against iOpenPod's empirically validated set. Unknown formats from obscure firmware versions may still exist — [open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
 - **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
