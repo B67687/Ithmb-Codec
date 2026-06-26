@@ -1,3 +1,5 @@
+# Whitelist pattern: block everything by default, then unblock specific paths.
+# This prevents accidentally tracking stray files (build artifacts, IDE files, temp files).
 /*
 !/.gitignore
 !/.gitattributes
@@ -19,7 +21,7 @@
 !/tests/
 !/tests/**
 
-# Blacklists — only what's needed to counteract whitelist entries above
+# Sub-blacklists — re-block specific paths within whitelisted directories
 bin/
 obj/
 *.dll
