@@ -118,7 +118,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 **Real-device validation:**
 
 - **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR;15 channel-swap, MSB replication — both confirmed correct). 30 reference PNGs match decoder output.
-- **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 49 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
+- **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 53 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 - **iPhone 5 (iOS 7):** 956 T-prefix files — 100% extraction
 - **Jakarade.com F00-F08:** 227 public T-prefix files — 100% JPEG+EXIF detection
 - **MVS CTF 2026 (iOS 18):** iPhone 14 Plus full filesystem image scanned — 3 `.ithmb` files found but use a different proprietary format (iOS Photos framework, not decodable by this codec)
@@ -132,7 +132,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 The plugin was developed through iterative research, implementation, review, and release cycles:
 
 1. **Format survey** — 35+ open-source .ithmb implementations found and analyzed
-2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 49 profiles
+2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 53 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
 4. **Testing** — 530 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, and format ID profile tests
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, rotation buffer overflow, crop integer overflow, and defense-in-depth
@@ -230,7 +230,7 @@ All decoders produce BGRA 8-bit output. Zero heap allocations — output is writ
 > [!WARNING]
 > **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 49 known profiles and pass roundtrip tests (530 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR;15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples. See [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for details.
 
-- **F-prefix decoder coverage is broad but not exhaustive** — 49 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Profiles are cross-referenced against iOpenPod's empirically validated set. Unknown formats from obscure firmware versions may still exist — [open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
+- **F-prefix decoder coverage is broad but not exhaustive** — 53 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Profiles are cross-referenced against iOpenPod's empirically validated set. Unknown formats from obscure firmware versions may still exist — [open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
 - **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
 
 ---

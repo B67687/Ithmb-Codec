@@ -1,6 +1,6 @@
 # Profiles
 
-49 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+53 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
@@ -29,6 +29,8 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1055    | 128×128    | RGB565           | Classic/Nano3G/Nano4G (cover art)                |
 | 1056    | 128×128    | RGB565           | Nano 5G (cover art)                              |
 | 1060    | 320×320    | RGB565           | Classic/Nano3G (cover art)                       |
+| 1042    | 320×240    | RGB565           | iPod Classic 5G/6G (photo alias for 1024)        |
+| 1043    | 130×88     | RGB565           | iPod Photo 4G (alias for 1015)                   |
 | 1044    | 128×128    | RGB565           | Compatibility alias for 1055                     |
 | ~~1064~~ | ~~320×240~~ | ~~YCbCr 4:2:0~~  | ~~iPod Nano 8GB 3G (photo library, speculative — disabled, no real sample)~~ |
 | 1061    | 56×56      | RGB565           | Classic (cover art small)                        |
@@ -55,13 +57,15 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 3003    | 64×64      | RGB555           | iPod touch (cover art small)                     |
 | 3004    | 56×55      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb)           |
 | 3005    | 320×320    | RGB555           | iPod touch (cover art xlarge)                    |
+| 3006    | 56×56      | RGB555           | iPod touch (cover art, padded slot 8192)          |
+| 3007    | 88×88      | RGB555           | iPod touch (cover art, padded slot 16384)         |
 | 3008    | 640×480    | RGB555           | iPhone 1G/2G, iPod Touch (full-screen)           |
 | 3009    | 160×120    | RGB555           | iPhone 1G/2G, iPod Touch (photo prev)            |
 | 3011    | 80×79      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb)           |
 
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 >
-> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are covered by our 49 active profiles. **F1064** (320×240, iPod Nano 8GB) was previously included as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis, but has been disabled — no real-world sample has ever been found across any surveyed implementation (iOpenPod, Keith's iPod Photo Reader, libgpod, ithmbrdr). If real samples emerge, re-enable via `profiles.json`.
+> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are covered by our 53 active profiles. **F1064** (320×240, iPod Nano 8GB) was previously included as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis, but has been disabled — no real-world sample has ever been found across any surveyed implementation (iOpenPod, Keith's iPod Photo Reader, libgpod, ithmbrdr). If real samples emerge, re-enable via `profiles.json`.
 
 > The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets orientation (1–8). ImageGlass uses this to auto-rotate.
 
