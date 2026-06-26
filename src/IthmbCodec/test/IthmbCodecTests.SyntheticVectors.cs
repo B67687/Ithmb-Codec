@@ -10,7 +10,7 @@ namespace IthmbCodec.Tests;
 
 public unsafe partial class IthmbCodecTests
 {
-    private const string SyntheticVectorsDir = "../../../../../../tests/samples/reuhno-synthetic/";
+    private const string SyntheticVectorsDir = "../../../../../../samples/reuhno-synthetic/";
 
     /// <summary>
     /// Decodes frame 0 of F1061 (55x55 slot) and verifies the full BGRA SHA256,

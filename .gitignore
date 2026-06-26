@@ -33,9 +33,9 @@ obj/
 *.exe
 *.pdb
 *.ithmb
-# Note: !/samples/synthetic/** below already covers .ithmb files under synthetic/
-!/tests/samples/**/*.ithmb
 /samples/*
+!/samples/reuhno-synthetic/
+!/samples/reuhno-synthetic/**
 !/samples/synthetic/
 !/samples/synthetic/**
 
