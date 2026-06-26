@@ -6,47 +6,47 @@ Every known open-source `.ithmb` implementation (30+ total) was surveyed across 
 
 ## Open-Source Implementations
 
-### Directly incorporated (MIT-licensed)
+### Primary references
 
-These projects' source code directly informed our decoders. All are MIT-licensed.
+The following projects were the most studied during development and directly informed decoder architecture, format tables, or ArtworkDB handling. No code was copied — all implementation is clean-room.
 
-| Project      | Author  | URL                                     | Contribution                                                                              |
-| ------------ | ------- | --------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **iOpenPod** | Savi    | https://github.com/TheRealSavi/iOpenPod | Most complete modern codec. 50+ format entries, encode + decode for all iPod generations. |
-| **ithmbrdr** | cyianor | https://github.com/cyianor/ithmbrdr     | F1067 YCbCr 4:2:0 with correct BT.601 coefficients; padded frame structure.               |
+| Project | Author | URL | Contribution |
+| ------- | ------ | --- | ------------ |
+| iOpenPod | Savi | https://github.com/TheRealSavi/iOpenPod | 50+ format entries, encode + decode for all iPod generations. Most complete modern reference. |
+| ithmbrdr | cyianor | https://github.com/cyianor/ithmbrdr | BT.601 coefficients, padded frame structure, multi-image seeking. |
+| Keith's iPod Photo Reader | Keith Wiley | https://github.com/kebwi/Keiths_iPod_Photo_Reader | Original 2005 RE, 13 decode methods, confirmed multi-image concatenation. |
+| andrewmalta/ithmb | Andrew Malta | https://github.com/andrewmalta/ithmb | CLCL packed-chroma layout |
+| wrinklykong/pyithmb | wrinklykong | https://github.com/wrinklykong/pyithmb | CLCL nibble-chroma decoder, confirmed ×16 scaling vs ×17 |
+| clickwheel | dstaley | https://github.com/dstaley/clickwheel | 40+ format ID table, per-generation device capabilities, ArtworkDB read/write |
+| OrgZ | FoxCouncil | https://github.com/FoxCouncil/OrgZ | Device capability tables, ArtworkDB serialization reference |
+| podkit | jvgomg | https://github.com/jvgomg/podkit | MHII/MHNI integrity validation, CLI diagnostics |
+| libgpod/gtkpod | gtkpod team | https://github.com/gtkpod/libgpod | PhotoDB chunk structure (8 chunk types, format_id linkage). C reference. |
+| gnupod | richvdh | https://github.com/richvdh/gnupod | Per-device format tables (nano_4g, classic, video, mini). Base for DeviceProfiles. |
+| Reuhno (iPod Classic 6G) | Renaud | https://github.com/reuhno | First real F-prefix samples (F1055, F1060, F1061). Validated decoders against real hardware. |
+| shinyquagsire23 gist | shinyquagsire23 | https://gist.github.com/shinyquagsire23/5ac38487b4c8f9252e78e0275814c90b | F1093 512×512 RGB565 decode |
+| Steee29/ithmb_converter | Steee29 | https://github.com/Steee29/ithmb_converter | iOS 1.x format table (F3004=55×55) |
 
-### Format references (clean-room — no code copied)
+### Additional references
 
-Format behavior was studied from these implementations; no code was copied.
+These projects were surveyed during research. Their format behavior was studied but did not directly shape decoder implementation.
 
-| Project                           | Author             | URL                                                                            | Language   | License | What it contributed                              |
-| --------------------------------- | ------------------ | ------------------------------------------------------------------------------ | ---------- | ------- | ------------------------------------------------ |
-| Keith's iPod Photo Reader         | Keith Wiley        | https://github.com/kebwi/Keiths_iPod_Photo_Reader                              | C++        | —       | Original 2005 RE, 13 decode methods              |
-| andrewmalta/ithmb                 | Andrew Malta       | https://github.com/andrewmalta/ithmb                                           | Python     | —       | F1019 CLCL packed-chroma layout                  |
-| Gaurav-Phogat/F1007               | Gaurav Phogat      | https://github.com/Gaurav-Phogat/ithmb-extractor-F1007                         | Python     | —       | F1007 480×864 MSB-replication scaling            |
-| keyj.emphy.de blog                | Jeff Luyten (KeyJ) | https://web.archive.org/web/2024*/https://keyj.emphy.de/an-ipod-hackers-diary/ | —          | —       | ArtworkDB RE, RGB565 byte-swapped artwork        |
-| repear                            | worstje            | https://github.com/worstje/repear                                              | Python     | —       | Complete format → dimension encoder table        |
-| podsyncr                          | tbutter            | https://github.com/tbutter/podsyncr                                            | Java       | —       | iPod Nano 2G syncer, configurable endianness     |
-| libgpod/gtkpod                    | gtkpod team        | https://github.com/gtkpod/libgpod                                              | C          | LGPL    | 22 format variants, ArtworkDB/PhotoDB parser     |
-| shinyquagsire23 gist              | shinyquagsire23    | https://gist.github.com/shinyquagsire23/5ac38487b4c8f9252e78e0275814c90b       | C          | —       | F1093 = 512×512 RGB565 decode                    |
-| Steee29/ithmb_converter           | Steee29            | https://github.com/Steee29/ithmb_converter                                     | Python     | —       | iOS 1.x format table (3004=55×55, etc.)          |
-| wrinklykong/pyithmb               | wrinklykong        | https://github.com/wrinklykong/pyithmb                                         | Python     | —       | CLCL nibble-chroma decoder                       |
-| thomas-alrek/iPod-photo-database  | thomas-alrek       | https://github.com/thomas-alrek/iPod-photo-database                            | JavaScript | —       | Node.js Photo Database + ithmb→JPEG              |
-| epireyn/ithmb-rs                  | epireyn            | https://gitlab.com/epireyn/ithmb-rs                                            | Rust       | GPLv3   | Not incorporated; format reference only          |
-| MasterCard007/ithmb2jpg-converter | MasterCard007      | https://github.com/MasterCard007/ithmb2jpg-converter                           | Python     | —       | Batch converter                                  |
-| devm18426/mhfd_extractor          | devm18426          | https://github.com/devm18426/mhfd_extractor                                    | Python     | —       | MHFD chunk → UYVY interlaced format              |
-| pygpod                            | Bionded            | https://github.com/Bionded/pygpod                                              | Python     | —       | Pure-Python libgpod port                         |
-| Keipydesu/ipod-convert            | Keipydesu          | https://github.com/Keipydesu/ipod-convert                                      | Python     | MIT     | F1067 padded YCbCr support                       |
-| **clickwheel**                    | dstaley            | https://github.com/dstaley/clickwheel                                          | C#         | MIT     | 40+ format ID table, per-generation device capabilities, full ArtworkDB read/write |
-| **OrgZ**                          | FoxCouncil         | https://github.com/FoxCouncil/OrgZ                                             | C#         | MIT     | IPodCapabilities.cs device tables, ArtworkDB+ithmb read/write, album art sync |
-| **podkit**                        | jvgomg             | https://github.com/jvgomg/podkit                                               | TypeScript | MIT     | ArtworkDB CLI diagnostics, offset validation, MHII/MHNI linking integrity checks |
-| **gnupod**                        | richvdh            | https://github.com/richvdh/gnupod                                              | Perl       | GPLv2   | Per-device format tables (nano_4g, nano_3g, classic, video, nano, mini), ImageMagick pipeline |
-| cardner/playlist-generator        | cardner            | https://github.com/cardner/playlist-generator                                  | TypeScript | —       | Pure-TS iPod DB with detailed iTunesDB dbversion comparison |
-| moerdowo/Minpod                   | moerdowo           | https://github.com/moerdowo/Minpod                                             | Swift      | MIT     | iPod sync tool, ArtworkDB ithmb creation         |
-| atimevil/Ithmb-Converter          | atimevil           | https://github.com/atimevil/Ithmb-Converter                                    | Python     | MIT     | Korean converter with AI upscaling               |
-| yosoyemi/ithmb-converter-a-jpg    | yosoyemi           | https://github.com/yosoyemi/ithmb-converter-a-jpg                              | Python     | MIT     | UYVY big-endian decode, BT.601-like coefficients |
-| **Reuhno** (iPod Classic 6G) | Renaud             | https://github.com/reuhno                                                        | Python     | —       | First known real F-prefix samples from iPod Classic 6G (F1055, F1060, F1061). Confirmed decoder correctness on real hardware. ArtworkDB analysis with mhni field offsets, stored_width formula (size/2/height), UTF-16LE .ithmb filenames, and iPod Classic 6G generation-specific format table (F1061=56×55, F1055=128×128, F1060=320×320). |
-
+| Project | Author | URL | Language | License | Notes |
+| ------- | ------ | --- | -------- | ------- | ----- |
+| keyj.emphy.de blog | Jeff Luyten (KeyJ) | https://keyj.emphy.de/an-ipod-hackers-diary/ | — | — | ArtworkDB RE, RGB565 byte-swapped artwork |
+| repear | worstje | https://github.com/worstje/repear | Python | — | Format → dimension encoder table |
+| podsyncr | tbutter | https://github.com/tbutter/podsyncr | Java | — | iPod Nano 2G syncer |
+| thomas-alrek/iPod-photo-database | thomas-alrek | https://github.com/thomas-alrek/iPod-photo-database | JavaScript | — | Node.js Photo Database + ithmb→JPEG |
+| pygpod | Bionded | https://github.com/Bionded/pygpod | Python | — | Pure-Python libgpod port |
+| devm18426/mhfd_extractor | devm18426 | https://github.com/devm18426/mhfd_extractor | Python | — | MHFD chunk → UYVY interlaced format |
+| Gaurav-Phogat/F1007 | Gaurav Phogat | https://github.com/Gaurav-Phogat/ithmb-extractor-F1007 | Python | — | F1007 MSB-replication scaling |
+| MasterCard007/ithmb2jpg-converter | MasterCard007 | https://github.com/MasterCard007/ithmb2jpg-converter | Python | — | Batch converter |
+| epireyn/ithmb-rs | epireyn | https://gitlab.com/epireyn/ithmb-rs | Rust | GPLv3 | Not incorporated; format reference only |
+| Keipydesu/ipod-convert | Keipydesu | https://github.com/Keipydesu/ipod-convert | Python | MIT | F1067 padded YCbCr support |
+| cardner/playlist-generator | cardner | https://github.com/cardner/playlist-generator | TypeScript | — | Pure-TS iPod DB |
+| moerdowo/Minpod | moerdowo | https://github.com/moerdowo/Minpod | Swift | MIT | iPod sync tool, ArtworkDB ithmb creation |
+| atimevil/Ithmb-Converter | atimevil | https://github.com/atimevil/Ithmb-Converter | Python | MIT | Korean converter with AI upscaling |
+| yosoyemi/ithmb-converter-a-jpg | yosoyemi | https://github.com/yosoyemi/ithmb-converter-a-jpg | Python | MIT | UYVY big-endian decode |
+ 
 ### Lost / unrecoverable
 
 - **iThmbConv** (C, 2007) — Windows CLI tool by "Anywho" (Whirlpool). First working F3008 (iPhone RGB565) and F1067 (Nano YCbCr 4:2:0) decoder. Source lost behind Captcha. [Whirlpool forum thread](https://forums.whirlpool.net.au/archive/661720)
