@@ -112,7 +112,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**528 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR;15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables.
+**530 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR;15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables, corruption fuzz, and format ID profile tests.
 
 **Real-device validation:**
 
@@ -131,7 +131,7 @@ The plugin was developed through iterative research, implementation, review, and
 1. **Format survey** — 25 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 49 profiles
 3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
-4. **Testing** — 528 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, and device-specific format tables
+4. **Testing** — 530 unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, and format ID profile tests
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, rotation buffer overflow, crop integer overflow, and defense-in-depth
 6. **Release** — Windows Native AOT binary published via GitHub Releases
 
@@ -162,7 +162,7 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 15 files organized by domain (previously 11, split for single-responsibility):
+**Source layout** — 16 files organized by domain (previously 11, split for single-responsibility):
 
 | File | Purpose | Size |
 |------|---------|------|
@@ -170,6 +170,7 @@ Quality checks run locally before release: linting, secret scanning, tests, stat
 | `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate | ~320 lines |
 | `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp | ~117 lines |
 | `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser | ~309 lines |
+| `IthmbCodecPlugin.VariantProfile.cs` | IthmbVariantProfile + IthmbEncoding types | ~38 lines |
 | `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser, walker, data model | ~294 lines |
 | `PhotoDb/Serialization.cs` | PhotoDB writer (TryBuildPhotoDb) + integrity checker | ~235 lines |
 | `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) | ~173 lines |

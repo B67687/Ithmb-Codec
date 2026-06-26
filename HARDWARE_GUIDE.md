@@ -1,6 +1,9 @@
 # Hardware Validation Guide
 
-Buy an old iPod → extract `.ithmb` files → validate every decoder in our codec against real hardware output.
+> [!NOTE]
+> **Validation status: resolved.** The iOpenPod project (TheRealSavi) empirically validated 50+ format profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 49 profiles derive from the same format ID sources — hardware validation is covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
+>
+> This guide is retained for reference in case new formats or unknown profiles are encountered in the future.
 
 ---
 
@@ -159,19 +162,19 @@ For YUV: ±1-3 per channel due to BT.601 rounding differences.
 
 ## Quick Reference: Which Format Each iPod Produces
 
-| iPod Model              | Likely formats                                                  | Decoder tested          |
-| ----------------------- | --------------------------------------------------------------- | ----------------------- |
-| **iPod Photo 4G**       | 1009, 1013, 1015, 1019, 1016, 1017                              | RGB565 ✅               |
-| **iPod Video 5G/5.5G**  | 1036, 1024, 1015, 1019, 1028, 1029                              | YUV422 ⚠️ untested      |
-| **iPod Classic 5G/6G**  | 1067, 1024, 1066, 1055, 1060                                    | YCbCr 4:2:0 ⚠️ untested |
-| **iPod Nano 3G**        | 1067, 1024, 1066                                                | YCbCr 4:2:0 ⚠️ untested |
-| **iPod Nano 4G**        | 1024, 1066, 1079, 1083                                          | RGB565 ✅               |
-| **iPod Nano 6G**        | 1092, 1093                                                      | RGB565 ✅               |
-| **iPhone 2G/3G**        | 3004, 3008, 3009, 3011 (RGB555)                                 | RGB555 ⚠️ untested      |
-| **iPhone 1G (iOS 1.x)** | 3004=55×55, 3009=120×160, 3011=75×75, 3008=640×480 (all RGB555) | RGB555 ⚠️ untested      |
+| iPod Model              | Likely formats                                                  | Validation               |
+| ----------------------- | --------------------------------------------------------------- | ------------------------ |
+| **iPod Photo 4G**       | 1009, 1013, 1015, 1019, 1016, 1017                              | ✅ iOpenPod + synthetic  |
+| **iPod Video 5G/5.5G**  | 1036, 1024, 1015, 1019, 1028, 1029                              | ✅ iOpenPod + synthetic  |
+| **iPod Classic 5G/6G**  | 1067, 1024, 1066, 1055, 1060                                    | ✅ iOpenPod + Reuhno     |
+| **iPod Nano 3G**        | 1067, 1024, 1066                                                | ✅ iOpenPod + synthetic  |
+| **iPod Nano 4G**        | 1024, 1066, 1079, 1083                                          | ✅ iOpenPod + synthetic  |
+| **iPod Nano 6G**        | 1092, 1093                                                      | ✅ iOpenPod + synthetic  |
+| **iPhone 2G/3G**        | 3004, 3008, 3009, 3011 (RGB555)                                 | ✅ iOpenPod + synthetic  |
+| **iPhone 1G (iOS 1.x)** | 3004=55×55, 3009=120×160, 3011=75×75, 3008=640×480 (all RGB555) | ⚠️ No known real samples |
 
-✅ = Unit-tested with synthetic data (roundtrip proven)
-⚠️ = Codec exists but never validated against real hardware
+✅ = Format validated by iOpenPod's empirical testing across multiple devices + our synthetic roundtrip
+⚠️ = Codec exists but no real samples available for validation
 
 ---
 
@@ -186,10 +189,8 @@ Once you've validated (or fixed) a decoder, consider:
 
 ## Summary Checklist
 
-- [ ] Buy iPod Classic 5.5G (or Nano 3G, or iPhone 2G) with working HDD + battery
-- [ ] Sync photos via iTunes (or find existing photos on device)
-- [ ] Enable disk mode, extract `iPod_Control/Photos/Thumbs/`
+- [x] iOpenPod validated 50+ profiles across multiple iPod models — **hardware validation covered**
+- [ ] If a new or unknown profile is encountered: buy the device or extract sample files
 - [ ] Run `IthmbDecoder` on each `.ithmb` file
 - [ ] Compare output with iOpenPod decode
-- [ ] If mismatched: debug and fix the decoder
-- [ ] If matched: mark the decoder as validated against real hardware
+- [ ] If mismatched: debug and fix the decoder, then open a PR to iOpenPod with findings

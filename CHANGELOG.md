@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **`swapRgbChannels` support completed for RGB565:** Scalar and Tail decode paths now accept the `swapRgbChannels` parameter (matching existing SSE2/NEON coverage). Completes BGR;15 support for all 5 DecodeRgb565 paths. (+0 new tests)
 - **Padded row stride tests:** 3 new tests verify correct decode for padded (55×55 nominal, 56-pixel rows), unpadded square, and non-square padded dimensions through both SSE2 and Scalar paths.
+- **Format IDs 1042, 1043, 3006, 3007:** Four additional built-in profiles — 1042 (320×240 RGB565, Classic photo alias for 1024), 1043 (130×88 RGB565, alias for 1015), 3006 (56×56 RGB555, iPod Touch cover art, slot-padded), 3007 (88×88 RGB555, slot-padded). Adds `SlotSize` field to `IthmbVariantProfile` for padded profiles. (+2 tests, 530 total)
 
 ### Changed
 
