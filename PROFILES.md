@@ -1,6 +1,6 @@
 # Profiles
 
-53 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+54 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
@@ -33,7 +33,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1043    | 130×88     | RGB565           | iPod Photo 4G (alias for 1015)                   |
 | 1044    | 128×128    | RGB565           | Compatibility alias for 1055                     |
 | ~~1064~~ | ~~320×240~~ | ~~YCbCr 4:2:0~~  | ~~iPod Nano 8GB 3G (photo library, speculative — disabled, no real sample)~~ |
-| 1061    | 56×56      | RGB565           | Classic (cover art small)                        |
+|| 1061    | 56×56      | RGB565           | Classic (cover art small, UseMhniDimensions=true — actual dims from MHNI)     |
 | 1066    | 64×64      | RGB565           | iPod Classic 6G (square photo)                   |
 | 1067    | 720×480    | YCbCr 4:2:0      | iPod Classic 6G / Nano 3G (padded)               |
 | 1068    | 128×128    | RGB565           | Classic/Nano (cover art variant)                 |
@@ -52,10 +52,10 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1093    | 512×512    | RGB565           | iPod Nano 6G (full-screen photo)                 |
 | 2002    | 50×50      | RGB565 BE        | iPod Mobile / Motorola ROKR (cover art)          |
 | 2003    | 150×150    | RGB565 BE        | iPod Mobile / Motorola ROKR (cover art)          |
-| 3001    | 256×256    | RGB555           | iPod touch (cover art large)                     |
-| 3002    | 128×128    | RGB555           | iPod touch (cover art medium)                    |
-| 3003    | 64×64      | RGB555           | iPod touch (cover art small)                     |
-| 3004    | 56×55      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb)           |
+|| 3001    | 256×256    | **Reordered RGB555** | iPod touch (cover art large, quad-tree Morton order)                         |
+|| 3002    | 128×128    | **Reordered RGB555** | iPod touch (cover art medium, quad-tree Morton order)                        |
+|| 3003    | 64×64      | **Reordered RGB555** | iPod touch (cover art small, quad-tree Morton order)                         |
+|| 3004    | 56×55      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb, slot-padded 8192)                     |
 | 3005    | 320×320    | RGB555           | iPod touch (cover art xlarge)                    |
 | 3006    | 56×56      | RGB555           | iPod touch (cover art, padded slot 8192)          |
 | 3007    | 88×88      | RGB555           | iPod touch (cover art, padded slot 16384)         |
@@ -65,7 +65,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.
 >
-> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are covered by our 53 active profiles. **F1064** (320×240, iPod Nano 8GB) was previously included as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis, but has been disabled — no real-world sample has ever been found across any surveyed implementation (iOpenPod, Keith's iPod Photo Reader, libgpod, ithmbrdr). If real samples emerge, re-enable via `profiles.json`.
+> The iLounge hacking thread (2005) and Whirlpool forum archive (2005–2009) document additional format IDs from community reverse-engineering. All known formats are covered by our 54 active profiles. **F1064** (320×240, iPod Nano 8GB) was previously included as a speculative YCbCr 4:2:0 padded profile based on Whirlpool thread analysis, but has been disabled — no real-world sample has ever been found across any surveyed implementation (iOpenPod, Keith's iPod Photo Reader, libgpod, ithmbrdr). If real samples emerge, re-enable via `profiles.json`.
 
 > The codec parses TIFF IFD0 tag 0x0112 from the JPEG APP1 segment and sets orientation (1–8). ImageGlass uses this to auto-rotate.
 
@@ -87,5 +87,7 @@ These flags can be set in `profiles.json` for fine-tuning raw decoder behavior:
 | `cropY`            | int  | `0`     | Y offset of visible region within decoded frame (0 = no crop).                                                    |
 | `cropWidth`        | int  | `0`     | Width of visible region (0 = no crop, uses full frame width).                                                     |
 | `cropHeight`       | int  | `0`     | Height of visible region (0 = no crop, uses full frame height).                                                   |
+| `useMhniDimensions` | bool | `false` | When true, decode dimensions come from the MHNI chunk (format_id's Width/Height) instead of the profile's fixed Width/Height. Resolves real-world dimension disagreements between sources (e.g., 1061: libgpod=56×56, Reuhno=55×55).
+| `fallbackEncodings`  | array | `null` | Ordered list of alternative encodings to try when the primary encoding fails to decode. Each entry must match one of the known encoding strings (e.g. `["rgb555", "reorderedrgb555"]`). Used when the exact encoding for a format ID is uncertain between sources.
 
 > **Speculative decoders:** The `isClcl`, `isCl`, and `swapChromaPlanes` flags are based on Keith Wiley's original 2005 reverse engineering (Methods 1–6). No other open-source ithmb implementation (iOpenPod, libgpod, andrewmalta/ithmb, etc.) independently confirms these byte layouts or chroma orderings. No known built-in profiles use them — they are safety nets for undocumented iPod variants. If you encounter a file that decodes with wrong colors, try toggling these flags via `profiles.json`.

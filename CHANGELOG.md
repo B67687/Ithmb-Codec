@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+### Added
+- **REC_RGB555 decoder (quad-tree / Morton Z-order) for iPhone/Touch cover art:** Apple's recursive-ordered dither format used by profiles 3001/3002/3003 (256×256, 128×128, 64×64). Pixels are stored in Morton Z-order (interleaved bit pattern) rather than raster scanline. Decoder de-deranges via MortonInterleave, then decodes as standard RGB555→BGRA8. Encoder (`EncodeReorderedRgb555`) reorders BGRA8→RGB555 via Morton Z-order for writing iPhone-compatible .ithmb files.
+- **Format 3004 SlotSize:8192 added** — libgpod's Itdb_ArtworkFormat `padding` field confirmed 8192 bytes slot padding for iPhone/Touch photo thumbnails (profile 3004, 56×55 Rgb555).
+- **Format 3005 (320×320 Rgb555) added** — iPhone/Touch cover art variant from libgpod's `ipod_touch_1_cover_art_info` table.
+- **Profiles count: 53→54 active** (3005 added). Total known: 54 active + 1 speculative disabled (F1064).
+- **Full libgpod comparison completed:** All 42 overlapping format IDs verified identical. REC_RGB555 decoder for 3001-3003, 3004 SlotSize, 3005 profile added.
+### Changed
+- **Profile flexibility system:** Added `UseMhniDimensions` flag (use actual Width/Height from MHNI chunk instead of profile's fixed dimensions) and `FallbackEncodings[]` array (ordered list of alternative encodings on primary decode failure). Enabled `UseMhniDimensions:true` on profile 1061 to resolve libgpod (56×56) vs Reuhno (55×55) dimension disagreement.
+- **PhotoDb/Core.cs tuple expanded:** WalkEntries and TryParsePhotoDb output now includes Width, Height from MHNI header (6-element tuple).
+- **PROFILES.md updated:** 3001/3002/3003 encoding changed from RGB555 to Reordered RGB555. Profile count 53→54. UseMhniDimensions and FallbackEncodings documented in advanced flags table.
 
 ### Fixed
 - **Documentation audit: stale profile/test counts updated across all docs.** README, CHANGELOG, ACKNOWLEDGMENTS, and what-is-this.md corrected: 49→53 built-in profiles, 528→530 tests, 35+→33 surveyed implementations, stale LOC in source layout table. v1.4.0 comparison URL added to CHANGELOG.
