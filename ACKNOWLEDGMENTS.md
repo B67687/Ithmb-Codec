@@ -1,6 +1,6 @@
 # Acknowledgments
 
-Every known open-source `.ithmb` implementation (35+ total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge during development.
+Every known open-source `.ithmb` implementation (33 total) was surveyed across GitHub, GitLab, Codeberg, SourceHut, Bitbucket, Gitee, and SourceForge during development.
 
 ---
 
