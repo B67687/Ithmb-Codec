@@ -76,7 +76,7 @@ internal static unsafe partial class IthmbCodecPlugin
             [1056] = new(1056, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
             [1060] = new(1060, 320, 320, IthmbEncoding.Rgb565, 320 * 320 * 2),
             // Classic cover art small: 55×55 nominal, 56-pixel rows (Reuhno)
-            [1061] = new(1061, 55, 55, IthmbEncoding.Rgb565, 56 * 55 * 2),
+            [1061] = new(1061, 55, 55, IthmbEncoding.Rgb565, 56 * 55 * 2, UseMhniDimensions: true),
             // iPod Nano 6G photo thumbnail and full-screen
             [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
             [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
@@ -97,14 +97,15 @@ internal static unsafe partial class IthmbCodecPlugin
             [2002] = new(2002, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2, LittleEndian: false),
             [2003] = new(2003, 150, 150, IthmbEncoding.Rgb565, 150 * 150 * 2, LittleEndian: false),
             // iPod touch cover art (iOpenPod) — RGB555 LE
-            [3001] = new(3001, 256, 256, IthmbEncoding.Rgb555, 256 * 256 * 2),
-            [3002] = new(3002, 128, 128, IthmbEncoding.Rgb555, 128 * 128 * 2),
-            [3003] = new(3003, 64, 64, IthmbEncoding.Rgb555, 64 * 64 * 2),
+            [3001] = new(3001, 256, 256, IthmbEncoding.ReorderedRgb555, 256 * 256 * 2),
+            [3002] = new(3002, 128, 128, IthmbEncoding.ReorderedRgb555, 128 * 128 * 2),
+            [3003] = new(3003, 64, 64, IthmbEncoding.ReorderedRgb555, 64 * 64 * 2),
+            // iPod Touch / iPhone cover art — 320×320 square (libgpod itdb_device.c)
             [3005] = new(3005, 320, 320, IthmbEncoding.Rgb555, 320 * 320 * 2),
             // iPhone 1G/2G, iPod Touch 1G/2G photo thumbnail variants
             // Note: iOS 1.x used different dims per Steee29: 3004=55×55, 3009=120×160 (swapped!), 3011=75×75
             // Our dimensions are from libgpod (iOS 2G+). Use profiles.json to override if targeting iPhone 1.x.
-            [3004] = new(3004, 56, 55, IthmbEncoding.Rgb555, 56 * 55 * 2),
+            [3004] = new(3004, 56, 55, IthmbEncoding.Rgb555, 56 * 55 * 2, IsPadded: true, SlotSize: 8192),
             [3009] = new(3009, 160, 120, IthmbEncoding.Rgb555, 160 * 120 * 2),
             [3011] = new(3011, 80, 79, IthmbEncoding.Rgb555, 80 * 79 * 2),
             // iPhone 1G/2G, iPod Touch 1G/2G full-screen
@@ -180,6 +181,8 @@ internal static unsafe partial class IthmbCodecPlugin
             string encoding = "rgb565";
             bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false, swapRgb = false;
             int rotationDeg = 0, cropX = 0, cropY = 0, cropW = 0, cropH = 0;
+            bool useMhni = false;
+            List<IthmbEncoding>? fallbackEncodings = null;
 
             while (pos < json.Length)
             {
@@ -215,6 +218,8 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "cropY": cropY = ParseJsonInt(json, ref pos); break;
                     case "cropWidth": cropW = ParseJsonInt(json, ref pos); break;
                     case "cropHeight": cropH = ParseJsonInt(json, ref pos); break;
+                    case "useMhniDimensions": useMhni = ParseJsonBool(json, ref pos); break;
+                    case "fallbackEncodings": fallbackEncodings = ParseEncodingArray(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos, 32); break;
                 }
 
@@ -229,11 +234,13 @@ internal static unsafe partial class IthmbCodecPlugin
                     : string.Equals(encoding, "yuv422cl", StringComparison.OrdinalIgnoreCase) ? (clSingle = true, IthmbEncoding.Yuv422).Item2
                     : string.Equals(encoding, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
                     : string.Equals(encoding, "rgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb555
+                    : string.Equals(encoding, "reorderedrgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.ReorderedRgb555
                     : IthmbEncoding.Rgb565;
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl,
                     SwapChromaPlanes: swapPlanes, ClChroma: clSingle, SwapRgbChannels: swapRgb, Rotation: rotationDeg,
-                    CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH);
+                    CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH,
+                    UseMhniDimensions: useMhni, FallbackEncodings: fallbackEncodings?.ToArray());
             }
 
             SkipWhitespace(json, ref pos);
@@ -318,5 +325,31 @@ internal static unsafe partial class IthmbCodecPlugin
         // number or boolean
         while (pos < s.Length && s[pos] != ',' && s[pos] != '}' && s[pos] != ']' && !char.IsWhiteSpace(s[pos]))
             pos++;
+    }
+
+    /// <summary>Parses a JSON array of encoding strings, e.g. ["rgb555", "reorderedrgb555"].</summary>
+    private static List<IthmbEncoding>? ParseEncodingArray(string s, ref int pos)
+    {
+        SkipWhitespace(s, ref pos);
+        if (pos >= s.Length || s[pos] != '[') return null;
+        pos++; // skip '['
+        var list = new List<IthmbEncoding>();
+        while (pos < s.Length)
+        {
+            SkipWhitespace(s, ref pos);
+            if (pos >= s.Length) break;
+            if (s[pos] == ']') { pos++; return list.Count > 0 ? list : null; }
+            string? enc = ParseJsonString(s, ref pos);
+            if (enc == null) break;
+            list.Add(string.Equals(enc, "rgb565", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb565
+                : string.Equals(enc, "rgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Rgb555
+                : string.Equals(enc, "reorderedrgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.ReorderedRgb555
+                : string.Equals(enc, "yuv422", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
+                : string.Equals(enc, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
+                : IthmbEncoding.Rgb565);
+            SkipWhitespace(s, ref pos);
+            if (pos < s.Length && s[pos] == ',') pos++;
+        }
+        return null;
     }
 }

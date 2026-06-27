@@ -57,7 +57,9 @@ public unsafe partial class IthmbCodecTests
         foreach (var fmt in touch1G.Formats)
         {
             var profile = IthmbCodecPlugin.KnownProfiles[fmt.FormatId];
-            Assert.Equal(IthmbCodecPlugin.IthmbEncoding.Rgb555, profile.Encoding);
+            Assert.True(profile.Encoding == IthmbCodecPlugin.IthmbEncoding.Rgb555
+                || profile.Encoding == IthmbCodecPlugin.IthmbEncoding.ReorderedRgb555,
+                $"Touch format {fmt.FormatId} has unexpected encoding {profile.Encoding}");
         }
     }
 

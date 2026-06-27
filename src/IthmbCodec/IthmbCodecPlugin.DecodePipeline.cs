@@ -148,7 +148,7 @@ internal static unsafe partial class IthmbCodecPlugin
                         return IGStatus.InvalidArg;
                     }
 
-                    var (pdFormatId, pdRawData, _, _) = pdEntries[frameIndex];
+                    var (pdFormatId, pdRawData, _, _, pdW, pdH) = pdEntries[frameIndex];
                     if (!KnownProfiles.TryGetValue(pdFormatId, out var pdProfile))
                     {
                         if (pdRawData.Length >= 2 && pdRawData[0] == 0xFF && pdRawData[1] == 0xD8)
@@ -166,12 +166,15 @@ internal static unsafe partial class IthmbCodecPlugin
                     byte[] synthetic = new byte[4 + pdRawData.Length];
                     pdRawData.CopyTo(synthetic, 4);
 
-                    FillImageInfo(outInfo, pdProfile.Width, pdProfile.Height, hasAlpha: 0, orientation: 1,
+                    int useW = pdProfile.UseMhniDimensions && pdW > 0 ? pdW : pdProfile.Width;
+                    int useH = pdProfile.UseMhniDimensions && pdH > 0 ? pdH : pdProfile.Height;
+                    if (pdProfile.SwapsDimensions) (useW, useH) = (useH, useW);
+
+                    FillImageInfo(outInfo, useW, useH, hasAlpha: 0, orientation: 1,
                         fileSize: synthetic.Length, frameCount: pdFrameCount);
                     if (outBuf == null) return IGStatus.OK;
 
-                    // frameIndex=0 for the synthetic buffer (it contains exactly one frame)
-                    return DecodeRawProfile(synthetic, pdProfile, cancellation, outInfo, outBuf, frameIndex: 0);
+                    return DecodeRawProfile(synthetic, pdProfile, cancellation, outInfo, outBuf, frameIndex: 0, overrideW: useW, overrideH: useH);
                 }
 
             // Read the 4-byte big-endian prefix. This is either a format_id matched against
@@ -227,10 +230,10 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ------------------------------ Raw profile decoding ------------------------------
     internal static IGStatus DecodeRawProfile(byte[] data, IthmbVariantProfile profile,
-        void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf, int frameIndex = 0)
+        void* cancellation, IGImageInfo* outInfo, IGPixelBuffer* outBuf, int frameIndex = 0, int overrideW = 0, int overrideH = 0)
     {
-        int w = profile.Width, h = profile.Height;
-        if (profile.SwapsDimensions) (w, h) = (h, w);
+        int w = overrideW > 0 ? overrideW : profile.Width;
+        int h = overrideH > 0 ? overrideH : profile.Height;
         // SlotSize overrides FrameByteLength for frame slicing when set (padded profiles
         // with fixed slot boundaries, e.g., iPod Touch cover art at 8192/16384 byte slots).
         int frameSize = profile.SlotSize > 0 ? profile.SlotSize : profile.FrameByteLength;
@@ -302,20 +305,15 @@ internal static unsafe partial class IthmbCodecPlugin
                 raw.CopyTo(padded);
                 raw = padded;
             }
-            bool ok = profile.Encoding switch
+            bool ok = TryDecode(raw, pixels, w, h, profile.Encoding, profile);
+            if (!ok && profile.FallbackEncodings != null)
             {
-                IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
-                IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian, profile.SwapRgbChannels),
-                IthmbEncoding.Yuv422 => profile.ClChroma
-                    ? DecodeYuv422Cl(raw, pixels, w, h)
-                    : profile.ClclChroma
-                    ? DecodeYuv422Clcl(raw, pixels, w, h)
-                    : profile.IsInterlaced
-                    ? DecodeYuv422Interlaced(raw, pixels, w, h)
-                    : DecodeYuv422(raw, pixels, w, h),
-                IthmbEncoding.Ycbcr420 => DecodeYcbcr420(raw, pixels, w, h, profile.SwapChromaPlanes),
-                _ => false,
-            };
+                foreach (var fallbackEnc in profile.FallbackEncodings)
+                {
+                    ok = TryDecode(raw, pixels, w, h, fallbackEnc, profile);
+                    if (ok) break;
+                }
+            }
             if (!ok)
             {
                 NativeMemory.Free(pixels);
@@ -374,5 +372,26 @@ internal static unsafe partial class IthmbCodecPlugin
         outBuf->Stride = (int)stride;
         outBuf->PixelFormat = (int)IGPixelFormat.Bgra8Unorm;
         return IGStatus.OK;
+    }
+
+    /// <summary>Tries decoding raw data with the given encoding. Returns false on failure.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    private static bool TryDecode(ReadOnlySpan<byte> raw, byte* pixels, int w, int h, IthmbEncoding enc, IthmbVariantProfile profile)
+    {
+        return enc switch
+        {
+            IthmbEncoding.Rgb565 => DecodeRgb565(raw, pixels, w, h, profile.LittleEndian),
+            IthmbEncoding.Rgb555 => DecodeRgb555(raw, pixels, w, h, profile.LittleEndian, profile.SwapRgbChannels),
+            IthmbEncoding.ReorderedRgb555 => DecodeReorderedRgb555(raw, pixels, w, h, profile.LittleEndian),
+            IthmbEncoding.Yuv422 => profile.ClChroma
+                ? DecodeYuv422Cl(raw, pixels, w, h)
+                : profile.ClclChroma
+                ? DecodeYuv422Clcl(raw, pixels, w, h)
+                : profile.IsInterlaced
+                ? DecodeYuv422Interlaced(raw, pixels, w, h)
+                : DecodeYuv422(raw, pixels, w, h),
+            IthmbEncoding.Ycbcr420 => DecodeYcbcr420(raw, pixels, w, h, profile.SwapChromaPlanes),
+            _ => false,
+        };
     }
 }

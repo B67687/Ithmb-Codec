@@ -300,4 +300,57 @@ internal static unsafe partial class IthmbCodecPlugin
             pDst += 4;
         }
     }
+
+    // ---------- Reordered RGB555 (quad-tree / REC_RGB555) ----------
+    //
+    // Apple's recursive-ordered dither format used by iPhone/Touch cover art
+    // (profiles 3001/3002/3003). Pixels are stored in Morton Z-order (interleaved
+    // bit pattern) rather than raster scanline order. De-derange reconstructs
+    // raster-order pixels, then each is decoded as standard RGB555→BGRA8.
+    // The quadtree level is determined by the image dimension (must be power-of-2, square).
+    /// <summary>Returns false when the input buffer is too small or dimensions are invalid.</summary>
+    internal static bool DecodeReorderedRgb555(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian)
+    {
+        if (w <= 0 || h <= 0) return false;
+        if (w != h) return false; // REC_RGB555 only used for square images in practice
+        if ((w & (w - 1)) != 0) return false; // must be power of 2
+        long expectedBytes = (long)w * h * 2;
+        if (src.Length < expectedBytes) return false;
+
+        int bits = System.Numerics.BitOperations.Log2((uint)w);
+        // Temp buffer for de-deranged RGB555 pixel data (raster order)
+        byte[] temp = new byte[w * h * 2];
+        fixed (byte* pSrc = src)
+        fixed (byte* pTemp = temp)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    // Compute Morton Z-order index from (x, y)
+                    uint z = MortonInterleave((uint)x, (uint)y, bits);
+                    int srcIdx = (int)z * 2;
+                    int dstIdx = (y * w + x) * 2;
+                    pTemp[dstIdx] = pSrc[srcIdx];
+                    pTemp[dstIdx + 1] = pSrc[srcIdx + 1];
+                }
+            }
+        }
+        // Decode reordered data as plain RGB555
+        return DecodeRgb555(temp, dst, w, h, littleEndian);
+    }
+
+    /// <summary>Interleaves bits of x and y into Morton Z-order (y0 x0 y1 x1 ...).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint MortonInterleave(uint x, uint y, int bits)
+    {
+        uint z = 0;
+        for (int i = 0; i < bits; i++)
+        {
+            z |= ((x >> i) & 1) << (2 * i + 1);
+            z |= ((y >> i) & 1) << (2 * i);
+        }
+        return z;
+    }
+
 }
