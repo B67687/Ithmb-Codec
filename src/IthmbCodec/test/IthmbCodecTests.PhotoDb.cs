@@ -136,7 +136,7 @@ public unsafe partial class IthmbCodecTests
         Assert.Equal(1, frameCount);
         Assert.Single(entries);
 
-        var (formatId, rawData, _, _) = entries[0];
+        var (formatId, rawData, _, _, _, _) = entries[0];
         Assert.Equal(1017, formatId);
 
         // Look up format in KnownProfiles
@@ -227,7 +227,7 @@ public unsafe partial class IthmbCodecTests
         Assert.Equal(1, frameCount);
         Assert.Single(entries);
 
-        var (fmtId, data, _, _) = entries[0];
+        var (fmtId, data, _, _, _, _) = entries[0];
         Assert.Equal(9999, fmtId);
         Assert.False(IthmbCodecPlugin.KnownProfiles.ContainsKey(9999));
         Assert.True(data.Length >= 2);

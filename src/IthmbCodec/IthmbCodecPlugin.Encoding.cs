@@ -74,6 +74,35 @@ internal static unsafe partial class IthmbCodecPlugin
         return result;
     }
 
+    // ---- Reordered RGB555 encoder (REC_RGB555: quad-tree derange + RGB555) ----
+    internal static byte[] EncodeReorderedRgb555(ReadOnlySpan<byte> bgra, int w, int h, bool bigEndian)
+    {
+        // Step 1: Encode as plain RGB555
+        byte[] plain = EncodeRgb555(bgra, w, h, bigEndian);
+
+        int bits = System.Numerics.BitOperations.Log2((uint)w);
+        // Step 2: Derange (raster → Morton Z-order)
+        byte[] result = new byte[plain.Length];
+        unsafe
+        {
+            fixed (byte* pSrc = plain)
+            fixed (byte* pDst = result)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    for (int x = 0; x < w; x++)
+                    {
+                        uint z = MortonInterleave((uint)x, (uint)y, bits);
+                        int srcIdx = (y * w + x) * 2;
+                        int dstIdx = (int)z * 2;
+                        pDst[dstIdx] = pSrc[srcIdx];
+                        pDst[dstIdx + 1] = pSrc[srcIdx + 1];
+                    }
+                }
+            }
+        }
+        return result;
+    }
     // ---- UYVY encoder (BT.601) ----
     internal static byte[] EncodeUyvy(ReadOnlySpan<byte> bgra, int w, int h)
     {
@@ -272,9 +301,10 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 IthmbEncoding.Rgb565 => EncodeRgb565(src, fw, fh, !profile.LittleEndian),
                 IthmbEncoding.Rgb555 => EncodeRgb555(src, fw, fh, !profile.LittleEndian, profile.SwapRgbChannels),
+                IthmbEncoding.ReorderedRgb555 => EncodeReorderedRgb555(src, fw, fh, !profile.LittleEndian),
                 IthmbEncoding.Yuv422 => EncodeUyvy(src, fw, fh),
                 IthmbEncoding.Ycbcr420 => EncodeYcbcr420(src, fw, fh, profile.SwapChromaPlanes),
-                _ => throw new ArgumentException($"Unknown encoding: {profile.Encoding}")
+                _ => throw new ArgumentException("Unknown encoding: " + profile.Encoding)
             };
         }
 

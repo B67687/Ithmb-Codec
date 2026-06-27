@@ -345,11 +345,11 @@ internal static unsafe partial class PhotoDb
     /// from all MHNI (thumbnail info) entries found.
     /// </summary>
     /// <param name="data">The full PhotoDB file contents.</param>
-    /// <param name="entries">Output list of (format_id, raw ithmb_data) pairs.</param>
+    /// <param name="entries">Output list of (format_id, raw ithmb_data, ithmb_offset, image_size, width, height) pairs.</param>
     /// <param name="frameCount">Total entries found; equals <c>entries.Count</c>.</param>
     /// <returns>true if the database was valid and parsed successfully; false otherwise.</returns>
     internal static bool TryParsePhotoDb(ReadOnlySpan<byte> data,
-        out List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize)> entries, out int frameCount)
+        out List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize, int Width, int Height)> entries, out int frameCount)
     {
         entries = [];
         frameCount = 0;
@@ -382,7 +382,7 @@ internal static unsafe partial class PhotoDb
                     {
                         var trimmed = new byte[jpegLen];
                         Array.Copy(entry.Data, trimmed, jpegLen);
-                        entries[i] = (entry.FormatId, trimmed, entry.IthmbOffset, jpegLen);
+                        entries[i] = (entry.FormatId, trimmed, entry.IthmbOffset, jpegLen, entry.Width, entry.Height);
                     }
                 }
             }
@@ -412,7 +412,7 @@ internal static unsafe partial class PhotoDb
     }
 
     private static void WalkEntries(ReadOnlySpan<byte> data, int startOffset, int endOffset,
-        int endian, ref List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize)> entries,
+        int endian, ref List<(int FormatId, byte[] Data, int IthmbOffset, int ImageSize, int Width, int Height)> entries,
         int depth = 0)
     {
         if (depth > 64) return;
@@ -449,7 +449,7 @@ internal static unsafe partial class PhotoDb
                 if (mhni.IthmbOffset >= 0 && mhni.ImageSize > 0 &&
                     (long)mhni.IthmbOffset + mhni.ImageSize <= data.Length)
                 {
-                    entries.Add((mhni.FormatId, data.Slice(mhni.IthmbOffset, mhni.ImageSize).ToArray(), mhni.IthmbOffset, mhni.ImageSize));
+                    entries.Add((mhni.FormatId, data.Slice(mhni.IthmbOffset, mhni.ImageSize).ToArray(), mhni.IthmbOffset, mhni.ImageSize, mhni.Width, mhni.Height));
                 }
 
                 pos += (int)mhni.HeaderSize;
