@@ -1,0 +1,43 @@
+# dependabot.yml — automated dependency updates
+#
+# Keeps NuGet dependencies current. The test project uses floating versions
+# (17.*, 2.*, 3.*) pinned by packages.lock.json — Dependabot will open PRs
+# when new minor/patch versions are available.
+
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/src/IthmbCodec/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+
+  - package-ecosystem: "nuget"
+    directory: "/src/IthmbCodec/test/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "nuget"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "github-actions"
