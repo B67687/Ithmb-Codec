@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- **Documentation audit: stale profile/test counts updated across all docs.** README, CHANGELOG, ACKNOWLEDGMENTS, and what-is-this.md corrected: 49→53 built-in profiles, 528→530 tests, 35+→33 surveyed implementations, stale LOC in source layout table. v1.4.0 comparison URL added to CHANGELOG.
+
+### Added
+- **linux-x64 CI build workflow:** `.github/workflows/build-linux.yml` — validates both Release and Debug builds on push/PR for the primary development platform.
+- **NuGet dependency lockfile:** `packages.lock.json` enabled for the test project — locked restore (`--locked-mode`) ensures reproducible builds.
+- **Dependabot configuration:** `.github/dependabot.yml` for weekly NuGet and GitHub Actions dependency updates.
+
+### Changed
+- **BT.601 YUV coefficients relocated:** `YuvRCoef`, `YuvGCoefCb`, `YuvGCoefCr`, `YuvBCoef` moved from `Rgb565Rgb555.cs` to `YuvUtils.cs` where they are used. Functional no-op (same partial class).
+
 ## [1.4.0] — 2026-06-26
 
 ### Fixed

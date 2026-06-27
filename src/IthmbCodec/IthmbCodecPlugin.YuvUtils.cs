@@ -1,12 +1,17 @@
-// Shared YUV→RGB conversion utilities for .ithmb raw profile decoders.
+// Shared YUV-to-RGB conversion utilities for .ithmb raw profile decoders.
 using System.Runtime.CompilerServices;
 
 namespace IthmbCodec;
 
 internal static unsafe partial class IthmbCodecPlugin
 {
-    // ---------- YUV→RGB conversion ----------
-    // Constants YuvRCoef/YuvGCoefCb/YuvGCoefCr/YuvBCoef defined in Rgb565Rgb555.cs
+    // ---------- YUV-to-RGB conversion ----------
+
+    // BT.601 YUV-to-RGB conversion coefficients (ITU-R BT.601-7)
+    internal const int YuvRCoef = 359;   //  1.402  (Cr contribution to R)
+    internal const int YuvGCoefCb = 88;  // -0.344  (Cb contribution to G)
+    internal const int YuvGCoefCr = 183; // -0.714  (Cr contribution to G)
+    internal const int YuvBCoef = 454;   //  1.772  (Cb contribution to B)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void WriteYuvPixel(byte* pDst, int luma, int cb, int cr)
