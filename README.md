@@ -13,8 +13,8 @@
 <hr style="max-width: 360px;">
 <sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek V4 Flash"></a>
-<a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode TUI"></a>
+<a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek v4 Flash Oh My OpenAgent"></a>
+<a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="Harness OpenCode Oh My OpenAgent"></a>
 </div>
 <br>
 
