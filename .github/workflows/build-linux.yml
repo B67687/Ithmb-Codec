@@ -1,0 +1,61 @@
+# build-linux.yml — linux-x64 build + test validation
+#
+# Purpose: validates the library builds and all tests pass on the primary
+# development platform (linux-x64). Includes both Release and Debug builds
+# to catch configuration-specific issues early.
+
+name: build-linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: linux-x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Display .NET info
+        run: |
+          dotnet --info
+          echo "Architecture: $(uname -m)"
+
+      - name: Restore dependencies (locked)
+        run: dotnet restore src/IthmbCodec/test/IthmbCodec.Tests.csproj --locked-mode
+
+      - name: Build (Release)
+        run: dotnet build src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-restore
+
+      - name: Build (Debug)
+        run: dotnet build src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-restore
+
+      - name: Run all tests (Release)
+        run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-build --verbosity normal --logger trx --results-directory linux-x64-release
+
+      - name: Run all tests (Debug)
+        run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-build --verbosity normal --logger trx --results-directory linux-x64-debug
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-x64-test-results
+          path: 
+          retention-days: 30
