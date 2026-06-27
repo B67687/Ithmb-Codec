@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - **F1061 profile dimensions corrected:** Width/Height changed from 56×56 to 55×55, FrameByteLength changed from 6272 to 6160 (56×55×2) to match real data from Reuhno's iPod Classic 6G. The slot is 56-pixel rows × 55 rows, not 56×56. The stride fix (src.Length/h = 112) correctly reads 55 pixels from each 112-byte row.
 - **Input row stride computed from actual data size instead of declared width:** All decoders (RGB565/RGB555 SSE2, NEON, Scalar, Tail × UYVY SIMD, NEON, Scalar, interlaced SIMD/NEON/Scalar × CLCL, CL) now compute input row stride as `src.Length / h` instead of `w * 2`. This fixes padded formats like F1061 (55×55 nominal, 56-pixel rows = 112-byte stride vs the old 110-byte stride that misaligned every row past row 0). Discovered via Reuhno's real iPod Classic 6G samples. (+0 tests, behavior-preserving for unpadded formats)
-- **Tail destination offset in SSE2/NEON paths:** `DecodeRgb565_Tail` and `DecodeRgb555_Tail` wrote to `pDstRow` instead of `pDstRow + xStart * 4`. Pre-existing bug that only manifests when `w % 8 != 0` with the SIMD path (e.g., F1061 at w=55). All previous test widths were powers of 2 or <8 (falling through to scalar). (+3 stride tests, 520 total)
+- **Tail destination offset in SSE2/NEON paths:** `DecodeRgb565_Tail` and `DecodeRgb555_Tail` wrote to `pDstRow` instead of `pDstRow + xStart * 4`. Pre-existing bug that only manifests when `w % 8 != 0` with the SIMD path (e.g., F1061 at w=55). All previous test widths were powers of 2 or <8 (falling through to scalar). (+3 stride tests, 530 total)
 - **Multi-frame decode span slicing:** `DecodeRawProfile` sliced the source buffer with `data.AsSpan(frameStart)`, passing the entire remaining buffer tail instead of just the current frame. Exposed by the stride fix (old `w*2` stride ignored `src.Length`). Now correctly trims to `frameSize` bytes.
 - **Interlaced UYVY field offset:** `DecodeYuv422Interlaced` methods computed the second-field offset using `(h+1)/2 * w * 2` instead of `(h+1)/2 * rowStride`. Fixed to use data-derived stride for consistency.
 
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Format IDs 1042, 1043, 3006, 3007:** Four additional built-in profiles — 1042 (320×240 RGB565, Classic photo alias for 1024), 1043 (130×88 RGB565, alias for 1015), 3006 (56×56 RGB555, iPod Touch cover art, slot-padded), 3007 (88×88 RGB555, slot-padded). Adds `SlotSize` field to `IthmbVariantProfile` for padded profiles. (+2 tests, 530 total)
 - **CLI `--extract-all-pd` and `--list-devices` flags:** `--extract-all-pd` batch-decodes all entries in a PhotoDB/ArtworkDB to individual BMPs; `--list-devices` prints the 18-device format table to stdout.
 - **PhotoDB inline JPEG blob detection:** `TryParsePhotoDb` post-processing detects entries with unknown format_id + FF D8 prefix and dispatches to `DecodeJpegSlice`. Covers PhotoDB entries where Apple stored JPEG data instead of raw pixel data. (+1 test)
-- **Byte-level corruption fuzz test:** `Fuzz_Corruption_RandomByteMutations` — 1000 iterations, fixed seed 42, all 7 decoders at random 4-128 dims. Random mutations: 10% bit flip, 5% byte swap, 5% truncate, 80% clean. NativeMemory alloc/free, no try/catch. (+1 test, 528 total)
+- **Byte-level corruption fuzz test:** `Fuzz_Corruption_RandomByteMutations` — 1000 iterations, fixed seed 42, all 7 decoders at random 4-128 dims. Random mutations: 10% bit flip, 5% byte swap, 5% truncate, 80% clean. NativeMemory alloc/free, no try/catch. (+1 test, 530 total)
 - **Reuhno CC0 synthetic test vectors:** 10-entry ArtworkDB + F1061/F1055/F1060 multi-frame .ithmb files + 30 reference PNGs + manifest.csv with SHA256 checksums. All 30 SHA256s verified against manifest. Committed to `samples/reuhno-synthetic/`. (+6 tests)
 - **ImageMagick delegate registration:** `tools/ithmb-delegate.xml` registers ITHMB format in ImageMagick's delegate system — runs `IthmbDecoder` behind the scenes for `magick ithmb:file.ithmb out.png`. Installer script at `tools/install-ithmb-magick.sh`.
 - **Benchmark summary in README:** 7-row benchmark table added under Tooling (RGB565=64µs, RGB555=66µs, UYVY=190µs, YCbCr420=221µs, YUV422I=190µs, CLCL=457µs, CL=591µs, all zero allocs).
@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **PhotoDB/ArtworkDB writer (`TryBuildPhotoDb`):** Added `TryBuildPhotoDb` to `IthmbCodecPlugin.PhotoDb.cs` — builds complete ArtworkDB binary from a list of (format_id, pixel_data, width, height) entries. Writes MHFD header → MHSD section → MHNI entries → pixel data (all entries first, then all pixel data for correct multi-entry roundtrip). Enables artwork sync to iPod without external tools. (+3 tests)
 - **PhotoDB integrity checker (`IntegrityCheckPhotoDb`):** Added `IntegrityCheckPhotoDb` + `IntegrityWalkTree` to PhotoDb.cs — validates chunk structure sanity, MHNI overlapping ranges, known format ID checks, trailing garbage detection. CLI `--check-pd` flag for stand-alone verification. (+3 tests)
 - **Device-specific format tables (`DeviceProfiles.cs`):** New `IthmbCodecPlugin.DeviceProfiles.cs` with static format tables for 18 iPod generations: Classic (5G, 5.5G, 6G), Nano (1G-7G), iPod Touch (1G-4G), iPhone (1G-2G), iPod Mini (1G-2G), iPod Photo (4G), iPod Video (5G), and iPod Mobile (Motorola). Each entry lists the format IDs required by that device for thumbnail display and cover art. (+5 tests)
-- **Format 1081 (640×480 RGB565):** New built-in profile for iPod Classic/Nano cover art large variant, documented in the consolidated format table from multiple sources. (+0 tests, 49 profiles total)
+- **Format 1081 (640×480 RGB565):** New built-in profile for iPod Classic/Nano cover art large variant, documented in the consolidated format table from multiple sources. (+0 tests, 53 profiles total)
 
 ### Changed
 
@@ -208,7 +208,8 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/B67687/ithmb-codec/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/B67687/ithmb-codec/compare/v1.1.0...v1.3.0
 [1.1.0]: https://github.com/B67687/ithmb-codec/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/B67687/ithmb-codec/releases/tag/v1.0.0
