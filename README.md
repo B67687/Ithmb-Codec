@@ -49,6 +49,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
+- [Contributions to the ecosystem](#contributions-to-the-ecosystem)
 - [Acknowledgments](#acknowledgments)
 - [Changelog](#changelog)
 - [License](#license)
@@ -156,7 +157,7 @@ See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 Quality checks run locally before release: linting, secret scanning, tests, static analysis, dependency audit, and link checking.
 
-### Contributions to the ecosystem
+## Contributions to the ecosystem
 
 Beyond building a working codec, this project made several original contributions to the .ithmb reverse-engineering space:
 
