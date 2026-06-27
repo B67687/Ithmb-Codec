@@ -26,8 +26,10 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 **F-prefix** (e.g. `F1019_1.ithmb`) — raw uncompressed thumbnails (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma). ✅ Cross-referenced against iOpenPod's empirically validated set (50+ profiles across multiple iPod models) and confirmed on real iPod Classic 6G samples (F1061/F1055/F1060).
 
-> [!NOTE]
-> **Special thanks to [Savi](https://github.com/TheRealSavi) from [iOpenPod](https://github.com/TheRealSavi/iOpenPod)** for hardware validation — purchasing multiple iPod models and testing profiles across firmware generations to confirm decoder correctness.
+<table><tr><td>
+🎖️ <strong>Special thanks to <a href="https://github.com/TheRealSavi">Savi</a> from <a href="https://github.com/TheRealSavi/iOpenPod">iOpenPod</a></strong><br>
+<em>For hardware validation — purchasing multiple iPod models and testing profiles across firmware generations to confirm decoder correctness.</em>
+</td></tr></table>
 
 > [!TIP]
 > New to `.ithmb` files? See [docs/what-is-this.md](docs/what-is-this.md) for a plain-english explainer.
