@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Architecture SVG updated to match current profile counts** — 54 profiles (was 49), 25 photo (was 22), 29 cover art (was 27). Pipeline inner boxes vertically centered. Long decoder label shortened (RGB565/RGB555→RGB565/555). EXIF box widened to match JPEG Path. Font-size reduced on crowded decoder line.
+- **README Contributions to ecosystem section updated** — surveyed implementations 4→22, dimension discrepancies 9→15. Added Steee29 iPhone 2G real-device validation, clickwheel 1062 discovery, gnupod/OrgZ profile corrections.
 - **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions, 538 total)
 - **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. Profiles count: 55 active + 1 speculative disabled (56 total). (+2 test assertions, 538 total)
+### Changed
+- **Profile system: Nano 7G override data deduplicated** — shared `Nano7GOverrides` field powers both `BuildProfileAlternates()` and `BuildDeviceOverrides()` instead of hardcoding the same values twice.
+- **ProfilesJson.cs sorted by prefix ascending** — easier maintenance, no functional change.
 ### Fixed
+- **Padded-profile short-file blind spot** — when `IsPadded=true` and raw data was slightly shorter than `validSize`, neither the trim path nor the zero-pad path ran. Decoder got wrong span size. Now zero-pads within tolerance.
+- **Defense-in-depth: padded-profile guard `>`→`>=`** — ensures exact-size files don't slip through the trim check.
 - **Nano 5G/6G device profiles inverted** — Our Nano 5G had Nano 6G photo formats (1092/1093) and vice versa. Corrected per OrgZ IPodCapabilities table. Nano 5G: 1056/1066/1073/1074/1078/1079/1087, Nano 6G: 1073/1074/1085/1089/1092/1093.
 - **Nano 3G profile was entirely wrong** — Had 6 Nano 4G+ formats (1066/1067/1068/1071/1073/1074) instead of 1060/1055/1061 per gnupod. Replaced.
 - **Nano 4G missing 1055 and 1068** — gnupod confirmed both 128×128 variants required. Added. Removed 6 extra formats belonging to Nano 5G/6G (1073/1085/1087/1089/1092/1093).
