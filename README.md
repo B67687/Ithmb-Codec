@@ -18,9 +18,19 @@
 </div>
 <br>
 
-**Goal:** The best open-source decoder for iPod Classic/Nano `.ithmb` thumbnail cache files (2005–2010), packaged as a Native AOT plugin for ImageGlass v10. 54 built-in profiles, 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON), multi-frame support for F-prefix raw files, BGR;15 channel-swap for iPhone formats, PhotoDB/ArtworkDB parser and builder, device-specific format tables, and 538 roundtrip-proven tests. Not an iOS 13+ thumbnail decoder — those are handled natively by Apple's software.
+A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails.
 
-A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that opens Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails. Two format categories exist:
+**Key features**
+
+- 54 built-in profiles covering 22 photo + 32 cover art formats
+- 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON)
+- 538 roundtrip-proven tests
+- PhotoDB/ArtworkDB read, write, and integrity checking
+- Multi-frame F-prefix raw file support
+- BGR;15 channel-swap for iPhone compatibility
+- Cross-platform builds (Windows x64/ARM64, Linux x64, macOS ARM64)
+
+> Not an iOS 13+ thumbnail decoder — those use a different proprietary format.
 
 **T-prefix** — contains an embedded JPEG. ✅ Fully supported (validated on 1,183 real files).
 
