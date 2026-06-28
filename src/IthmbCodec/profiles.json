@@ -1,55 +1,53 @@
-[
-  // External profile definitions for IthmbCodec.
-  // Add entries here to override built-in profiles or define new ones.
-  // This file is loaded on the first decode call and merged with built-in profiles.
-  // External entries take precedence over built-in ones.
-  //
-  // Schema:
-  //   prefix: int (format FXXXX, e.g. 1007)
-  //   width, height: int (pixels)
-  //   encoding: "rgb565" | "rgb555" | "yuv422" | "yuv422clcl" | "ycbcr420"
-  //     - rgb565: 2 Bpp, 16-bit: R(5) G(6) B(5), MSB-replicated to 8-bit
-  //     - rgb555: 2 Bpp, 16-bit: R(5) G(5) B(5), bit 15 unused, MSB-replicated
-  //     - yuv422: 2 Bpp, UYVY byte order: [U, Y0, V, Y1] per 2 pixels
-  //     - yuv422clcl: 2 Bpp, 4-bit nibble-packed Cb:Cr shared per 2 pixels
-  //     - ycbcr420: 2 Bpp, planar: Y plane + subsampled Cb, Cr planes
-  //   frameBytes: int (bytes per frame, including padding)
-  //   swapsDimensions: bool (optional, default false)
-  //   littleEndian: bool (optional, default true)
-  //   isPadded: bool (optional, default false — for YCbCr420 with 2-Bpp frames)
-  //   isInterlaced: bool (optional, default false — for F1019 YUV422 field-split)
-  //   isClcl: bool (optional, default false — for CLCL nibble-chroma YUV422, shared chroma)
-  //   isCl: bool (optional, default false — for CL per-pixel nibble-chroma YUV422)
-  //   swapChromaPlanes: bool (optional, default false — swaps Cb/Cr in YCbCr 4:2:0)
-  //   rotation: int (optional, default 0 — clockwise rotation degrees: 90, 180, or 270)
-  //
-  // Example — iPod Photo 4G full-screen (built-in, shown here for reference):
-  // {"prefix": 1013, "width": 220, "height": 176, "encoding": "rgb565", "frameBytes": 77440, "littleEndian": false}
-  //
-  // Album art / cover art formats (from iOpenPod format registry):
-  // All use standard RGB565 LE encoding. Add any of these to enable new prefix support:
-  // {"prefix": 1010, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
-  // {"prefix": 1027, "width": 100, "height": 100, "encoding": "rgb565", "frameBytes": 20000}
-  // {"prefix": 1056, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768}
-  // {"prefix": 1061, "width": 56, "height": 56, "encoding": "rgb565", "frameBytes": 6272}
-  // {"prefix": 1068, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768}
-  // {"prefix": 1071, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
-  // {"prefix": 1073, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
-  // {"prefix": 1074, "width": 50, "height": 50, "encoding": "rgb565", "frameBytes": 5000}
-  // {"prefix": 1078, "width": 80, "height": 80, "encoding": "rgb565", "frameBytes": 12800}
-  // {"prefix": 1084, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200}
-  // {"prefix": 1085, "width": 88, "height": 88, "encoding": "rgb565", "frameBytes": 15488}
-  // {"prefix": 1089, "width": 58, "height": 58, "encoding": "rgb565", "frameBytes": 6728}
-  // {"prefix": 2002, "width": 50, "height": 50, "encoding": "rgb565", "frameBytes": 5000, "littleEndian": false}
-  // {"prefix": 2003, "width": 150, "height": 150, "encoding": "rgb565", "frameBytes": 45000, "littleEndian": false}
-  // {"prefix": 3001, "width": 256, "height": 256, "encoding": "rgb555", "frameBytes": 131072}
-  // {"prefix": 3002, "width": 128, "height": 128, "encoding": "rgb555", "frameBytes": 32768}
-  // {"prefix": 3003, "width": 64, "height": 64, "encoding": "rgb555", "frameBytes": 8192}
-  // {"prefix": 3005, "width": 320, "height": 320, "encoding": "rgb555", "frameBytes": 204800}
-  //
-  // iOS 1.x firmware variants (iPhone 1.x, differs from libgpod's 2G+ dims per Steee29):
-  // Uncomment to override built-in profiles for iPhone 1.x targets:
-  // {"prefix": 3004, "width": 55, "height": 55, "encoding": "rgb555", "frameBytes": 6050}
-  // {"prefix": 3009, "width": 120, "height": 160, "encoding": "rgb555", "frameBytes": 38400, "littleEndian": false}
-  // {"prefix": 3011, "width": 75, "height": 75, "encoding": "rgb555", "frameBytes": 11250}
+// External profile overrides for IthmbCodec.
+// Built-in profiles live in IthmbCodecPlugin.ProfilesJson.cs (embedded JSON).
+// Add entries here to override built-in profiles or define new ones — no recompile needed.
+// This file is loaded on the first decode call; entries here take precedence over embedded.
+//
+// Schema:
+//   prefix: int (format FXXXX, e.g. 1007)
+//   width, height: int (pixels)
+//   encoding: "rgb565" | "rgb555" | "reorderedrgb555" | "yuv422" | "yuv422clcl" | "yuv422cl" | "ycbcr420"
+//   frameBytes: int (bytes per frame, including padding)
+//   littleEndian: bool (optional, default true)
+//   isPadded: bool (optional, default false)
+//   isInterlaced: bool (optional, default false)
+//   swapsDimensions: bool (optional, default false)
+//   isClcl: bool (optional, default false)
+//   isCl: bool (optional, default false)
+//   swapChromaPlanes: bool (optional, default false)
+//   swapRgbChannels: bool (optional, default false)
+//   rotation: int (optional, default 0 — 90/180/270)
+//   useMhniDimensions: bool (optional, default false)
+//   slotSize: int (optional, default 0 — slot padding for Touch/iPhone)
+//   cropX, cropY, cropWidth, cropHeight: int (optional)
+//   fallbackEncodings: string[] (optional — e.g. ["rgb555", "reorderedrgb555"])
+//
+// ── Example: override a built-in profile ──
+// Uncomment to change iPod Photo 4G full-screen to different dimensions:
+// {"prefix": 1013, "width": 220, "height": 176, "encoding": "rgb565", "frameBytes": 77440, "littleEndian": false}
+//
+// ── iOpenPod corrections ──
+// iOpenPod (verified with real hardware) differs from our built-in defaults in a few places.
+// Uncomment these if you want iOpenPod-verified dimensions instead of our defaults:
+//
+// Profile 1061: iOpenPod says 56x56; we default to 55x55 with UseMhniDimensions fallback.
+// {"prefix": 1061, "width": 56, "height": 56, "encoding": "rgb565", "frameBytes": 6272}
+//
+// Profile 1081: libgpod declares JPEG; iOpenPod confirms RGB565 640x480 (our default).
+// Only override if you have a sample that decodes as JPEG.
+// {"prefix": 1081, "width": 640, "height": 480, "encoding": "jpeg", "frameBytes": 614400}
+//
+// ── Nano 7G overrides ──
+// Nano 7G repurposes global format IDs with cover-art dimensions.
+// These are handled automatically by TryResolveProfile's device override system.
+// Uncomment if you want the global profiles to match Nano 7G's dimensions instead:
+// {"prefix": 1013, "width": 50, "height": 50, "encoding": "rgb565", "frameBytes": 5000}
+// {"prefix": 1015, "width": 58, "height": 58, "encoding": "rgb565", "frameBytes": 6728}
+// {"prefix": 1016, "width": 57, "height": 57, "encoding": "rgb565", "frameBytes": 6498}
+//
+// ── iOS 1.x firmware variants (iPhone 1.x — per Steee29) ──
+// libgpod does not distinguish iOS versions. Uncomment for iPhone 1.x targets:
+// {"prefix": 3004, "width": 55, "height": 55, "encoding": "rgb555", "frameBytes": 6050}
+// {"prefix": 3009, "width": 120, "height": 160, "encoding": "rgb555", "frameBytes": 38400, "littleEndian": false}
+// {"prefix": 3011, "width": 75, "height": 75, "encoding": "rgb555", "frameBytes": 11250}
 ]

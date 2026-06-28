@@ -31,7 +31,7 @@ A profile is a set of settings that tells the decoder how to interpret a raw .it
 - An **encoding** — which pixel format to use (RGB565, RGB555, UYVY, YCbCr420, CLCL, or CL)
 - Various flags — things like whether the pixel data is packed or padded, whether channels are swapped, etc.
 
-There are 53 built-in profiles covering known iPod/iPhone devices from 2004 through 2016.
+There are 54 built-in profiles covering known iPod/iPhone devices from 2004 through 2016.
 
 ## What's a Decoder?
 

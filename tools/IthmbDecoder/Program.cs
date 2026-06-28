@@ -189,7 +189,7 @@ unsafe class Program
 
         for (int i = 0; i < entries.Count; i++)
         {
-            var (fmtId, entryData, _, _) = entries[i];
+            var (fmtId, entryData, _, _, _, _) = entries[i];
             string fmtName = GetFormatIdName(fmtId);
             if (IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
             {
@@ -220,7 +220,7 @@ unsafe class Program
             return 1;
         }
 
-        var (fmtId, _, ithmbOffset, imageSize) = entries[index];
+        var (fmtId, _, ithmbOffset, imageSize, _, _) = entries[index];
 
         if (!IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
         {
@@ -365,7 +365,7 @@ unsafe class Program
         int success = 0, fail = 0;
         for (int i = 0; i < entries.Count; i++)
         {
-            var (fmtId, _, ithmbOffset, imageSize) = entries[i];
+            var (fmtId, _, ithmbOffset, imageSize, _, _) = entries[i];
             if (!IthmbCodecPlugin.KnownProfiles.TryGetValue(fmtId, out var profile))
             {
                 Console.Error.WriteLine($"Entry {i}: format {fmtId} unknown — skipping.");

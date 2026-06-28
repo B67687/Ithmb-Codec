@@ -149,7 +149,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     }
 
                     var (pdFormatId, pdRawData, _, _, pdW, pdH) = pdEntries[frameIndex];
-                    if (!KnownProfiles.TryGetValue(pdFormatId, out var pdProfile))
+                    if (!TryResolveProfile(pdFormatId, pdRawData.AsSpan(), out var pdProfile))
                     {
                         if (pdRawData.Length >= 2 && pdRawData[0] == 0xFF && pdRawData[1] == 0xD8)
                         {
@@ -184,7 +184,7 @@ internal static unsafe partial class IthmbCodecPlugin
             // was blocking our own encoder output (format IDs < 65536 have first byte 0x00).
             if (fileBytes.Length < 4) return IGStatus.DecodeFailed;
             int prefix = BinaryPrimitives.ReadInt32BigEndian(fileBytes.AsSpan(0, 4));
-            if (KnownProfiles.TryGetValue(prefix, out var profile))
+            if (TryResolveProfile(prefix, fileBytes.AsSpan(4), out var profile))
             {
                 // Check cache first (populated by a previous frameIndex or metadata call)
                 if (_rawFileCache.TryGetValue(path, out var cached))
@@ -240,8 +240,9 @@ internal static unsafe partial class IthmbCodecPlugin
 
         // Compute frame count for multi-image support.
         // F-prefix .ithmb files can contain multiple concatenated raw frames,
-        // each exactly frameSize bytes (confirmed by Keith's iPod Photo Reader,
-        // ithmbrdr, libgpod, and iOpenPod).
+        // each exactly frameSize bytes. Slot/padding mechanism verified by libgpod
+        // (itdb_device.c padding fields); multi-frame concatenation confirmed by
+        // Keith's iPod Photo Reader, ithmbrdr, and iOpenPod.
         int dataAfterPrefix = data.Length - 4;
         int frameCount = frameSize > 0 ? dataAfterPrefix / frameSize : 1;
         if (frameCount < 1) frameCount = 1;
@@ -294,7 +295,15 @@ internal static unsafe partial class IthmbCodecPlugin
                     IthmbEncoding.Ycbcr420 => w * h + ((w + 1) / 2) * ((h + 1) / 2) * 2,
                     _ => w * h * 2 // RGB565/RGB555/YUV422 are all 2 Bpp
                 };
-                if (raw.Length > validSize) raw = raw[..validSize];
+                if (raw.Length >= validSize) raw = raw[..validSize];
+                else if (raw.Length < validSize && raw.Length >= validSize - TrailingPaddingTolerance)
+                {
+                    // File is within tolerance of validSize (e.g., slightly undersized padded slot).
+                    // Zero-pad to validSize so the decoder can read the expected number of bytes.
+                    var padded = new byte[validSize];
+                    raw.CopyTo(padded);
+                    raw = padded;
+                }
             }
             // For non-padded profiles, handle trailing alignment tolerance:
             // if raw is slightly shorter than frameSize (within TrailingPaddingTolerance),

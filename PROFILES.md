@@ -1,6 +1,6 @@
 # Profiles
 
-54 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+55 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
@@ -59,8 +59,9 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 3005    | 320×320    | RGB555           | iPod touch (cover art xlarge)                    |
 | 3006    | 56×56      | RGB555           | iPod touch (cover art, padded slot 8192)          |
 | 3007    | 88×88      | RGB555           | iPod touch (cover art, padded slot 16384)         |
+|| 1062    | 56×56      | RGB565           | Nano 5G SysInfoExtended (clickwheel) — no device profile by default
 | 3008    | 640×480    | RGB555           | iPhone 1G/2G, iPod Touch (full-screen)           |
-| 3009    | 160×120    | RGB555           | iPhone 1G/2G, iPod Touch (photo prev)            |
+|| 3009    | 120×160    | RGB555           | iPhone 1G/2G, iPod Touch (photo prev, portrait, padded)            
 | 3011    | 80×79      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb)           |
 
 > **Note:** iOS 1.x firmware used slightly different dimensions for some iPhone format IDs (e.g., 3004=55×55, 3009=120×160, 3011=75×75 per Steee29/ithmb_converter). Our dimensions target iPhone 2G+ (per libgpod). If your iOS 1.x files fail to decode, try adjusting the dimensions via `profiles.json`.

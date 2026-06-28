@@ -1,7 +1,6 @@
-// Known profile definitions and external profiles.json loader for .ithmb raw profiles.
-// Provides the built-in 49-profile table and a minimal AOT-safe JSON parser for
-// user-provided profile overrides.
-// Separated from plugin ABI glue for independent AOT compilation.
+// Profile resolution system and external profiles.json loader for .ithmb raw profiles.
+// Built-in profile definitions live in IthmbCodecPlugin.ProfilesJson.cs (embedded JSON).
+// External profiles.json overrides take precedence at runtime — no recompile needed.
 
 using System.Collections.Frozen;
 using System.IO;
@@ -13,104 +12,14 @@ internal static unsafe partial class IthmbCodecPlugin
 {
     internal static volatile FrozenDictionary<int, IthmbVariantProfile> KnownProfiles = GetBuiltInProfiles();
 
-    private static FrozenDictionary<int, IthmbVariantProfile> GetBuiltInProfiles() =>
-        new Dictionary<int, IthmbVariantProfile>
-        {
-            [1007] = new(1007, 480, 864, IthmbEncoding.Rgb565, 480 * 864 * 2),
-            // iPod Nano 7G full-resolution photo (from iOpenPod)
-            [1005] = new(1005, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
-            [1009] = new(1009, 42, 30, IthmbEncoding.Rgb565, 42 * 30 * 2),
-            // iPod Photo 4G full-screen (big-endian, per iOpenPod/libgpod)
-            [1013] = new(1013, 220, 176, IthmbEncoding.Rgb565, 220 * 176 * 2, LittleEndian: false),
-            [1015] = new(1015, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
-            // Nano 7G cover art large (iOpenPod)
-            [1010] = new(1010, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
-            [1019] = new(1019, 720, 480, IthmbEncoding.Yuv422, 720 * 480 * 2, IsInterlaced: true),
-            [1020] = new(1020, 176, 220, IthmbEncoding.Rgb565, 176 * 220 * 2, SwapsDimensions: true, LittleEndian: false),
-            [1023] = new(1023, 176, 132, IthmbEncoding.Rgb565, 176 * 132 * 2, LittleEndian: false),
-            // iPod Classic 5G/6G full-screen
-            [1024] = new(1024, 320, 240, IthmbEncoding.Rgb565, 320 * 240 * 2),
-            // Nano/Classic cover art variants (iOpenPod)
-            [1027] = new(1027, 100, 100, IthmbEncoding.Rgb565, 100 * 100 * 2),
-            // iPod Classic thumbnail
-            [1031] = new(1031, 42, 42, IthmbEncoding.Rgb565, 42 * 42 * 2),  // Nano album art small
-            // iPod Nano 1G/2G photo list thumbnail
-            [1032] = new(1032, 42, 37, IthmbEncoding.Rgb565, 42 * 37 * 2),
-            [1036] = new(1036, 50, 41, IthmbEncoding.Rgb565, 50 * 41 * 2),
-            // iPod Nano 8GB (3G) photo library — 320×240 YCbCr 4:2:0, padded
-            // Documented in Whirlpool forum thread (Anywho's iThmbConv, 2007).
-            // No sample files exist for validation. Speculative — override via profiles.json if wrong.
-            // [1064] speculated as 320×240 YCbCr420 padded — disabled: no real sample has ever
-            // been found to validate. Not present in any known iPod Photo Cache dump, iOpenPod's
-            // 50+ profiles, Keith's iPod Photo Reader, libgpod, etc. Re-enable only after
-            // verifying against a real F1064 .ithmb file from actual hardware.
-            // [1064] = new(1064, 320, 240, IthmbEncoding.Ycbcr420, 320 * 240 * 2, IsPadded: true),
-            // iPod Classic 6G square photo thumbnail
-            [1066] = new(1066, 64, 64, IthmbEncoding.Rgb565, 64 * 64 * 2),
-            // iPod Classic 6G / nano 3G: 12-bit YCbCr 4:2:0 packed into 2 Bpp frame
-            [1067] = new(1067, 720, 480, IthmbEncoding.Ycbcr420, 720 * 480 * 2, IsPadded: true),
-            // Classic/Nano cover art variants (iOpenPod)
-            [1068] = new(1068, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
-            // Nano 4G/5G/6G cover art variants (iOpenPod)
-            [1071] = new(1071, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
-            [1073] = new(1073, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
-            [1074] = new(1074, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2),
-            [1078] = new(1078, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
-            // iPod Nano 4G photo thumbnails
-            [1079] = new(1079, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
-            [1081] = new(1081, 640, 480, IthmbEncoding.Rgb565, 640 * 480 * 2),
-            [1083] = new(1083, 240, 320, IthmbEncoding.Rgb565, 240 * 320 * 2),
-            // Nano 4G/6G cover art variants (iOpenPod)
-            [1084] = new(1084, 240, 240, IthmbEncoding.Rgb565, 240 * 240 * 2),
-            [1085] = new(1085, 88, 88, IthmbEncoding.Rgb565, 88 * 88 * 2),
-            [1089] = new(1089, 58, 58, IthmbEncoding.Rgb565, 58 * 58 * 2),
-            // iPod Nano 5G photo
-            [1087] = new(1087, 384, 384, IthmbEncoding.Rgb565, 384 * 384 * 2),
-            // Cover art / album art formats (also stored as .ithmb, same RGB565 encoding)
-            [1016] = new(1016, 140, 140, IthmbEncoding.Rgb565, 140 * 140 * 2),
-            [1017] = new(1017, 56, 56, IthmbEncoding.Rgb565, 56 * 56 * 2),
-            [1028] = new(1028, 100, 100, IthmbEncoding.Rgb565, 100 * 100 * 2),
-            [1029] = new(1029, 200, 200, IthmbEncoding.Rgb565, 200 * 200 * 2),
-            [1055] = new(1055, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
-            // Nano 5G cover art medium (iOpenPod)
-            [1056] = new(1056, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
-            [1060] = new(1060, 320, 320, IthmbEncoding.Rgb565, 320 * 320 * 2),
-            // Classic cover art small: 55×55 nominal, 56-pixel rows (Reuhno)
-            [1061] = new(1061, 55, 55, IthmbEncoding.Rgb565, 56 * 55 * 2, UseMhniDimensions: true),
-            // iPod Nano 6G photo thumbnail and full-screen
-            [1092] = new(1092, 80, 80, IthmbEncoding.Rgb565, 80 * 80 * 2),
-            [1093] = new(1093, 512, 512, IthmbEncoding.Rgb565, 512 * 512 * 2),
+    /// <summary>Parses the embedded <see cref="BuiltInProfilesJson">JSON</see> into the profile dictionary.</summary>
+    private static FrozenDictionary<int, IthmbVariantProfile> GetBuiltInProfiles()
+    {
+        var dict = new Dictionary<int, IthmbVariantProfile>();
+        ParseProfilesJson(BuiltInProfilesJson, dict);
+        return dict.ToFrozenDictionary();
+    }
 
-            // Compatibility alias for 1055 (same 128×128 cover art, older iTunes versions)
-            [1044] = new(1044, 128, 128, IthmbEncoding.Rgb565, 128 * 128 * 2),
-
-            // iPod Classic photo thumbnail aliases (pygpod photodb.py — likely identical to 1024/1015)
-            [1042] = new(1042, 320, 240, IthmbEncoding.Rgb565, 320 * 240 * 2),
-            [1043] = new(1043, 130, 88, IthmbEncoding.Rgb565, 130 * 88 * 2),
-
-            // iPod Touch cover art with slot padding (libgpod itdb_device.c)
-            // Each slot is padded to fixed byte boundaries regardless of image data size.
-            [3006] = new(3006, 56, 56, IthmbEncoding.Rgb555, 56 * 56 * 2, IsPadded: true, SlotSize: 8192),
-            [3007] = new(3007, 88, 88, IthmbEncoding.Rgb555, 88 * 88 * 2, IsPadded: true, SlotSize: 16384),
-
-            // iPod Mobile (Motorola ROKR/SLVR/RAZR) cover art — big-endian (iOpenPod)
-            [2002] = new(2002, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2, LittleEndian: false),
-            [2003] = new(2003, 150, 150, IthmbEncoding.Rgb565, 150 * 150 * 2, LittleEndian: false),
-            // iPod touch cover art (iOpenPod) — RGB555 LE
-            [3001] = new(3001, 256, 256, IthmbEncoding.ReorderedRgb555, 256 * 256 * 2),
-            [3002] = new(3002, 128, 128, IthmbEncoding.ReorderedRgb555, 128 * 128 * 2),
-            [3003] = new(3003, 64, 64, IthmbEncoding.ReorderedRgb555, 64 * 64 * 2),
-            // iPod Touch / iPhone cover art — 320×320 square (libgpod itdb_device.c)
-            [3005] = new(3005, 320, 320, IthmbEncoding.Rgb555, 320 * 320 * 2),
-            // iPhone 1G/2G, iPod Touch 1G/2G photo thumbnail variants
-            // Note: iOS 1.x used different dims per Steee29: 3004=55×55, 3009=120×160 (swapped!), 3011=75×75
-            // Our dimensions are from libgpod (iOS 2G+). Use profiles.json to override if targeting iPhone 1.x.
-            [3004] = new(3004, 56, 55, IthmbEncoding.Rgb555, 56 * 55 * 2, IsPadded: true, SlotSize: 8192),
-            [3009] = new(3009, 160, 120, IthmbEncoding.Rgb555, 160 * 120 * 2),
-            [3011] = new(3011, 80, 79, IthmbEncoding.Rgb555, 80 * 79 * 2),
-            // iPhone 1G/2G, iPod Touch 1G/2G full-screen
-            [3008] = new(3008, 640, 480, IthmbEncoding.Rgb555, 640 * 480 * 2),
-        }.ToFrozenDictionary();
 
     // ------------------------------ External profiles.json ------------------------------
 
@@ -154,6 +63,120 @@ internal static unsafe partial class IthmbCodecPlugin
         KnownProfiles = merged.ToFrozenDictionary();
     }
 
+    // ------------------------------ Device-contextual profile resolution ------------------------------
+
+    /// <summary>
+    /// Alternate profiles for format IDs with device-specific dimension/encoding variations.
+    /// Keyed by format ID. Used by <see cref="ResolveProfile"/> to heuristically select
+    /// the best match based on actual data size when device context is unavailable.
+    /// </summary>
+    private static volatile FrozenDictionary<int, IthmbVariantProfile[]> _profileAlternates
+        = BuildProfileAlternates();
+
+    /// <summary>
+    /// Device-specific format overrides: device name → format ID → override profile.
+    /// Used when the caller provides device context (e.g., from DeviceProfiles).
+    /// Currently populated with Nano 7G overrides (global IDs repurposed with cover-art dimensions).
+    /// </summary>
+    private static volatile FrozenDictionary<string, FrozenDictionary<int, IthmbVariantProfile>> _deviceOverrides
+        = BuildDeviceOverrides();
+
+    /// <summary>
+    /// Resolves the best-matching profile for a given format ID and raw pixel data.
+    /// Resolution order:
+    ///   1. Device-specific override (highest priority, requires device name context)
+    ///   2. Data-size heuristic (matches alternate profiles by frame size vs data length)
+    ///   3. Global KnownProfiles (fallback)
+    /// </summary>
+    /// <param name="formatId">The format ID from the .ithmb prefix or PhotoDB entry.</param>
+    /// <param name="data">Raw pixel data (without 4-byte prefix). Used for size heuristic.</param>
+    /// <param name="profile">The resolved profile when return is true.</param>
+    /// <param name="deviceName">Optional device name for device-specific override lookup.</param>
+    /// <returns>true if a profile was resolved; false if no profile matches the format ID.</returns>
+    internal static bool TryResolveProfile(int formatId, ReadOnlySpan<byte> data, out IthmbVariantProfile profile, string? deviceName = null)
+    {
+        // 1. Device-specific override (highest priority, requires device context)
+        if (deviceName != null
+            && _deviceOverrides.TryGetValue(deviceName, out var deviceFormats)
+            && deviceFormats.TryGetValue(formatId, out var deviceProfile))
+        {
+            profile = deviceProfile;
+            return true;
+        }
+
+        // 2. Data-size heuristic: try to find the matching alternate profile
+        if (_profileAlternates.TryGetValue(formatId, out var alternates))
+        {
+            int dataLen = data.Length;
+            foreach (var alt in alternates)
+            {
+                if (alt.FrameByteLength > 0
+                    && Math.Abs(dataLen - alt.FrameByteLength) <= TrailingPaddingTolerance)
+                {
+                    profile = alt;
+                    return true;
+                }
+            }
+        }
+
+        // 3. Fall back to global KnownProfiles
+        if (KnownProfiles.TryGetValue(formatId, out var globalProfile))
+        {
+            profile = globalProfile;
+            return true;
+        }
+
+        profile = default;
+        return false;
+    }
+
+    /// <summary>Shared Nano 7G cover art overrides: global format IDs repurposed with smaller cover-art dimensions.</summary>
+    private static readonly FrozenDictionary<int, IthmbVariantProfile> Nano7GOverrides = BuildNano7GOverrides();
+
+    private static FrozenDictionary<int, IthmbVariantProfile> BuildNano7GOverrides()
+    {
+        return new Dictionary<int, IthmbVariantProfile>
+        {
+            [1013] = new(1013, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2),
+            [1015] = new(1015, 58, 58, IthmbEncoding.Rgb565, 58 * 58 * 2),
+            [1016] = new(1016, 57, 57, IthmbEncoding.Rgb565, 57 * 57 * 2),
+        }.ToFrozenDictionary();
+    }
+
+    /// <summary>Builds the alternate profiles table for format IDs with device-specific variations.</summary>
+    private static FrozenDictionary<int, IthmbVariantProfile[]> BuildProfileAlternates()
+    {
+        var alternates = new Dictionary<int, List<IthmbVariantProfile>>();
+
+        // Helper: add an alternate profile for a format ID
+        void AddAlt(int formatId, int w, int h, IthmbEncoding enc, int frameBytes,
+            bool le = true, int rotation = 0)
+        {
+            if (!alternates.TryGetValue(formatId, out var list))
+                alternates[formatId] = list = new();
+            list.Add(new IthmbVariantProfile(formatId, w, h, enc, frameBytes,
+                LittleEndian: le, Rotation: rotation));
+        }
+
+        // Nano 7G overrides (from shared Nano7GOverrides — same data powers BuildDeviceOverrides)
+        foreach (var (_, alt) in Nano7GOverrides)
+            AddAlt(alt.Prefix, alt.Width, alt.Height, alt.Encoding, alt.FrameByteLength);
+
+        return alternates.ToFrozenDictionary(kv => kv.Key, kv => kv.Value.ToArray());
+    }
+
+    /// <summary>
+    /// Used when device context is provided to <see cref="TryResolveProfile"/>
+    /// (future: device selector, file metadata, or caller-provided hint).
+    /// </summary>
+    private static FrozenDictionary<string, FrozenDictionary<int, IthmbVariantProfile>> BuildDeviceOverrides()
+    {
+        return new Dictionary<string, FrozenDictionary<int, IthmbVariantProfile>>
+        {
+            ["iPod Nano 7G"] = Nano7GOverrides,
+        }.ToFrozenDictionary();
+    }
+
     /// <summary>Minimal AOT-safe JSON parser for the profiles.json schema.</summary>
     internal static void ParseProfilesJson(string json, Dictionary<int, IthmbVariantProfile> output)
     {
@@ -177,7 +200,7 @@ internal static unsafe partial class IthmbCodecPlugin
             if (json[pos] != '{') return;
             pos++; // skip '{'
 
-            int prefix = 0, width = 0, height = 0, frameBytes = 0;
+            int prefix = 0, width = 0, height = 0, frameBytes = 0, slotSize = 0;
             string encoding = "rgb565";
             bool swapsDim = false, le = true, padded = false, interlaced = false, clcl = false, clSingle = false, swapPlanes = false, swapRgb = false;
             int rotationDeg = 0, cropX = 0, cropY = 0, cropW = 0, cropH = 0;
@@ -219,6 +242,7 @@ internal static unsafe partial class IthmbCodecPlugin
                     case "cropWidth": cropW = ParseJsonInt(json, ref pos); break;
                     case "cropHeight": cropH = ParseJsonInt(json, ref pos); break;
                     case "useMhniDimensions": useMhni = ParseJsonBool(json, ref pos); break;
+                    case "slotSize": slotSize = ParseJsonInt(json, ref pos); break;
                     case "fallbackEncodings": fallbackEncodings = ParseEncodingArray(json, ref pos); break;
                     default: SkipJsonValue(json, ref pos, 32); break;
                 }
@@ -239,7 +263,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 output[prefix] = new IthmbVariantProfile(prefix, width, height, enc, frameBytes,
                     SwapsDimensions: swapsDim, LittleEndian: le, IsPadded: padded, IsInterlaced: interlaced, ClclChroma: clcl,
                     SwapChromaPlanes: swapPlanes, ClChroma: clSingle, SwapRgbChannels: swapRgb, Rotation: rotationDeg,
-                    CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH,
+                    CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH, SlotSize: slotSize,
                     UseMhniDimensions: useMhni, FallbackEncodings: fallbackEncodings?.ToArray());
             }
 

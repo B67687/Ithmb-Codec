@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 ### Added
+- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions, 538 total)
+- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. Profiles count: 55 active + 1 speculative disabled (56 total). (+2 test assertions, 538 total)
+### Fixed
+- **Nano 5G/6G device profiles inverted** — Our Nano 5G had Nano 6G photo formats (1092/1093) and vice versa. Corrected per OrgZ IPodCapabilities table. Nano 5G: 1056/1066/1073/1074/1078/1079/1087, Nano 6G: 1073/1074/1085/1089/1092/1093.
+- **Nano 3G profile was entirely wrong** — Had 6 Nano 4G+ formats (1066/1067/1068/1071/1073/1074) instead of 1060/1055/1061 per gnupod. Replaced.
+- **Nano 4G missing 1055 and 1068** — gnupod confirmed both 128×128 variants required. Added. Removed 6 extra formats belonging to Nano 5G/6G (1073/1085/1087/1089/1092/1093).
+- **Nano 1G/2G missing 1031(42×42)** — gnupod/pygpod confirmed this album art thumbnail. Added to both Nano 1G and Nano 2G.
+- **Format 3009 dimensions swapped (160×120→120×160)** — Steee29/ithmb_converter from real iPhone 2G iOS 1.1.4 shows portrait. Added isPadded:true and slotSize:40960.
+- **Mini 1G/2G artwork support removed** — Both iOpenPod and iOpenPod creator confirm `supports_artwork=False`. Removed 1024 and 1027 from Mini profiles.
+### Documentation
+- **Stale counts/docs updated** — README/CHANGELOG/PROFILES/what-is-this.md test count 530→538, profiles 53→55 active. PROFILES.md 3009 dimension corrected. 1062 added to profile table.
+
+### Added
 - **REC_RGB555 decoder (quad-tree / Morton Z-order) for iPhone/Touch cover art:** Apple's recursive-ordered dither format used by profiles 3001/3002/3003 (256×256, 128×128, 64×64). Pixels are stored in Morton Z-order (interleaved bit pattern) rather than raster scanline. Decoder de-deranges via MortonInterleave, then decodes as standard RGB555→BGRA8. Encoder (`EncodeReorderedRgb555`) reorders BGRA8→RGB555 via Morton Z-order for writing iPhone-compatible .ithmb files.
 - **Format 3004 SlotSize:8192 added** — libgpod's Itdb_ArtworkFormat `padding` field confirmed 8192 bytes slot padding for iPhone/Touch photo thumbnails (profile 3004, 56×55 Rgb555).
 - **Format 3005 (320×320 Rgb555) added** — iPhone/Touch cover art variant from libgpod's `ipod_touch_1_cover_art_info` table.
