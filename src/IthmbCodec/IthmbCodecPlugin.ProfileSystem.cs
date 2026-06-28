@@ -70,6 +70,19 @@ internal static unsafe partial class IthmbCodecPlugin
     /// Keyed by format ID. Used by <see cref="ResolveProfile"/> to heuristically select
     /// the best match based on actual data size when device context is unavailable.
     /// </summary>
+    /// <summary>Shared Nano 7G cover art overrides: global format IDs repurposed with smaller cover-art dimensions.</summary>
+    private static readonly FrozenDictionary<int, IthmbVariantProfile> Nano7GOverrides = BuildNano7GOverrides();
+
+    private static FrozenDictionary<int, IthmbVariantProfile> BuildNano7GOverrides()
+    {
+        return new Dictionary<int, IthmbVariantProfile>
+        {
+            [1013] = new(1013, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2),
+            [1015] = new(1015, 58, 58, IthmbEncoding.Rgb565, 58 * 58 * 2),
+            [1016] = new(1016, 57, 57, IthmbEncoding.Rgb565, 57 * 57 * 2),
+        }.ToFrozenDictionary();
+    }
+
     private static volatile FrozenDictionary<int, IthmbVariantProfile[]> _profileAlternates
         = BuildProfileAlternates();
 
@@ -130,18 +143,7 @@ internal static unsafe partial class IthmbCodecPlugin
         return false;
     }
 
-    /// <summary>Shared Nano 7G cover art overrides: global format IDs repurposed with smaller cover-art dimensions.</summary>
-    private static readonly FrozenDictionary<int, IthmbVariantProfile> Nano7GOverrides = BuildNano7GOverrides();
 
-    private static FrozenDictionary<int, IthmbVariantProfile> BuildNano7GOverrides()
-    {
-        return new Dictionary<int, IthmbVariantProfile>
-        {
-            [1013] = new(1013, 50, 50, IthmbEncoding.Rgb565, 50 * 50 * 2),
-            [1015] = new(1015, 58, 58, IthmbEncoding.Rgb565, 58 * 58 * 2),
-            [1016] = new(1016, 57, 57, IthmbEncoding.Rgb565, 57 * 57 * 2),
-        }.ToFrozenDictionary();
-    }
 
     /// <summary>Builds the alternate profiles table for format IDs with device-specific variations.</summary>
     private static FrozenDictionary<int, IthmbVariantProfile[]> BuildProfileAlternates()
