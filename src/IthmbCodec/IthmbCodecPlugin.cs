@@ -214,7 +214,7 @@ internal static unsafe partial class IthmbCodecPlugin
         int dstW = srcH, dstH = srcW;
         int newSize = dstW * dstH * 4;
         byte* rotated = (byte*)NativeMemory.Alloc((nuint)newSize);
-        if (rotated == null) { w = dstW; h = dstH; return; } // OOM: skip rotation
+        if (rotated == null) return; // OOM: skip rotation
         try
         {
             for (int y = 0; y < srcH; y++)

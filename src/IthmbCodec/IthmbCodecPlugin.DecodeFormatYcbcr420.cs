@@ -91,8 +91,8 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             int yRow0 = y * w;
             int yRow1 = (y + 1) * w;
-            byte* dstRow0 = dst + (nint)(y * w * 4);
-            byte* dstRow1 = dst + (nint)((y + 1) * w) * 4;
+            byte* dstRow0 = dst + (nint)y * w * 4;
+            byte* dstRow1 = dst + (nint)(y + 1) * w * 4;
 
             for (int x = 0; x < w; x += 2)
             {

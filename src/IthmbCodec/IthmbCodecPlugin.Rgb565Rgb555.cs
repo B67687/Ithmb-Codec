@@ -329,8 +329,10 @@ internal static unsafe partial class IthmbCodecPlugin
                 {
                     // Compute Morton Z-order index from (x, y)
                     uint z = MortonInterleave((uint)x, (uint)y, bits);
-                    int srcIdx = (int)z * 2;
+                    long srcIdx = (long)z * 2;
                     int dstIdx = (y * w + x) * 2;
+                    pTemp[dstIdx] = pSrc[(int)srcIdx];
+                    pTemp[dstIdx + 1] = pSrc[(int)srcIdx + 1];
                     pTemp[dstIdx] = pSrc[srcIdx];
                     pTemp[dstIdx + 1] = pSrc[srcIdx + 1];
                 }

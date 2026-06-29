@@ -46,7 +46,7 @@ jobs:
           echo "ARM NEON intrinsics: AdvSimd.IsSupported should be 'True'"
 
       - name: Restore dependencies
-        run: dotnet restore src/IthmbCodec/test/IthmbCodec.Tests.csproj
+        run: dotnet restore src/IthmbCodec/test/IthmbCodec.Tests.csproj --locked-mode
 
       - name: Build (Release)
         run: dotnet build src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-restore

@@ -163,8 +163,8 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 | `IthmbCodecPlugin.VariantProfile.cs` | Profile struct (IthmbVariantProfile, IthmbEncoding) |
 | `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD + REC_RGB555 quad-tree |
 | `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD |
-| `IthmbCodecPlugin.DecodeFormatClcl.cs` | CLCL nibble-chroma decoder |
-| `IthmbCodecPlugin.DecodeFormatCl.cs` | CL per-pixel chroma decoder |
+| `IthmbCodecPlugin.DecodeFormatClcl.cs` | CLCL nibble-chroma decoder + SSSE3/NEON SIMD |
+| `IthmbCodecPlugin.DecodeFormatCl.cs` | CL per-pixel chroma decoder + SSSE3/NEON SIMD |
 | `IthmbCodecPlugin.DecodeFormatYcbcr420.cs` | YCbCr 4:2:0 scalar + SIMD decoder |
 | `IthmbCodecPlugin.YuvUtils.cs` | Shared YUV conversion helpers |
 | `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) |
@@ -183,7 +183,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
                 └─ external .ithmb reference → read file → raw decoder → BGRA
 ```
 
-**SIMD acceleration:** RGB565/RGB555 → SSE2 or NEON (x64/ARM64, 4-6× gain), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (SSE2 on x64 + NEON on ARM64, 3-5× gain). CLCL nibble-chroma is scalar-only. **BGR15 channel-swap** (`SwapRgbChannels` flag) supported in all decoder variants — SIMD uses a conditional branch outside the pixel loop (zero per-pixel overhead when inactive). NEON CI validated on native ARM64 runners.
+**SIMD acceleration:** RGB565/RGB555 → SSE2 or NEON (x64/ARM64, 4-6× gain), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (SSE2 on x64 + NEON on ARM64, 3-5× gain). CLCL nibble-chroma and CL per-pixel chroma → SSSE3 or NEON (x64/ARM64). **BGR15 channel-swap** (`SwapRgbChannels` flag) supported in all decoder variants — SIMD uses a conditional branch outside the pixel loop (zero per-pixel overhead when inactive). NEON CI validated on native ARM64 runners.
 
 **Multi-frame support** — F-prefix `.ithmb` files may contain multiple concatenated raw frames (confirmed by Keith's iPod Photo Reader, ithmbrdr, libgpod, and iOpenPod). The codec detects frame count from file size and caches the file for read-once decode-many access. Callers can access individual frames via `frameIndex` (0-based); out-of-range indices return `IGStatus.InvalidArg`. JPEG-embedded T-prefix files are always single-frame.
 

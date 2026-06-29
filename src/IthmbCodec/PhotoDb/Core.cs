@@ -424,11 +424,11 @@ internal static unsafe partial class PhotoDb
             uint hdrSize = ReadU32(data, pos + 4, endian);
 
             // Sanity check: headerSize must be >= 8 and within bounds
-            if (hdrSize < 8 || pos + hdrSize > endOffset)
+            if (hdrSize < 8 || (long)pos + hdrSize > endOffset)
             {
                 // Unknown bytes or padding between chunks — advance by 1 and re-scan.
                 // Breaking here would miss subsequent chunks (e.g. MHNI after padding).
-                pos++;
+                pos += hdrSize == 0 ? 4 : 1;
                 continue;
             }
 

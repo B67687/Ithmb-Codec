@@ -328,6 +328,41 @@ internal static unsafe partial class IthmbCodecPlugin
                 NativeMemory.Free(pixels);
                 return IGStatus.DecodeFailed;
             }
+
+            // Apply post-decode rotation (speculative, for profiles with Rotation≠0)
+            if (profile.Rotation != 0 && w > 0 && h > 0)
+            {
+                RotateBgra(pixels, ref w, ref h, profile.Rotation);
+                stride = (ulong)w * 4UL;
+            }
+
+            // Apply post-decode crop for centered-padding photo formats.
+            // Crop is applied AFTER rotation so the crop region references the final orientation.
+            // When CropWidth/CropHeight are non-zero, copy the visible region into a new
+            // buffer and free the full-frame buffer. Based on iOpenPod's _crop_visible_region.
+            if (profile.CropWidth > 0 && profile.CropHeight > 0 &&
+                profile.CropX >= 0 && profile.CropY >= 0 &&
+                (long)profile.CropX + profile.CropWidth <= w &&
+                (long)profile.CropY + profile.CropHeight <= h)
+            {
+                int cropW = profile.CropWidth, cropH = profile.CropHeight;
+                byte* cropped = (byte*)NativeMemory.AllocZeroed((nuint)(cropW * 4 * cropH));
+                if (cropped != null)
+                {
+                    for (int y = 0; y < cropH; y++)
+                    {
+                        int srcOff = ((profile.CropY + y) * w + profile.CropX) * 4;
+                        int dstOff = y * cropW * 4;
+                        NativeMemory.Copy(pixels + srcOff, cropped + dstOff, (nuint)(cropW * 4));
+                    }
+                    NativeMemory.Free(pixels);
+                    _liveBuffers.TryRemove((nint)pixels, out _);
+                    pixels = cropped;
+                    w = cropW;
+                    h = cropH;
+                    stride = (ulong)cropW * 4UL;
+                }
+            }
         }
         catch (Exception) when (!System.Diagnostics.Debugger.IsAttached)
 #pragma warning disable CS0168 // Deliberate catch-all: Native AOT plugin error boundary — 
@@ -338,40 +373,6 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             NativeMemory.Free(pixels);
             return IGStatus.Internal;
-        }
-
-        // Apply post-decode rotation (speculative, for profiles with Rotation≠0)
-        if (profile.Rotation != 0 && w > 0 && h > 0)
-        {
-            RotateBgra(pixels, ref w, ref h, profile.Rotation);
-            stride = (ulong)w * 4UL;
-        }
-
-        // Apply post-decode crop for centered-padding photo formats.
-        // Crop is applied AFTER rotation so the crop region references the final orientation.
-        // When CropWidth/CropHeight are non-zero, copy the visible region into a new
-        // buffer and free the full-frame buffer. Based on iOpenPod's _crop_visible_region.
-        if (profile.CropWidth > 0 && profile.CropHeight > 0 &&
-            (long)profile.CropX + profile.CropWidth <= w &&
-            (long)profile.CropY + profile.CropHeight <= h)
-        {
-            int cropW = profile.CropWidth, cropH = profile.CropHeight;
-            byte* cropped = (byte*)NativeMemory.AllocZeroed((nuint)(cropW * 4 * cropH));
-            if (cropped != null)
-            {
-                for (int y = 0; y < cropH; y++)
-                {
-                    int srcOff = ((profile.CropY + y) * w + profile.CropX) * 4;
-                    int dstOff = y * cropW * 4;
-                    NativeMemory.Copy(pixels + srcOff, cropped + dstOff, (nuint)(cropW * 4));
-                }
-                NativeMemory.Free(pixels);
-                _liveBuffers.TryRemove((nint)pixels, out _);
-                pixels = cropped;
-                w = cropW;
-                h = cropH;
-                stride = (ulong)cropW * 4UL;
-            }
         }
 
         _liveBuffers[(nint)pixels] = 0;

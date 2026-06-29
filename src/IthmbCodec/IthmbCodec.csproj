@@ -33,7 +33,7 @@
 
     <!-- Enforce deterministic code style during build (using built-in Roslyn analyzers) -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-    <AnalysisLevel>latest-Recommended</AnalysisLevel>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
 
     <!-- Treat style warnings as errors in CI — opt out per-file with #pragma if needed -->
