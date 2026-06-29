@@ -114,7 +114,7 @@ public unsafe partial class IthmbCodecTests
                         Assert.Equal(255, decoded[i * 4 + 3]);
                     }
                 }
-                finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+                finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
             }
         }
     }
@@ -166,7 +166,7 @@ public unsafe partial class IthmbCodecTests
                         Assert.Equal(255, decoded[i + 3]);
                     }
                 }
-                finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+                finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
             }
         }
     }

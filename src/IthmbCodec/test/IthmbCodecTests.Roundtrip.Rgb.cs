@@ -151,7 +151,7 @@ public unsafe partial class IthmbCodecTests
                 Assert.Equal(bgra[i], decoded[i]);
             }
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public unsafe partial class IthmbCodecTests
             for (int i = 0; i < 32768 * 4; i++)
                 Assert.Equal(bgra[i], decoded[i]);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public unsafe partial class IthmbCodecTests
                     // Smoke: any status is OK except Internal
                     Assert.NotEqual(ImageGlass.SDK.Plugins.IGStatus.Internal, status);
                 }
-                finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+                finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
             }
             catch (Exception ex)
             {
@@ -283,7 +283,7 @@ public unsafe partial class IthmbCodecTests
             Assert.Equal(100, outBuf->Width);
             Assert.Equal(100, outBuf->Height);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -324,7 +324,7 @@ public unsafe partial class IthmbCodecTests
                 cancellation: null, outInfo, outBuf);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     // ===================== Centered crop infrastructure =====================
@@ -384,7 +384,7 @@ public unsafe partial class IthmbCodecTests
                 Assert.Equal(255, decoded[off + 3]);
             }
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -424,7 +424,7 @@ public unsafe partial class IthmbCodecTests
             Assert.Equal(2, outBuf->Width);
             Assert.Equal(2, outBuf->Height);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -457,7 +457,7 @@ public unsafe partial class IthmbCodecTests
             Assert.Equal(w, outBuf->Width);
             Assert.Equal(h, outBuf->Height);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     // ===================== SwapRgbChannels (BGR15) =====================
@@ -534,7 +534,7 @@ public unsafe partial class IthmbCodecTests
                 }
             }
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -582,6 +582,6 @@ public unsafe partial class IthmbCodecTests
                 }
             }
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 }

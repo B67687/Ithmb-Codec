@@ -319,7 +319,7 @@ public unsafe partial class IthmbCodecTests
             int avgError = totalError / (w * h * 3);
             Assert.InRange(avgError, 0, 2);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -372,7 +372,7 @@ public unsafe partial class IthmbCodecTests
             int avgError = totalError / (w * h * 3);
             Assert.InRange(avgError, 0, 2);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -433,6 +433,6 @@ public unsafe partial class IthmbCodecTests
                 cancellation: null, outInfo, outBuf);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 }

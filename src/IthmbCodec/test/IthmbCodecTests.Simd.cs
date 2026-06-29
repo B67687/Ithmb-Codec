@@ -45,59 +45,6 @@ public unsafe partial class IthmbCodecTests
         finally { NativeMemory.Free(simdDst); NativeMemory.Free(scalarDst); }
     }
 
-    [Fact]
-    public void Rgb565_Exhaustive_All65536Values_SIMD_Redundant()
-    {
-        // Verifies that the SSE2-accelerated path produces byte-identical output
-        // to the scalar path for ALL 65,536 possible 1×1 RGB565 values.
-        // On non-x64 platforms (ARM64) the SIMD path is not used, so this test
-        // passes trivially (scalar is used in both cases).
-        var src = new byte[2];
-        byte* simdDst = (byte*)NativeMemory.Alloc(4);
-        byte* scalarDst = (byte*)NativeMemory.Alloc(4);
-        try
-        {
-            for (int i = 0; i < 65536; i++)
-            {
-                src[0] = (byte)(i & 0xFF);
-                src[1] = (byte)(i >> 8);
-
-                NativeMemory.Clear(simdDst, 4);
-                NativeMemory.Clear(scalarDst, 4);
-
-                // SIMD path (SSE2 on x64, else falls through to scalar)
-                IthmbCodecPlugin.DecodeRgb565(src, simdDst, 1, 1, littleEndian: true);
-
-                // Scalar path (direct call to the internal fallback)
-                unsafe
-                {
-                    fixed (byte* p = src)
-                    {
-                        // Call the scalar implementation directly via pointer-based tail
-                        // We can't call the private scalar method, but for 1×1 the SIMD dispatcher
-                        // falls through to scalar when w < 8, so the first call is already scalar.
-                        // For verification with 8+ pixel width, test below.
-                    }
-                }
-
-                // For 1×1 (w < 8), DecodeRgb565 always uses the scalar path.
-                // Just verify the output is correct.
-                ushort rgb = (ushort)i;
-                int r5 = (rgb >> 11) & 0x1F;
-                int g6 = (rgb >> 5) & 0x3F;
-                int b5 = rgb & 0x1F;
-                int er = (r5 << 3) | (r5 >> 2);
-                int eg = (g6 << 2) | (g6 >> 4);
-                int eb = (b5 << 3) | (b5 >> 2);
-
-                Assert.Equal(er, simdDst[2]); // R
-                Assert.Equal(eg, simdDst[1]); // G
-                Assert.Equal(eb, simdDst[0]); // B
-                Assert.Equal(255, simdDst[3]); // A
-            }
-        }
-        finally { NativeMemory.Free(simdDst); NativeMemory.Free(scalarDst); }
-    }
 
     [Fact]
     public void DecodeRgb565_SIMD_KnownValue()

@@ -160,4 +160,27 @@ public unsafe partial class IthmbCodecTests
             NativeMemory.Free(dst2);
         }
     }
+
+    /// <summary>Randomly mutates a byte buffer for corruption fuzz testing.</summary>
+    private static void MutateBuffer(Random rng, byte[] buf)
+    {
+        double roll = rng.NextDouble();
+        if (roll < 0.10)
+        {
+            int pos = rng.Next(buf.Length);
+            int bit = rng.Next(8);
+            buf[pos] ^= (byte)(1 << bit);
+        }
+        else if (roll < 0.15)
+        {
+            int a = rng.Next(buf.Length);
+            int b = rng.Next(buf.Length);
+            (buf[a], buf[b]) = (buf[b], buf[a]);
+        }
+        else if (roll < 0.20)
+        {
+            int newLen = rng.Next(4, buf.Length + 1);
+            Array.Resize(ref buf, newLen);
+        }
+    }
 }

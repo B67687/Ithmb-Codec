@@ -26,7 +26,7 @@ public unsafe partial class IthmbCodecTests
                 cancellation: null, outInfo, outBuf);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public unsafe partial class IthmbCodecTests
                 cancellation: null, outInfo, outBuf);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public unsafe partial class IthmbCodecTests
             for (int i = 0; i < w * h * 4; i++)
                 Assert.InRange(decoded[i], bgra[i] - 8, bgra[i] + 8);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     // ===================== Multi-frame raw decode =====================
@@ -256,7 +256,7 @@ public unsafe partial class IthmbCodecTests
                 cancellation: null, outInfo, outBuf, frameIndex: 1);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.InvalidArg, status);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
     [Fact]
@@ -281,6 +281,6 @@ public unsafe partial class IthmbCodecTests
                 cancellation: null, outInfo, outBuf, frameIndex: -1);
             Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.InvalidArg, status);
         }
-        finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 }
