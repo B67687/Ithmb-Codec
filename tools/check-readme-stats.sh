@@ -8,7 +8,7 @@ errors=0
 
 # === Profile count ===
 # Count entries with "prefix" key in embedded profiles (ProfilesJson.cs)
-profile_count=$(grep -c '"prefix"' src/IthmbCodec/IthmbCodecPlugin.ProfilesJson.cs 2>/dev/null || echo 0)
+profile_count=$(grep '"prefix"' src/IthmbCodec/IthmbCodecPlugin.ProfilesJson.cs 2>/dev/null | grep -cv '//' || echo 0)
 echo "embedded profiles: $profile_count"
 
 if grep -q "\*\*${profile_count} known profiles\*\*" README.md 2>/dev/null; then

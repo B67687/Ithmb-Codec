@@ -200,7 +200,7 @@ public unsafe partial class IthmbCodecTests
     public void KnownProfiles_JsonBaseline_CountAndKeyEntries()
     {
         // Verify the embedded JSON parses to the expected number of profiles
-        Assert.Equal(54, IthmbCodecPlugin.KnownProfiles.Count);
+        Assert.Equal(53, IthmbCodecPlugin.KnownProfiles.Count);
 
         // Spot-check critical entries that are easy to get wrong
         var p1007 = IthmbCodecPlugin.KnownProfiles[1007];

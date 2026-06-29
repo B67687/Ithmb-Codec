@@ -372,6 +372,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 : string.Equals(enc, "reorderedrgb555", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.ReorderedRgb555
                 : string.Equals(enc, "yuv422", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Yuv422
                 : string.Equals(enc, "ycbcr420", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Ycbcr420
+                : string.Equals(enc, "jpeg", StringComparison.OrdinalIgnoreCase) ? IthmbEncoding.Jpeg
                 : IthmbEncoding.Rgb565);
             SkipWhitespace(s, ref pos);
             if (pos < s.Length && s[pos] == ',') pos++;

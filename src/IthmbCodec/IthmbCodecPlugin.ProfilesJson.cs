@@ -57,9 +57,8 @@ internal static unsafe partial class IthmbCodecPlugin
       {"prefix": 1042, "width": 320, "height": 240, "encoding": "rgb565", "frameBytes": 153600},
       // iPod Classic photo thumbnail alias (matches 1015)
       {"prefix": 1043, "width": 130, "height": 88, "encoding": "rgb565", "frameBytes": 22880},
-      // Compatibility alias for 1055 (older iTunes versions)
-      {"prefix": 1044, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768},
-      // Classic/Nano3G/Nano4G cover art
+      // iOpenPod #81: writing 1044 to iPod Classic corrupts cover art; disabled until confirmed safe.
+      // {"prefix": 1044, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768},
       {"prefix": 1055, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768},
       // Nano 5G cover art medium (iOpenPod)
       {"prefix": 1056, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768},
@@ -85,9 +84,13 @@ internal static unsafe partial class IthmbCodecPlugin
       {"prefix": 1078, "width": 80, "height": 80, "encoding": "rgb565", "frameBytes": 12800},
       // iPod Nano 4G photo thumbnail
       {"prefix": 1079, "width": 80, "height": 80, "encoding": "rgb565", "frameBytes": 12800},
-      // libgpod declares 1081 as THUMB_FORMAT_JPEG; iOpenPod indicates RGB565 640x480
-      {"prefix": 1081, "width": 640, "height": 480, "encoding": "rgb565", "frameBytes": 614400},
-      // iPod Nano 4G photo (portrait)
+      // libgpod declares 1081 as THUMB_FORMAT_JPEG; iOpenPod indicates RGB565 640x480.
+      // If RGB565 decode fails, fallbackEncodings:["jpeg"] attempts JPEG decode.
+      // No real JPEG 1081 sample has been found — this is a defensive fallback.
+      // libgpod declares 1081 as THUMB_FORMAT_JPEG; iOpenPod indicates RGB565 640x480.
+      // If RGB565 decode fails, fallbackEncodings:["jpeg"] attempts JPEG decode.
+      // No real JPEG 1081 sample has been found — this is a defensive fallback.
+      {"prefix": 1081, "width": 640, "height": 480, "encoding": "rgb565", "frameBytes": 614400, "fallbackEncodings": ["jpeg"]},
       {"prefix": 1083, "width": 240, "height": 320, "encoding": "rgb565", "frameBytes": 153600},
       // Nano 4G cover art alt
       {"prefix": 1084, "width": 240, "height": 240, "encoding": "rgb565", "frameBytes": 115200},

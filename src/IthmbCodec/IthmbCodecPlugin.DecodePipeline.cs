@@ -325,6 +325,18 @@ internal static unsafe partial class IthmbCodecPlugin
             }
             if (!ok)
             {
+                // JPEG fallback: if profile declares JPEG as a fallback encoding,
+                // check if the raw frame data contains JPEG markers (0xFF 0xD8).
+                // This handles format 1081 where libgpod says JPEG while iOpenPod says RGB565.
+                if (profile.FallbackEncodings != null
+                    && Array.IndexOf(profile.FallbackEncodings, IthmbEncoding.Jpeg) >= 0
+                    && raw.Length >= 2 && raw[0] == 0xFF && raw[1] == 0xD8)
+                {
+                    NativeMemory.Free(pixels);
+                    byte[] jpegData = raw.ToArray();
+                    return DecodeJpegSlice(jpegData, jpegData.Length, jpegData.Length,
+                        cancellation, outInfo, outBuf);
+                }
                 NativeMemory.Free(pixels);
                 return IGStatus.DecodeFailed;
             }

@@ -6,7 +6,7 @@ namespace IthmbCodec;
 internal static unsafe partial class IthmbCodecPlugin
 {
     // ------------------------------ Raw profile enums ------------------------------
-    internal enum IthmbEncoding { Rgb565, Rgb555, ReorderedRgb555, Yuv422, Ycbcr420 }
+    internal enum IthmbEncoding { Rgb565, Rgb555, ReorderedRgb555, Yuv422, Ycbcr420, Jpeg }
 
     /// <summary>Raw profile for F-prefix .ithmb files (single image, no container).</summary>
     /// <param name="SwapChromaPlanes">If true, swaps Cb/Cr order in YCbCr 4:2:0 (some iPod variants).</param>
