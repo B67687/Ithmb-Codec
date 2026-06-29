@@ -236,10 +236,11 @@ public unsafe partial class IthmbCodecTests
                     var decoded = new Span<byte>((void*)outBuf->Data, pixelCount * 4);
                     for (int i = 0; i < pixelCount; i++)
                     {
-                        Assert.InRange(decoded[i * 4], 0, 255);
-                        Assert.InRange(decoded[i * 4 + 1], 0, 255);
-                        Assert.InRange(decoded[i * 4 + 2], 0, 255);
+                        int v = (i * 17) & 0xFF;
                         Assert.Equal(255, decoded[i * 4 + 3]);
+                        Assert.InRange(decoded[i * 4 + 2], Math.Max(0, v - 8), Math.Min(255, v + 8)); // R ≈ v
+                        Assert.InRange(decoded[i * 4 + 1], Math.Max(0, v - 8), Math.Min(255, v + 8)); // G ≈ v
+                        Assert.InRange(decoded[i * 4], Math.Max(0, v - 8), Math.Min(255, v + 8));     // B ≈ v
                     }
                 }
                 finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }

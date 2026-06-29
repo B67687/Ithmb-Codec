@@ -108,10 +108,11 @@ public unsafe partial class IthmbCodecTests
                     var decoded = new Span<byte>((void*)outBuf->Data, pixelCount * 4);
                     for (int i = 0; i < pixelCount; i++)
                     {
-                        Assert.InRange(decoded[i * 4], 0, 255);
-                        Assert.InRange(decoded[i * 4 + 1], 0, 255);
-                        Assert.InRange(decoded[i * 4 + 2], 0, 255);
+                        int v = (i * 19) & 0xFF;
                         Assert.Equal(255, decoded[i * 4 + 3]);
+                        Assert.InRange(decoded[i * 4 + 2], Math.Max(0, v - 8), Math.Min(255, v + 8)); // R ≈ v
+                        Assert.InRange(decoded[i * 4 + 1], Math.Max(0, v - 8), Math.Min(255, v + 8)); // G ≈ v
+                        Assert.InRange(decoded[i * 4], Math.Max(0, v - 8), Math.Min(255, v + 8));     // B ≈ v
                     }
                 }
                 finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
@@ -160,10 +161,11 @@ public unsafe partial class IthmbCodecTests
                     var decoded = new Span<byte>((void*)outBuf->Data, pixelCount * 4);
                     for (int i = 0; i < pixelCount * 4; i += 4)
                     {
-                        Assert.InRange(decoded[i], 0, 255);
-                        Assert.InRange(decoded[i + 1], 0, 255);
-                        Assert.InRange(decoded[i + 2], 0, 255);
+                        int vi = ((i >> 2) * 31) & 0xFF;
                         Assert.Equal(255, decoded[i + 3]);
+                        Assert.InRange(decoded[i + 2], Math.Max(0, vi - 16), Math.Min(255, vi + 16)); // R ≈ v
+                        Assert.InRange(decoded[i + 1], Math.Max(0, vi - 16), Math.Min(255, vi + 16)); // G ≈ v
+                        Assert.InRange(decoded[i], Math.Max(0, vi - 16), Math.Min(255, vi + 16));     // B ≈ v
                     }
                 }
                 finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }

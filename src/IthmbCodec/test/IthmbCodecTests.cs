@@ -139,7 +139,7 @@ public unsafe partial class IthmbCodecTests
             // Pixel 0 should be approximately red (dominant R channel)
             Assert.True(dst[2] > 200); // R should be high
             Assert.True(dst[1] < 50);  // G should be low
-            // B channel from BT.601 YCbCr red conversion is ~226 (not 0)
+            Assert.True(dst[0] < 50);  // B should be low (cb = -43, clamped to 0)
         }
         finally
         {
@@ -165,10 +165,10 @@ public unsafe partial class IthmbCodecTests
             IthmbCodecPlugin.DecodeYcbcr420(src, dst, 2, 2);
 
             // With neutral chroma, output = luma in all channels
-            Assert.Equal(0, dst[0]); Assert.Equal(0, dst[1]); Assert.Equal(0, dst[2]);   // black
-            Assert.Equal(255, dst[4]); Assert.Equal(255, dst[5]); Assert.Equal(255, dst[6]); // white
-            Assert.Equal(128, dst[8]);  // ~mid gray
-            Assert.Equal(64, dst[12]);  // ~dark gray
+            Assert.Equal(0, dst[0]); Assert.Equal(0, dst[1]); Assert.Equal(0, dst[2]); Assert.Equal(255, dst[3]);   // black
+            Assert.Equal(255, dst[4]); Assert.Equal(255, dst[5]); Assert.Equal(255, dst[6]); Assert.Equal(255, dst[7]); // white
+            Assert.Equal(128, dst[8]); Assert.Equal(128, dst[9]); Assert.Equal(128, dst[10]); Assert.Equal(255, dst[11]); // mid gray
+            Assert.Equal(64, dst[12]); Assert.Equal(64, dst[13]); Assert.Equal(64, dst[14]); Assert.Equal(255, dst[15]); // dark gray
         }
         finally
         {

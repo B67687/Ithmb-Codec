@@ -183,4 +183,17 @@ public unsafe partial class IthmbCodecTests
             Array.Resize(ref buf, newLen);
         }
     }
+
+    /// <summary>Asserts that a pixel buffer has valid channel ranges and alpha=255 for every pixel.</summary>
+    private static void AssertValidPixels(byte* dst, int pixelCount)
+    {
+        for (int i = 0; i < pixelCount; i++)
+        {
+            int off = i * 4;
+            Assert.InRange(dst[off], 0, 255);     // B
+            Assert.InRange(dst[off + 1], 0, 255); // G
+            Assert.InRange(dst[off + 2], 0, 255); // R
+            Assert.Equal(255, dst[off + 3]);         // A
+        }
+    }
 }
