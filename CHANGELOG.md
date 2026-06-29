@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] — 2026-06-29
 ### Added
 - **Architecture SVG updated to match current profile counts** — 54 profiles (was 49), 25 photo (was 22), 29 cover art (was 27). Pipeline inner boxes vertically centered. Long decoder label shortened (RGB565/RGB555→RGB565/555). EXIF box widened to match JPEG Path. Font-size reduced on crowded decoder line.
 - **README Contributions to ecosystem section updated** — surveyed implementations 4→22, dimension discrepancies 9→15. Added Steee29 iPhone 2G real-device validation, clickwheel 1062 discovery, gnupod/OrgZ profile corrections.
@@ -278,7 +278,8 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/B67687/ithmb-codec/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/B67687/ithmb-codec/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/B67687/ithmb-codec/compare/v1.1.0...v1.3.0
 [1.1.0]: https://github.com/B67687/ithmb-codec/compare/v1.0.0...v1.1.0
