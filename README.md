@@ -22,7 +22,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 **Key features**
 
-- 54 built-in profiles covering 22 photo + 32 cover art formats
+- 54 built-in profiles covering 25 photo + 29 cover art formats
 - 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON)
 - Roundtrip-proven tests
 - PhotoDB/ArtworkDB read, write, and integrity checking
@@ -251,7 +251,7 @@ The repository includes several CLI tools under [`tools/`](tools/):
 
 ## Profile Reference
 
-**54 known profiles** (22 photo + 32 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
+**54 known profiles** (25 photo + 29 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
 
 ---
 

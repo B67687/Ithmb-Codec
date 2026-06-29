@@ -237,7 +237,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeRgb565(buf, dst, w, h, true); }
+                try { IthmbCodecPlugin.DecodeRgb565(buf, dst, w, h, true); AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
             {
@@ -245,7 +245,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeRgb555(buf, dst, w, h, true); }
+                try { IthmbCodecPlugin.DecodeRgb555(buf, dst, w, h, true); AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
             {
@@ -253,7 +253,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeYuv422(buf, dst, w, h); }
+                try { if (IthmbCodecPlugin.DecodeYuv422(buf, dst, w, h)) AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
             {
@@ -261,7 +261,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeYcbcr420(buf, dst, w, h); }
+                try { if (IthmbCodecPlugin.DecodeYcbcr420(buf, dst, w, h)) AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
             {
@@ -269,7 +269,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeYuv422Interlaced(buf, dst, w, h); }
+                try { if (IthmbCodecPlugin.DecodeYuv422Interlaced(buf, dst, w, h)) AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
             if (evenW)
@@ -278,7 +278,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeYuv422Clcl(buf, dst, w, h); }
+                try { if (IthmbCodecPlugin.DecodeYuv422Clcl(buf, dst, w, h)) AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
             {
@@ -286,7 +286,7 @@ public unsafe partial class IthmbCodecTests
                 rng.NextBytes(buf);
                 MutateBuffer(rng, buf);
                 byte* dst = (byte*)NativeMemory.AllocZeroed((nuint)allocSize);
-                try { IthmbCodecPlugin.DecodeYuv422Cl(buf, dst, w, h); }
+                try { IthmbCodecPlugin.DecodeYuv422Cl(buf, dst, w, h); AssertValidPixels(dst, w * h); }
                 finally { NativeMemory.Free(dst); }
             }
         }
