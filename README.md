@@ -37,8 +37,8 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 **F-prefix** (e.g. `F1019_1.ithmb`) — raw uncompressed thumbnails (RGB565, RGB555, UYVY, YCbCr420, CLCL nibble-chroma). ✅ Cross-referenced against iOpenPod's empirically validated set (50+ profiles across multiple iPod models) and confirmed on real iPod Classic 6G samples (F1061/F1055/F1060).
 
 <table><tr><td>
-🎖️ <strong>Special thanks to <a href="https://github.com/TheRealSavi">Savi</a> from <a href="https://github.com/TheRealSavi/iOpenPod">iOpenPod</a></strong><br>
-<em>For hardware validation — purchasing multiple iPod models and testing profiles across firmware generations to confirm decoder correctness.</em>
+🎖️ <strong>Special thanks to <a href="https://github.com/TheRealSavi">Savi</a> and the <a href="https://github.com/TheRealSavi/iOpenPod">iOpenPod</a> community</strong><br>
+<em>For hardware validation — purchasing multiple iPod models and testing profiles across firmware generations. Profile tuning incorporates feedback from the iOpenPod community.</em>
 </td></tr></table>
 
 > [!TIP]
@@ -49,6 +49,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 ## Table of Contents
 
 - [How it works](#how-it-works)
+- [Acknowledgments](#acknowledgments)
 - [Install](#install)
 - [Build from source](#build-from-source)
 - [Testing & validation](#testing--validation)
@@ -60,7 +61,6 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
 - [Contributions to the ecosystem](#contributions-to-the-ecosystem)
-- [Acknowledgments](#acknowledgments)
 - [Changelog](#changelog)
 - [License](#license)
 
@@ -78,6 +78,31 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 > [!NOTE]
 > Files larger than **32 MB** are rejected before reading to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB). The 32 MB limit covers ~40 max-size raw frames — far beyond any realistic thumbnail cache. Researched from scratch: no evidence that libgpod's commonly-cited 256 MB limit is a real firmware constant.
+
+## Acknowledgments
+
+This project builds on the work of the iPod reverse-engineering community. Key references:
+
+| Project | Author | Role |
+|---------|--------|------|
+| [iOpenPod](https://github.com/TheRealSavi/iOpenPod) | Savi | Primary format profile reference (50+ entries, empirically validated across multiple iPod models) |
+| [libgpod](https://sourceforge.net/p/gtkpod/libgpod/ci/master/tree/) | community | PhotoDB/ArtworkDB chunk parser, format ID tables |
+| [Keith's iPod Photo Reader](https://github.com/kebwi/Keiths_iPod_Photo_Reader) | kebwi | Original RE (2005), multi-frame confirmation, 13 decode methods |
+| [clickwheel](https://github.com/dstaley/clickwheel) | dstaley | C# ArtworkDB read/write, 40+ format IDs |
+| [OrgZ](https://github.com/FoxCouncil/OrgZ) | Fox | C# ArtworkDB+ithmb read/write |
+| [pyithmb](https://github.com/wrinklykong/pyithmb) | wrinklykong | Python YUV reference decoder |
+
+See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for the full list (33 projects, sample file sources, academic references, and color conversion standards).
+
+### Contribution breakdown
+
+| Area | What was done | Who |
+|------|--------------|-----|
+| **Community foundations** | iOpenPod, libgpod, clickwheel, Keith's RE, pyithmb, ithmb-rs, 15+ more | Community |
+| **Hardware-validated profiles** | 50+ profiles empirically validated across multiple iPod models | Savi (iOpenPod) |
+| **Sample contribution** | First public F-prefix .ithmb test vectors + 30 reference PNGs (CC0) | Reuhno |
+| **AI execution** | Code, SIMD, testing, documentation, CI, format cross-referencing | AI (Sisyphus + OMO) |
+| **Project lead** | Vision, architecture, quality control, community engagement, verification, hardware coordination | B67687 |
 
 ---
 
@@ -314,21 +339,6 @@ Beyond building a working codec, this project made several original contribution
 - **Speculative profile corrections** — The F1064 profile (320×240 YCbCr) circulated in community speculation for years. Cross-checked against every public implementation: none has it. Disabled with rationale. Also corrected CLCL nibble scaling from ×17 (original 2005 Whirlpool RE) to ×16, cross-validated against 2 independent implementations.
 - **Synthetic test vectors (CC0)** — No public F-prefix test data existed before this project. Reuhno contributed generated CC0 vectors covering 3 slot geometries (56×55 slot with varying content rectangles, 128×128, 320×320) with 30 reference PNGs. These are the first public test vectors for raw .ithmb decoding.
 - **Negative knowledge: iOS Photos ≠ iPod Classic** — Downloaded and analyzed two iOS firmware images (9.3.5 and iOS 18) confirming their .ithmb files use a completely different, proprietary format not decodable by this codec. Documents a common misconception about .ithmb cross-platform compatibility.
-
-## Acknowledgments
-
-This project builds on the work of the iPod reverse-engineering community. Key references:
-
-| Project | Author | Role |
-|---------|--------|------|
-| [iOpenPod](https://github.com/TheRealSavi/iOpenPod) | Savi | Primary format profile reference (50+ entries, empirically validated across multiple iPod models) |
-| [libgpod](https://sourceforge.net/p/gtkpod/libgpod/ci/master/tree/) | community | PhotoDB/ArtworkDB chunk parser, format ID tables |
-| [Keith's iPod Photo Reader](https://github.com/kebwi/Keiths_iPod_Photo_Reader) | kebwi | Original RE (2005), multi-frame confirmation, 13 decode methods |
-| [clickwheel](https://github.com/dstaley/clickwheel) | dstaley | C# ArtworkDB read/write, 40+ format IDs |
-| [OrgZ](https://github.com/FoxCouncil/OrgZ) | Fox | C# ArtworkDB+ithmb read/write |
-| [pyithmb](https://github.com/wrinklykong/pyithmb) | wrinklykong | Python YUV reference decoder |
-
-See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for the full list (33 projects, sample file sources, academic references, and color conversion standards).
 
 ---
 
