@@ -27,6 +27,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Stale counts/docs updated** — README/CHANGELOG/PROFILES/what-is-this.md test count 530→538, profiles 53→55 active. PROFILES.md 3009 dimension corrected. 1062 added to profile table.
 
 ### Added
+- **SSSE3/ARM64 NEON SIMD for CLCL nibble-chroma and CL per-pixel chroma decoders** — 8 pixels/iteration via pshufb (SSSE3) / VectorTableLookup (NEON), matching the existing UYVY SIMD pattern. CLCL: ~454→192 µs (2.4×), CL: ~589→196 µs (3.0×). Both dispatch only when w%8==0 (fallback to scalar).
+- **Reproducible decoder benchmarks** — `tools/IthmbCodec.Benchmark/` with BenchmarkDotNet, all 7 decoders at 720×480, MemoryDiagnoser, 3 warmup + 10 measurement iterations. CI workflow at `.github/workflows/benchmark.yml` (manual dispatch, results as artifacts).
+- **CI gate for README stats accuracy** — `tools/check-readme-stats.sh` verifies profile count (54), test count (547), and decoder count (7) match the codebase. Runs in build-linux.yml on every push.
+- **Zero-dimension edge-case tests** — all 7 decoder formats tested on 0×4, 4×0, and 0×0 (all return false). Null outBuf guard tested for DecodeRawProfile (returns OK). (+8 tests)
+
+### Changed
+- **README sections reordered:** Performance promoted to after Architecture, Development/Contributions moved after Troubleshooting. Added decoder format reference table explaining each pixel format. Benchmark table updated with real CLCL/CL SIMD results.
+- **BGR15 naming normalized:** All `BGR;15` occurrences (code comments, docs, README) changed to `BGR15` for consistency.
+- **README intro restructured:** Removed duplicate Goal paragraph, replaced with Key Features bullet list (54 profiles, 7 decoders, SIMD, PhotoDB, cross-platform).
+
+### Fixed
+- **CLCL benchmark buffer size corrected:** Was `w*h+uvSize` (too small), should be `w*h*2` per pixel 2-byte minimum.
+- **Benchmark CI added `--filter "*"`** — BenchmarkDotNet entered interactive TUI mode without it, hanging the CI run.
+- **Release-windows publish path:** Output was `native/` folder, publish step pointed to wrong directory. Corrected to `publish/`.
+- **build-linux.yml upload-artifact:** `path:` field was empty, causing `Input required and not supplied: path` error. Fixed to list `linux-x64-release` and `linux-x64-debug` output directories.
+- **.gitignore purge (history-rewritten):** Removed 6 leaky blacklist entries (`.ruff_cache/`, `BenchmarkDotNet.Artifacts/`, `.omo/`, `HANDOVER.md`, `TestResults/`, `.codegraph/`) — all already covered by the whitelist pattern. Entire history force-pushed via git-filter-repo.
+
+### Test
+- **Tautological assertions fixed:** 7 assertions in Fuzz.cs that always passed due to wrong variables. Extracted `MutateBuffer` helper, reduced iteration count 1000→300.
+- **Memory leaks fixed:** `outBuf->Data` null-guarded free added in 18 `finally` blocks across 5 roundtrip test files (Rgb, Cl, Yuv, Statistical.Core, Validation).
+- **Redundant SIMD test removed:** `Rgb565_Exhaustive_SIMD_Redundant` was a no-op copy of the scalar exhaustive test.
+- **Empty test shells deleted:** `Roundtrip.cs` and `Statistical.cs` (empty partial stubs). Constants merged into `Statistical.Core.cs`.
+- **Weak assertions hardened:** CL/CLCL/SwapChroma roundtrip now checks actual pixel values within ±8-16 tolerance. `DecodeYuv422_KnownColor` B assertion corrected (B≈0, was checking >220). `DecodeYcbcr420_NeutralChroma` now checks all channels + alpha for all 4 pixels.
+- **Source bugs fixed (audit C-3, H-2, H-3, H-4):** DecodePipeline.cs crop bounds negative check, YCbCr420 pointer math overflow (`int`→`nint`), RotateBgra OOM path corrupting output dimensions, Morton de-derange `uint`→`int` overflow.
+- **CI configs fixed:** benchmark.yml lockfile restore, upload `if: always()`, test-neon.yml locked-mode, release-windows.yml if syntax. IthmbCodec.csproj `AnalysisLevel` case.
+- **Fuzz_Corruption_RandomByteMutations assertions added:** Pixel validity checks gated on decoder return (void decoders always check; bool decoders skip when returning false for early exits).
+- **Photo/cover art split corrected:** README claimed 22+32, actual is 25+29 (verified from CHANGELOG v1.4.0 + PROFILES.md). All 547 tests pass.
+
+### Added
 - **REC_RGB555 decoder (quad-tree / Morton Z-order) for iPhone/Touch cover art:** Apple's recursive-ordered dither format used by profiles 3001/3002/3003 (256×256, 128×128, 64×64). Pixels are stored in Morton Z-order (interleaved bit pattern) rather than raster scanline. Decoder de-deranges via MortonInterleave, then decodes as standard RGB555→BGRA8. Encoder (`EncodeReorderedRgb555`) reorders BGRA8→RGB555 via Morton Z-order for writing iPhone-compatible .ithmb files.
 - **Format 3004 SlotSize:8192 added** — libgpod's Itdb_ArtworkFormat `padding` field confirmed 8192 bytes slot padding for iPhone/Touch photo thumbnails (profile 3004, 56×55 Rgb555).
 - **Format 3005 (320×320 Rgb555) added** — iPhone/Touch cover art variant from libgpod's `ipod_touch_1_cover_art_info` table.
