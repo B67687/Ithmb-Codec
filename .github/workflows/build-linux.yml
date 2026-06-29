@@ -52,10 +52,24 @@ jobs:
       - name: Run all tests (Debug)
         run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-build --verbosity normal --logger trx --results-directory linux-x64-debug
 
+      - name: Verify README stats match source
+        run: |
+          trx_file="$(ls linux-x64-release/*.trx 2>/dev/null | head -1)"
+          if [ -z "$trx_file" ]; then
+            echo "No .trx file found -- skipping test count check"
+            bash tools/check-readme-stats.sh
+          else
+            passed=$(grep -oP 'passed="\K[0-9]+' "$trx_file" | head -1)
+            echo "Test count from .trx: $passed"
+            bash tools/check-readme-stats.sh "$passed"
+          fi
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux-x64-test-results
-          path: 
+          path: |
+            linux-x64-release
+            linux-x64-debug
           retention-days: 30

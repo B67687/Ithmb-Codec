@@ -1,0 +1,64 @@
+# release-windows.yml — build win-x64 Native AOT binary and upload to GitHub Release
+#
+# Triggers:
+#   push tag v* → builds and uploads the release asset automatically.
+#   workflow_dispatch with tag input → backfills old releases that are missing assets.
+
+name: release-windows
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build for (e.g. v1.1.0). Leave empty to build HEAD.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: win-x64
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Display .NET info
+        run: |
+          dotnet --info
+          echo "Architecture: $env:PROCESSOR_ARCHITECTURE"
+
+      - name: Restore dependencies (locked)
+        run: dotnet restore src/IthmbCodec/IthmbCodec.csproj --locked-mode
+
+      - name: Publish Native AOT (win-x64)
+        run: dotnet publish src/IthmbCodec/IthmbCodec.csproj -c Release -r win-x64 -p:IlcInstructionSet=base
+
+      - name: Create release zip
+        shell: pwsh
+        run: |
+          $publishDir = "src/IthmbCodec/bin/Release/net10.0/win-x64/publish"
+          Compress-Archive -Path "$publishDir/IthmbCodec.dll", "$publishDir/igplugin.json", "$publishDir/profiles.json" -DestinationPath IthmbCodec_win-x64.zip
+
+      - name: Upload to release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          gh release upload $tag IthmbCodec_win-x64.zip --clobber
+          echo "Uploaded IthmbCodec_win-x64.zip to $tag"
