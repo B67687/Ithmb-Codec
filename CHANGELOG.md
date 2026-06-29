@@ -6,77 +6,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [1.5.0] — 2026-06-29
+
 ### Added
 - **Architecture SVG updated to match current profile counts** — 54 profiles (was 49), 25 photo (was 22), 29 cover art (was 27). Pipeline inner boxes vertically centered. Long decoder label shortened (RGB565/RGB555→RGB565/555). EXIF box widened to match JPEG Path. Font-size reduced on crowded decoder line.
 - **README Contributions to ecosystem section updated** — surveyed implementations 4→22, dimension discrepancies 9→15. Added Steee29 iPhone 2G real-device validation, clickwheel 1062 discovery, gnupod/OrgZ profile corrections.
-- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions, 538 total)
-- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. Profiles count: 55 active + 1 speculative disabled (56 total). (+2 test assertions, 538 total)
-### Changed
-- **Profile system: Nano 7G override data deduplicated** — shared `Nano7GOverrides` field powers both `BuildProfileAlternates()` and `BuildDeviceOverrides()` instead of hardcoding the same values twice.
-- **ProfilesJson.cs sorted by prefix ascending** — easier maintenance, no functional change.
-### Fixed
-- **Padded-profile short-file blind spot** — when `IsPadded=true` and raw data was slightly shorter than `validSize`, neither the trim path nor the zero-pad path ran. Decoder got wrong span size. Now zero-pads within tolerance.
-- **Defense-in-depth: padded-profile guard `>`→`>=`** — ensures exact-size files don't slip through the trim check.
-- **Nano 5G/6G device profiles inverted** — Our Nano 5G had Nano 6G photo formats (1092/1093) and vice versa. Corrected per OrgZ IPodCapabilities table. Nano 5G: 1056/1066/1073/1074/1078/1079/1087, Nano 6G: 1073/1074/1085/1089/1092/1093.
-- **Nano 3G profile was entirely wrong** — Had 6 Nano 4G+ formats (1066/1067/1068/1071/1073/1074) instead of 1060/1055/1061 per gnupod. Replaced.
-- **Nano 4G missing 1055 and 1068** — gnupod confirmed both 128×128 variants required. Added. Removed 6 extra formats belonging to Nano 5G/6G (1073/1085/1087/1089/1092/1093).
-- **Nano 1G/2G missing 1031(42×42)** — gnupod/pygpod confirmed this album art thumbnail. Added to both Nano 1G and Nano 2G.
-- **Format 3009 dimensions swapped (160×120→120×160)** — Steee29/ithmb_converter from real iPhone 2G iOS 1.1.4 shows portrait. Added isPadded:true and slotSize:40960.
-- **Mini 1G/2G artwork support removed** — Both iOpenPod and iOpenPod creator confirm `supports_artwork=False`. Removed 1024 and 1027 from Mini profiles.
-### Documentation
-- **Stale counts/docs updated** — README/CHANGELOG/PROFILES/what-is-this.md test count 530→538, profiles 53→55 active. PROFILES.md 3009 dimension corrected. 1062 added to profile table.
-
-### Added
+- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions). Profiles count: 55 active + 1 speculative disabled (56 total).
+- **REC_RGB555 decoder (quad-tree / Morton Z-order) for iPhone/Touch cover art:** Apple's recursive-ordered dither format used by profiles 3001/3002/3003 (256×256, 128×128, 64×64). Pixels stored in Morton Z-order (interleaved bit pattern) rather than raster scanline. Decoder de-deranges via MortonInterleave, then decodes as standard RGB555→BGRA8. Encoder (`EncodeReorderedRgb555`) reorders BGRA8→RGB555 via Morton Z-order for writing iPhone-compatible .ithmb files.
+- **Format 3004 SlotSize:8192 added** — libgpod's Itdb_ArtworkFormat `padding` field confirmed 8192 bytes slot padding for iPhone/Touch photo thumbnails (profile 3004, 56×55 Rgb555).
+- **Format 3005 (320×320 Rgb555) added** — iPhone/Touch cover art variant from libgpod's `ipod_touch_1_cover_art_info` table. (53→54 active).
+- **Full libgpod comparison completed:** All 42 overlapping format IDs verified identical. REC_RGB555 decoder for 3001-3003, 3004 SlotSize, 3005 profile added.
+- **linux-x64 CI build workflow:** `.github/workflows/build-linux.yml` — validates both Release and Debug builds on push/PR.
+- **NuGet dependency lockfile:** `packages.lock.json` enabled for the test project — locked restore (`--locked-mode`) ensures reproducible builds.
+- **Dependabot configuration:** `.github/dependabot.yml` for weekly NuGet and GitHub Actions dependency updates.
 - **SSSE3/ARM64 NEON SIMD for CLCL nibble-chroma and CL per-pixel chroma decoders** — 8 pixels/iteration via pshufb (SSSE3) / VectorTableLookup (NEON), matching the existing UYVY SIMD pattern. CLCL: ~454→192 µs (2.4×), CL: ~589→196 µs (3.0×). Both dispatch only when w%8==0 (fallback to scalar).
-- **Reproducible decoder benchmarks** — `tools/IthmbCodec.Benchmark/` with BenchmarkDotNet, all 7 decoders at 720×480, MemoryDiagnoser, 3 warmup + 10 measurement iterations. CI workflow at `.github/workflows/benchmark.yml` (manual dispatch, results as artifacts).
+- **Reproducible decoder benchmarks** — `tools/IthmbCodec.Benchmark/` with BenchmarkDotNet, all 7 decoders at 720×480, MemoryDiagnoser, 3 warmup + 10 measurement iterations. CI workflow at `.github/workflows/benchmark.yml` (manual dispatch).
 - **CI gate for README stats accuracy** — `tools/check-readme-stats.sh` verifies profile count (54), test count (547), and decoder count (7) match the codebase. Runs in build-linux.yml on every push.
 - **Zero-dimension edge-case tests** — all 7 decoder formats tested on 0×4, 4×0, and 0×0 (all return false). Null outBuf guard tested for DecodeRawProfile (returns OK). (+8 tests)
 
 ### Changed
-- **README sections reordered:** Performance promoted to after Architecture, Development/Contributions moved after Troubleshooting. Added decoder format reference table explaining each pixel format. Benchmark table updated with real CLCL/CL SIMD results.
+- **Profile system: Nano 7G override data deduplicated** — shared `Nano7GOverrides` field powers both `BuildProfileAlternates()` and `BuildDeviceOverrides()` instead of hardcoding the same values twice.
+- **ProfilesJson.cs sorted by prefix ascending** — easier maintenance, no functional change.
+- **Profile flexibility system:** Added `UseMhniDimensions` flag (use actual Width/Height from MHNI chunk instead of profile's fixed dimensions) and `FallbackEncodings[]` array (ordered list of alternative encodings on primary decode failure). Enabled on profile 1061 to resolve dimension disagreement.
+- **PhotoDb/Core.cs tuple expanded:** WalkEntries and TryParsePhotoDb output now includes Width, Height from MHNI header (6-element tuple).
+- **PROFILES.md updated:** 3001/3002/3003 encoding changed from RGB555 to Reordered RGB555. UseMhniDimensions and FallbackEncodings documented.
+- **BT.601 YUV coefficients relocated:** `YuvRCoef`, `YuvGCoefCb`, `YuvGCoefCr`, `YuvBCoef` moved from `Rgb565Rgb555.cs` to `YuvUtils.cs`.
+- **README sections reordered:** Performance promoted to after Architecture, Development/Contributions moved after Troubleshooting. Added decoder format reference table. Benchmark table updated with real CLCL/CL SIMD results.
 - **BGR15 naming normalized:** All `BGR;15` occurrences (code comments, docs, README) changed to `BGR15` for consistency.
 - **README intro restructured:** Removed duplicate Goal paragraph, replaced with Key Features bullet list (54 profiles, 7 decoders, SIMD, PhotoDB, cross-platform).
 
 ### Fixed
-- **CLCL benchmark buffer size corrected:** Was `w*h+uvSize` (too small), should be `w*h*2` per pixel 2-byte minimum.
+- **Padded-profile short-file blind spot** — when `IsPadded=true` and raw data was slightly shorter than `validSize`, neither trim path nor zero-pad path ran. Now zero-pads within tolerance.
+- **Defense-in-depth: padded-profile guard `>`→`>=`** — ensures exact-size files don't slip through trim check.
+- **Nano 5G/6G device profiles inverted** — Our Nano 5G had Nano 6G photo formats (1092/1093) and vice versa. Corrected per OrgZ IPodCapabilities table.
+- **Nano 3G profile entirely wrong** — had 6 Nano 4G+ formats instead of 1060/1055/1061 per gnupod. Replaced.
+- **Nano 4G missing 1055 and 1068** — gnupod confirmed both 128×128 variants required. Added. Removed 6 extra formats belonging to Nano 5G/6G.
+- **Nano 1G/2G missing 1031 (42×42)** — gnupod/pygpod confirmed this album art thumbnail. Added to both.
+- **Format 3009 dimensions swapped (160×120→120×160)** — Steee29/ithmb_converter from real iPhone 2G iOS 1.1.4 shows portrait. Added isPadded:true and slotSize:40960.
+- **Mini 1G/2G artwork support removed** — Both iOpenPod and iOpenPod creator confirm `supports_artwork=False`. Removed 1024 and 1027 from Mini profiles.
+- **Documentation audit: stale profile/test counts updated across all docs.** README, CHANGELOG, ACKNOWLEDGMENTS, what-is-this.md corrected: 49→53 profiles, 528→530 tests, 35+→33 implementations.
+- **CLCL benchmark buffer size corrected:** Was `w*h+uvSize` (too small), changed to `w*h*2`.
 - **Benchmark CI added `--filter "*"`** — BenchmarkDotNet entered interactive TUI mode without it, hanging the CI run.
-- **Release-windows publish path:** Output was `native/` folder, publish step pointed to wrong directory. Corrected to `publish/`.
-- **build-linux.yml upload-artifact:** `path:` field was empty, causing `Input required and not supplied: path` error. Fixed to list `linux-x64-release` and `linux-x64-debug` output directories.
-- **.gitignore purge (history-rewritten):** Removed 6 leaky blacklist entries (`.ruff_cache/`, `BenchmarkDotNet.Artifacts/`, `.omo/`, `HANDOVER.md`, `TestResults/`, `.codegraph/`) — all already covered by the whitelist pattern. Entire history force-pushed via git-filter-repo.
+- **Release-windows publish path:** Output was `native/` folder, publish step pointed to `publish/`.
+- **build-linux.yml upload-artifact:** `path:` field was empty. Fixed to list output directories.
+- **.gitignore purge (history-rewritten):** Removed 6 leaky blacklist entries (`.ruff_cache/`, `BenchmarkDotNet.Artifacts/`, `.omo/`, `HANDOVER.md`, `TestResults/`, `.codegraph/`) — all already covered by the whitelist pattern.
+
+### Documentation
+- **Stale counts/docs updated** — README/CHANGELOG/PROFILES/what-is-this.md test count 530→538, profiles 53→55 active. PROFILES.md 3009 dimension corrected. 1062 added to profile table.
 
 ### Test
 - **Tautological assertions fixed:** 7 assertions in Fuzz.cs that always passed due to wrong variables. Extracted `MutateBuffer` helper, reduced iteration count 1000→300.
-- **Memory leaks fixed:** `outBuf->Data` null-guarded free added in 18 `finally` blocks across 5 roundtrip test files (Rgb, Cl, Yuv, Statistical.Core, Validation).
+- **Memory leaks fixed:** `outBuf->Data` null-guarded free added in 18 `finally` blocks across 5 roundtrip test files.
 - **Redundant SIMD test removed:** `Rgb565_Exhaustive_SIMD_Redundant` was a no-op copy of the scalar exhaustive test.
 - **Empty test shells deleted:** `Roundtrip.cs` and `Statistical.cs` (empty partial stubs). Constants merged into `Statistical.Core.cs`.
-- **Weak assertions hardened:** CL/CLCL/SwapChroma roundtrip now checks actual pixel values within ±8-16 tolerance. `DecodeYuv422_KnownColor` B assertion corrected (B≈0, was checking >220). `DecodeYcbcr420_NeutralChroma` now checks all channels + alpha for all 4 pixels.
-- **Source bugs fixed (audit C-3, H-2, H-3, H-4):** DecodePipeline.cs crop bounds negative check, YCbCr420 pointer math overflow (`int`→`nint`), RotateBgra OOM path corrupting output dimensions, Morton de-derange `uint`→`int` overflow.
+- **Weak assertions hardened:** CL/CLCL/SwapChroma roundtrip now checks actual pixel values within ±8-16 tolerance. `DecodeYuv422_KnownColor` B assertion corrected (B≈0, was >220). `DecodeYcbcr420_NeutralChroma` now checks all channels + alpha for all 4 pixels.
+- **Source bugs fixed (C-3, H-2, H-3, H-4):** DecodePipeline.cs crop bounds negative check, YCbCr420 pointer math overflow (`int`→`nint`), RotateBgra OOM corrupting output dimensions, Morton de-derange `uint`→`int` overflow.
 - **CI configs fixed:** benchmark.yml lockfile restore, upload `if: always()`, test-neon.yml locked-mode, release-windows.yml if syntax. IthmbCodec.csproj `AnalysisLevel` case.
 - **Fuzz_Corruption_RandomByteMutations assertions added:** Pixel validity checks gated on decoder return (void decoders always check; bool decoders skip when returning false for early exits).
-- **Photo/cover art split corrected:** README claimed 22+32, actual is 25+29 (verified from CHANGELOG v1.4.0 + PROFILES.md). All 547 tests pass.
-
-### Added
-- **REC_RGB555 decoder (quad-tree / Morton Z-order) for iPhone/Touch cover art:** Apple's recursive-ordered dither format used by profiles 3001/3002/3003 (256×256, 128×128, 64×64). Pixels are stored in Morton Z-order (interleaved bit pattern) rather than raster scanline. Decoder de-deranges via MortonInterleave, then decodes as standard RGB555→BGRA8. Encoder (`EncodeReorderedRgb555`) reorders BGRA8→RGB555 via Morton Z-order for writing iPhone-compatible .ithmb files.
-- **Format 3004 SlotSize:8192 added** — libgpod's Itdb_ArtworkFormat `padding` field confirmed 8192 bytes slot padding for iPhone/Touch photo thumbnails (profile 3004, 56×55 Rgb555).
-- **Format 3005 (320×320 Rgb555) added** — iPhone/Touch cover art variant from libgpod's `ipod_touch_1_cover_art_info` table.
-- **Profiles count: 53→54 active** (3005 added). Total known: 54 active + 1 speculative disabled (F1064).
-- **Full libgpod comparison completed:** All 42 overlapping format IDs verified identical. REC_RGB555 decoder for 3001-3003, 3004 SlotSize, 3005 profile added.
-### Changed
-- **Profile flexibility system:** Added `UseMhniDimensions` flag (use actual Width/Height from MHNI chunk instead of profile's fixed dimensions) and `FallbackEncodings[]` array (ordered list of alternative encodings on primary decode failure). Enabled `UseMhniDimensions:true` on profile 1061 to resolve libgpod (56×56) vs Reuhno (55×55) dimension disagreement.
-- **PhotoDb/Core.cs tuple expanded:** WalkEntries and TryParsePhotoDb output now includes Width, Height from MHNI header (6-element tuple).
-- **PROFILES.md updated:** 3001/3002/3003 encoding changed from RGB555 to Reordered RGB555. Profile count 53→54. UseMhniDimensions and FallbackEncodings documented in advanced flags table.
-
-### Fixed
-- **Documentation audit: stale profile/test counts updated across all docs.** README, CHANGELOG, ACKNOWLEDGMENTS, and what-is-this.md corrected: 49→53 built-in profiles, 528→530 tests, 35+→33 surveyed implementations, stale LOC in source layout table. v1.4.0 comparison URL added to CHANGELOG.
-
-### Added
-- **linux-x64 CI build workflow:** `.github/workflows/build-linux.yml` — validates both Release and Debug builds on push/PR for the primary development platform.
-- **NuGet dependency lockfile:** `packages.lock.json` enabled for the test project — locked restore (`--locked-mode`) ensures reproducible builds.
-- **Dependabot configuration:** `.github/dependabot.yml` for weekly NuGet and GitHub Actions dependency updates.
-
-### Changed
-- **BT.601 YUV coefficients relocated:** `YuvRCoef`, `YuvGCoefCb`, `YuvGCoefCr`, `YuvBCoef` moved from `Rgb565Rgb555.cs` to `YuvUtils.cs` where they are used. Functional no-op (same partial class).
-
+- **Photo/cover art split corrected:** README claimed 22+32, actual is 25+29. All 547 tests pass.
 ## [1.4.0] — 2026-06-26
 
 ### Fixed
