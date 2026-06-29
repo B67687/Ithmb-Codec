@@ -281,7 +281,7 @@ internal static unsafe partial class IthmbCodecPlugin
             int r5, g5, b5;
             if (swapRgbChannels)
             {
-                // BGR;15: x BBBBB GGGGG RRRRR
+                // BGR15: x BBBBB GGGGG RRRRR
                 b5 = (rgb >> 10) & 0x1F;
                 g5 = (rgb >> 5)  & 0x1F;
                 r5 = rgb         & 0x1F;

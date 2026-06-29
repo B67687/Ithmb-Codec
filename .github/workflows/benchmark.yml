@@ -1,0 +1,47 @@
+# benchmark.yml — run decoder benchmarks on demand
+#
+# Triggers:
+#   workflow_dispatch — manual trigger only (NativeAOT compile is ~2 min)
+
+name: benchmark
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    name: linux-x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Display .NET info
+        run: |
+          dotnet --info
+          echo "Architecture: $(uname -m)"
+
+      - name: Restore dependencies (locked)
+        run: dotnet restore tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj --locked-mode
+
+      - name: Run benchmarks
+        run: dotnet run -c Release --project tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj -- --filter "*"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: benchmark-results
+          path: |
+            tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/
+          retention-days: 90

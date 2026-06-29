@@ -460,12 +460,12 @@ public unsafe partial class IthmbCodecTests
         finally { NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
     }
 
-    // ===================== SwapRgbChannels (BGR;15) =====================
+    // ===================== SwapRgbChannels (BGR15) =====================
 
     [Fact]
     public void SwapRgbChannels_KnownValue()
     {
-        // BGR;15 word 0x7C01 (binary: 0111_1100_0000_0001 = 0 11111 00000 00001)
+        // BGR15 word 0x7C01 (binary: 0111_1100_0000_0001 = 0 11111 00000 00001)
         // Layout: xBBBBB GGGGG RRRRR → B=31, G=0, R=1
         ushort bgr15 = 0x7C01;
         byte leLow = (byte)(bgr15 & 0xFF);

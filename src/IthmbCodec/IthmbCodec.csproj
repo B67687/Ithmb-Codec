@@ -54,6 +54,7 @@
     <InternalsVisibleTo Include="IthmbCodec.Tests" />
     <InternalsVisibleTo Include="IthmbDecoder" />
     <InternalsVisibleTo Include="IthmbSampleGenerator" />
+    <InternalsVisibleTo Include="IthmbCodec.Benchmark" />
   </ItemGroup>
 
   <ItemGroup>

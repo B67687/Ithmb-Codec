@@ -82,7 +82,7 @@ These flags can be set in `profiles.json` for fine-tuning raw decoder behavior:
 | `isInterlaced`     | bool | `false` | Even/odd rows stored separately (used by profile 1019 UYVY interlaced).                                           |
 | `isClcl`           | bool | `false` | CLCL nibble-chroma: 4-bit chroma shared across 2 pixels (4 bytes per macropixel).                                 |
 | `isCl`             | bool | `false` | CL per-pixel nibble-chroma: each pixel has its own 4-bit chroma (2 bytes per pixel). Keith's Methods 3/4.         |
-| `swapRgbChannels`  | bool | `false` | When true, the RGB555 decoder reads `xBBBBBGGGGGRRRRR` (BGR;15) instead of standard `xRRRRRGGGGGBBBBB`. For iPhone 2G thumbnail compatibility (Steee29/ithmb_converter). |
+| `swapRgbChannels`  | bool | `false` | When true, the RGB555 decoder reads `xBBBBBGGGGGRRRRR` (BGR15) instead of standard `xRRRRRGGGGGBBBBB`. For iPhone 2G thumbnail compatibility (Steee29/ithmb_converter). |
 | `swapChromaPlanes` | bool | `false` | Swaps Cb/Cr order in YCbCr 4:2:0 planar decode (Keith's Method 6). For iPod variants with reversed chroma planes. |
 | `cropX`            | int  | `0`     | X offset of visible region within decoded frame (0 = no crop). For centered-padding photo formats.                |
 | `cropY`            | int  | `0`     | Y offset of visible region within decoded frame (0 = no crop).                                                    |

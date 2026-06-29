@@ -27,7 +27,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 - Roundtrip-proven tests
 - PhotoDB/ArtworkDB read, write, and integrity checking
 - Multi-frame F-prefix raw file support
-- BGR;15 channel-swap for iPhone compatibility
+- BGR15 channel-swap for iPhone compatibility
 - Cross-platform builds (Windows x64/ARM64, Linux x64, macOS ARM64)
 
 > Not an iOS 13+ thumbnail decoder — those use a different proprietary format.
@@ -52,8 +52,8 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 - [Install](#install)
 - [Build from source](#build-from-source)
 - [Testing & validation](#testing--validation)
-- [Performance](#performance)
 - [Architecture](#architecture)
+- [Performance](#performance)
 - [Tooling](#tooling)
 - [Profile Reference](#profile-reference)
 - [Limitations](#limitations)
@@ -70,7 +70,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 1. **Peek read** — reads the first 4 MB of the file for JPEG scanning, then seeks the exact JPEG byte range from the FileStream (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos).
 2. **JPEG scan** — SIMD-accelerated `Span.IndexOf` (SSE2 on x64, NEON on ARM64) locates a SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via StbImageSharp, and its EXIF orientation tag (0x0112) is parsed for auto-rotation in ImageGlass.
-3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 54 known profiles and runs the appropriate raw decoder (RGB565, RGB555, Reordered RGB555, UYVY, YCbCr420, YUV422 interlaced, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is scanned for embedded JPEG markers (byte-level carving) before being rejected. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, padded frame handling, and channel-swap for BGR;15 formats.
+3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 54 known profiles and runs the appropriate raw decoder (RGB565, RGB555, Reordered RGB555, UYVY, YCbCr420, YUV422 interlaced, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is scanned for embedded JPEG markers (byte-level carving) before being rejected. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, padded frame handling, and channel-swap for BGR15 formats.
 
 4. **PhotoDB/ArtworkDB** — Apple's iPod thumbnail databases (PhotoDB, ArtworkDB) use a binary chunk-based format (MHFD→MHSD→MHNI entries). When a file starts with `mhfd`, the codec parses the chunk tree, extracts individual thumbnails (inline pixel data or external `.ithmb` file references), and decodes each via the raw decoder matching its format ID. Read, write, and integrity checking are all supported.
 
@@ -134,11 +134,11 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**540 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR;15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables, corruption fuzz, and format ID profile tests.
+**540 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables, corruption fuzz, and format ID profile tests.
 
 **Real-device validation:**
 
-- **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR;15 channel-swap, MSB replication — both confirmed correct). 30 reference PNGs match decoder output.
+- **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR15 channel-swap, MSB replication — both confirmed correct). 30 reference PNGs match decoder output.
 - **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 54 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 - **iPhone 5 (iOS 7):** 956 T-prefix files — 100% extraction
 - **Jakarade.com F00-F08:** 227 public T-prefix files — 100% JPEG+EXIF detection
@@ -147,39 +147,6 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 > Other known sources (FAU.edu, ~500 files) have live directory listings but downloads return 404. Not available for testing.
 
 ---
-
-## Development
-
-The plugin was developed through iterative research, implementation, review, and release cycles:
-
-1. **Format survey** — 33 open-source .ithmb implementations found and analyzed
-2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 54 profiles
-3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
-4. **Testing** — unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR;15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, and format ID profile tests
-5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, rotation buffer overflow, crop integer overflow, and defense-in-depth
-6. **Release** — Windows Native AOT binary published via GitHub Releases
-
-<div align="center"><img src="docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
-
-See [CHANGELOG.md](CHANGELOG.md) for the full version history.
-
-### Quality pipeline
-
-Quality checks run locally before release: linting, secret scanning, tests, static analysis, dependency audit, and link checking.
-
-## Contributions to the ecosystem
-
-Beyond building a working codec, this project made several original contributions to the .ithmb reverse-engineering space:
-
-- **Multi-OSS format consolidation** — Extracted format tables from **22 independent implementations** (iOpenPod, libgpod, Keith's iPod Photo Reader, clickwheel, gnupod, pygpod, ithmb-rs, OrgZ, andrewmalta/ithmb, wrinklykong/pyithmb, Reuhno, podkit, Steee29, keyj (Jeff Luyten), Mixtape, and more) and cross-referenced them against each other and against existing tables. Found **15 dimension discrepancies** across device profiles, including inverted Nano 5G/6G profiles, wrong Nano 3G formats, and iOS 1.x profile corrections from actual iPhone 2G (iOS 1.1.4) samples. Identified **18 format IDs** not present in any single implementation's table. The consolidated cross-reference covers **54 unique format IDs** — the most complete public reference.
-- **Device-specific format tables** — All prior tools maintain a flat list of all known format IDs. This project mapped which formats each of **18 iPod/iPhone generations** actually requires for thumbnail display and cover art, enabling per-device profile selection for sync tools.
-- **PhotoDB/ArtworkDB write support** — Every existing tool is read-only (extract thumbnails from a device's Photo Database). This project implements `TryBuildPhotoDb`, capable of writing a valid ArtworkDB binary from scratch — enabling artwork sync to iPod without iTunes.
-- **Hardware validation via community** — Initiated cross-project collaboration with iOpenPod, whose developer purchased multiple iPod models and validated decoders across firmware generations. This closed a long-standing gap: none of the OSS .ithmb decoders had systematic hardware confirmation.
-- **32 MB file size limit (researched from scratch)** — All prior decoders cite libgpod's 256 MB limit, but no evidence confirms it as a real firmware constant. This project derived 32 MB independently: max frame size across **54 profiles** is 829 KB, multi-frame concatenation from 5 RE tools never exceeded ~40 frames, and a public .ithmb file survey found zero files >1 MB. 32 MB is a power of 2 and covers all known data.
-- **BGR;15 iPhone compatibility** — Confirmed via real iPod Classic 6G samples (Reuhno) that iPhone thumbnails use reversed channel order (`xBBBBBGGGGGRRRRR` instead of standard `xRRRRRGGGGGBBBBB`). Added `SwapRgbChannels` flag — the first decoder to distinguish iPhone pixel layout from iPod's.
-- **Speculative profile corrections** — The F1064 profile (320×240 YCbCr) circulated in community speculation for years. Cross-checked against every public implementation: none has it. Disabled with rationale. Also corrected CLCL nibble scaling from ×17 (original 2005 Whirlpool RE) to ×16, cross-validated against 2 independent implementations.
-- **Synthetic test vectors (CC0)** — No public F-prefix test data existed before this project. Reuhno contributed generated CC0 vectors covering 3 slot geometries (56×55 slot with varying content rectangles, 128×128, 320×320) with 30 reference PNGs. These are the first public test vectors for raw .ithmb decoding.
-- **Negative knowledge: iOS Photos ≠ iPod Classic** — Downloaded and analyzed two iOS firmware images (9.3.5 and iOS 18) confirming their .ithmb files use a completely different, proprietary format not decodable by this codec. Documents a common misconception about .ithmb cross-platform compatibility.
 
 ## Architecture
 
@@ -216,11 +183,58 @@ Beyond building a working codec, this project made several original contribution
                 └─ external .ithmb reference → read file → raw decoder → BGRA
 ```
 
-**SIMD acceleration:** RGB565/RGB555 → SSE2 or NEON (x64/ARM64, 4-6× gain), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (SSE2 on x64 + NEON on ARM64, 3-5× gain). CLCL nibble-chroma is scalar-only. **BGR;15 channel-swap** (`SwapRgbChannels` flag) supported in all decoder variants — SIMD uses a conditional branch outside the pixel loop (zero per-pixel overhead when inactive). NEON CI validated on native ARM64 runners.
+**SIMD acceleration:** RGB565/RGB555 → SSE2 or NEON (x64/ARM64, 4-6× gain), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (SSE2 on x64 + NEON on ARM64, 3-5× gain). CLCL nibble-chroma is scalar-only. **BGR15 channel-swap** (`SwapRgbChannels` flag) supported in all decoder variants — SIMD uses a conditional branch outside the pixel loop (zero per-pixel overhead when inactive). NEON CI validated on native ARM64 runners.
 
 **Multi-frame support** — F-prefix `.ithmb` files may contain multiple concatenated raw frames (confirmed by Keith's iPod Photo Reader, ithmbrdr, libgpod, and iOpenPod). The codec detects frame count from file size and caches the file for read-once decode-many access. Callers can access individual frames via `frameIndex` (0-based); out-of-range indices return `IGStatus.InvalidArg`. JPEG-embedded T-prefix files are always single-frame.
 
 <div align="center"><img src="docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
+
+---
+
+## Performance
+
+### Decoder performance (720×480, AMD Ryzen AI 9 HX 370, .NET 10.0.9, AVX-512)
+
+| Decoder | Encoding | Width | Height | Mean time | Allocations |
+|---------|----------|-------|--------|-----------|-------------|
+| RGB565 | 16-bit RGB | 720 | 480 | 54.35 µs | 0 B |
+| RGB555 | 15-bit RGB | 720 | 480 | 52.92 µs | 0 B |
+| UYVY | YUV 4:2:2 | 720 | 480 | 184.6 µs | 0 B |
+| YCbCr 4:2:0 | YUV 4:2:0 | 720 | 480 | 212.9 µs | 0 B |
+| YUV422 Interlaced | YUV 4:2:2 (fields) | 720 | 480 | 187.0 µs | 0 B |
+| CLCL | Nibble-chroma YUV | 720 | 480 | 192.9 µs | 0 B |
+| CL | Per-pixel chroma YUV | 720 | 480 | 196.0 µs | 0 B |
+
+All decoders produce BGRA 8-bit output. Zero heap allocations — output is written directly to caller-provided native buffers.
+
+### Decoder format reference
+
+Each row in the table above corresponds to a raw pixel format that Apple used across iPod/iPhone firmware versions:
+
+| Decoder | Format | Details |
+|---------|--------|---------|
+| **RGB565** | 16-bit RGB (5/6/5) | Most common format (~40% of profiles). 2 bytes/pixel. SIMD: SSE2/NEON (16 px/iter). |
+| **RGB555** | 15-bit RGB (5/5/5) | Common on iPod 4G/5G. 2 bytes/pixel. SIMD: SSE2/NEON. |
+| **Reordered RGB555** | 15-bit RGB (swapped) | Same 15-bit data, different byte ordering. Some firmware variants. Scalar. |
+| **BGR15** | 15-bit BGR (iPhone) | Reversed channel order (blue->green->red instead of red->green->blue). Uses `SwapRgbChannels` flag. Confirmed on iPhone 2G samples. |
+| **UYVY** | YUV 4:2:2 packed | Two pixels share chroma (U and V). Layout: `[U, Y0, V, Y1]` (4 bytes/2px). Most common raw thumbnail format. SIMD: SSSE3/NEON (8 px/iter). |
+| **YCbCr 4:2:0** | YUV planar | Separate Y (luma), Cb, Cr planes. Chroma planes at half resolution (quarter area). Used by iPod Nano 4G/5G. SIMD: cross-platform Vector128. |
+| **YUV422 Interlaced** | YUV 4:2:2 fields | Interlaced field ordering: odd/even rows stored separately, then combined. SIMD: SSSE3/NEON. |
+| **CLCL** | Nibble-chroma YUV | Two pixels share one packed chroma byte (Cb high nibble, Cr low nibble, 4-bit each) + 2 luma bytes. Layout: `[CbCr] [Y0] [CbCr] [Y1]` (4 bytes/2px). SIMD: SSSE3/NEON (8 px/iter). *Speculative — no real samples verified.* |
+| **CL** | Per-pixel nibble YUV | Each pixel has its own chroma nibble pair. Layout: `[Cb:Cr_nibble] [Y]` (2 bytes/px). SIMD: SSSE3/NEON (8 px/iter). Rare — described in Keith's iPod Photo Reader as Methods 3/4. |
+
+
+### Reproducing benchmarks
+
+These numbers were measured on the hardware listed above. To reproduce on your own machine:
+
+```bash
+dotnet run -c Release --project tools/IthmbCodec.Benchmark
+```
+
+Or trigger the [benchmark workflow](.github/workflows/benchmark.yml) from the GitHub Actions tab (manual dispatch) — results are uploaded as a downloadable artifact.
+
+The benchmark project uses **BenchmarkDotNet** with 3 warmup iterations and 10 measurement iterations per decoder. Each decoder decodes a 720×480 synthetic buffer (random pixel data) and reports mean time and memory allocated.
 
 ---
 
@@ -235,24 +249,6 @@ The repository includes several CLI tools under [`tools/`](tools/):
 | [`ithmb-delegate.xml`](tools/ithmb-delegate.xml) | ImageMagick delegate config — open `.ithmb` files directly in `magick`/`convert` |
 | [`install-ithmb-magick.sh`](tools/install-ithmb-magick.sh) | Install .ithmb ImageMagick delegate system-wide |
 
-## Performance
-
-### Decoder performance (720×480, AMD Ryzen AI 9 HX 370, .NET 10.0.9, AVX-512)
-
-| Decoder | Encoding | Width | Height | Mean time | Allocations |
-|---------|----------|-------|--------|-----------|-------------|
-| RGB565 | 16-bit RGB | 720 | 480 | 64.19 µs | 0 B |
-| RGB555 | 15-bit RGB | 720 | 480 | 65.90 µs | 0 B |
-| UYVY | YUV 4:2:2 | 720 | 480 | 189.61 µs | 0 B |
-| YCbCr 4:2:0 | YUV 4:2:0 | 720 | 480 | 221.36 µs | 0 B |
-| YUV422 Interlaced | YUV 4:2:2 (fields) | 720 | 480 | 190.22 µs | 0 B |
-| CLCL | Nibble-chroma YUV | 720 | 480 | 456.80 µs | 0 B |
-| CL | Per-pixel chroma YUV | 720 | 480 | 590.66 µs | 0 B |
-
-All decoders produce BGRA 8-bit output. Zero heap allocations — output is written directly to caller-provided native buffers.
-
----
-
 ## Profile Reference
 
 **54 known profiles** (22 photo + 32 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
@@ -262,7 +258,7 @@ All decoders produce BGRA 8-bit output. Zero heap allocations — output is writ
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (540 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR;15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples.
+> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (540 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples.
 >
 > **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
 >
@@ -285,6 +281,39 @@ All decoders produce BGRA 8-bit output. Zero heap allocations — output is writ
 > If a file doesn't decode correctly, [open an issue](https://github.com/B67687/ithmb-codec/issues) with a sample link. You can also try [ithmb.org](https://ithmb.org) — a browser-based .ithmb decoder (offline, no upload) — to compare results.
 
 ---
+
+## Development
+
+The plugin was developed through iterative research, implementation, review, and release cycles:
+
+1. **Format survey** — 33 open-source .ithmb implementations found and analyzed
+2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 54 profiles
+3. **Implementation** — C# Native AOT plugin with 7 decoders and SIMD acceleration (SSE2 + ARM64 NEON)
+4. **Testing** — unit tests across roundtrip, fuzz, SIMD identity, YUV tolerance, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, SIMD tail path fuzz, rotation roundtrip, byte-level corruption fuzz, BGR15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, and format ID profile tests
+5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, SIMD correctness, rotation buffer overflow, crop integer overflow, and defense-in-depth
+6. **Release** — Windows Native AOT binary published via GitHub Releases
+
+<div align="center"><img src="docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
+
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
+
+### Quality pipeline
+
+Quality checks run locally before release: linting, secret scanning, tests, static analysis, dependency audit, and link checking.
+
+## Contributions to the ecosystem
+
+Beyond building a working codec, this project made several original contributions to the .ithmb reverse-engineering space:
+
+- **Multi-OSS format consolidation** — Extracted format tables from **22 independent implementations** (iOpenPod, libgpod, Keith's iPod Photo Reader, clickwheel, gnupod, pygpod, ithmb-rs, OrgZ, andrewmalta/ithmb, wrinklykong/pyithmb, Reuhno, podkit, Steee29, keyj (Jeff Luyten), Mixtape, and more) and cross-referenced them against each other and against existing tables. Found **15 dimension discrepancies** across device profiles, including inverted Nano 5G/6G profiles, wrong Nano 3G formats, and iOS 1.x profile corrections from actual iPhone 2G (iOS 1.1.4) samples. Identified **18 format IDs** not present in any single implementation's table. The consolidated cross-reference covers **54 unique format IDs** — the most complete public reference.
+- **Device-specific format tables** — All prior tools maintain a flat list of all known format IDs. This project mapped which formats each of **18 iPod/iPhone generations** actually requires for thumbnail display and cover art, enabling per-device profile selection for sync tools.
+- **PhotoDB/ArtworkDB write support** — Every existing tool is read-only (extract thumbnails from a device's Photo Database). This project implements `TryBuildPhotoDb`, capable of writing a valid ArtworkDB binary from scratch — enabling artwork sync to iPod without iTunes.
+- **Hardware validation via community** — Initiated cross-project collaboration with iOpenPod, whose developer purchased multiple iPod models and validated decoders across firmware generations. This closed a long-standing gap: none of the OSS .ithmb decoders had systematic hardware confirmation.
+- **32 MB file size limit (researched from scratch)** — All prior decoders cite libgpod's 256 MB limit, but no evidence confirms it as a real firmware constant. This project derived 32 MB independently: max frame size across **54 profiles** is 829 KB, multi-frame concatenation from 5 RE tools never exceeded ~40 frames, and a public .ithmb file survey found zero files >1 MB. 32 MB is a power of 2 and covers all known data.
+- **BGR15 iPhone compatibility** — Confirmed via real iPod Classic 6G samples (Reuhno) that iPhone thumbnails use reversed channel order (`xBBBBBGGGGGRRRRR` instead of standard `xRRRRRGGGGGBBBBB`). Added `SwapRgbChannels` flag — the first decoder to distinguish iPhone pixel layout from iPod's.
+- **Speculative profile corrections** — The F1064 profile (320×240 YCbCr) circulated in community speculation for years. Cross-checked against every public implementation: none has it. Disabled with rationale. Also corrected CLCL nibble scaling from ×17 (original 2005 Whirlpool RE) to ×16, cross-validated against 2 independent implementations.
+- **Synthetic test vectors (CC0)** — No public F-prefix test data existed before this project. Reuhno contributed generated CC0 vectors covering 3 slot geometries (56×55 slot with varying content rectangles, 128×128, 320×320) with 30 reference PNGs. These are the first public test vectors for raw .ithmb decoding.
+- **Negative knowledge: iOS Photos ≠ iPod Classic** — Downloaded and analyzed two iOS firmware images (9.3.5 and iOS 18) confirming their .ithmb files use a completely different, proprietary format not decodable by this codec. Documents a common misconception about .ithmb cross-platform compatibility.
 
 ## Acknowledgments
 

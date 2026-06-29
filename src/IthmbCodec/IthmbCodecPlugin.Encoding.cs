@@ -56,7 +56,7 @@ internal static unsafe partial class IthmbCodecPlugin
             int g = bgra[srcOff + 1] >> 3;  // G: top 5 bits
             int b = bgra[srcOff] >> 3;      // B: top 5 bits
             ushort pixel = swapRgbChannels
-                ? (ushort)(b << 10 | g << 5 | r)  // BGR;15: B in high bits, R in low bits
+                ? (ushort)(b << 10 | g << 5 | r)  // BGR15: B in high bits, R in low bits
                 : (ushort)(r << 10 | g << 5 | b); // RGB555: R in high bits, B in low bits
 
             int dstOff = i * 2;
