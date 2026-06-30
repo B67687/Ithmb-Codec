@@ -66,7 +66,7 @@ jobs:
       - name: Run all tests (Release) with code coverage
         run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-build --verbosity normal --collect "XPlat Code Coverage" --results-directory linux-x64-coverage
 
-      - name: Check code coverage threshold (min 70%)
+      - name: Check code coverage threshold (min 72%)
         run: |
           coverage_file="$(ls linux-x64-coverage/**/coverage.cobertura.xml 2>/dev/null | head -1)"
           if [ -z "$coverage_file" ]; then
