@@ -81,11 +81,12 @@ if [ "$CURRENT_METHOD_COL" -lt 0 ] || [ "$CURRENT_MEAN_COL" -lt 0 ]; then
     exit 0
 fi
 
-echo "%-30s %15s %15s %10s" "Benchmark" "Baseline (ns)" "Current (ns)" "Change"
-echo "%-30s %15s %15s %10s" "---------" "-------------" "------------" "------"
+printf "%-30s %15s %15s %10s\n" "Benchmark" "Baseline (ns)" "Current (ns)" "Change"
+printf "%-30s %15s %15s %10s\n" "---------" "-------------" "------------" "------"
 
 # Process each row
-tail -n +2 "$SUMMARY_FILE" | while IFS=',' read -ra ROW; do
+# Process each row (process substitution avoids subshell so HAS_REGRESSION propagates)
+while IFS=',' read -ra ROW; do
     method="${ROW[$CURRENT_METHOD_COL]}"
     method="${method//\"/}"
     mean_str="${ROW[$CURRENT_MEAN_COL]}"
@@ -120,7 +121,7 @@ tail -n +2 "$SUMMARY_FILE" | while IFS=',' read -ra ROW; do
     else
         printf "%-30s %15.0f %15.0f %+8.1f%%\n" "$method" "$baseline" "$mean_val" "$change"
     fi
-done
+done < <(tail -n +2 "$SUMMARY_FILE")
 
 echo ""
 
