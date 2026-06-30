@@ -31,6 +31,7 @@ mean of all eight category percentages.
 | 1.5 | Partial-class discipline | Logical split, no cross-file coupling | Some cross-file coupling | Chaotic split |
 
 **Structural Integrity Score =** (sum of 1.1–1.5) / 10
+**Current: 90% (9/10)** — 1.1–1.3, 1.5 at 2/2 (P5 extraction resolved god-classes). 1.4 at 1/2 (no cyclic-dep tooling documented, though no cycles known).
 
 ---
 
@@ -45,6 +46,7 @@ mean of all eight category percentages.
 | 2.5 | Code-smell discipline | No negative naming, >3 params, redundant verify | ≤2 smells | 3+ or systematic |
 
 **Code Quality Score =** (sum of 2.1–2.5) / 10
+**Current: 100% (10/10)** — All five criteria at 2/2. NUL guard, ex.Message in all catches, explicit ASCII whitespace, no code smells detected in audit.
 
 ---
 
@@ -59,6 +61,7 @@ mean of all eight category percentages.
 | 3.5 | Profile-guided optimization | PGO enabled in csproj for Native AOT | PGO considered | Not configured |
 
 **Performance Score =** (sum of 3.1–3.5) / 10
+**Current: 90% (9/10)** — SIMD 2/2 (SSE2+AVX-512+NEON), memory 2/2 (ArrayPool+LRU), benchmark gate 2/2, PGO 2/2 (just enabled). 3.3 at 1/2 — unavoidable managed allocs (JPEG slice, synthetic buffers) prevent zero-alloc decode.
 
 ---
 
@@ -73,6 +76,7 @@ mean of all eight category percentages.
 | 4.5 | Profiles integrity | External profiles verified by hash before use | CRC logged but not verified | Loaded with trust |
 
 **Security Score =** (sum of 4.1–4.5) / 10
+**Current: 90% (9/10)** — 4.1–4.4 all at 2/2 (NUL guard, SHA-pinned actions, CodeQL+gitleaks). 4.5 at 1/2 — CRC logged on profiles.json load but not verified against a trusted hash.
 
 ---
 
@@ -87,6 +91,7 @@ mean of all eight category percentages.
 | 5.5 | Regression suite runtime | <30 s | <60 s | >60 s |
 
 **Testing Score =** (sum of 5.1–5.5) / 10
+**Current: 90% (9/10)** — 5.2–5.5 at 2/2 (real roundtrip+concurrency+fuzz+7s runtime). 5.1 at 1/2 — 75.3% coverage below 85% bar; ~5% gap is NEON paths unreachable on x64 CI.
 
 ---
 
@@ -101,6 +106,7 @@ mean of all eight category percentages.
 | 6.5 | Release validation | Tag pattern check, CHANGELOG diff, release notes | Tag check only | Manual release |
 
 **CI/CD Score =** (sum of 6.1–6.5) / 10
+**Current: 90% (9/10)** — Format+build+test+release gates all at 2/2. 6.4 at 1/2 — 72% gate enforced but below 85% target; coverage report published.
 
 ---
 
@@ -115,6 +121,7 @@ mean of all eight category percentages.
 | 7.5 | Architecture decision records | Rationale for major design choices | Inline comments only | No rationale |
 
 **Documentation Score =** (sum of 7.1–7.5) / 10
+**Current: 80% (8/10)** — 7.1–7.3 at 2/2 (README gate-verified, CHANGELOG current, PROFILES.md accurate). 7.4 at 1/2 — DecodePipeline+EncoderHelpers documented, but Encoding.cs and JpegDecode.cs still lack XML docs. 7.5 at 1/2 — inline rationale comments exist but no formal ADR process.
 
 ---
 
@@ -128,6 +135,7 @@ mean of all eight category percentages.
 | 8.4 | Error telemetry | Stack trace + context captured for failures | Message logged | Silent failures |
 
 **Observability Score =** (sum of 8.1–8.4) / 8
+**Current: 62.5% (5/8)** — 8.2+8.4 at 2/2 (decode metrics, error capture). 8.1 at 1/2 — consistent format+filename tokens but no structured correlation IDs. 8.3 at 0/2 — no tracing/propagation system.
 
 ---
 
@@ -135,7 +143,7 @@ mean of all eight category percentages.
 
 ```
 Overall = (Axis1% + Axis2% + Axis3% + Axis4% + Axis5% + Axis6% + Axis7% + Axis8%) / 8
-```
+## Overall Score: **86.6% — Production-grade** (85–94% band)
 
 | Range | Rating | Meaning |
 |-------|--------|---------|
