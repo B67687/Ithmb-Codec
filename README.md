@@ -177,7 +177,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 18 files organized by domain (previously 11, split for single-responsibility):
+**Source layout** — 19 files organized by domain (previously 11, split for single-responsibility):
 
 | File | Purpose |
 |------|---------|
@@ -195,10 +195,10 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 | `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) |
 | `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats |
 | `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) |
+| `IthmbCodecPlugin.ProfilesJson.cs` | Embedded profiles.json data and AOT-safe parser |
 | `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser + format ID mapping |
 | `PhotoDb/Serialization.cs` | PhotoDB writer + integrity checker |
 | `IthmbCodecPlugin.SimdConstants.cs` | Shared SIMD shuffle masks and coefficient vectors |
-
 **Data flow:**
 
 ```
