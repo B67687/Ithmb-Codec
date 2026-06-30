@@ -35,10 +35,11 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         Interlocked.Increment(ref _decodeCount);
         var sw = Stopwatch.StartNew();
+        string path = "";
         try
         {
             if (filePath.Data == null || filePath.Length <= 0) return IGStatus.InvalidArg;
-            var path = new string(filePath.Data, 0, filePath.Length);
+            path = new string(filePath.Data, 0, filePath.Length);
             if (path.Contains('\0')) return IGStatus.InvalidArg;
             if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
@@ -60,6 +61,10 @@ internal static unsafe partial class IthmbCodecPlugin
                 Log(4, $"ITHMB: '{Path.GetFileName(path)}' file too large ({fileSize} bytes)");
                 return IGStatus.DecodeFailed;
             }
+
+            // Log decode start for lifecycle observability
+            Log(4, $"ITHMB|Decode|START|{Path.GetFileName(path)}|{fileSize}bytes");
+
 
             // Two-phase header probe: read 512 KB first for JPEG scan;
             // extend to full peek buffer (4 MB) only if no SOI found.
@@ -261,8 +266,29 @@ internal static unsafe partial class IthmbCodecPlugin
             Interlocked.Add(ref _decodeTotalTicks, ticks);
             // Successful decode: ran long enough (>=1ms) to be a real attempt,
             // not an early-return error path (NUL, canceled, invalid frameIndex).
-            if (ticks >= Stopwatch.Frequency / 1000)
+            bool wasRealAttempt = ticks >= Stopwatch.Frequency / 1000;
+            if (wasRealAttempt)
                 Interlocked.Increment(ref _decodeSuccessCount);
+
+            // Log decode lifecycle outcome with timing
+            if (path.Length > 0)
+            {
+                double ms = ticks * 1000.0 / Stopwatch.Frequency;
+                string status = wasRealAttempt ? "OK" : "EARLY";
+                Log(4, $"ITHMB|Decode|END|{Path.GetFileName(path)}|{status}|{ms:F1}ms");
+            }
+
+            // Periodic stats summary every 100 decode attempts
+            long count = Interlocked.Read(ref _decodeCount);
+            if (count > 0 && count % 100 == 0)
+            {
+                long success = Interlocked.Read(ref _decodeSuccessCount);
+                long totalTicks2 = Interlocked.Read(ref _decodeTotalTicks);
+                double avgMs = count > 0
+                    ? totalTicks2 * 1000.0 / Stopwatch.Frequency / count
+                    : 0;
+                Log(4, $"ITHMB|Stats|count={count}|success={success}|fail={count - success}|avg_ms={avgMs:F1}");
+            }
         }
     }
 

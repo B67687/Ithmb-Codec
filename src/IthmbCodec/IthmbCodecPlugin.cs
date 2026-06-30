@@ -61,6 +61,13 @@ internal static unsafe partial class IthmbCodecPlugin
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static void OnShutdown()
     {
+        // Log final cumulative decode stats before shutdown
+        var (total, success, _) = GetDecodeStats();
+        if (total > 0)
+        {
+            double pct = total > 0 ? (double)success / total * 100 : 0;
+            Log(4, $"ITHMB|Stats|SHUTDOWN|attempts={total}|success={success}|fail={total - success}|rate={pct:F1}%");
+        }
         FreePluginStrings();
         FreePixelBufferCleanup();
     }
