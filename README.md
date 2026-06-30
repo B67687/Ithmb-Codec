@@ -161,6 +161,10 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 **594 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables, corruption fuzz, format ID profile tests, encoder helpers (interlace fields + BT.601 color conversion), and scalar decoder fallback paths.
 
+> **Coverage ceiling:** Current line coverage is **75.3%** (x64 CI). Approximately 5% of uncovered lines
+> are NEON/ARM64 SIMD paths (`AdvSimd.IsSupported` branches) unreachable on x64 hardware. The
+> effective x64-reachable ceiling is ~80%. Coverage gate is set at 72% in `build-linux.yml`.
+
 **Real-device validation:**
 
 - **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR15 channel-swap, MSB replication — both confirmed correct). 30 reference PNGs match decoder output.

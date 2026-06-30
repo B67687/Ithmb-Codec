@@ -8,7 +8,12 @@ namespace IthmbCodec;
 
 internal static unsafe partial class IthmbCodecPlugin
 {
-    // ---- Helper: interleave fields for interlaced formats ----
+    /// <summary>Interleave fields for interlaced YCbCr 4:2:0 and 2 Bpp formats.</summary>
+    /// <param name="planar">Raw planar pixel data.</param>
+    /// <param name="w">Image width in pixels.</param>
+    /// <param name="h">Image height in rows.</param>
+    /// <param name="enc">Encoding format (YCbCr 4:2:0 uses per-plane interlace; other formats use row-stride interlace).</param>
+    /// <returns>Interlaced byte array with fields reordered for iPod hardware.</returns>
     private static byte[] InterlaceFields(byte[] planar, int w, int h, IthmbEncoding enc)
     {
         if (enc != IthmbEncoding.Ycbcr420)
@@ -79,6 +84,7 @@ internal static unsafe partial class IthmbCodecPlugin
     }
 
     // ---- BT.601 forward transform helpers (fixed-point, same precision as decoder) ----
+    /// <summary>Compute BT.601 luma (Y) from R/G/B using fixed-point coefficients (Y = 0.299R + 0.587G + 0.114B).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Bt601Y(int r, int g, int b)
     {
@@ -86,6 +92,7 @@ internal static unsafe partial class IthmbCodecPlugin
         return (77 * r + 150 * g + 29 * b) >> 8;
     }
 
+    /// <summary>Compute BT.601 blue-difference chroma (Cb) from R/G/B. Result is unbiased (add 128 for output).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Bt601Cb(int r, int g, int b)
     {
@@ -94,6 +101,7 @@ internal static unsafe partial class IthmbCodecPlugin
         return ((-43 * r - 85 * g + 128 * b) >> 8) + 128;
     }
 
+    /// <summary>Compute BT.601 red-difference chroma (Cr) from R/G/B. Result is unbiased (add 128 for output).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Bt601Cr(int r, int g, int b)
     {

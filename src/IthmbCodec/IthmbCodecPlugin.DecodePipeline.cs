@@ -19,6 +19,12 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ------------------------------ Core decode pipeline ------------------------------
 
+    /// <summary>Unmanaged entry point called by ImageGlass to decode a raster frame from an .ithmb file.</summary>
+    /// <param name="filePath">Path to the .ithmb file (Native AOT string ref).</param>
+    /// <param name="frameIndex">Zero-based frame index for multi-frame files.</param>
+    /// <param name="outBuf">Output pixel buffer — the decoded BGRA32 pixels are written here.</param>
+    /// <param name="cancellation">Opaque cancellation token pointer (non-null means cancellation requested).</param>
+    /// <returns>IGStatus.OK on success, or an error code.</returns>
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static IGStatus CodecDecodeStaticRaster(IGStringRef filePath, int frameIndex,
         IGPixelBuffer* outBuf, void* cancellation)
@@ -30,6 +36,13 @@ internal static unsafe partial class IthmbCodecPlugin
         return DecodeInternal(filePath, cancellation, &info, outBuf, frameIndex);
     }
 
+    /// <summary>Internal decode pipeline: JPEG detection, raw profile fallback, multi-frame caching, and DecodeRawProfile dispatch.</summary>
+    /// <param name="filePath">.ithmb file path reference.</param>
+    /// <param name="cancellation">Cancellation token pointer.</param>
+    /// <param name="outInfo">Populated with image metadata (dimensions, frame count). May be null.</param>
+    /// <param name="outBuf">Output pixel buffer. If null, only fills outInfo (metadata query).</param>
+    /// <param name="frameIndex">Frame index for multi-frame files (default 0).</param>
+    /// <returns>IGStatus.OK on success, or an error code.</returns>
     internal static IGStatus DecodeInternal(IGStringRef filePath, void* cancellation,
         IGImageInfo* outInfo, IGPixelBuffer* outBuf, int frameIndex = 0)
     {
