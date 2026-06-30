@@ -6,6 +6,7 @@ using System.Buffers.Binary;
 using System.Buffers;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -28,6 +29,11 @@ internal static unsafe partial class IthmbCodecPlugin
     private const int MaxCachedPaths = 16;
     private const int MaxCarvingFileSize = 8 * 1024 * 1024; // 8 MB: skip JPEG carving on oversized unknown-prefix files
     private static readonly ConcurrentDictionary<string, RawFileCacheEntry> _rawFileCache = new();
+
+    // Decode performance metrics (Interlocked for thread safety across concurrent decode threads)
+    private static long _decodeCount;
+    private static long _decodeSuccessCount;
+    private static long _decodeTotalTicks;
     internal static void SetCachedFile(string path, byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
     {
         // LRU eviction: when MaxCachedPaths is exceeded, remove the oldest entry.
@@ -69,6 +75,20 @@ internal static unsafe partial class IthmbCodecPlugin
     // Test support — resets the raw file cache to empty.
     internal static void ClearRawFileCache() => _rawFileCache.Clear();
 
+    /// <summary>Returns cumulative decode metrics for observability.</summary>
+    internal static (long Count, long SuccessCount, long TotalTicks) GetDecodeStats()
+        => (Interlocked.Read(ref _decodeCount),
+            Interlocked.Read(ref _decodeSuccessCount),
+            Interlocked.Read(ref _decodeTotalTicks));
+
+    /// <summary>Resets decode metrics (test support).</summary>
+    internal static void ResetDecodeStats()
+    {
+        Interlocked.Exchange(ref _decodeCount, 0);
+        Interlocked.Exchange(ref _decodeSuccessCount, 0);
+        Interlocked.Exchange(ref _decodeTotalTicks, 0);
+    }
+
     internal record struct RawFileCacheEntry(byte[] Data, IthmbVariantProfile Profile, int FrameCount, int FrameSize)
     {
         public long LastAccess { get; set; }
@@ -90,6 +110,10 @@ internal static unsafe partial class IthmbCodecPlugin
     internal static IGStatus DecodeInternal(IGStringRef filePath, void* cancellation,
         IGImageInfo* outInfo, IGPixelBuffer* outBuf, int frameIndex = 0)
     {
+        Interlocked.Increment(ref _decodeCount);
+        var sw = Stopwatch.StartNew();
+        try
+        {
         if (filePath.Data == null || filePath.Length <= 0) return IGStatus.InvalidArg;
         var path = new string(filePath.Data, 0, filePath.Length);
         if (path.Contains('\0')) return IGStatus.InvalidArg;
@@ -307,6 +331,16 @@ internal static unsafe partial class IthmbCodecPlugin
         }
         catch (IOException ex) { Log(4, $"ITHMB: read failed '{path}' ({ex.Message})"); return IGStatus.IoError; }
         catch (Exception ex) { Log(4, $"ITHMB: unexpected error reading '{path}' ({ex.Message})"); return IGStatus.Internal; }
+        }
+        finally
+        {
+            long ticks = sw.ElapsedTicks;
+            Interlocked.Add(ref _decodeTotalTicks, ticks);
+            // Successful decode: ran long enough (>=1ms) to be a real attempt,
+            // not an early-return error path (NUL, canceled, invalid frameIndex).
+            if (ticks >= Stopwatch.Frequency / 1000)
+                Interlocked.Increment(ref _decodeSuccessCount);
+        }
     }
 
     // ------------------------------ Raw profile decoding ------------------------------

@@ -38,9 +38,8 @@ jobs:
       - name: Run benchmarks
         run: dotnet run -c Release --project tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj -- --filter "*"
 
-      - name: Run benchmarks
-        run: dotnet run -c Release --project tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj -- --filter "*"
-
+      - name: Check for performance regression vs baseline
+        run: bash tools/check-benchmark-regression.sh
       - name: Upload benchmark results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -49,14 +48,4 @@ jobs:
           path: |
             tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/
           retention-days: 90
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: benchmark-results
-          path: |
-            tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/
-          retention-days: 90
 
-      # Benchmark results are compared against the previous run's artifact (downloaded
-      # from the same workflow's latest successful run) for regression detection.
-      # Compare mean times per decoder; a 10%+ regression warrants investigation.
