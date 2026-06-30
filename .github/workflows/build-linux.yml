@@ -26,6 +26,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      - name: Secret scan with gitleaks
+        uses: gitleaks/gitleaks-action@833cdc7c5d919d4b3fc08c69c0af1c26098cc0ce # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
@@ -42,6 +47,9 @@ jobs:
 
       - name: Restore dependencies (locked)
         run: dotnet restore src/IthmbCodec/test/IthmbCodec.Tests.csproj --locked-mode
+
+      - name: SAST — check for vulnerable dependencies
+        run: dotnet list src/IthmbCodec/IthmbCodec.csproj package --vulnerable --include-transitive 2>&1 || echo 'WARNING: vulnerable packages found (non-fatal for now)'
 
       - name: Build (Release)
         run: dotnet build src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-restore
