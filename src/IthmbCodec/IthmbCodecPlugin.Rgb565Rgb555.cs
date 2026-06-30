@@ -102,7 +102,7 @@ internal static unsafe partial class IthmbCodecPlugin
         => DecodeRgbX_Sse2(src, dst, w, h, littleEndian, swapRgbChannels, 11, 5, 0, 0x003F, 2, &DecodeRgb565_Tail);
 
     /// <summary>Parameterized ARM64 NEON SIMD loop shared by RGB565 and RGB555 decoders.</summary>
-            #pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
+#pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
     private static void DecodeRgbX_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool le, bool swapRgbChannels,
         int rShift, int gShift, int bShift, int gMask, int gMsbShift,
         delegate* managed<byte*, byte*, int, int, bool, bool, void> tail)
@@ -220,7 +220,7 @@ internal static unsafe partial class IthmbCodecPlugin
     // ---------- AVX-512 decode paths (process 32 pixels per iteration) ----------
 
     /// <summary>Parameterized AVX-512 SIMD loop: 32 px/iter (2*16 via 256-bit halves).</summary>
-            #pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
+#pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
     private static void DecodeRgbX_Avx512(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool le, bool swapRgbChannels,
         int rShift, int gShift, int bShift, int gMask, int gMsbShift,
         delegate* managed<byte*, byte*, int, int, bool, bool, void> tail)
@@ -250,7 +250,7 @@ internal static unsafe partial class IthmbCodecPlugin
 #pragma warning restore CA1857
 
     /// <summary>Decodes 16 RGB565/RGB555 pixels using 256-bit AVX2 intrinsics.</summary>
-            #pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
+#pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void DecodeHalfAvx2(Vector256<byte> raw, byte* pDstRow, int x, bool le, bool swapRgbChannels,
         int rShift, int gShift, int bShift, int gMask, int gMsbShift, int gRightShift)
@@ -370,15 +370,15 @@ internal static unsafe partial class IthmbCodecPlugin
             {
                 // BGR15: x BBBBB GGGGG RRRRR
                 b5 = (rgb >> 10) & 0x1F;
-                g5 = (rgb >> 5)  & 0x1F;
-                r5 = rgb         & 0x1F;
+                g5 = (rgb >> 5) & 0x1F;
+                r5 = rgb & 0x1F;
             }
             else
             {
                 // Standard RGB555: x RRRRR GGGGG BBBBB
                 r5 = (rgb >> 10) & 0x1F;
-                g5 = (rgb >> 5)  & 0x1F;
-                b5 = rgb         & 0x1F;
+                g5 = (rgb >> 5) & 0x1F;
+                b5 = rgb & 0x1F;
             }
             pDst[0] = (byte)((b5 << 3) | (b5 >> 2));
             pDst[1] = (byte)((g5 << 3) | (g5 >> 2));

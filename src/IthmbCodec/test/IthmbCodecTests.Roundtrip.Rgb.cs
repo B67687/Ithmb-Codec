@@ -305,6 +305,57 @@ public unsafe partial class IthmbCodecTests
     }
 
     [Fact]
+    public void DecodeRawProfile_TrailingPaddingTolerance_ExactBoundary_Succeeds()
+    {
+        // Exact boundary: frameSize - TrailingPaddingTolerance (256). The tolerance is
+        // inclusive — a file exactly 256 bytes short is still accepted.
+        int frameSize = 100 * 100 * 2;
+        int actualSize = frameSize - 256; // 20000 - 256 = 19744
+        var data = new byte[4 + actualSize];
+        data[0] = 0x00; data[1] = 0x00; data[2] = 0x03; data[3] = 0xED;
+        for (int i = 4; i < data.Length; i++) data[i] = 128;
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1005, Width: 100, Height: 100,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: frameSize);
+
+        var outInfo = (ImageGlass.SDK.Plugins.IGImageInfo*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGImageInfo));
+        var outBuf = (ImageGlass.SDK.Plugins.IGPixelBuffer*)NativeMemory.AllocZeroed(
+            (nuint)sizeof(ImageGlass.SDK.Plugins.IGPixelBuffer));
+        try
+        {
+            var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
+                cancellation: null, outInfo, outBuf);
+            Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.OK, status);
+            Assert.Equal(100, outBuf->Width);
+            Assert.Equal(100, outBuf->Height);
+        }
+        finally { if (outBuf->Data != null) NativeMemory.Free((void*)outBuf->Data); NativeMemory.Free(outInfo); NativeMemory.Free(outBuf); }
+    }
+
+    [Fact]
+    public void DecodeRawProfile_TrailingPaddingTolerance_JustBeyondBoundary_Fails()
+    {
+        // One byte beyond the tolerance: frameSize - TrailingPaddingTolerance - 1.
+        // This confirms the tolerance boundary is strict but inclusive at the exact value.
+        int frameSize = 100 * 100 * 2;
+        int actualSize = frameSize - 256 - 1; // 20000 - 257 = 19743
+        var data = new byte[4 + actualSize];
+        data[0] = 0x00; data[1] = 0x00; data[2] = 0x03; data[3] = 0xED;
+
+        var profile = new IthmbCodecPlugin.IthmbVariantProfile(
+            Prefix: 1005, Width: 100, Height: 100,
+            Encoding: IthmbCodecPlugin.IthmbEncoding.Rgb565,
+            FrameByteLength: frameSize);
+
+        var status = IthmbCodecPlugin.DecodeRawProfile(data, profile,
+            cancellation: null, outInfo: null, outBuf: null);
+        Assert.Equal(ImageGlass.SDK.Plugins.IGStatus.DecodeFailed, status);
+    }
+
+    [Fact]
     public void DecodeRawProfile_Rotation_90_NoCrash()
     {
         var profile = new IthmbCodecPlugin.IthmbVariantProfile(

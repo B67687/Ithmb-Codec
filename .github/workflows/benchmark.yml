@@ -56,3 +56,7 @@ jobs:
           path: |
             tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/
           retention-days: 90
+
+      # Benchmark results are compared against the previous run's artifact (downloaded
+      # from the same workflow's latest successful run) for regression detection.
+      # Compare mean times per decoder; a 10%+ regression warrants investigation.

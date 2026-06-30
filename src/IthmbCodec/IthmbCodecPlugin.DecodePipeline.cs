@@ -92,6 +92,7 @@ internal static unsafe partial class IthmbCodecPlugin
     {
         if (filePath.Data == null || filePath.Length <= 0) return IGStatus.InvalidArg;
         var path = new string(filePath.Data, 0, filePath.Length);
+        if (path.Contains('\0')) return IGStatus.InvalidArg;
         if (IsCanceled(cancellation)) return IGStatus.Canceled;
 
         // Load external profiles on first decode (deferred from init to avoid I/O in GetApi)
@@ -113,23 +114,49 @@ internal static unsafe partial class IthmbCodecPlugin
             return IGStatus.DecodeFailed;
         }
 
-        // Read a header buffer for JPEG scan (4 MB or file size, whichever is smaller)
-        // This avoids reading the entire file into memory for the common JPEG-embedded path.
+        // Two-phase header probe: read 512 KB first for JPEG scan;
+        // extend to full peek buffer (4 MB) only if no SOI found.
+        // This avoids reading 4 MB for common small thumbnails (~500 KB).
+
+        // Network filesystem note: FileStream reads block the calling thread.
+        // On a network share, an unresponsive server could hang the plugin
+        // indefinitely. A future enhancement may add a CancellationToken-based
+        // timeout wrapper around the file read.
+
         try
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-            int peekSize = (int)Math.Min(fileSize, PeekBufferSize);
-            byte[] peekBuffer = ArrayPool<byte>.Shared.Rent(peekSize);
             int jpegOffset = 0, jpegLength = 0;
             bool foundJpeg;
+            int peekSize = (int)Math.Min(fileSize, 512 * 1024);
+
+            // Phase 1: probe first 512 KB for JPEG SOI
+            byte[] probeBuffer = ArrayPool<byte>.Shared.Rent(peekSize);
             try
             {
-                fs.ReadExactly(peekBuffer, 0, peekSize);
-                foundJpeg = TryFindJpegSlice(peekBuffer.AsSpan(0, peekSize), out jpegOffset, out jpegLength, cancellation);
+                fs.ReadExactly(probeBuffer, 0, peekSize);
+                foundJpeg = TryFindJpegSlice(probeBuffer.AsSpan(0, peekSize), out jpegOffset, out jpegLength, cancellation);
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(peekBuffer);
+                ArrayPool<byte>.Shared.Return(probeBuffer);
+            }
+
+            // Phase 2: if not found and file is larger, extend to full peek buffer
+            if (!foundJpeg && fileSize > peekSize)
+            {
+                peekSize = (int)Math.Min(fileSize, PeekBufferSize);
+                byte[] fullBuffer = ArrayPool<byte>.Shared.Rent(peekSize);
+                try
+                {
+                    fs.Seek(0, SeekOrigin.Begin);
+                    fs.ReadExactly(fullBuffer, 0, peekSize);
+                    foundJpeg = TryFindJpegSlice(fullBuffer.AsSpan(0, peekSize), out jpegOffset, out jpegLength, cancellation);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(fullBuffer);
+                }
             }
 
             if (foundJpeg)
@@ -164,59 +191,59 @@ internal static unsafe partial class IthmbCodecPlugin
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
                 if (bytesRead < jpegLength) { Log(4, $"ITHMB: '{Path.GetFileName(path)}' truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
                 // fileSize ≤ MaxDecodeFileSize, safe for int
-                    return DecodeJpegSlice(jpegSlice, jpegLength, (int)fileSize,
-                        cancellation, outInfo, outBuf);
-                }
+                return DecodeJpegSlice(jpegSlice, jpegLength, (int)fileSize,
+                    cancellation, outInfo, outBuf);
+            }
 
-                // No embedded JPEG found in peek buffer — read full file for raw profile fallback
-                byte[] fileBytes = new byte[(int)fileSize];
-                fs.Seek(0, SeekOrigin.Begin);
-                fs.ReadExactly(fileBytes, 0, (int)fileSize);
+            // No embedded JPEG found in peek buffer — read full file for raw profile fallback
+            byte[] fileBytes = new byte[(int)fileSize];
+            fs.Seek(0, SeekOrigin.Begin);
+            fs.ReadExactly(fileBytes, 0, (int)fileSize);
 
-                // PhotoDB/ArtworkDB container check — iPod thumbnail databases embed raw .ithmb blobs
-                if (fileBytes.Length >= 4 && CanOpenPhotoDb(fileBytes))
+            // PhotoDB/ArtworkDB container check — iPod thumbnail databases embed raw .ithmb blobs
+            if (fileBytes.Length >= 4 && CanOpenPhotoDb(fileBytes))
+            {
+                if (!TryParsePhotoDb(fileBytes, out var pdEntries, out var pdFrameCount))
                 {
-                    if (!TryParsePhotoDb(fileBytes, out var pdEntries, out var pdFrameCount))
-                    {
-                        Log(4, $"ITHMB: '{Path.GetFileName(path)}' PhotoDB parse failed");
-                        return IGStatus.DecodeFailed;
-                    }
-
-                    if (frameIndex >= pdFrameCount)
-                    {
-                        FillImageInfo(outInfo, 0, 0, hasAlpha: 0, orientation: 1,
-                            fileSize: (int)fileSize, frameCount: pdFrameCount);
-                        return IGStatus.InvalidArg;
-                    }
-
-                    var (pdFormatId, pdRawData, _, _, pdW, pdH) = pdEntries[frameIndex];
-                    if (!TryResolveProfile(pdFormatId, pdRawData.AsSpan(), out var pdProfile))
-                    {
-                        if (pdRawData.Length >= 2 && pdRawData[0] == 0xFF && pdRawData[1] == 0xD8)
-                        {
-                            return DecodeJpegSlice(pdRawData, pdRawData.Length, (int)fileSize,
-                                cancellation, outInfo, outBuf);
-                        }
-                        Log(4, $"ITHMB: '{Path.GetFileName(path)}' PhotoDB format_id {pdFormatId} has no decoder profile");
-                        return IGStatus.DecodeFailed;
-                    }
-
-                    // Construct synthetic .ithmb buffer: 4-byte placeholder prefix + raw pixel data.
-                    // DecodeRawProfile expects frameStart = 4 + frameIndex * frameSize.
-                    // With prefix_bytes|raw_data and frameIndex=0, frameStart=4 skips the prefix.
-                    byte[] synthetic = new byte[4 + pdRawData.Length];
-                    pdRawData.CopyTo(synthetic, 4);
-
-                    int useW = pdProfile.UseMhniDimensions && pdW > 0 ? pdW : pdProfile.Width;
-                    int useH = pdProfile.UseMhniDimensions && pdH > 0 ? pdH : pdProfile.Height;
-                    if (pdProfile.SwapsDimensions) (useW, useH) = (useH, useW);
-
-                    FillImageInfo(outInfo, useW, useH, hasAlpha: 0, orientation: 1,
-                        fileSize: synthetic.Length, frameCount: pdFrameCount);
-                    if (outBuf == null) return IGStatus.OK;
-
-                    return DecodeRawProfile(synthetic, pdProfile, cancellation, outInfo, outBuf, frameIndex: 0, overrideW: useW, overrideH: useH);
+                    Log(4, $"ITHMB: '{Path.GetFileName(path)}' PhotoDB parse failed");
+                    return IGStatus.DecodeFailed;
                 }
+
+                if (frameIndex >= pdFrameCount)
+                {
+                    FillImageInfo(outInfo, 0, 0, hasAlpha: 0, orientation: 1,
+                        fileSize: (int)fileSize, frameCount: pdFrameCount);
+                    return IGStatus.InvalidArg;
+                }
+
+                var (pdFormatId, pdRawData, _, _, pdW, pdH) = pdEntries[frameIndex];
+                if (!TryResolveProfile(pdFormatId, pdRawData.AsSpan(), out var pdProfile))
+                {
+                    if (pdRawData.Length >= 2 && pdRawData[0] == 0xFF && pdRawData[1] == 0xD8)
+                    {
+                        return DecodeJpegSlice(pdRawData, pdRawData.Length, (int)fileSize,
+                            cancellation, outInfo, outBuf);
+                    }
+                    Log(4, $"ITHMB: '{Path.GetFileName(path)}' PhotoDB format_id {pdFormatId} has no decoder profile");
+                    return IGStatus.DecodeFailed;
+                }
+
+                // Construct synthetic .ithmb buffer: 4-byte placeholder prefix + raw pixel data.
+                // DecodeRawProfile expects frameStart = 4 + frameIndex * frameSize.
+                // With prefix_bytes|raw_data and frameIndex=0, frameStart=4 skips the prefix.
+                byte[] synthetic = new byte[4 + pdRawData.Length];
+                pdRawData.CopyTo(synthetic, 4);
+
+                int useW = pdProfile.UseMhniDimensions && pdW > 0 ? pdW : pdProfile.Width;
+                int useH = pdProfile.UseMhniDimensions && pdH > 0 ? pdH : pdProfile.Height;
+                if (pdProfile.SwapsDimensions) (useW, useH) = (useH, useW);
+
+                FillImageInfo(outInfo, useW, useH, hasAlpha: 0, orientation: 1,
+                    fileSize: synthetic.Length, frameCount: pdFrameCount);
+                if (outBuf == null) return IGStatus.OK;
+
+                return DecodeRawProfile(synthetic, pdProfile, cancellation, outInfo, outBuf, frameIndex: 0, overrideW: useW, overrideH: useH);
+            }
 
             // Read the 4-byte big-endian prefix. This is either a format_id matched against
             // KnownProfiles (for F-prefix raw decodes) or ignored for T-prefix JPEG blobs.
@@ -237,6 +264,11 @@ internal static unsafe partial class IthmbCodecPlugin
                 // First time: compute frame count and cache the raw data.
                 // F-prefix .ithmb files can contain multiple concatenated raw frames.
                 int frameSize = profile.FrameByteLength;
+                if (frameSize <= 0)
+                {
+                    Log(4, $"ITHMB: '{Path.GetFileName(path)}' profile {profile.Prefix} has invalid frameSize={frameSize}");
+                    return IGStatus.DecodeFailed;
+                }
                 int dataLen = fileBytes.Length - 4;
                 int frameCount = frameSize > 0 ? dataLen / frameSize : 1;
                 if (frameCount < 1) frameCount = 1;
@@ -256,19 +288,19 @@ internal static unsafe partial class IthmbCodecPlugin
                 return IGStatus.DecodeFailed;
             }
 
-                    // Unknown prefix — try JPEG carving on the full file before giving up.
-                // Many .ithmb files from newer devices embed JPEGs regardless of prefix,
-                // and the JPEG may start beyond the 4 MB peek buffer or lack standard
-                // JFIF/Exif markers in the first scan window. File Juicer uses this
-                // byte-level carving approach successfully for unknown variants.
-                Log(4, $"ITHMB: '{Path.GetFileName(path)}' unknown prefix {prefix}, trying JPEG carving fallback");
-                if (TryFindJpegSlice(fileBytes, out var carveOffset, out var carveLength, cancellation))
-                {
-                    Log(4, $"ITHMB: '{Path.GetFileName(path)}' JPEG carving found slice at offset {carveOffset}, length {carveLength}");
-                    var carveSlice = fileBytes.AsSpan(carveOffset, carveLength).ToArray();
-                    return DecodeJpegSlice(carveSlice, carveLength, (int)fileSize,
-                        cancellation, outInfo, outBuf);
-                }
+            // Unknown prefix — try JPEG carving on the full file before giving up.
+            // Many .ithmb files from newer devices embed JPEGs regardless of prefix,
+            // and the JPEG may start beyond the 4 MB peek buffer or lack standard
+            // JFIF/Exif markers in the first scan window. File Juicer uses this
+            // byte-level carving approach successfully for unknown variants.
+            Log(4, $"ITHMB: '{Path.GetFileName(path)}' unknown prefix {prefix}, trying JPEG carving fallback");
+            if (TryFindJpegSlice(fileBytes, out var carveOffset, out var carveLength, cancellation))
+            {
+                Log(4, $"ITHMB: '{Path.GetFileName(path)}' JPEG carving found slice at offset {carveOffset}, length {carveLength}");
+                var carveSlice = fileBytes.AsSpan(carveOffset, carveLength).ToArray();
+                return DecodeJpegSlice(carveSlice, carveLength, (int)fileSize,
+                    cancellation, outInfo, outBuf);
+            }
 
             Log(4, $"ITHMB: '{Path.GetFileName(path)}' no embedded JPEG or known profile (prefix {prefix})");
             return IGStatus.DecodeFailed;
@@ -316,6 +348,9 @@ internal static unsafe partial class IthmbCodecPlugin
         int frameStart = 4 + frameIndex * frameSize;
         int actualDataLen = data.Length - frameStart;
         if (actualDataLen < 0) { Log(4, "ITHMB: frame offset past file end"); return IGStatus.DecodeFailed; }
+        // Reject if file is shorter than requiredSize minus tolerance.
+        // TrailingPaddingTolerance is inclusive: a file exactly (requiredSize - tolerance)
+        // bytes is accepted (device alignment quirk, iOpenPod trailing-trim pattern).
         if (actualDataLen < requiredSize - TrailingPaddingTolerance)
         {
             Log(4, $"ITHMB: raw file too small ({actualDataLen} < {requiredSize})");

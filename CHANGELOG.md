@@ -28,6 +28,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Refactored
 - **SIMD constants centralized** — per-method UyvySimdConstants struct instances replaced by shared SimdConstants static class
 
+### Security
+- **NUL-in-path guard** — decode entry rejects paths containing embedded NUL bytes, preventing truncated-path decode in Native AOT
+- **profiles.json integrity logging** — FNV-1a CRC logged on external profile load for tamper detection
+- **Catch blocks log ex.Message** — all 3 bare `catch(Exception) { return; }` in ProfileSystem.cs now include error detail
+- **AssemblyMetadata build provenance** — CommitSha and BuildTimestamp embedded at compile time via MSBuild target
+- **CLSCompliant(false)** — explicit opt-out via Properties/AssemblyInfo.cs, suppressing CS3000/CS3016 warnings from Native AOT unsafe patterns
+
+### CI/CD
+- **dotnet format --verify-no-changes** — added as CI step in build-linux.yml, enforcing consistent formatting
+- **Tag validation** — release-windows.yml validates tag matches `v*` before proceeding
+- **Code coverage gate** — build-linux.yml collects XPlat Code Coverage with 70% threshold
+- **Benchmark comparison note** — benchmark.yml documents comparison against prior run artifact
+
+### Fixed
+- **frameSize == 0 guard** — division-by-zero in multi-frame decode rejected with clear log message
+- **Trailing-padding boundary** — inclusive semantics documented; exact boundary test (frameSize - 256) added
+- **Orphaned /// tag** — duplicate WalkEntries doc comment removed from PhotoDb/Core.cs
+- **Indentation fix** — return jpegSlice at DecodePipeline.cs line 167 realigned with surrounding block
+- **CA1508 rationale** — comment explains why NativeMemory.Free(rotated) in finally block is safe after early return
+- **iOpenPod issue link** — ProfilesJson.cs disabled profile comments reference issue #81
+
+### Performance
+- **Two-phase peek buffer** — 512 KB first probe, extend to full 4 MB only if JPEG SOI found within window. Reduces peak I/O for common small thumbnails.
+
+### Testing
+- **PhotoDB roundtrip tests** — 3+ MHNI param combos (classic 76/64, Apple TV alternate, edge) verified build→parse→match
+- **AVX-512 tail fuzz** — 8 width variants (1,31,32,33,47,63,64,65) verifying SSE2 fallback matches AVX-512 output
+- **ArrayPool regression guard** — rent/return correctness verified; ensures no pool corruption or double-return
+- **Cancellation stress test** — 100 iterations of mid-decode cancel on multi-frame raw decode; 0 memory leaks
+- **PhotoDB chunk parser fuzz** — 20+ malformed MHFD/MHSD/MHNI inputs (corrupt sizes, negative offsets, truncation) verified graceful failure
+- **Cache concurrency test** — 1000 iterations of 2+ concurrent writers/readers on _rawFileCache; no race or corruption
+- **GetFormatIdName thread safety** — 1000 concurrent calls while KnownProfiles updates; no torn reads
+- **Trailing-padding boundary tests** — exact (frameSize-256) succeeds, one byte beyond fails
+- **TreatWarningsAsErrors** — enabled in test csproj; coverlet.collector added for coverage reporting
+
 
 ## [1.5.0] — 2026-06-29
 

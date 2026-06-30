@@ -72,7 +72,7 @@ internal static unsafe partial class PhotoDb
 
     private const uint MagicMhfdLe = 0x6466686d; // "mhfd"
     private const uint MagicMhsdLe = 0x6473686d; // "mhsd"
-    private const uint MagicMhlLe  = 0x696c686d; // "mhli"
+    private const uint MagicMhlLe = 0x696c686d; // "mhli"
     private const uint MagicMhiiLe = 0x6969686d; // "mhii"
     private const uint MagicMhbaLe = 0x6162686d; // "mhba"
     private const uint MagicMhiaLe = 0x6169686d; // "mhia"
@@ -392,12 +392,6 @@ internal static unsafe partial class PhotoDb
         return true;
     }
 
-    /// <summary>
-    /// Recursive chunk walker. Processes a range of bytes as a sequence of
-    /// typed iPod DB chunks, extracting .ithmb data from any MHNI entries.
-    /// Container chunks (MHSD, MHII, MHL, MHBA, MHIA) are descended into;
-    /// leaf chunks and unknown magics are skipped by headerSize.
-    /// </summary>
     /// <summary>Validates that a range begins with at least one valid known chunk.</summary>
     /// <remarks>Apple TV and Animal PhotoDB files may use MHSD/MHLI as leaf chunks
     /// whose body contains entry data rather than child chunks. This gate prevents

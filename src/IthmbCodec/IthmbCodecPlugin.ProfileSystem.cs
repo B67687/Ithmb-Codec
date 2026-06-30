@@ -39,12 +39,12 @@ internal static unsafe partial class IthmbCodecPlugin
             jsonPath = System.IO.Path.Join(baseDir, "profiles.json");
             if (!File.Exists(jsonPath)) return;
         }
-        catch (Exception) { return; }
+        catch (Exception ex) { Log(4, $"ITHMB: profiles.json path error: {ex.Message}"); return; }
         if (jsonPath == null) return;
 
         string json;
         try { json = File.ReadAllText(jsonPath); }
-        catch (Exception) { return; }
+        catch (Exception ex) { Log(4, $"ITHMB: profiles.json read error: {ex.Message}"); return; }
 
         if (string.IsNullOrWhiteSpace(json)) return;
 
@@ -53,7 +53,13 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             ParseProfilesJson(json, external);
         }
-        catch (Exception) { return; }
+        catch (Exception ex) { Log(4, $"ITHMB: profiles.json parse error: {ex.Message}"); return; }
+
+        // FNV-1a hash of raw JSON for diagnostic traceability
+        ulong hash = 14695981039346656037UL;
+        foreach (byte b in System.Text.Encoding.UTF8.GetBytes(json))
+            hash = (hash ^ b) * 1099511628211UL;
+        Log(4, $"ITHMB: loaded {external.Count} profiles (FNV: {hash:X16})");
 
         if (external.Count == 0) return;
 

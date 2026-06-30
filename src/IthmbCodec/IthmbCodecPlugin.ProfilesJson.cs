@@ -58,6 +58,7 @@ internal static unsafe partial class IthmbCodecPlugin
       // iPod Classic photo thumbnail alias (matches 1015)
       {"prefix": 1043, "width": 130, "height": 88, "encoding": "rgb565", "frameBytes": 22880},
       // iOpenPod #81: writing 1044 to iPod Classic corrupts cover art; disabled until confirmed safe.
+      // See https://github.com/TheRealSavi/iOpenPod/issues/81
       // {"prefix": 1044, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768},
       {"prefix": 1055, "width": 128, "height": 128, "encoding": "rgb565", "frameBytes": 32768},
       // Nano 5G cover art medium (iOpenPod)

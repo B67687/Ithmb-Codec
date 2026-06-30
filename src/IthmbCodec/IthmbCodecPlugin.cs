@@ -230,7 +230,7 @@ internal static unsafe partial class IthmbCodecPlugin
                         ? (x * srcH + (srcH - 1 - y)) * 4
                         : ((srcW - 1 - x) * srcH + y) * 4;
 
-                    rotated[dstIdx]     = pixels[srcIdx];
+                    rotated[dstIdx] = pixels[srcIdx];
                     rotated[dstIdx + 1] = pixels[srcIdx + 1];
                     rotated[dstIdx + 2] = pixels[srcIdx + 2];
                     rotated[dstIdx + 3] = pixels[srcIdx + 3];
@@ -242,6 +242,9 @@ internal static unsafe partial class IthmbCodecPlugin
         }
         finally
         {
+            // CA1508: rotated is null only when the NativeMemory.Alloc at line 221 failed —
+            // we return early in that path, so this finally block is never reached with null
+            // after a successful allocation. The early return is the safety guard.
             NativeMemory.Free(rotated);
         }
     }

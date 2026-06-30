@@ -7,6 +7,6 @@
   "website": "https://github.com/B67687",
   "kind": "Codec",
   "executable": "IthmbCodec.dll",
-  "supportedExtensions": ".ithmb",
+  "supportedExtensions": ".ithmb,.ithmbb",
   "minHostVersion": "10.0.2.66"
 }

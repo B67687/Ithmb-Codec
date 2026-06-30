@@ -68,4 +68,13 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+
+  <!-- Build provenance embedded in assembly metadata for diagnostics -->
+  <Target Name="SetBuildProvenance" BeforeTargets="CoreGenerateAssemblyInfo">
+    <ItemGroup>
+      <AssemblyMetadata Include="BuildTimestamp" Value="$([System.DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'))" />
+      <AssemblyMetadata Include="CommitSha" Value="$(GITHUB_SHA)" Condition="'$(GITHUB_SHA)' != ''" />
+    </ItemGroup>
+  </Target>
+
 </Project>

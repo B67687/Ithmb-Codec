@@ -219,7 +219,7 @@ internal static unsafe partial class IthmbCodecPlugin
             byte chromaNibble = (byte)((cbNibble << 4) | crNibble);
 
             int dstOff = i * 2;
-            result[dstOff]     = chromaNibble;          // [0]: packed CbCr
+            result[dstOff] = chromaNibble;          // [0]: packed CbCr
             result[dstOff + 1] = ClampU8(y0);           // [1]: Y0
             result[dstOff + 2] = chromaNibble;          // [2]: packed CbCr (same)
             result[dstOff + 3] = ClampU8(y1);           // [3]: Y1
@@ -250,7 +250,7 @@ internal static unsafe partial class IthmbCodecPlugin
             byte chromaNibble = (byte)((cbNibble << 4) | crNibble);
 
             int dstOff = i * 2;
-            result[dstOff]     = chromaNibble;  // [0]: packed CbCr
+            result[dstOff] = chromaNibble;  // [0]: packed CbCr
             result[dstOff + 1] = ClampU8(y);    // [1]: Y
         }
         return result;
@@ -316,8 +316,8 @@ internal static unsafe partial class IthmbCodecPlugin
         }
 
         // 4. Pad to FrameByteLength if needed
-        
-if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
+
+        if (profile.IsPadded && encoded.Length < profile.FrameByteLength)
         {
             var padded = new byte[profile.FrameByteLength];
             encoded.CopyTo(padded, 0);
