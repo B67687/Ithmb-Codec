@@ -100,7 +100,11 @@ internal static unsafe partial class IthmbCodecPlugin
     private static IGStatus OnInitialize() => IGStatus.OK;
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static void OnShutdown() { }
+    private static void OnShutdown()
+    {
+        FreePluginStrings();
+        FreePixelBufferCleanup();
+    }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static IGStatus OnGetCodec(int index, IGCodecApi** outCodecApi)
@@ -427,5 +431,33 @@ internal static unsafe partial class IthmbCodecPlugin
         for (var i = 0; i < s.Length; i++) buf[i] = s[i];
         buf[s.Length] = '\0';
         return buf;
+    }
+
+    /// <summary>Frees AllocUtf16-allocated string buffers to prevent memory leak on shutdown.</summary>
+    private static void FreePluginStrings()
+    {
+        if (_bufPluginId != null) { NativeMemory.Free(_bufPluginId); _bufPluginId = null; }
+        if (_bufPluginName != null) { NativeMemory.Free(_bufPluginName); _bufPluginName = null; }
+        if (_bufVersion != null) { NativeMemory.Free(_bufVersion); _bufVersion = null; }
+        if (_bufCodecId != null) { NativeMemory.Free(_bufCodecId); _bufCodecId = null; }
+        if (_bufCodecName != null) { NativeMemory.Free(_bufCodecName); _bufCodecName = null; }
+        if (_bufExtensions != null)
+        {
+            var count = SupportedExtensions.Length;
+            for (var i = 0; i < count; i++)
+                if (_bufExtensions[i] != null) { NativeMemory.Free(_bufExtensions[i]); _bufExtensions[i] = null; }
+            NativeMemory.Free(_bufExtensions); _bufExtensions = null;
+        }
+        if (_extArray != null) { NativeMemory.Free(_extArray); _extArray = null; }
+    }
+
+    /// <summary>Frees any remaining pixel buffers in _liveBuffers (cleanup guard).</summary>
+    private static void FreePixelBufferCleanup()
+    {
+        foreach (var kv in _liveBuffers)
+        {
+            NativeMemory.Free((void*)kv.Key);
+        }
+        _liveBuffers.Clear();
     }
 }

@@ -3,6 +3,8 @@
 // Separated from plugin ABI glue for independent AOT compilation.
 
 using System.Buffers.Binary;
+using System.Buffers;
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -18,29 +20,58 @@ internal static unsafe partial class IthmbCodecPlugin
     // call for a raw file, reused across subsequent frameIndex values without re-reading.
     // Read-once, decode-many: the ithmb file is read in full once and cached here.
     //
-    // Eviction policy: simple bounded cache — when the number of cached paths exceeds
-    // MaxCachedPaths (16), the entire cache is cleared. Entries are recreated on the
-    // next access to the same path, so Clear() is safe. This bounds memory growth
-    // from every unique file path ever decoded accumulating a full byte[] (up to 32 MB).
+    // Eviction policy: LRU bounded cache — when the number of cached paths exceeds
+    // MaxCachedPaths (16), the entry with the oldest LastAccess timestamp is evicted.
+    // TryGetCachedFile updates LastAccess on each hit, so recently accessed entries are
+    // retained. This bounds memory growth from every unique file path ever decoded
+    // accumulating a full byte[] (up to 32 MB).
     private const int MaxCachedPaths = 16;
+    private const int MaxCarvingFileSize = 8 * 1024 * 1024; // 8 MB: skip JPEG carving on oversized unknown-prefix files
     private static readonly ConcurrentDictionary<string, RawFileCacheEntry> _rawFileCache = new();
-    private static void SetCachedFile(string path, byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
+    internal static void SetCachedFile(string path, byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
     {
-        // Bounded eviction: when MaxCachedPaths is exceeded, clear all entries.
-        // Clear+Set interleaving (another thread's entry created between our Clear and Set)
-        // is harmless — that entry is recreated on its next access, and the cache is purely
-        // an optimization (read-once, decode-many).
+        // LRU eviction: when MaxCachedPaths is exceeded, remove the oldest entry.
+        // ConcurrentDictionary iteration is safe (returns a snapshot), and TryRemove
+        // handles the race if another thread removes the same key concurrently.
         if (_rawFileCache.Count >= MaxCachedPaths)
-            _rawFileCache.Clear();
-        _rawFileCache[path] = new RawFileCacheEntry(data, profile, frameCount, frameSize);
+        {
+            long oldestTs = long.MaxValue;
+            string? oldestKey = null;
+            foreach (var kvp in _rawFileCache)
+            {
+                if (kvp.Value.LastAccess < oldestTs)
+                {
+                    oldestTs = kvp.Value.LastAccess;
+                    oldestKey = kvp.Key;
+                }
+            }
+            if (oldestKey != null)
+                _rawFileCache.TryRemove(oldestKey, out _);
+        }
+        _rawFileCache[path] = new RawFileCacheEntry(data, profile, frameCount, frameSize)
+        {
+            LastAccess = Stopwatch.GetTimestamp()
+        };
     }
 
-    private readonly struct RawFileCacheEntry(byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
+    /// <summary>Gets a cached file entry and updates its LastAccess timestamp.</summary>
+    internal static bool TryGetCachedFile(string path, out RawFileCacheEntry entry)
     {
-        public readonly byte[] Data = data;
-        public readonly IthmbVariantProfile Profile = profile;
-        public readonly int FrameCount = frameCount;
-        public readonly int FrameSize = frameSize;
+        if (_rawFileCache.TryGetValue(path, out entry))
+        {
+            entry.LastAccess = Stopwatch.GetTimestamp();
+            _rawFileCache[path] = entry;
+            return true;
+        }
+        return false;
+    }
+
+    // Test support — resets the raw file cache to empty.
+    internal static void ClearRawFileCache() => _rawFileCache.Clear();
+
+    internal record struct RawFileCacheEntry(byte[] Data, IthmbVariantProfile Profile, int FrameCount, int FrameSize)
+    {
+        public long LastAccess { get; set; }
     }
 
     // ------------------------------ Core decode pipeline ------------------------------
@@ -78,7 +109,7 @@ internal static unsafe partial class IthmbCodecPlugin
         catch (Exception) { return IGStatus.IoError; }
         if (fileSize > MaxDecodeFileSize)
         {
-            Log(4, $"ITHMB: file too large ({fileSize} bytes)");
+            Log(4, $"ITHMB: '{Path.GetFileName(path)}' file too large ({fileSize} bytes)");
             return IGStatus.DecodeFailed;
         }
 
@@ -88,10 +119,20 @@ internal static unsafe partial class IthmbCodecPlugin
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
             int peekSize = (int)Math.Min(fileSize, PeekBufferSize);
-            byte[] peek = new byte[peekSize];
-            fs.ReadExactly(peek, 0, peekSize);
+            byte[] peekBuffer = ArrayPool<byte>.Shared.Rent(peekSize);
+            int jpegOffset = 0, jpegLength = 0;
+            bool foundJpeg;
+            try
+            {
+                fs.ReadExactly(peekBuffer, 0, peekSize);
+                foundJpeg = TryFindJpegSlice(peekBuffer.AsSpan(0, peekSize), out jpegOffset, out jpegLength, cancellation);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(peekBuffer);
+            }
 
-            if (TryFindJpegSlice(peek, out var jpegOffset, out var jpegLength, cancellation))
+            if (foundJpeg)
             {
                 // If JPEG EOI extends beyond peek buffer, read tail to find true EOI
                 if (jpegOffset + jpegLength >= peekSize && fileSize > peekSize)
@@ -121,7 +162,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 byte[] jpegSlice = new byte[jpegLength];
                 fs.Seek(jpegOffset, SeekOrigin.Begin);
                 int bytesRead = fs.ReadAtLeast(jpegSlice, jpegLength, throwOnEndOfStream: false);
-                if (bytesRead < jpegLength) { Log(4, $"ITHMB: truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
+                if (bytesRead < jpegLength) { Log(4, $"ITHMB: '{Path.GetFileName(path)}' truncated JPEG read ({bytesRead}/{jpegLength})"); return IGStatus.DecodeFailed; }
                 // fileSize ≤ MaxDecodeFileSize, safe for int
                     return DecodeJpegSlice(jpegSlice, jpegLength, (int)fileSize,
                         cancellation, outInfo, outBuf);
@@ -137,7 +178,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 {
                     if (!TryParsePhotoDb(fileBytes, out var pdEntries, out var pdFrameCount))
                     {
-                        Log(4, "ITHMB: PhotoDB parse failed");
+                        Log(4, $"ITHMB: '{Path.GetFileName(path)}' PhotoDB parse failed");
                         return IGStatus.DecodeFailed;
                     }
 
@@ -156,7 +197,7 @@ internal static unsafe partial class IthmbCodecPlugin
                             return DecodeJpegSlice(pdRawData, pdRawData.Length, (int)fileSize,
                                 cancellation, outInfo, outBuf);
                         }
-                        Log(4, $"ITHMB: PhotoDB format_id {pdFormatId} has no decoder profile");
+                        Log(4, $"ITHMB: '{Path.GetFileName(path)}' PhotoDB format_id {pdFormatId} has no decoder profile");
                         return IGStatus.DecodeFailed;
                     }
 
@@ -187,7 +228,7 @@ internal static unsafe partial class IthmbCodecPlugin
             if (TryResolveProfile(prefix, fileBytes.AsSpan(4), out var profile))
             {
                 // Check cache first (populated by a previous frameIndex or metadata call)
-                if (_rawFileCache.TryGetValue(path, out var cached))
+                if (TryGetCachedFile(path, out var cached))
                 {
                     if (frameIndex >= cached.FrameCount) return IGStatus.InvalidArg;
                     return DecodeRawProfile(cached.Data, cached.Profile, cancellation, outInfo, outBuf, frameIndex);
@@ -207,6 +248,14 @@ internal static unsafe partial class IthmbCodecPlugin
                 return DecodeRawProfile(fileBytes, profile, cancellation, outInfo, outBuf, frameIndex);
             }
 
+            // Early bailout: files >8 MB with an unknown prefix are unlikely to be valid
+            // .ithmb files — skip the expensive full-file JPEG carving scan.
+            if (fileBytes.Length > MaxCarvingFileSize)
+            {
+                Log(4, $"ITHMB: '{Path.GetFileName(path)}' file too large ({fileBytes.Length} bytes) for JPEG carving, unknown prefix {prefix}");
+                return IGStatus.DecodeFailed;
+            }
+
                     // Unknown prefix — try JPEG carving on the full file before giving up.
                 // Many .ithmb files from newer devices embed JPEGs regardless of prefix,
                 // and the JPEG may start beyond the 4 MB peek buffer or lack standard
@@ -215,7 +264,7 @@ internal static unsafe partial class IthmbCodecPlugin
                 Log(4, $"ITHMB: '{Path.GetFileName(path)}' unknown prefix {prefix}, trying JPEG carving fallback");
                 if (TryFindJpegSlice(fileBytes, out var carveOffset, out var carveLength, cancellation))
                 {
-                    Log(4, $"ITHMB: JPEG carving found slice at offset {carveOffset}, length {carveLength}");
+                    Log(4, $"ITHMB: '{Path.GetFileName(path)}' JPEG carving found slice at offset {carveOffset}, length {carveLength}");
                     var carveSlice = fileBytes.AsSpan(carveOffset, carveLength).ToArray();
                     return DecodeJpegSlice(carveSlice, carveLength, (int)fileSize,
                         cancellation, outInfo, outBuf);

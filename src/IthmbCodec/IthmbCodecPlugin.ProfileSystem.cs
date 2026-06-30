@@ -5,6 +5,7 @@
 using System.Collections.Frozen;
 using System.IO;
 using ImageGlass.SDK.Plugins;
+using System.Threading;
 
 namespace IthmbCodec;
 
@@ -60,7 +61,7 @@ internal static unsafe partial class IthmbCodecPlugin
         var merged = new Dictionary<int, IthmbVariantProfile>();
         foreach (var kv in GetBuiltInProfiles()) merged[kv.Key] = kv.Value;
         foreach (var kv in external) merged[kv.Key] = kv.Value;
-        KnownProfiles = merged.ToFrozenDictionary();
+        Interlocked.Exchange(ref KnownProfiles, merged.ToFrozenDictionary());
     }
 
     // ------------------------------ Device-contextual profile resolution ------------------------------
@@ -268,6 +269,10 @@ internal static unsafe partial class IthmbCodecPlugin
                     CropX: cropX, CropY: cropY, CropWidth: cropW, CropHeight: cropH, SlotSize: slotSize,
                     UseMhniDimensions: useMhni, FallbackEncodings: fallbackEncodings?.ToArray());
             }
+            else
+            {
+                Log(4, $"ITHMB: profiles.json entry #{objectsRead} skipped — prefix={prefix}, width={width}, height={height}, frameBytes={frameBytes}");
+            }
 
             SkipWhitespace(json, ref pos);
             if (pos < json.Length && json[pos] == ',') pos++;
@@ -349,7 +354,7 @@ internal static unsafe partial class IthmbCodecPlugin
         // null literal
         if (pos + 4 <= s.Length && s[pos] == 'n' && s[pos..(pos + 4)] == "null") { pos += 4; return; }
         // number or boolean
-        while (pos < s.Length && s[pos] != ',' && s[pos] != '}' && s[pos] != ']' && !char.IsWhiteSpace(s[pos]))
+        while (pos < s.Length && s[pos] != ',' && s[pos] != '}' && s[pos] != ']' && s[pos] != ' ' && s[pos] != '\t' && s[pos] != '\n' && s[pos] != '\r')
             pos++;
     }
 

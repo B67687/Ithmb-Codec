@@ -22,8 +22,8 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 **Key features**
 
-- 53 built-in profiles covering 24 photo + 29 cover art formats
-- 7 decoders with SIMD acceleration (SSE2 + ARM64 NEON)
+- 54 built-in profiles covering 25 photo + 29 cover art formats
+- 7 decoders with SIMD acceleration (SSE2 + AVX-512 + ARM64 NEON)
 - Roundtrip-proven tests
 - PhotoDB/ArtworkDB read, write, and integrity checking
 - Multi-frame F-prefix raw file support
@@ -159,7 +159,7 @@ ImageGlass runs on **Windows only** (10/11 64-bit). Cross-platform builds target
 dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 ```
 
-**547 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables, corruption fuzz, and format ID profile tests.
+**552 tests** across roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 7 decoders + 1,000 random byte mutations), SIMD identity (10 tests), YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, per-decoder determinism + statistical verification, SIMD tail path fuzz (5 tests), rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, and device-specific format tables, corruption fuzz, and format ID profile tests.
 
 **Real-device validation:**
 
@@ -177,7 +177,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 17 files organized by domain (previously 11, split for single-responsibility):
+**Source layout** — 18 files organized by domain (previously 11, split for single-responsibility):
 
 | File | Purpose |
 |------|---------|
@@ -197,6 +197,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 | `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) |
 | `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser + format ID mapping |
 | `PhotoDb/Serialization.cs` | PhotoDB writer + integrity checker |
+| `IthmbCodecPlugin.SimdConstants.cs` | Shared SIMD shuffle masks and coefficient vectors |
 
 **Data flow:**
 
@@ -208,7 +209,7 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
                 └─ external .ithmb reference → read file → raw decoder → BGRA
 ```
 
-**SIMD acceleration:** RGB565/RGB555 → SSE2 or NEON (x64/ARM64, 4-6× gain), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (SSE2 on x64 + NEON on ARM64, 3-5× gain). CLCL nibble-chroma and CL per-pixel chroma → SSSE3 or NEON (x64/ARM64). **BGR15 channel-swap** (`SwapRgbChannels` flag) supported in all decoder variants — SIMD uses a conditional branch outside the pixel loop (zero per-pixel overhead when inactive). NEON CI validated on native ARM64 runners.
+**SIMD acceleration:** RGB565/RGB555 → SSE2/AVX-512 or NEON (x64/ARM64, 4-6× gain, up to 8-12× with AVX-512), UYVY → SSSE3 or NEON (x64/ARM64, 2-3× gain), YCbCr420 → cross-platform Vector128 (SSE2 on x64 + NEON on ARM64, 3-5× gain). CLCL nibble-chroma and CL per-pixel chroma → SSSE3 or NEON (x64/ARM64). **BGR15 channel-swap** (`SwapRgbChannels` flag) supported in all decoder variants — SIMD uses a conditional branch outside the pixel loop (zero per-pixel overhead when inactive). NEON CI validated on native ARM64 runners.
 
 **Multi-frame support** — F-prefix `.ithmb` files may contain multiple concatenated raw frames (confirmed by Keith's iPod Photo Reader, ithmbrdr, libgpod, and iOpenPod). The codec detects frame count from file size and caches the file for read-once decode-many access. Callers can access individual frames via `frameIndex` (0-based); out-of-range indices return `IGStatus.InvalidArg`. JPEG-embedded T-prefix files are always single-frame.
 
@@ -276,16 +277,16 @@ The repository includes several CLI tools under [`tools/`](tools/):
 
 ## Profile Reference
 
-**53 known profiles** (24 photo + 29 cover art) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
+**53 known profiles** covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
 
 ---
 
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 53 known profiles and pass roundtrip tests (547 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples.
+> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 53 known profiles and pass roundtrip tests (552 total). Multi-frame raw decode is synthetically tested. Profiles are cross-referenced against iOpenPod's empirically validated set (50+ profiles, tested across multiple iPod models). BGR15 format identified from Steee29/ithmb_converter analysis and confirmed via Reuhno's real samples.
 >
-> **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
+> **F-prefix decoder coverage is broad but not exhaustive.** 53 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
 >
 > **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
 >

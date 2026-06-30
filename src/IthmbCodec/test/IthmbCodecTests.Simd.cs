@@ -1,3 +1,4 @@
+using System.Runtime.Intrinsics;
 using System.Runtime.InteropServices;
 using IthmbCodec;
 using Xunit;
@@ -339,5 +340,71 @@ public unsafe partial class IthmbCodecTests
             }
         }
         finally { NativeMemory.Free(dst); }
+    }
+
+
+    // ---- SimdConstants correctness ----
+
+    [Fact]
+    public void SimdConstants_ValuesMatchYuvUtils()
+    {
+        // Verify coefficient vectors match YuvUtils constants
+        Assert.Equal(IthmbCodecPlugin.YuvRCoef, IthmbCodecPlugin.SimdConstants.RCoef.GetElement(0));
+        Assert.Equal(IthmbCodecPlugin.YuvGCoefCb, IthmbCodecPlugin.SimdConstants.GCoefCb.GetElement(0));
+        Assert.Equal(IthmbCodecPlugin.YuvGCoefCr, IthmbCodecPlugin.SimdConstants.GCoefCr.GetElement(0));
+        Assert.Equal(IthmbCodecPlugin.YuvBCoef, IthmbCodecPlugin.SimdConstants.BCoef.GetElement(0));
+
+        // Verify all lanes have the same coefficient value (broadcast vector)
+        for (int i = 1; i < 4; i++)
+        {
+            Assert.Equal(IthmbCodecPlugin.SimdConstants.RCoef.GetElement(0),
+                         IthmbCodecPlugin.SimdConstants.RCoef.GetElement(i));
+            Assert.Equal(IthmbCodecPlugin.SimdConstants.GCoefCb.GetElement(0),
+                         IthmbCodecPlugin.SimdConstants.GCoefCb.GetElement(i));
+            Assert.Equal(IthmbCodecPlugin.SimdConstants.GCoefCr.GetElement(0),
+                         IthmbCodecPlugin.SimdConstants.GCoefCr.GetElement(i));
+            Assert.Equal(IthmbCodecPlugin.SimdConstants.BCoef.GetElement(0),
+                         IthmbCodecPlugin.SimdConstants.BCoef.GetElement(i));
+        }
+
+        // Verify Max255 is 255
+        Assert.Equal(255, IthmbCodecPlugin.SimdConstants.Max255.GetElement(0));
+        for (int i = 1; i < 4; i++)
+            Assert.Equal(255, IthmbCodecPlugin.SimdConstants.Max255.GetElement(i));
+
+        // Verify Alpha is 255 << 24 = 0xFF000000
+        Assert.Equal(-16777216, IthmbCodecPlugin.SimdConstants.Alpha.GetElement(0));
+        for (int i = 1; i < 4; i++)
+            Assert.Equal(-16777216, IthmbCodecPlugin.SimdConstants.Alpha.GetElement(i));
+
+        // Verify ZeroI is 0
+        Assert.Equal(0, IthmbCodecPlugin.SimdConstants.ZeroI.GetElement(0));
+
+        // Verify shuffle mask: ShufY first byte is 1
+        Assert.Equal(1, IthmbCodecPlugin.SimdConstants.ShufY.GetElement(0));
+        Assert.Equal(0x80, IthmbCodecPlugin.SimdConstants.ShufY.GetElement(1));
+
+        // Verify ShufU first byte is 0
+        Assert.Equal(0, IthmbCodecPlugin.SimdConstants.ShufU.GetElement(0));
+        Assert.Equal(0x80, IthmbCodecPlugin.SimdConstants.ShufU.GetElement(1));
+
+        // Verify ShufV first byte is 2
+        Assert.Equal(2, IthmbCodecPlugin.SimdConstants.ShufV.GetElement(0));
+        Assert.Equal(0x80, IthmbCodecPlugin.SimdConstants.ShufV.GetElement(1));
+
+        // Verify ClShufY first byte is 1
+        Assert.Equal(1, IthmbCodecPlugin.SimdConstants.ClShufY.GetElement(0));
+
+        // Verify ClShufC
+        Assert.Equal(0, IthmbCodecPlugin.SimdConstants.ClShufC.GetElement(0));
+        Assert.Equal(0x80, IthmbCodecPlugin.SimdConstants.ClShufC.GetElement(1));
+        Assert.Equal(2, IthmbCodecPlugin.SimdConstants.ClShufC.GetElement(2));
+
+        // Verify ClclShufY first byte is 1
+        Assert.Equal(1, IthmbCodecPlugin.SimdConstants.ClclShufY.GetElement(0));
+
+        // Verify ClclShufC
+        Assert.Equal(0, IthmbCodecPlugin.SimdConstants.ClclShufC.GetElement(0));
+        Assert.Equal(0x80, IthmbCodecPlugin.SimdConstants.ClclShufC.GetElement(1));
     }
 }

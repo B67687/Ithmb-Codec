@@ -286,7 +286,8 @@ internal static unsafe partial class PhotoDb
     /// <param name="entries">List of (FormatId, raw_ithmb_data) — the same type used in TryParsePhotoDb output.</param>
     /// <param name="output">The complete PhotoDB binary if successful.</param>
     /// <returns>true if the database was built successfully; false if entries is empty, an unknown format ID, or size mismatch.</returns>
-    internal static bool TryBuildPhotoDb(List<(int FormatId, byte[] Data)> entries, out byte[] output)
+    internal static bool TryBuildPhotoDb(List<(int FormatId, byte[] Data)> entries, out byte[] output,
+        int mhniHeaderSize = 76, int mhniPaddingSize = 64)
     {
         output = null!;
 
@@ -316,7 +317,7 @@ internal static unsafe partial class PhotoDb
         for (int i = 0; i < count; i++)
             totalPixelData += entries[i].Data.Length;
 
-        int mhniTotalLen = 76 + 64; // 76-byte header + padding/filename area
+        int mhniTotalLen = mhniHeaderSize + mhniPaddingSize; // header + padding/filename area
         int mhsdHeaderSize = 16 + count * mhniTotalLen + totalPixelData;
         int mhsdChildrenStart = 12 + 16; // after MHFD(12) + MHSD(16)
 
@@ -351,7 +352,7 @@ internal static unsafe partial class PhotoDb
             var profile = IthmbCodecPlugin.KnownProfiles[formatId];
 
             bw.Write(MagicMhniLe);              // "mhni"
-            bw.Write(76u);                      // headerSize
+            bw.Write((uint)mhniHeaderSize);              // headerSize
             bw.Write((uint)mhniTotalLen);       // total_len at +8
             bw.Write(1u);                       // entryIndex at +12
             bw.Write(formatId);                 // formatId at +16

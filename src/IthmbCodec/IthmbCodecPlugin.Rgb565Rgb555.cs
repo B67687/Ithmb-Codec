@@ -24,7 +24,10 @@ internal static unsafe partial class IthmbCodecPlugin
 
         // SIMD path: process 8 pixels per iteration.
         // x64: SSE2 (Sse2.Store/Shuffle). ARM64: NEON (AdvSimd).
-        if (Sse2.IsSupported && w >= 8)
+        // AVX-512BW path: process 32 pixels per iteration.
+        if (Avx512BW.IsSupported && w >= 32)
+            DecodeRgb565_Avx512(src, dst, w, h, littleEndian, swapRgbChannels);
+        else if (Sse2.IsSupported && w >= 8)
             DecodeRgb565_Sse2(src, dst, w, h, littleEndian, swapRgbChannels);
         else if (AdvSimd.IsSupported && w >= 8)
             DecodeRgb565_Neon(src, dst, w, h, littleEndian, swapRgbChannels);
@@ -99,7 +102,7 @@ internal static unsafe partial class IthmbCodecPlugin
         => DecodeRgbX_Sse2(src, dst, w, h, littleEndian, swapRgbChannels, 11, 5, 0, 0x003F, 2, &DecodeRgb565_Tail);
 
     /// <summary>Parameterized ARM64 NEON SIMD loop shared by RGB565 and RGB555 decoders.</summary>
-#pragma warning disable CA1857
+            #pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
     private static void DecodeRgbX_Neon(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool le, bool swapRgbChannels,
         int rShift, int gShift, int bShift, int gMask, int gMsbShift,
         delegate* managed<byte*, byte*, int, int, bool, bool, void> tail)
@@ -214,6 +217,87 @@ internal static unsafe partial class IthmbCodecPlugin
         }
     }
 
+    // ---------- AVX-512 decode paths (process 32 pixels per iteration) ----------
+
+    /// <summary>Parameterized AVX-512 SIMD loop: 32 px/iter (2*16 via 256-bit halves).</summary>
+            #pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
+    private static void DecodeRgbX_Avx512(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool le, bool swapRgbChannels,
+        int rShift, int gShift, int bShift, int gMask, int gMsbShift,
+        delegate* managed<byte*, byte*, int, int, bool, bool, void> tail)
+    {
+        int gRightShift = 8 - 2 * gMsbShift;
+        int rowStride = (int)((long)src.Length / h);
+        fixed (byte* pSrc = src)
+        {
+            for (int y = 0; y < h; y++)
+            {
+                byte* pSrcRow = pSrc + (nint)(y * rowStride);
+                byte* pDstRow = dst + (nint)(y * w * 4);
+                int x = 0;
+
+                // Process 32 pixels per iteration (64 bytes src -> 128 bytes dst)
+                for (; x + 31 < w; x += 32)
+                {
+                    Vector512<byte> raw = Vector512.LoadUnsafe(ref *pSrcRow, (nuint)(x * 2));
+                    DecodeHalfAvx2(raw.GetLower(), pDstRow, x, le, swapRgbChannels, rShift, gShift, bShift, gMask, gMsbShift, gRightShift);
+                    DecodeHalfAvx2(raw.GetUpper(), pDstRow, x + 16, le, swapRgbChannels, rShift, gShift, bShift, gMask, gMsbShift, gRightShift);
+                }
+
+                tail(pSrcRow, pDstRow, x, w, le, swapRgbChannels);
+            }
+        }
+    }
+#pragma warning restore CA1857
+
+    /// <summary>Decodes 16 RGB565/RGB555 pixels using 256-bit AVX2 intrinsics.</summary>
+            #pragma warning disable CA1857 // constant values reach this method after AggressiveInlining propagates caller constants (11,5,0,0x3F,2)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void DecodeHalfAvx2(Vector256<byte> raw, byte* pDstRow, int x, bool le, bool swapRgbChannels,
+        int rShift, int gShift, int bShift, int gMask, int gMsbShift, int gRightShift)
+    {
+        Vector256<ushort> v = raw.AsUInt16();
+
+        if (!le)
+            v = Avx2.Or(Avx2.ShiftRightLogical(v, 8), Avx2.ShiftLeftLogical(v, 8)).AsUInt16();
+
+        var bF = Avx2.And(Avx2.ShiftRightLogical(v, (byte)(swapRgbChannels ? rShift : bShift)), Vector256.Create((ushort)0x001F));
+        var gF = Avx2.And(Avx2.ShiftRightLogical(v, (byte)gShift), Vector256.Create((ushort)gMask));
+        var rF = Avx2.And(Avx2.ShiftRightLogical(v, (byte)(swapRgbChannels ? bShift : rShift)), Vector256.Create((ushort)0x001F));
+
+        var b8 = Avx2.Or(Avx2.ShiftLeftLogical(bF, 3), Avx2.ShiftRightLogical(bF, 2));
+        var g8 = Avx2.Or(Avx2.ShiftLeftLogical(gF, (byte)gMsbShift), Avx2.ShiftRightLogical(gF, (byte)gRightShift));
+        var r8 = Avx2.Or(Avx2.ShiftLeftLogical(rF, 3), Avx2.ShiftRightLogical(rF, 2));
+
+        var bp = Avx2.PackUnsignedSaturate(b8.AsInt16(), b8.AsInt16());
+        var gp = Avx2.PackUnsignedSaturate(g8.AsInt16(), g8.AsInt16());
+        var rp = Avx2.PackUnsignedSaturate(r8.AsInt16(), r8.AsInt16());
+
+        var alpha = Vector256.Create((byte)255);
+        var br = Avx2.UnpackLow(bp, rp);
+        var ga = Avx2.UnpackLow(gp, alpha);
+        var pxLo = Avx2.UnpackLow(br, ga);
+        var pxHi = Avx2.UnpackHigh(br, ga);
+
+        // Fix 128-bit lane ordering: AVX2 UnpackLow/High are lane-wise,
+        // producing [p0-3, p8-11] in pxLo and [p4-7, p12-15] in pxHi.
+        // Permute2x128 cross-lane swap corrects to [p0-7] and [p8-15].
+        var pxLoFixed = Avx2.Permute2x128(pxLo, pxHi, 0x20);
+        var pxHiFixed = Avx2.Permute2x128(pxLo, pxHi, 0x31);
+
+        Vector256.StoreUnsafe(pxLoFixed, ref *pDstRow, (nuint)(x * 4));
+        Vector256.StoreUnsafe(pxHiFixed, ref *pDstRow, (nuint)((x + 8) * 4));
+    }
+#pragma warning restore CA1857
+
+    /// <summary>AVX-512-accelerated RGB565->BGRA: 32 px/iter (64B->128B).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void DecodeRgb565_Avx512(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
+        => DecodeRgbX_Avx512(src, dst, w, h, littleEndian, swapRgbChannels, 11, 5, 0, 0x003F, 2, &DecodeRgb565_Tail);
+
+    /// <summary>AVX-512-accelerated RGB555->BGRA: 32 px/iter (64B->128B).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void DecodeRgb555_Avx512(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels)
+        => DecodeRgbX_Avx512(src, dst, w, h, littleEndian, swapRgbChannels, 10, 5, 0, 0x001F, 3, &DecodeRgb555_Tail);
     // ---------- RGB555 ----------
 
     /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
@@ -224,7 +308,10 @@ internal static unsafe partial class IthmbCodecPlugin
         if (src.Length < expectedBytes) return false;
 
         // SIMD path: process 8 pixels per iteration.
-        if (Sse2.IsSupported && w >= 8)
+        // AVX-512BW path: process 32 pixels per iteration.
+        if (Avx512BW.IsSupported && w >= 32)
+            DecodeRgb555_Avx512(src, dst, w, h, littleEndian, swapRgbChannels);
+        else if (Sse2.IsSupported && w >= 8)
             DecodeRgb555_Sse2(src, dst, w, h, littleEndian, swapRgbChannels);
         else if (AdvSimd.IsSupported && w >= 8)
             DecodeRgb555_Neon(src, dst, w, h, littleEndian, swapRgbChannels);
