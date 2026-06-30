@@ -11,19 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **SimdConstants shared class** — centralized all 8 shuffle masks and 7 coefficient vectors from UyvyYuv.cs, DecodeFormatClcl.cs, DecodeFormatCl.cs, DecodeFormatYcbcr420.cs. Eliminated ~70 lines of identical Vector128 definitions.
 - **MHNI header parameterization** — `TryBuildPhotoDb` accepts optional mhniHeaderSize (default 76) and mhniPaddingSize (default 64) for non-Classic MHNI layouts.
 
-### Fixed
-- **HasChildChunks false-positive** — header validation rejects fragments with hdrSize < 8, preventing spurious recursion into padding bytes matching known magic
-- **Plugin shutdown memory leak** — FreePluginStrings() + FreePixelBufferCleanup() on OnShutdown() frees 8 AllocUtf16 native buffers
-- **JPEG carving early bailout** — MaxCarvingFileSize = 8 MB prevents full-file scanning of unknown raw files with no JPEG markers
-- **profiles.json parse failures logged** — skipped entries (prefix=0, validation failure) now log entry details instead of silent omission
-- **Culture-sensitive SkipJsonValue** — char.IsWhiteSpace() replaced with explicit ASCII whitespace comparison
-
 ### Changed
 - **TryFindJpegSlice accepts ReadOnlySpan<byte>** — eliminates ArrayPool over-read bug from pooled array Length vs logical data size; callers pass exact span
 - **_rawFileCache LRU eviction** — Clear() replaced with oldest-LastAccess eviction, preventing cache thrashing under concurrent multi-image workloads
 - **Peek buffer allocation** — new byte[4MB] replaced with ArrayPool<byte>.Shared.Rent/Return, reducing LOH pressure
 - **KnownProfiles thread-safe publication** — Interlocked.Exchange replaces raw volatile field write
 - **Log calls include correlation token** — all Log(4,...) in DecodePipeline.cs include Path.GetFileName(path) for traceability
+
+### Fixed
+- **HasChildChunks false-positive** — header validation rejects fragments with hdrSize < 8, preventing spurious recursion into padding bytes matching known magic
+- **Plugin shutdown memory leak** — FreePluginStrings() + FreePixelBufferCleanup() on OnShutdown() frees 8 AllocUtf16 native buffers
+- **JPEG carving early bailout** — MaxCarvingFileSize = 8 MB prevents full-file scanning of unknown raw files with no JPEG markers
+- **profiles.json parse failures logged** — skipped entries (prefix=0, validation failure) now log entry details instead of silent omission
+- **Culture-sensitive SkipJsonValue** — char.IsWhiteSpace() replaced with explicit ASCII whitespace comparison
+- **frameSize == 0 guard** — division-by-zero in multi-frame decode rejected with clear log message
+- **Trailing-padding boundary** — inclusive semantics documented; exact boundary test (frameSize - 256) added
+- **Orphaned /// tag** — duplicate WalkEntries doc comment removed from PhotoDb/Core.cs
+- **Indentation fix** — return jpegSlice at DecodePipeline.cs line 167 realigned with surrounding block
+- **CA1508 rationale** — comment explains why NativeMemory.Free(rotated) in finally block is safe after early return
+- **iOpenPod issue link** — ProfilesJson.cs disabled profile comments reference issue #81
 
 ### Refactored
 - **SIMD constants centralized** — per-method UyvySimdConstants struct instances replaced by shared SimdConstants static class
@@ -35,22 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **AssemblyMetadata build provenance** — CommitSha and BuildTimestamp embedded at compile time via MSBuild target
 - **CLSCompliant(false)** — explicit opt-out via Properties/AssemblyInfo.cs, suppressing CS3000/CS3016 warnings from Native AOT unsafe patterns
 
+### Performance
+- **Two-phase peek buffer** — 512 KB first probe, extend to full 4 MB only if JPEG SOI found within window. Reduces peak I/O for common small thumbnails.
+
 ### CI/CD
 - **dotnet format --verify-no-changes** — added as CI step in build-linux.yml, enforcing consistent formatting
 - **Tag validation** — release-windows.yml validates tag matches `v*` before proceeding
 - **Code coverage gate** — build-linux.yml collects XPlat Code Coverage with 70% threshold
 - **Benchmark comparison note** — benchmark.yml documents comparison against prior run artifact
-
-### Fixed
-- **frameSize == 0 guard** — division-by-zero in multi-frame decode rejected with clear log message
-- **Trailing-padding boundary** — inclusive semantics documented; exact boundary test (frameSize - 256) added
-- **Orphaned /// tag** — duplicate WalkEntries doc comment removed from PhotoDb/Core.cs
-- **Indentation fix** — return jpegSlice at DecodePipeline.cs line 167 realigned with surrounding block
-- **CA1508 rationale** — comment explains why NativeMemory.Free(rotated) in finally block is safe after early return
-- **iOpenPod issue link** — ProfilesJson.cs disabled profile comments reference issue #81
-
-### Performance
-- **Two-phase peek buffer** — 512 KB first probe, extend to full 4 MB only if JPEG SOI found within window. Reduces peak I/O for common small thumbnails.
 
 ### Testing
 - **PhotoDB roundtrip tests** — 3+ MHNI param combos (classic 76/64, Apple TV alternate, edge) verified build→parse→match
@@ -62,7 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **GetFormatIdName thread safety** — 1000 concurrent calls while KnownProfiles updates; no torn reads
 - **Trailing-padding boundary tests** — exact (frameSize-256) succeeds, one byte beyond fails
 - **TreatWarningsAsErrors** — enabled in test csproj; coverlet.collector added for coverage reporting
-
 
 ## [1.5.0] — 2026-06-29
 
