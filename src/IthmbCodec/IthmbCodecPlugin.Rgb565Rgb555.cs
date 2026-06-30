@@ -1,5 +1,8 @@
 // Decode algorithms for .ithmb raw profiles — RGB565 and RGB555.
 // Separated from plugin ABI glue for independent AOT compilation.
+// allow: SIZE_OK — all 4 SIMD ISAs (SSE2/AVX-512/NEON/ARM) plus scalar tails;
+//         intrinsic duplication is inherent to per-ISA dispatch, not poor cohesion.
+// Separated from plugin ABI glue for independent AOT compilation.
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
