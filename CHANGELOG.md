@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Thread safety: Lock wrapper for RawFileCache** — SetCachedFile, TryGetCachedFile, and ClearRawFileCache all wrapped in `System.Threading.Lock`
+- **Observability: decode lifecycle logging** — every decode call emits START|{file}|{size} and END|{file}|{status}|{ms:F1}ms lines
+- **Observability: periodic stats** — every 100 decode attempts a summary line (count, success, fail, avg ms)
+- **Observability: shutdown stats** — `OnShutdown` logs cumulative decode attempts, successes, and fail rate
+- **EncoderHelpers test suite** — 23 new tests: InterlaceFields (3 chroma modes), BT.601 known colors, scalar decoder fallback paths at sub-SIMD width w=6
 - **AVX-512 decoder paths for RGB565/RGB555** — 32 pixels/iteration via Avx512BW, ~2× SSE2 throughput. Requires w%32==0 (falls back to SSE2).
 - **SimdConstants shared class** — centralized all 8 shuffle masks and 7 coefficient vectors from UyvyYuv.cs, DecodeFormatClcl.cs, DecodeFormatCl.cs, DecodeFormatYcbcr420.cs. Eliminated ~70 lines of identical Vector128 definitions.
 - **MHNI header parameterization** — `TryBuildPhotoDb` accepts optional mhniHeaderSize (default 76) and mhniPaddingSize (default 64) for non-Classic MHNI layouts.
@@ -17,8 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Peek buffer allocation** — new byte[4MB] replaced with ArrayPool<byte>.Shared.Rent/Return, reducing LOH pressure
 - **KnownProfiles thread-safe publication** — Interlocked.Exchange replaces raw volatile field write
 - **Log calls include correlation token** — all Log(4,...) in DecodePipeline.cs include Path.GetFileName(path) for traceability
+- **Coverage gate raised 70% → 75%** — build-linux.yml threshold updated after coverage push reached 75.3%
+- **Test count 571 → 594** — README updated
+- **check-benchmark-regression.sh** — fixed: iterates all 7 report CSVs instead of `head -1`; correctly parses μs/ms/ns unit suffixes
+- **Readme source layout 18 → 19 files** — added ProfilesJson.cs row to Architecture table
 
 ### Fixed
+- **CI: gitleaks SHA pin** — updated to v3.0.0 actual commit `e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e`
+- **CI: YAML syntax error in SAST step** — `WARNING:` colon+space in plain scalar broke YAML. Quoted the `run:` value
+- **CI: DecodePipeline indentation** — P4 try/finally left 4 spaces too-shallow indent; corrected by `dotnet format`
 - **HasChildChunks false-positive** — header validation rejects fragments with hdrSize < 8, preventing spurious recursion into padding bytes matching known magic
 - **Plugin shutdown memory leak** — FreePluginStrings() + FreePixelBufferCleanup() on OnShutdown() frees 8 AllocUtf16 native buffers
 - **JPEG carving early bailout** — MaxCarvingFileSize = 8 MB prevents full-file scanning of unknown raw files with no JPEG markers
@@ -33,24 +45,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Refactored
 - **SIMD constants centralized** — per-method UyvySimdConstants struct instances replaced by shared SimdConstants static class
+- **P5: DecodeInfrastructure extracted** — RawFileCache, DecodeMetrics, MaxCarvingFileSize from DecodePipeline.cs → new DecodeInfrastructure.cs
+- **P5: Strings extracted** — AllocUtf16 buffers + InitStrings/FreePluginStrings from IthmbCodecPlugin.cs → new Strings.cs
+- **P5: Helpers extracted** — MaxDecodeFileSize, TrailingPaddingTolerance, utility helpers from IthmbCodecPlugin.cs → new Helpers.cs
+- **P5: PhotoDb/Types extracted** — chunk constants, data structs, read helpers from PhotoDb/Core.cs → PhotoDb/Types.cs
+- **P5: JsonParser extracted** — JSON tokenizer + depth-limited parser from ProfileSystem.cs → new JsonParser.cs
 
 ### Security
 - **NUL-in-path guard** — decode entry rejects paths containing embedded NUL bytes, preventing truncated-path decode in Native AOT
 - **profiles.json integrity logging** — FNV-1a CRC logged on external profile load for tamper detection
 - **Catch blocks log ex.Message** — all 3 bare `catch(Exception) { return; }` in ProfileSystem.cs now include error detail
 - **AssemblyMetadata build provenance** — CommitSha and BuildTimestamp embedded at compile time via MSBuild target
+- **SAST + secret scanning** — gitleaks-action@v3.0.0 added to build-linux.yml CI workflow
 - **CLSCompliant(false)** — explicit opt-out via Properties/AssemblyInfo.cs, suppressing CS3000/CS3016 warnings from Native AOT unsafe patterns
 
 ### Performance
 - **Two-phase peek buffer** — 512 KB first probe, extend to full 4 MB only if JPEG SOI found within window. Reduces peak I/O for common small thumbnails.
+- **Decode metrics infrastructure** — Interlocked counters (_decodeCount, _decodeSuccessCount, _decodeTotalTicks) + GetDecodeStats()/ResetDecodeStats()
 
 ### CI/CD
 - **dotnet format --verify-no-changes** — added as CI step in build-linux.yml, enforcing consistent formatting
 - **Tag validation** — release-windows.yml validates tag matches `v*` before proceeding
-- **Code coverage gate** — build-linux.yml collects XPlat Code Coverage with 70% threshold
+- **Code coverage gate** — build-linux.yml collects XPlat Code Coverage with 75% threshold (raised from 70%)
+- **Coverage report artifact upload** — build-linux.yml uploads coverage report XML for manual inspection
+- **SAST + secret scanning** — gitleaks-action@v3.0.0 scans every push/PR
 - **Benchmark comparison note** — benchmark.yml documents comparison against prior run artifact
+- **Benchmark regression script fixed** — check-benchmark-regression.sh iterates all 7 report CSVs; handles ns/μs/ms unit suffixes
+- **benchmark.yml deduplicated** — removed duplicate "Display dotnet info" step
 
 ### Testing
+- **EncoderHelpers: 23 new tests** — InterlaceFields (2Bpp, YCbCr420, edge dims), BT.601 known colors, scalar decoder fallback at sub-SIMD width w=6
+- **DecodePipeline coverage push** — UnknownPrefix_NoJpeg + UnknownPrefix_EmbeddedJpeg tests (+2)
+- **JpegDecode coverage push** — real iPhone JPEG slice decode + early bailout paths (+2)
+- **Metrics test** — DecodeInternal increments counters, ResetDecodeStats clears, GetDecodeStats returns cumulative values
 - **PhotoDB roundtrip tests** — 3+ MHNI param combos (classic 76/64, Apple TV alternate, edge) verified build→parse→match
 - **AVX-512 tail fuzz** — 8 width variants (1,31,32,33,47,63,64,65) verifying SSE2 fallback matches AVX-512 output
 - **ArrayPool regression guard** — rent/return correctness verified; ensures no pool corruption or double-return
