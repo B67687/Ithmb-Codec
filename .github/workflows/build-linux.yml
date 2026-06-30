@@ -80,11 +80,11 @@ jobs:
           fi
           pct="$(awk "BEGIN { printf \"%.1f\", $line_rate * 100 }")"
           echo "Code coverage: ${pct}%"
-          if awk "BEGIN { exit (!($line_rate < 0.70)) }"; then
-            echo "FAIL: Coverage ${pct}% is below 70% threshold"
+          if awk "BEGIN { exit (!($line_rate < 0.72)) }"; then
+            echo "FAIL: Coverage ${pct}% is below 72% threshold"
             exit 1
           fi
-          echo "OK: Coverage ${pct}% meets 70% threshold"
+          echo "OK: Coverage ${pct}% meets 72% threshold"
 
       - name: Verify README stats match source
         run: |
