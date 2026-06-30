@@ -24,6 +24,7 @@ internal static unsafe partial class IthmbCodecPlugin
     private const int MaxCachedPaths = 16;
     private const int MaxCarvingFileSize = 8 * 1024 * 1024; // 8 MB: skip JPEG carving on oversized unknown-prefix files
     private static readonly ConcurrentDictionary<string, RawFileCacheEntry> _rawFileCache = new();
+    private static readonly Lock _cacheLock = new();
 
     // Decode performance metrics (Interlocked for thread safety across concurrent decode threads)
     private static long _decodeCount;
@@ -32,44 +33,47 @@ internal static unsafe partial class IthmbCodecPlugin
 
     internal static void SetCachedFile(string path, byte[] data, IthmbVariantProfile profile, int frameCount, int frameSize)
     {
-        // LRU eviction: when MaxCachedPaths is exceeded, remove the oldest entry.
-        // ConcurrentDictionary iteration is safe (returns a snapshot), and TryRemove
-        // handles the race if another thread removes the same key concurrently.
-        if (_rawFileCache.Count >= MaxCachedPaths)
+        lock (_cacheLock)
         {
-            long oldestTs = long.MaxValue;
-            string? oldestKey = null;
-            foreach (var kvp in _rawFileCache)
+            if (_rawFileCache.Count >= MaxCachedPaths)
             {
-                if (kvp.Value.LastAccess < oldestTs)
+                long oldestTs = long.MaxValue;
+                string? oldestKey = null;
+                foreach (var kvp in _rawFileCache)
                 {
-                    oldestTs = kvp.Value.LastAccess;
-                    oldestKey = kvp.Key;
+                    if (kvp.Value.LastAccess < oldestTs)
+                    {
+                        oldestTs = kvp.Value.LastAccess;
+                        oldestKey = kvp.Key;
+                    }
                 }
+                if (oldestKey != null)
+                    _rawFileCache.TryRemove(oldestKey, out _);
             }
-            if (oldestKey != null)
-                _rawFileCache.TryRemove(oldestKey, out _);
+            _rawFileCache[path] = new RawFileCacheEntry(data, profile, frameCount, frameSize)
+            {
+                LastAccess = Stopwatch.GetTimestamp()
+            };
         }
-        _rawFileCache[path] = new RawFileCacheEntry(data, profile, frameCount, frameSize)
-        {
-            LastAccess = Stopwatch.GetTimestamp()
-        };
     }
 
     /// <summary>Gets a cached file entry and updates its LastAccess timestamp.</summary>
     internal static bool TryGetCachedFile(string path, out RawFileCacheEntry entry)
     {
-        if (_rawFileCache.TryGetValue(path, out entry))
+        lock (_cacheLock)
         {
-            entry.LastAccess = Stopwatch.GetTimestamp();
-            _rawFileCache[path] = entry;
-            return true;
+            if (_rawFileCache.TryGetValue(path, out entry))
+            {
+                entry.LastAccess = Stopwatch.GetTimestamp();
+                _rawFileCache[path] = entry;
+                return true;
+            }
+            return false;
         }
-        return false;
     }
 
     // Test support — resets the raw file cache to empty.
-    internal static void ClearRawFileCache() => _rawFileCache.Clear();
+    internal static void ClearRawFileCache() { lock (_cacheLock) _rawFileCache.Clear(); }
 
     /// <summary>Returns cumulative decode metrics for observability.</summary>
     internal static (long Count, long SuccessCount, long TotalTicks) GetDecodeStats()

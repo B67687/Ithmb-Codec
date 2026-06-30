@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Secret scan with gitleaks
-        uses: gitleaks/gitleaks-action@833cdc7c5d919d4b3fc08c69c0af1c26098cc0ce # v3.0.0
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -66,7 +66,7 @@ jobs:
       - name: Run all tests (Release) with code coverage
         run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-build --verbosity normal --collect "XPlat Code Coverage" --results-directory linux-x64-coverage
 
-      - name: Check code coverage threshold (min 72%)
+      - name: Check code coverage threshold (min 75%)
         run: |
           coverage_file="$(ls linux-x64-coverage/**/coverage.cobertura.xml 2>/dev/null | head -1)"
           if [ -z "$coverage_file" ]; then
@@ -80,11 +80,11 @@ jobs:
           fi
           pct="$(awk "BEGIN { printf \"%.1f\", $line_rate * 100 }")"
           echo "Code coverage: ${pct}%"
-          if awk "BEGIN { exit (!($line_rate < 0.72)) }"; then
-            echo "FAIL: Coverage ${pct}% is below 72% threshold"
+          if awk "BEGIN { exit (!($line_rate < 0.75)) }"; then
+            echo "FAIL: Coverage ${pct}% is below 75% threshold"
             exit 1
           fi
-          echo "OK: Coverage ${pct}% meets 72% threshold"
+          echo "OK: Coverage ${pct}% meets 75% threshold"
 
       - name: Verify README stats match source
         run: |
