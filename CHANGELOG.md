@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+## [Unreleased]
+
+### Added
+- **AVX-512 decoder paths for RGB565/RGB555** — 32 pixels/iteration via Avx512BW, ~2× SSE2 throughput. Requires w%32==0 (falls back to SSE2).
+- **SimdConstants shared class** — centralized all 8 shuffle masks and 7 coefficient vectors from UyvyYuv.cs, DecodeFormatClcl.cs, DecodeFormatCl.cs, DecodeFormatYcbcr420.cs. Eliminated ~70 lines of identical Vector128 definitions.
+- **MHNI header parameterization** — `TryBuildPhotoDb` accepts optional mhniHeaderSize (default 76) and mhniPaddingSize (default 64) for non-Classic MHNI layouts.
+
+### Fixed
+- **HasChildChunks false-positive** — header validation rejects fragments with hdrSize < 8, preventing spurious recursion into padding bytes matching known magic
+- **Plugin shutdown memory leak** — FreePluginStrings() + FreePixelBufferCleanup() on OnShutdown() frees 8 AllocUtf16 native buffers
+- **JPEG carving early bailout** — MaxCarvingFileSize = 8 MB prevents full-file scanning of unknown raw files with no JPEG markers
+- **profiles.json parse failures logged** — skipped entries (prefix=0, validation failure) now log entry details instead of silent omission
+- **Culture-sensitive SkipJsonValue** — char.IsWhiteSpace() replaced with explicit ASCII whitespace comparison
+
+### Changed
+- **TryFindJpegSlice accepts ReadOnlySpan<byte>** — eliminates ArrayPool over-read bug from pooled array Length vs logical data size; callers pass exact span
+- **_rawFileCache LRU eviction** — Clear() replaced with oldest-LastAccess eviction, preventing cache thrashing under concurrent multi-image workloads
+- **Peek buffer allocation** — new byte[4MB] replaced with ArrayPool<byte>.Shared.Rent/Return, reducing LOH pressure
+- **KnownProfiles thread-safe publication** — Interlocked.Exchange replaces raw volatile field write
+- **Log calls include correlation token** — all Log(4,...) in DecodePipeline.cs include Path.GetFileName(path) for traceability
+
+### Refactored
+- **SIMD constants centralized** — per-method UyvySimdConstants struct instances replaced by shared SimdConstants static class
+
 
 ## [1.5.0] — 2026-06-29
 

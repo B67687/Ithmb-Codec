@@ -14,14 +14,14 @@ namespace IthmbCodec;
 internal static unsafe partial class IthmbCodecPlugin
 {
     // ------------------------------ JPEG extraction ------------------------------
-    internal static bool TryFindJpegSlice(byte[] data, out int offset, out int length, void* cancellation)
+    internal static bool TryFindJpegSlice(ReadOnlySpan<byte> data, out int offset, out int length, void* cancellation)
     {
         offset = 0; length = 0;
         int i = 0;
         while (i <= data.Length - JpegSoiMarker.Length)
         {
             // SIMD-accelerated search for FF D8
-            int soi = data.AsSpan(i).IndexOf(JpegSoiMarker);
+            int soi = data.Slice(i).IndexOf(JpegSoiMarker);
             if (soi < 0) return false;
             i += soi;
 
@@ -34,13 +34,13 @@ internal static unsafe partial class IthmbCodecPlugin
 
             // Verify JFIF or Exif within the scan window (covers marker segments before APP0/APP1)
             int scanEnd = Math.Min(i + JfifExifScanWindow, data.Length);
-            int jfifOff = IndexOf(data, JfifMarker, i, scanEnd);
-            int exifOff = IndexOf(data, ExifMarker, i, scanEnd);
+            int jfifOff = data.Slice(i, scanEnd - i).IndexOf(JfifMarker);
+            int exifOff = data.Slice(i, scanEnd - i).IndexOf(ExifMarker);
             if (jfifOff < 0 && exifOff < 0) { i += JpegSoiMarker.Length; continue; }
 
             offset = i;
             // SIMD-accelerated search for FF D9 after SOI
-            int eoiRel = data.AsSpan(offset + JpegSoiMarker.Length).IndexOf(JpegEoiMarker);
+            int eoiRel = data.Slice(offset + JpegSoiMarker.Length).IndexOf(JpegEoiMarker);
             if (eoiRel >= 0)
             {
                 length = (offset + JpegSoiMarker.Length + eoiRel + JpegEoiMarker.Length) - offset;

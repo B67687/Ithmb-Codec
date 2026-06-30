@@ -8,7 +8,7 @@ namespace IthmbCodec;
 internal static unsafe partial class IthmbCodecPlugin
 {
     /// <summary>
-    /// Embedded JSON array of all 54 built-in profiles, parsed at module init by
+    /// Embedded JSON array of all 53 built-in profiles, parsed at module init by
     /// <see cref="GetBuiltInProfiles"/>. This replaces the previous hardcoded C# dictionary —
     /// dimensions are now data, not code. The schema matches what
     /// <see cref="ParseProfilesJson"/> expects (same format as external profiles.json).
