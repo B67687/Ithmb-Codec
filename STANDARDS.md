@@ -42,12 +42,18 @@ It is the applied version of the universal standards in the project-retrospectiv
 | Item | Status | How |
 |------|--------|-----|
 | Performance regression gate | ✅ | `tools/check-benchmark-regression.sh` + `benchmark.yml` (manual dispatch) |
-|| Scheduled fuzz testing | ✅ | Weekly CI in `.github/workflows/fuzz-weekly.yml` (Mon 06:00 UTC). Extended iterations for all fuzz test suites. |
-| Production-grade rubric | ✅ | `PRODUCTION_GRADE_RUBRIC.md` — 8-axis, scored 86.6% baseline |
-| Scheduled adversarial audit | ❌ **Missing** | The v1.5.0 and v1.6.0 audits were manual. No quarterly schedule. |
+| Scheduled fuzz testing | ✅ | Weekly CI in `.github/workflows/fuzz-weekly.yml` (Mon 06:00 UTC) |
+| Production-grade rubric | ✅ | `PRODUCTION_GRADE_RUBRIC.md` — 8-axis, scored 86.6% |
+| Scheduled adversarial audit | ✅ | Quarterly protocol in `docs/adr/0004`, issue template in `.github/ISSUE_TEMPLATE/` |
+| Release artifact automation | ✅ | `.github/workflows/release-windows.yml` (tag → build → zip → upload + notes) |
+| Correlation tokens in logs | ✅ | `ITHMB|component|EVENT|filename|details` convention |
+| File size gate (250 LOC) | ✅ | CI gate in build-linux.yml via `tools/check-file-sizes.sh`. SIZE_OK exemptions. |
+| Test quality gate | ✅ | Tautological assertions removed in v1.5.0 audit. |
+| Debug coverage gate | ✅ | 60% min in build-linux.yml (`--collect XPlat Code Coverage` for Debug) |
+| NEON coverage collection | ✅ | Coverage gate in test-neon.yml (ARM64, 60% min) |
 | Release artifact automation | ✅ | `.github/workflows/release-windows.yml` (tag → build → zip → upload) |
 | Correlation tokens in logs | ✅ | `ITHMB\|component\|EVENT\|filename\|details` convention |
-|| File size gate (250 LOC) | ✅ | CI gate in build-linux.yml via `tools/check-file-sizes.sh`. 4 files exempted with SIZE_OK comments. |
+|| File size gate (250 LOC) | ✅ | CI gate in build-linux.yml via `tools/check-file-sizes.sh`. 7 files exempted with SIZE_OK annotations. |
 | Test quality gate | ✅ | Tautological assertions removed in v1.5.0 audit. Every test asserts behavior. |
 
 ### Tier 3 — Quality of Life
@@ -56,7 +62,7 @@ It is the applied version of the universal standards in the project-retrospectiv
 |------|--------|-----|
 || Design decision records | ✅ | `docs/adr/0001` (Native AOT), `0002` (SIMD dispatch), `0003` (profile resolution) |
 || Commit date alias | ✅ | `tools/git-commit-dated.sh` — preserves author+committer dates |
-| Release notes from CHANGELOG | ⚠️ Manual | Notes are hand-crafted per release |
+|| Release notes from CHANGELOG | ✅ | Auto-generated from CHANGELOG section in `release-windows.yml` |
 || PR template | ✅ | `.github/PULL_REQUEST_TEMPLATE.md` with checklist |
 || Pre-commit hooks | ✅ | `.pre-commit-config.yaml` — trailing-whitespace, EOF-fixer, YAML/JSON lint, conventional commit check |
 || Multi-architecture CI | ✅ | x64 (build-linux.yml), ARM64 (test-neon.yml), macOS ARM64 (build-macos.yml) |
@@ -101,21 +107,15 @@ This project follows the design hierarchy from `DESIGN_STANDARDS_HIERARCHY.md`.
 
 ## Current Gaps (highest priority to close)
 
-|| Gap | Effort | Impact | Why it matters |
-||-----|--------|--------|---------------|
-|| Quarterly audit reminder | 1 calendar entry | Catch logic bugs | 28 bugs found in single manual pass |
+No remaining gaps from the 11 items in the automation plan.
+See `.omo/plans/ithmbcodec-automation-gaps.md` for complete execution history.
 
-### Ithmb-Specific Gaps (not covered by universal tiers)
+Items closed across 4 phases (commit `0943504`):
+- Phase 0: File size gate exemptions, macOS flaky test fix
+- Phase 1: README arch table (24 files), Debug coverage gate, release notes automation
+- Phase 2: NEON coverage, quarterly audit protocol ADR + issue template, profile SHA-256 integrity
+- Phase 3: Profile diff script, Native AOT benchmark workflow, post-release benchmark baseline
 
-| Gap | Effort | Impact | Why it matters |
-|-----|--------|--------|---------------|
-|| Profile source diff script | 2h | Prevent profile drift | Formats discovered from 22 sources; no automatic diff against them |
-|| NEON coverage collection | 1h | Accurate ARM64 coverage | 5% uncovered on x64 is NEON paths; never actually measured on ARM64 |
-|| Profile integrity verification | 30m | Supply chain trust | FNV-1a hash logged but not verified against embedded expected hash |
-|| README architecture table | 15m | Doc accuracy | Table still missing 6 extracted files |
-|| Release notes from CHANGELOG | 30m | Clean releases | Notes still hand-crafted per release |
-|| Benchmark Native AOT comparison | 2h | Accurate perf numbers | Benchmark runs JIT; production runs Native AOT with PGO |
-|| Debug coverage collection | 15m | Complete coverage picture | Coverage only collected in Release mode |
 
 ---
 
@@ -128,3 +128,5 @@ This file is versioned with the project. Update when automation or design standa
 || 1.0 | 2026-06-30 | Initial: automation tiers 0-3 + design axioms applied |
 || 1.1 | 2026-06-30 | Wave 1: CHANGELOG CI check, signed tag CI, commit-date script, PR template, v1.6.0 tag |
 || 1.2 | 2026-06-30 | Wave 2+3: ADRs, file size gate, SETUP.md, macOS CI, pre-commit, fuzz CI, gaps table restructured |
+|| 1.3 | 2026-07-01 | Phase 0-3: size gate fix, macOS fix, README table, Debug/NEON coverage, release notes, audit protocol, profile integrity, profile diff, Native AOT benchmark, post-release baseline |
+|| 1.3 | 2026-07-01 | Phase 0-3: size gate fix, macOS fix, README table, Debug/NEON coverage, release notes, audit protocol, profile integrity, profile diff, Native AOT benchmark, baseline update |

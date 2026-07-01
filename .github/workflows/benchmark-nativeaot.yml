@@ -1,0 +1,63 @@
+# benchmark-nativeaot.yml — production-representative decoder benchmarks
+#
+# Purpose: runs the benchmark suite against a Native AOT published binary
+# instead of JIT. Native AOT with TieredPGO produces different codegen
+# than dotnet run (JIT). This workflow gives production-representative numbers.
+#
+# Differences from benchmark.yml (JIT):
+#   - Compiles the benchmark project as Native AOT (dotnet publish)
+#   - Runs the published native binary directly
+#   - Still checks regression against the shared baseline.csv
+
+name: benchmark-nativeaot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark-nativeaot:
+    name: linux-x64-nativeaot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Display .NET info
+        run: |
+          dotnet --info
+          echo "Architecture: $(uname -m)"
+
+      - name: Restore dependencies (locked)
+        run: dotnet restore tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj --locked-mode
+
+      - name: Publish Native AOT benchmark
+        run: dotnet publish tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj -c Release -r linux-x64
+
+      - name: Run Native AOT benchmarks
+        run: |
+          PUBLISH_DIR="tools/IthmbCodec.Benchmark/bin/Release/net10.0/linux-x64/publish"
+          echo "Running Native AOT benchmark binary..."
+          "$PUBLISH_DIR/IthmbCodec.Benchmark" --filter "*"
+
+      - name: Check for performance regression vs baseline
+        run: bash tools/check-benchmark-regression.sh
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: benchmark-nativeaot-results
+          path: |
+            tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/
+          retention-days: 90

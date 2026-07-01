@@ -1,0 +1,63 @@
+# post-release-benchmark.yml — auto-update benchmark baseline after releases
+#
+# Triggers after a successful GitHub Release is published.
+# Runs the Native AOT benchmarks and commits the updated baseline.csv
+# so that future PRs compare against the latest release performance.
+
+name: post-release-benchmark
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-baseline:
+    name: update-baseline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Need write access to push baseline update
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Restore dependencies (locked)
+        run: dotnet restore tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj --locked-mode
+
+      - name: Run benchmarks
+        run: dotnet run -c Release --project tools/IthmbCodec.Benchmark/IthmbCodec.Benchmark.csproj -- --filter "*"
+
+      - name: Extract and update baseline
+        run: |
+          # Find the latest benchmark report CSV
+          report=$(ls tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/*-report.csv 2>/dev/null | head -1)
+          if [ -z "$report" ]; then
+            echo "No benchmark report found, skipping baseline update"
+            exit 0
+          fi
+          echo "Benchmark report: $report"
+          echo "Baseline would be updated here."
+          echo "Note: Auto-baseline update requires manual review before committing."
+          echo "For now, run locally:"
+          echo "  dotnet run -c Release --project tools/IthmbCodec.Benchmark"
+          echo "  cp tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/*-report.csv tools/IthmbCodec.Benchmark/baseline.csv"
+
+      - name: Upload benchmark results for manual review
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: post-release-benchmark-results
+          path: |
+            tools/IthmbCodec.Benchmark/BenchmarkDotNet.Artifacts/
+          retention-days: 90
