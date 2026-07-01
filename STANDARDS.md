@@ -47,14 +47,14 @@ It is the applied version of the universal standards in the project-retrospectiv
 | Scheduled adversarial audit | ❌ **Missing** | The v1.5.0 and v1.6.0 audits were manual. No quarterly schedule. |
 | Release artifact automation | ✅ | `.github/workflows/release-windows.yml` (tag → build → zip → upload) |
 | Correlation tokens in logs | ✅ | `ITHMB\|component\|EVENT\|filename\|details` convention |
-| File size gate (250 LOC) | ⚠️ Partial | 4 files exceed 250 LOC with SIZE_OK comments. No CI gate. |
+|| File size gate (250 LOC) | ✅ | CI gate in build-linux.yml via `tools/check-file-sizes.sh`. 4 files exempted with SIZE_OK comments. |
 | Test quality gate | ✅ | Tautological assertions removed in v1.5.0 audit. Every test asserts behavior. |
 
 ### Tier 3 — Quality of Life
 
 | Item | Status | How |
 |------|--------|-----|
-| Design decision records | ❌ **Missing** | No `docs/adr/` directory. Architecture decisions are implicit. |
+|| Design decision records | ✅ | `docs/adr/0001` (Native AOT), `0002` (SIMD dispatch), `0003` (profile resolution) |
 || Commit date alias | ✅ | `tools/git-commit-dated.sh` — preserves author+committer dates |
 | Release notes from CHANGELOG | ⚠️ Manual | Notes are hand-crafted per release |
 || PR template | ✅ | `.github/PULL_REQUEST_TEMPLATE.md` with checklist |

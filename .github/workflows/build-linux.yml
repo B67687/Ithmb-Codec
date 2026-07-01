@@ -108,6 +108,8 @@ jobs:
             linux-x64-debug
             linux-x64-coverage
           retention-days: 30
+      - name: Check file sizes (max 250 SLOC)
+        run: bash tools/check-file-sizes.sh --quiet
 
       - name: Check CHANGELOG was updated
         run: |
