@@ -60,8 +60,28 @@ jobs:
       - name: Run all tests (Release)
         run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-build --verbosity normal --logger trx --results-directory linux-x64-release
 
-      - name: Run all tests (Debug)
-        run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-build --verbosity normal --logger trx --results-directory linux-x64-debug
+      - name: Run all tests (Debug) with code coverage
+        run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-build --verbosity normal --collect "XPlat Code Coverage" --results-directory linux-x64-debug-coverage
+
+      - name: Check Debug code coverage threshold (min 60%)
+        run: |
+          coverage_file="$(ls linux-x64-debug-coverage/**/coverage.cobertura.xml 2>/dev/null | head -1)"
+          if [ -z "$coverage_file" ]; then
+            echo "No coverage file found"
+            exit 1
+          fi
+          line_rate="$(grep -oP 'line-rate="\K[0-9.]+' "$coverage_file" | head -1)"
+          if [ -z "$line_rate" ]; then
+            echo "Could not parse line-rate from coverage report"
+            exit 1
+          fi
+          pct="$(awk "BEGIN { printf \"%.1f\", $line_rate * 100 }")"
+          echo "Debug code coverage: ${pct}%"
+          if awk "BEGIN { exit (!($line_rate < 0.60)) }"; then
+            echo "FAIL: Debug coverage ${pct}% is below 60% threshold"
+            exit 1
+          fi
+          echo "OK: Debug coverage ${pct}% meets 60% threshold"
 
       - name: Run all tests (Release) with code coverage
         run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-build --verbosity normal --collect "XPlat Code Coverage" --results-directory linux-x64-coverage

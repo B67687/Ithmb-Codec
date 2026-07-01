@@ -62,11 +62,43 @@ jobs:
           if (Test-Path "$publishDir/profiles.json") { $files += "$publishDir/profiles.json" }
           Compress-Archive -Path $files -DestinationPath IthmbCodec_win-x64.zip
 
-      - name: Upload to release
+      - name: Create release notes from CHANGELOG
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = "${{ github.event.inputs.tag || github.ref_name }}"
-          gh release upload $tag IthmbCodec_win-x64.zip --clobber
+          echo "Generating release notes for $tag from CHANGELOG..."
+          # Extract the CHANGELOG section for this version
+          $changelog = Get-Content -Path CHANGELOG.md -Raw
+          if ($changelog -match "## \[$tag"] -s*(.*?)(?=## \[|`$)" -or
+              $changelog -match "## \[($tag -replace '^v','')"] -s*(.*?)(?=## \[|`$)") {
+            $notes = $matches[1].Trim()
+            echo "$notes" | Out-File -FilePath release-notes.md -Encoding utf8
+            echo "Release notes written ($($notes.Length) chars)"
+          } else {
+            echo "WARNING: No CHANGELOG section found for $tag — using auto-generated notes"
+            "" | Out-File -FilePath release-notes.md -Encoding utf8
+          }
+
+      - name: Create release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          $notes = Get-Content -Path release-notes.md -Raw
+          if ([string]::IsNullOrWhiteSpace("$notes")) {
+            gh release create "$tag" --generate-notes
+          } else {
+            gh release create "$tag" --notes-file release-notes.md
+          }
+
+      - name: Upload release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.event.inputs.tag || github.ref_name }}"
+          gh release upload "$tag" IthmbCodec_win-x64.zip --clobber
           echo "Uploaded IthmbCodec_win-x64.zip to $tag"

@@ -181,28 +181,34 @@ dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release
 
 **Plugin ABI** — the only C export is `ig_plugin_get_api()`, which returns an `IGPluginApi` → `IGCodecApi` chain following the ImageGlass v10 native codec plugin ABI (v1.0.0.0).
 
-**Source layout** — 19 files organized by domain (previously 11, split for single-responsibility):
+**Source layout** — 24 files organized by domain (previously 6, split for single-responsibility):
 
 | File | Purpose |
 |------|---------|
 | `IthmbCodecPlugin.cs` | ABI entry point, init, API surface |
-| `IthmbCodecPlugin.DecodePipeline.cs` | Decode dispatch, live buffer mgmt, crop/rotate |
+| `IthmbCodecPlugin.Strings.cs` | UTF-16 string buffers for ImageGlass ABI |
+| `IthmbCodecPlugin.Helpers.cs` | Shared utilities (rotate, buffer alloc, logging) |
+| `IthmbCodecPlugin.DecodePipeline.cs` | Core decode pipeline, two-phase JPEG scan |
+| `IthmbCodecPlugin.DecodeInfrastructure.cs` | Bounded LRU file cache, decode metrics |
+| `IthmbCodecPlugin.DecodeRawProfile.cs` | Raw profile decode dispatch + crop/rotate |
 | `IthmbCodecPlugin.JpegDecode.cs` | JPEG scan, EXIF parsing, StbImageSharp |
-| `IthmbCodecPlugin.ProfileSystem.cs` | Profile lookup, profiles.json parser |
-| `IthmbCodecPlugin.VariantProfile.cs` | Profile struct (IthmbVariantProfile, IthmbEncoding) |
-| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/NEON SIMD + REC_RGB555 quad-tree |
-| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY, YCbCr420, YUV422 decoders + SIMD |
+| `IthmbCodecPlugin.DecodeFormatYcbcr420.cs` | YCbCr 4:2:0 scalar + SIMD decoder |
+| `IthmbCodecPlugin.Rgb565Rgb555.cs` | RGB565/RGB555 decoders + SSE2/AVX-512/NEON SIMD + REC_RGB555 |
+| `IthmbCodecPlugin.UyvyYuv.cs` | UYVY 4:2:2 + Interlaced UYVY decoders + SSSE3/NEON SIMD |
 | `IthmbCodecPlugin.DecodeFormatClcl.cs` | CLCL nibble-chroma decoder + SSSE3/NEON SIMD |
 | `IthmbCodecPlugin.DecodeFormatCl.cs` | CL per-pixel chroma decoder + SSSE3/NEON SIMD |
-| `IthmbCodecPlugin.DecodeFormatYcbcr420.cs` | YCbCr 4:2:0 scalar + SIMD decoder |
-| `IthmbCodecPlugin.YuvUtils.cs` | Shared YUV conversion helpers |
-| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) |
-| `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats |
+| `IthmbCodecPlugin.SimdConstants.cs` | Shared SIMD shuffle masks and coefficient vectors |
+| `IthmbCodecPlugin.ProfileSystem.cs` | Profile resolution, external override, heuristics |
+| `IthmbCodecPlugin.VariantProfile.cs` | Profile record struct (IthmbVariantProfile, IthmbEncoding) |
+| `IthmbCodecPlugin.ProfilesJson.cs` | Embedded 54-profile JSON string literal |
+| `IthmbCodecPlugin.JsonParser.cs` | AOT-safe JSON parser for profiles |
 | `IthmbCodecPlugin.DeviceProfiles.cs` | Per-generation iPod device format tables (18 devices) |
-| `IthmbCodecPlugin.ProfilesJson.cs` | Embedded profiles.json data and AOT-safe parser |
+| `IthmbCodecPlugin.Encoding.cs` | Synthetic encoder for all raw formats |
+| `IthmbCodecPlugin.EncoderHelpers.cs` | Shared encoder helpers (InterlaceFields, BT.601) |
+| `IthmbCodecPlugin.YuvUtils.cs` | Shared YUV conversion helpers |
 | `PhotoDb/Core.cs` | PhotoDB/ArtworkDB chunk parser + format ID mapping |
 | `PhotoDb/Serialization.cs` | PhotoDB writer + integrity checker |
-| `IthmbCodecPlugin.SimdConstants.cs` | Shared SIMD shuffle masks and coefficient vectors |
+| `PhotoDb/Types.cs` | PhotDB chunk header structs + endian-aware read helpers |
 **Data flow:**
 
 ```
