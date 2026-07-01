@@ -45,16 +45,16 @@ It is the applied version of the universal standards in the project-retrospectiv
 | Scheduled fuzz testing | ✅ | Weekly CI in `.github/workflows/fuzz-weekly.yml` (Mon 06:00 UTC) |
 | Production-grade rubric | ✅ | `PRODUCTION_GRADE_RUBRIC.md` — 8-axis, scored 86.6% |
 | Scheduled adversarial audit | ✅ | Quarterly protocol in `docs/adr/0004`, issue template in `.github/ISSUE_TEMPLATE/` |
-| Release artifact automation | ✅ | `.github/workflows/release-windows.yml` (tag → build → zip → upload + notes) |
+| Release artifact automation | ✅ | `.github/workflows/release-windows.yml`: build, notes, upload |
 | Correlation tokens in logs | ✅ | `ITHMB|component|EVENT|filename|details` convention |
-| File size gate (250 LOC) | ✅ | CI gate in build-linux.yml via `tools/check-file-sizes.sh`. SIZE_OK exemptions. |
-| Test quality gate | ✅ | Tautological assertions removed in v1.5.0 audit. |
-| Debug coverage gate | ✅ | 60% min in build-linux.yml (`--collect XPlat Code Coverage` for Debug) |
+| File size gate (250 LOC) | ✅ | CI gate via `tools/check-file-sizes.sh`. SIZE_OK exemptions. |
+| Test quality gate | ✅ | Tautological assertions removed in v1.5.0 audit |
+| Debug coverage gate | ✅ | 60% min in build-linux.yml |
 | NEON coverage collection | ✅ | Coverage gate in test-neon.yml (ARM64, 60% min) |
-| Release artifact automation | ✅ | `.github/workflows/release-windows.yml` (tag → build → zip → upload) |
-| Correlation tokens in logs | ✅ | `ITHMB\|component\|EVENT\|filename\|details` convention |
-|| File size gate (250 LOC) | ✅ | CI gate in build-linux.yml via `tools/check-file-sizes.sh`. 7 files exempted with SIZE_OK annotations. |
-| Test quality gate | ✅ | Tautological assertions removed in v1.5.0 audit. Every test asserts behavior. |
+| Native AOT benchmark | ✅ | `.github/workflows/benchmark-nativeaot.yml` |
+| Post-release baseline update | ✅ | `.github/workflows/post-release-benchmark.yml` |
+| Profile integrity verification | ✅ | SHA-256 hash logged in ProfileSystem.cs |
+| Profile source diff script | ✅ | `tools/profile-diff.sh` |
 
 ### Tier 3 — Quality of Life
 
