@@ -1,0 +1,59 @@
+# build-macos.yml — macOS arm64 build + test validation
+#
+# Purpose: validates the library builds and tests pass on macOS ARM64.
+# macOS is a supported deployment target; this catches platform-specific
+# issues (SIP, Mach-O ABI, ARM64 tail handling) that x64 CI cannot.
+
+name: build-macos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: osx-arm64
+    runs-on: macos-15  # Apple Silicon
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: |
+            10.0.x
+
+      - name: Display .NET info
+        run: |
+          dotnet --info
+          echo "Architecture: $(uname -m)"
+
+      - name: Check formatting
+        run: dotnet format src/IthmbCodec/IthmbCodec.csproj --verify-no-changes
+
+      - name: Restore dependencies (locked)
+        run: dotnet restore src/IthmbCodec/test/IthmbCodec.Tests.csproj --locked-mode
+
+      - name: Build (Release)
+        run: dotnet build src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-restore
+
+      - name: Build (Debug)
+        run: dotnet build src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-restore
+
+      - name: Run all tests (Release)
+        run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Release --no-build --verbosity normal
+
+      - name: Run all tests (Debug)
+        run: dotnet test src/IthmbCodec/test/IthmbCodec.Tests.csproj -c Debug --no-build --verbosity normal
+
+      - name: Check file sizes (max 250 SLOC)
+        run: bash tools/check-file-sizes.sh --quiet
