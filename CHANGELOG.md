@@ -88,14 +88,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Trailing-padding boundary tests** — exact (frameSize-256) succeeds, one byte beyond fails
 - **TreatWarningsAsErrors** — enabled in test csproj; coverlet.collector added for coverage reporting
 
-## [Unreleased]
-
 ## [1.5.0] — 2026-06-29
 
 ### Added
 - **Architecture SVG updated to match current profile counts** — 54 profiles (was 49), 25 photo (was 22), 29 cover art (was 27). Pipeline inner boxes vertically centered. Long decoder label shortened (RGB565/RGB555→RGB565/555). EXIF box widened to match JPEG Path. Font-size reduced on crowded decoder line.
 - **README Contributions to ecosystem section updated** — surveyed implementations 4→22, dimension discrepancies 9→15. Added Steee29 iPhone 2G real-device validation, clickwheel 1062 discovery, gnupod/OrgZ profile corrections.
-- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions). Profiles count: 55 active + 1 speculative disabled (56 total).
+- **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions). Profiles count: 53 active + 1 speculative disabled (54 total).
 - **REC_RGB555 decoder (quad-tree / Morton Z-order) for iPhone/Touch cover art:** Apple's recursive-ordered dither format used by profiles 3001/3002/3003 (256×256, 128×128, 64×64). Pixels stored in Morton Z-order (interleaved bit pattern) rather than raster scanline. Decoder de-deranges via MortonInterleave, then decodes as standard RGB555→BGRA8. Encoder (`EncodeReorderedRgb555`) reorders BGRA8→RGB555 via Morton Z-order for writing iPhone-compatible .ithmb files.
 - **Format 3004 SlotSize:8192 added** — libgpod's Itdb_ArtworkFormat `padding` field confirmed 8192 bytes slot padding for iPhone/Touch photo thumbnails (profile 3004, 56×55 Rgb555).
 - **Format 3005 (320×320 Rgb555) added** — iPhone/Touch cover art variant from libgpod's `ipod_touch_1_cover_art_info` table. (53→54 active).

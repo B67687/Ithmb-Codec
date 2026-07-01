@@ -22,7 +22,7 @@ A C# Native AOT codec plugin for [ImageGlass v10](https://imageglass.org) that o
 
 **Key features**
 
-- 53 built-in profiles covering 42 photo + 12 cover art formats (+ 1 speculative disabled)
+- 53 built-in profiles (+ 1 speculative disabled) covering known iPod/iPhone formats
 - 7 decoders with SIMD acceleration (SSE2 + AVX-512 + ARM64 NEON)
 - Roundtrip-proven tests
 - PhotoDB/ArtworkDB read, write, and integrity checking

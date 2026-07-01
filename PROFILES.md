@@ -1,6 +1,6 @@
 # Profiles
 
-55 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
+54 known raw-format profiles (1 speculative profile disabled — see [F1064](#f1064-speculative-disabled)) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G.
 
 Additional profiles can be added at runtime via `profiles.json` without recompiling.
 
