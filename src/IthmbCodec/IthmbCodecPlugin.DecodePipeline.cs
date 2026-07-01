@@ -1,5 +1,6 @@
 // Core decode pipeline for .ithmb files: orchestrates JPEG detection, raw profile
 // decode fallback, multi-frame caching, and the DecodeRawProfile dispatch.
+// SIZE_OK: ~270 SLOC — pipeline orchestration + JPEG scan + multi-frame cache + dispatch logic
 // Separated from plugin ABI glue for independent AOT compilation.
 
 using System.Buffers.Binary;
