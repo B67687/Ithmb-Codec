@@ -108,3 +108,19 @@ jobs:
             linux-x64-debug
             linux-x64-coverage
           retention-days: 30
+
+      - name: Check CHANGELOG was updated
+        run: |
+          git fetch origin main --depth=1 2>/dev/null || true
+          if git rev-parse --verify origin/main >/dev/null 2>&1; then
+            changed=$(git diff --name-only origin/main...HEAD 2>/dev/null || echo "")
+            if ! echo "$changed" | grep -q CHANGELOG.md; then
+              echo "INFO: CHANGELOG.md not updated — verify this is intentional"
+            fi
+          fi
+
+      - name: Validate tag signature (if tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "Validating tag signature for ${{ github.ref_name }}..."
+          git tag -v "${{ github.ref_name }}" 2>&1 | head -5

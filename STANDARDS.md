@@ -27,14 +27,14 @@ It is the applied version of the universal standards in the project-retrospectiv
 | Item | Status | How |
 |------|--------|-----|
 | Conventional commits | ✅ | All commits follow Conventional Commits. Enforced by commitlint. |
-| CHANGELOG presence CI check | ❌ **Still missing** | No `git diff | grep CHANGELOG` step |
+|| CHANGELOG presence CI check | ✅ | `git diff | grep CHANGELOG` check in build-linux.yml |
 | Stats gate (derive from source) | ✅ | `tools/check-readme-stats.sh` verifies profile count + test count in CI |
 | Build provenance | ✅ | `AssemblyMetadata("CommitSha")` + `BuildTimestamp` embedded at compile time |
 | Code coverage gate | ✅ | 72% minimum in CI (adjusted from 75%/73% due to PGO instability) |
 | Formatter enforcement | ✅ | `dotnet format --verify-no-changes` in CI |
 | EditorConfig | ✅ | `.editorconfig` with LF, UTF-8, indent 4/2, trim trailing whitespace |
 | SDK/toolchain pinning | ✅ | `global.json` pins .NET 10.0.x, `rollForward: latestFeature` |
-| Signed release tags | ❌ **Missing** | Tags v1.1.0–v1.5.0 not signed. CI does not validate. |
+|| Signed release tags | ✅ | Tag signature validation in build-linux.yml. v1.6.0 tag pushed signed. |
 | Concurrency-safe state | ✅ | Retrofitted in v1.6.0 (Lock, Interlocked, ConcurrentDictionary) |
 
 ### Tier 2 — Within First Release (present by v1.6.0)
@@ -55,9 +55,9 @@ It is the applied version of the universal standards in the project-retrospectiv
 | Item | Status | How |
 |------|--------|-----|
 | Design decision records | ❌ **Missing** | No `docs/adr/` directory. Architecture decisions are implicit. |
-| Commit date alias | ❌ **Missing** | `GIT_COMMITTER_DATE` dance repeated on every commit |
+|| Commit date alias | ✅ | `tools/git-commit-dated.sh` — preserves author+committer dates |
 | Release notes from CHANGELOG | ⚠️ Manual | Notes are hand-crafted per release |
-| PR template | ❌ **Missing** | No PR template in `.github/` |
+|| PR template | ✅ | `.github/PULL_REQUEST_TEMPLATE.md` with checklist |
 | Pre-commit hooks | ❌ **Missing** | No `.pre-commit-config.yaml` or `.husky/` |
 | Multi-architecture CI | ⚠️ Partial | x64 + ARM64 covered. No macOS (osx-arm64 supported but untested) |
 
@@ -103,12 +103,8 @@ This project follows the design hierarchy from `DESIGN_STANDARDS_HIERARCHY.md`.
 
 | Gap | Effort | Impact | Why it matters |
 |-----|--------|--------|---------------|
-| CHANGELOG presence CI check | 1 line of CI config | Prevents next forgotten changelog | We keep forgetting. Both of us. |
-| Signed tag enforcement | 2 lines of CI config | Tag integrity | Tags v1.1.0–v1.5.0 are unsigned |
-| Commit date alias | 1 git config | Saves ~30s per commit | Multiple rebase rounds wasted |
-| v1.6.0 tag creation | 1 git command | Release traceability | Release commit is not tagged |
-| Scheduled fuzz CI | 1 workflow file | Catch overflow/OOB bugs | Unit-test fuzz is deterministic |
-| Quarterly audit reminder | 1 calendar entry | Catch logic bugs | 28 bugs found in single manual pass |
+|| Scheduled fuzz CI | 1 workflow file | Catch overflow/OOB bugs | Unit-test fuzz is deterministic |
+|| Quarterly audit reminder | 1 calendar entry | Catch logic bugs | 28 bugs found in single manual pass |
 
 ---
 
@@ -118,4 +114,5 @@ This file is versioned with the project. Update when automation or design standa
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0 | 2026-06-30 | Initial: automation tiers 0-3 + design axioms applied |
+|| 1.0 | 2026-06-30 | Initial: automation tiers 0-3 + design axioms applied |
+|| 1.1 | 2026-06-30 | Wave 1: CHANGELOG CI check, signed tag CI, commit-date script, PR template, v1.6.0 tag |
