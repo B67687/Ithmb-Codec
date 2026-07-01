@@ -21,6 +21,12 @@ public unsafe partial class IthmbCodecTests
         if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             return;
 
+        const int frameCount = 5;
+        const int width = 100;
+        const int height = 100;
+        const int iterations = 50;
+        const int cancelDelayMs = 100;
+
         // Build a multi-frame RGB565 .ithmb buffer (5 frames × 100×100 pixels)
         var profile = new IthmbCodecPlugin.IthmbVariantProfile(
             Prefix: 1007, Width: width, Height: height,
