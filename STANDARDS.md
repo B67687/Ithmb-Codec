@@ -42,7 +42,7 @@ It is the applied version of the universal standards in the project-retrospectiv
 | Item | Status | How |
 |------|--------|-----|
 | Performance regression gate | ✅ | `tools/check-benchmark-regression.sh` + `benchmark.yml` (manual dispatch) |
-| Scheduled fuzz testing | ❌ **Missing** | Fuzz tests run as unit tests (deterministic). No weekly long-running job. |
+|| Scheduled fuzz testing | ✅ | Weekly CI in `.github/workflows/fuzz-weekly.yml` (Mon 06:00 UTC). Extended iterations for all fuzz test suites. |
 | Production-grade rubric | ✅ | `PRODUCTION_GRADE_RUBRIC.md` — 8-axis, scored 86.6% baseline |
 | Scheduled adversarial audit | ❌ **Missing** | The v1.5.0 and v1.6.0 audits were manual. No quarterly schedule. |
 | Release artifact automation | ✅ | `.github/workflows/release-windows.yml` (tag → build → zip → upload) |
@@ -58,8 +58,8 @@ It is the applied version of the universal standards in the project-retrospectiv
 || Commit date alias | ✅ | `tools/git-commit-dated.sh` — preserves author+committer dates |
 | Release notes from CHANGELOG | ⚠️ Manual | Notes are hand-crafted per release |
 || PR template | ✅ | `.github/PULL_REQUEST_TEMPLATE.md` with checklist |
-| Pre-commit hooks | ❌ **Missing** | No `.pre-commit-config.yaml` or `.husky/` |
-| Multi-architecture CI | ⚠️ Partial | x64 + ARM64 covered. No macOS (osx-arm64 supported but untested) |
+|| Pre-commit hooks | ✅ | `.pre-commit-config.yaml` — trailing-whitespace, EOF-fixer, YAML/JSON lint, conventional commit check |
+|| Multi-architecture CI | ✅ | x64 (build-linux.yml), ARM64 (test-neon.yml), macOS ARM64 (build-macos.yml) |
 
 ---
 
