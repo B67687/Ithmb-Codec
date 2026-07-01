@@ -126,10 +126,8 @@ public unsafe partial class IthmbCodecTests
     private static ushort PackRgb565(int r, int g, int b) =>
         (ushort)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
 
-    /// <summary>Reference full-range BT.601 forward transform matching our encoder's Bt601Y/Bt601Cb/Bt601Cr.</summary>
     private static (int y, int u, int v) RgbToYuv(int r, int g, int b)
     {
-        // Match encoder's fixed-point BT.601 coefficients (Encoding.cs Bt601Y, Bt601Cb, Bt601Cr)
         int y = (77 * r + 150 * g + 29 * b) >> 8;
         int u = ((-43 * r - 85 * g + 128 * b) >> 8) + 128;
         int v = ((128 * r - 107 * g - 21 * b) >> 8) + 128;

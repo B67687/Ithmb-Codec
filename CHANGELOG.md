@@ -347,10 +347,10 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/ithmb-codec/compare/v1.6.0...HEAD
-[1.6.0]: https://github.com/B67687/ithmb-codec/compare/v1.5.0...v1.6.0
-[1.5.0]: https://github.com/B67687/ithmb-codec/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/B67687/ithmb-codec/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/B67687/ithmb-codec/compare/v1.1.0...v1.3.0
-[1.1.0]: https://github.com/B67687/ithmb-codec/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/B67687/ithmb-codec/releases/tag/v1.0.0
+[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.1.0...v1.3.0
+[1.1.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/B67687/Ithmb-Codec/releases/tag/v1.0.0
