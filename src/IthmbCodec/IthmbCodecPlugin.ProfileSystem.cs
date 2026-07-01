@@ -61,6 +61,16 @@ internal static unsafe partial class IthmbCodecPlugin
             hash = (hash ^ b) * 1099511628211UL;
         Log(4, $"ITHMB: loaded {external.Count} profiles (FNV: {hash:X16})");
 
+        // SHA-256 hash for integrity verification (log-only for v1.x)
+        // The expected hash can be pinned once the canonical profiles.json is determined.
+        string sha256Hex;
+        using (var sha256 = System.Security.Cryptography.SHA256.Create())
+        {
+            byte[] hashBytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(json));
+            sha256Hex = Convert.ToHexString(hashBytes).ToLowerInvariant();
+        }
+        Log(4, $"ITHMB: profiles.json SHA-256: {sha256Hex}");
+
         if (external.Count == 0) return;
 
         // Merge: start with built-in, override with external, rebuild
