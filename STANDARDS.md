@@ -101,10 +101,21 @@ This project follows the design hierarchy from `DESIGN_STANDARDS_HIERARCHY.md`.
 
 ## Current Gaps (highest priority to close)
 
+|| Gap | Effort | Impact | Why it matters |
+||-----|--------|--------|---------------|
+|| Quarterly audit reminder | 1 calendar entry | Catch logic bugs | 28 bugs found in single manual pass |
+
+### Ithmb-Specific Gaps (not covered by universal tiers)
+
 | Gap | Effort | Impact | Why it matters |
 |-----|--------|--------|---------------|
-|| Scheduled fuzz CI | 1 workflow file | Catch overflow/OOB bugs | Unit-test fuzz is deterministic |
-|| Quarterly audit reminder | 1 calendar entry | Catch logic bugs | 28 bugs found in single manual pass |
+|| Profile source diff script | 2h | Prevent profile drift | Formats discovered from 22 sources; no automatic diff against them |
+|| NEON coverage collection | 1h | Accurate ARM64 coverage | 5% uncovered on x64 is NEON paths; never actually measured on ARM64 |
+|| Profile integrity verification | 30m | Supply chain trust | FNV-1a hash logged but not verified against embedded expected hash |
+|| README architecture table | 15m | Doc accuracy | Table still missing 6 extracted files |
+|| Release notes from CHANGELOG | 30m | Clean releases | Notes still hand-crafted per release |
+|| Benchmark Native AOT comparison | 2h | Accurate perf numbers | Benchmark runs JIT; production runs Native AOT with PGO |
+|| Debug coverage collection | 15m | Complete coverage picture | Coverage only collected in Release mode |
 
 ---
 
@@ -116,3 +127,4 @@ This file is versioned with the project. Update when automation or design standa
 |---------|------|---------|
 || 1.0 | 2026-06-30 | Initial: automation tiers 0-3 + design axioms applied |
 || 1.1 | 2026-06-30 | Wave 1: CHANGELOG CI check, signed tag CI, commit-date script, PR template, v1.6.0 tag |
+|| 1.2 | 2026-06-30 | Wave 2+3: ADRs, file size gate, SETUP.md, macOS CI, pre-commit, fuzz CI, gaps table restructured |
