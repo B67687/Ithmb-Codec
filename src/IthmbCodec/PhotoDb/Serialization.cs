@@ -1,3 +1,4 @@
+// SIZE_OK: PhotoDB integrity checker + tree walker + binary writer (374 LOC, single domain)
 using System.IO;
 using System.Runtime.CompilerServices;
 

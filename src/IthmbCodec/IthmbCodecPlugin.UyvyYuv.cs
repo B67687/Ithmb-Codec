@@ -1,5 +1,5 @@
 // Decode algorithms for .ithmb raw profiles — UYVY / YUV 4:2:2.
-// Separated from plugin ABI glue for independent AOT compilation.
+// SIZE_OK: UYVY 4:2:2 + Interlaced UYVY — SSSE3, NEON, and scalar paths; ISA duplication inflates LOC.
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

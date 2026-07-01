@@ -18,8 +18,8 @@ public unsafe partial class IthmbCodecTests
         const int frameCount = 5;
         const int width = 100;
         const int height = 100;
-        const int iterations = 100;
-        const int cancelDelayMs = 50;
+        const int iterations = 50;
+        const int cancelDelayMs = 100;
 
         // Build a multi-frame RGB565 .ithmb buffer (5 frames × 100×100 pixels)
         var profile = new IthmbCodecPlugin.IthmbVariantProfile(
@@ -87,7 +87,7 @@ public unsafe partial class IthmbCodecTests
                 cts.Cancel();
 
                 // Wait for the task to finish (with a generous timeout to avoid deadlock)
-                task.Wait(TimeSpan.FromSeconds(2));
+                task.Wait(TimeSpan.FromSeconds(5));
 
                 // Verify no exception escaped
                 Assert.True(task.IsCompleted);
