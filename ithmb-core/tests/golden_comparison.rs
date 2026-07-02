@@ -7,8 +7,8 @@
 use jpeg_decoder as _;
 use thiserror as _;
 
-use ithmb_core::profile::{Encoding, Profile};
 use ithmb_core::DecodedImage;
+use ithmb_core::profile::{Encoding, Profile};
 
 // ---------------------------------------------------------------------------
 // Helpers
