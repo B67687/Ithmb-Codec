@@ -1,0 +1,16 @@
+[package]
+name = "ithmb-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pure Rust decoder for Apple iThmb thumbnail cache files"
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+jpeg-decoder = "0.3"
+thiserror = "2"

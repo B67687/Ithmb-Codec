@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["ithmb-core", "ithmb-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unused_crate_dependencies = "deny"
+rust_2018_idioms = "deny"
+
+[workspace.lints.clippy]
+all = "deny"
+pedantic = "warn"

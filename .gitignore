@@ -1,44 +1,21 @@
-# Whitelist pattern: block everything by default, then unblock specific paths.
-# This prevents accidentally tracking stray files (build artifacts, IDE files, temp files).
-/*
-!/.gitignore
-!/.gitattributes
-!.editorconfig
-!/.github/
-!/.github/**
-!/LICENSE
-!/*.md
-!/docs/
-!/docs/*
-!/src/
-!/src/**/*
-!/tools/
-!/tools/**/*
-!/samples/
-!/samples/**
-!/scripts/
-!/scripts/**
-!/tests/
-!/tests/**
+# Rust build artifacts
+target/
 
-# Sub-blacklists — re-block specific paths within whitelisted directories
-bin/
-obj/
-*.dll
-*.so
-*.dylib
-*.exe
-*.pdb
-*.ithmb
-/samples/*
-!/samples/reuhno-synthetic/
-!/samples/reuhno-synthetic/**
-!/samples/synthetic/
-!/samples/synthetic/**
-
+# Editor/IDE
 .vscode/
 .idea/
 *.user
 *.suo
 *.DotSettings.user
-*.log
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# iThmb test samples
+*.ithmb
+
+# Keep sample directories
+!/samples/reuhno-synthetic/
+!/samples/synthetic/

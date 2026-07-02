@@ -1,0 +1,42 @@
+# rust-ci.yml — Rust build, test, lint, and format check
+#
+# Purpose: validates the Rust workspace builds and passes quality gates
+# on every push/PR to main.
+
+name: rust-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: ubuntu-latest / stable
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Build
+        run: cargo build --workspace
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings
+
+      - name: Format check
+        run: cargo fmt --check

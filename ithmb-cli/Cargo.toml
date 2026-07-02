@@ -1,0 +1,19 @@
+[package]
+name = "ithmb-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI tool for decoding .ithmb files"
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "ithmb"
+path = "src/main.rs"
+
+[dependencies]
+ithmb-core = { path = "../ithmb-core" }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+png = "0.17"
