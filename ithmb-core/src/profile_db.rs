@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(p.width, 480);
         assert_eq!(p.height, 864);
         assert_eq!(p.encoding, crate::profile::Encoding::Rgb565);
-        assert_eq!(p.frame_byte_length, 829440);
+        assert_eq!(p.frame_byte_length, 829_440);
         assert!(!p.is_padded);
         assert!(p.little_endian); // default
     }

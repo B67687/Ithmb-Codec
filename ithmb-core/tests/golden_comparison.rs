@@ -42,7 +42,7 @@ fn decode_jpeg(enc: &[u8], profile: &Profile) -> DecodedImage {
     ithmb_core::jpeg::decode(enc, profile).unwrap()
 }
 
-fn check(enc: &[u8], expected: &[u8], w: u32, h: u32, result: DecodedImage, label: &str) {
+fn check(enc: &[u8], expected: &[u8], w: u32, h: u32, result: &DecodedImage, label: &str) {
     assert_eq!(result.width, w, "{label}: width mismatch");
     assert_eq!(result.height, h, "{label}: height mismatch");
     assert_eq!(
@@ -71,7 +71,7 @@ fn golden_rgb565_solid_white_2x2() {
         ..Default::default()
     };
     let result = decode_rgb(enc, &profile);
-    check(enc, expected, 2, 2, result, "rgb565/solid_white_2x2");
+    check(enc, expected, 2, 2, &result, "rgb565/solid_white_2x2");
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn golden_rgb565_solid_red_2x2() {
         ..Default::default()
     };
     let result = decode_rgb(enc, &profile);
-    check(enc, expected, 2, 2, result, "rgb565/solid_red_2x2");
+    check(enc, expected, 2, 2, &result, "rgb565/solid_red_2x2");
 }
 
 #[test]
@@ -101,7 +101,7 @@ fn golden_rgb565_gradient_4x4() {
         ..Default::default()
     };
     let result = decode_rgb(enc, &profile);
-    check(enc, expected, 4, 4, result, "rgb565/gradient_4x4");
+    check(enc, expected, 4, 4, &result, "rgb565/gradient_4x4");
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ fn golden_rgb555_solid_white_2x2() {
         ..Default::default()
     };
     let result = decode_rgb555(enc, &profile);
-    check(enc, expected, 2, 2, result, "rgb555/solid_white_2x2");
+    check(enc, expected, 2, 2, &result, "rgb555/solid_white_2x2");
 }
 
 #[test]
@@ -135,7 +135,7 @@ fn golden_rgb555_gradient_4x4() {
         ..Default::default()
     };
     let result = decode_rgb555(enc, &profile);
-    check(enc, expected, 4, 4, result, "rgb555/gradient_4x4");
+    check(enc, expected, 4, 4, &result, "rgb555/gradient_4x4");
 }
 
 // ---------------------------------------------------------------------------
@@ -154,7 +154,7 @@ fn golden_uyvy_solid_white_2x2() {
         ..Default::default()
     };
     let result = decode_uyvy(enc, &profile);
-    check(enc, expected, 2, 2, result, "uyvy/solid_white_2x2");
+    check(enc, expected, 2, 2, &result, "uyvy/solid_white_2x2");
 }
 
 #[test]
@@ -170,7 +170,7 @@ fn golden_uyvy_interlaced_4x4() {
         ..Default::default()
     };
     let result = decode_uyvy(enc, &profile);
-    check(enc, expected, 4, 4, result, "uyvy/interlaced_4x4");
+    check(enc, expected, 4, 4, &result, "uyvy/interlaced_4x4");
 }
 
 // ---------------------------------------------------------------------------
@@ -189,7 +189,7 @@ fn golden_ycbcr420_solid_white_4x4() {
         ..Default::default()
     };
     let result = decode_ycbcr420(enc, &profile);
-    check(enc, expected, 4, 4, result, "ycbcr420/solid_white_4x4");
+    check(enc, expected, 4, 4, &result, "ycbcr420/solid_white_4x4");
 }
 
 #[test]
@@ -204,7 +204,7 @@ fn golden_ycbcr420_gradient_4x4() {
         ..Default::default()
     };
     let result = decode_ycbcr420(enc, &profile);
-    check(enc, expected, 4, 4, result, "ycbcr420/gradient_4x4");
+    check(enc, expected, 4, 4, &result, "ycbcr420/gradient_4x4");
 }
 
 // ---------------------------------------------------------------------------
@@ -224,7 +224,7 @@ fn golden_cl_solid_white_4x4() {
         ..Default::default()
     };
     let result = decode_cl(enc, &profile);
-    check(enc, expected, 4, 4, result, "cl/solid_white_4x4");
+    check(enc, expected, 4, 4, &result, "cl/solid_white_4x4");
 }
 
 // ---------------------------------------------------------------------------
@@ -244,7 +244,7 @@ fn golden_clcl_solid_white_4x4() {
         ..Default::default()
     };
     let result = decode_clcl(enc, &profile);
-    check(enc, expected, 4, 4, result, "clcl/solid_white_4x4");
+    check(enc, expected, 4, 4, &result, "clcl/solid_white_4x4");
 }
 
 // ---------------------------------------------------------------------------
@@ -261,5 +261,5 @@ fn golden_jpeg_solid_white_2x2() {
         ..Default::default()
     };
     let result = decode_jpeg(enc, &profile);
-    check(enc, expected, 2, 2, result, "jpeg/solid_white_2x2");
+    check(enc, expected, 2, 2, &result, "jpeg/solid_white_2x2");
 }

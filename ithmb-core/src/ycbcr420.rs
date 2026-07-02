@@ -219,6 +219,7 @@ mod tests {
     // 4×4 known pattern — verify BGRA output, chroma grid, and plane order
     // -----------------------------------------------------------------------
 
+    #[allow(clippy::similar_names, clippy::cast_possible_truncation)]
     #[test]
     fn four_by_four_default_order() {
         // 4×4 image with distinct chroma per 2×2 block.
@@ -253,6 +254,7 @@ mod tests {
         assert_eq!(img.data, expected);
     }
 
+    #[allow(clippy::similar_names, clippy::cast_possible_truncation)]
     #[test]
     fn four_by_four_swap_chroma_planes() {
         // Same as above but with Cr before Cb in the payload and

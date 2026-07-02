@@ -313,6 +313,7 @@ mod tests {
         assert_eq!(img.data[16..32], [px10, px11, px12, px13].concat());
     }
 
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
     #[test]
     fn interlaced_matches_manual_weave() {
         // 6×4 interlaced: 2 fields of 2 rows each.
@@ -368,6 +369,7 @@ mod tests {
     // BGRA output alignment — each pixel is exactly 4 bytes
     // -----------------------------------------------------------------------
 
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     #[test]
     fn bgra_output_alpha_is_always_255() {
         let mut src: Vec<u8> = Vec::new();

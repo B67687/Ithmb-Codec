@@ -309,9 +309,9 @@ mod tests {
 
     fn small_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
         let bpp = match encoding {
-            Encoding::Rgb565 | Encoding::Rgb555 | Encoding::ReorderedRgb555 => 2,
-            Encoding::Yuv422 => 2,
-            Encoding::Ycbcr420 => 2, // not exact but unused in these helpers
+            Encoding::Rgb565 | Encoding::Rgb555 | Encoding::ReorderedRgb555 | Encoding::Yuv422 | Encoding::Ycbcr420 => {
+                2
+            }
             Encoding::Jpeg => 0,
         };
         Profile {
@@ -959,6 +959,7 @@ mod tests {
         assert_eq!(img.data.len(), w * h * 4);
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     #[test]
     fn test_decode_ithmb_prefix_2002_big_endian_rgb565() {
         // Profile 2002: 50×50 big-endian RGB565 from built-in profiles.json.

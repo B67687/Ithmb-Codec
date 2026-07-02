@@ -378,7 +378,7 @@ mod tests {
         assert_eq!(profiles[0].width, 480);
         assert_eq!(profiles[0].height, 864);
         assert_eq!(profiles[0].encoding, Encoding::Rgb565);
-        assert_eq!(profiles[0].frame_byte_length, 829440);
+        assert_eq!(profiles[0].frame_byte_length, 829_440);
         assert!(!profiles[0].is_interlaced);
 
         assert_eq!(profiles[1].prefix, 1019);
