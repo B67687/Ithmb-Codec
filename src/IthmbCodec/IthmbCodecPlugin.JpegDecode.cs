@@ -14,6 +14,20 @@ namespace IthmbCodec;
 internal static unsafe partial class IthmbCodecPlugin
 {
     // ------------------------------ JPEG extraction ------------------------------
+    /// <summary>
+    /// Scan a byte span for a JPEG SOI marker (FF D8) and extract the contiguous
+    /// JPEG slice to its EOI (FF D9). Used as the primary decode path for
+    /// JPEG-embedded .ithmb files and as a fallback for unknown-format files
+    /// (JPEG carving).
+    /// </summary>
+    /// <remarks>
+    /// The search is SIMD-accelerated via Span&lt;byte&gt;.IndexOf. Periodic cancellation
+    /// checks every 64 KB prevent hangs on corrupted files.
+    /// JPEG markers validated: SOI (FF D8 FF), EOI (FF D9), with marker-segment
+    /// length parsing to skip APP/COM/SOF/DHT/DQT segments between SOI and EOI.
+    /// If no EOI is found within the data span, returns the slice from SOI to
+    /// end-of-data as a best-effort extraction.
+    /// </remarks>
     internal static bool TryFindJpegSlice(ReadOnlySpan<byte> data, out int offset, out int length, void* cancellation)
     {
         offset = 0; length = 0;

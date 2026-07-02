@@ -19,7 +19,19 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ---------- YUV 4:2:2 (UYVY) ----------
 
-    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    /// <summary>
+    /// Decode a standard UYVY YUV 4:2:2 frame (2 Bpp).
+    /// Common across iPod Classic 5G/6G, Nano 1G–4G (format IDs 1019, 1024, etc.).
+    /// </summary>
+    /// <remarks>
+    /// Byte layout per 2-pixel macropixel (UYVY order):
+    /// <code>
+    ///   [Cb] [Y0] [Cr] [Y1]   — 4 bytes, 2 pixels
+    /// </code>
+    /// Cb and Cr are shared between the two pixels (4:2:2 subsampling).
+    /// Conversion uses BT.601 coefficients.
+    /// SIMD accelerated: SSSE3 (x86) and NEON (ARM64) via pshufb/VTBL.
+    /// </remarks>
     internal static bool DecodeYuv422(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         if (w <= 0 || h <= 0) return false;
