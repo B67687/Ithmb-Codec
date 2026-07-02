@@ -20,6 +20,22 @@ internal static unsafe partial class IthmbCodecPlugin
     // Same BT.601 YUV→RGB math as standard YUV422.
     //
     // Confirmed against Keith's iPod Photo Reader source (Methods 3 and 4).
+    /// <summary>
+    /// Decode a CL-packed YCbCr 4:2:2 frame (per-pixel nibble chroma).
+    /// Used in later iPod generations for thumbnail storage.
+    /// Known as Keith's "Methods 3/4" from iPod Photo Reader.
+    /// </summary>
+    /// <remarks>
+    /// Byte layout per pixel:
+    /// <code>
+    ///   [Cb:Cr_nibble] [Y]   — 2 bytes, 1 pixel
+    /// </code>
+    /// Each pixel has independent chroma (unlike CLCL where macropixels share).
+    /// High nibble = Cb (4-bit, scaled ×16), low nibble = Cr (4-bit, scaled ×16).
+    /// SIMD accelerated: SSSE3 (x86) and NEON (ARM64), 8 pixels per iteration.
+    /// Requires width divisible by 8 for SIMD (falls back to scalar otherwise).
+    /// Confirmed against Keith's iPod Photo Reader Methods 3 and 4.
+    /// </remarks>
     internal static bool DecodeYuv422Cl(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {
         if (w <= 0 || h <= 0) return false;

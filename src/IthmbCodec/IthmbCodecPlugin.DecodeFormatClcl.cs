@@ -13,21 +13,21 @@ internal static unsafe partial class IthmbCodecPlugin
     // ---------- CLCL nibble-chroma (speculative, untested) ----------
 
     /// <summary>
-    /// Decodes CLCL-packed YCbCr 4:2:2: one chroma byte packs Cb (high nibble) and
-    /// Cr (low nibble) at 4-bit precision. Two luma bytes follow for two pixels.
-    /// Byte layout per macropixel: [CbCr] [Y0] [CbCr] [Y1]  —  4 bytes, 2 pixels.
-    /// The two CbCr bytes are identical (same packed chroma for both pixels).
-    ///
-    /// Chroma conversion (4-bit → 8-bit): multiply by 16 (shifts nibble to byte range 0-240).
-    /// Confirmed against andrewmalta/ithmb and wrinklykong/pyithmb sources.
-    /// Keith Wiley method 1 uses full 8-bit chroma (different variant, no nibble packing).
-    /// Same BT.601 YUV→RGB math as standard YUV422.
-    ///
-    /// SPECULATIVE — no real-world .ithmb sample files available for verification.
-    /// The neutral-chroma unit test validates the math but not real file compatibility.
-    /// Based on andrewmalta/ithmb, wrinklykong/pyithmb, and Keith's iPod Photo Reader.
-    /// Activate via profiles.json for iPod 4G/5G files that decode incorrectly
-    /// with the standard UYVY path.
+    /// Decode a CLCL-packed YCbCr 4:2:2 frame (shared macropixel nibble chroma).
+    /// </summary>
+    /// <remarks>
+    /// Byte layout per 2-pixel macropixel:
+    /// <code>
+    ///   [CbCr_nibbles] [Y0] [CbCr_nibbles] [Y1]   — 4 bytes, 2 pixels
+    /// </code>
+    /// CLCL differs from CL in that two pixels share one chroma nibble-pair
+    /// (true 4:2:2 subsampling), while CL gives each pixel independent chroma.
+    /// Same nibble→byte scaling as CL (×16).
+    /// SIMD accelerated: SSSE3 (x86) and NEON (ARM64), 8 pixels per iteration.
+    /// SPECULATIVE — no real-world .ithmb sample available for verification.
+    /// Confirmed against andrewmalta/ithmb, wrinklykong/pyithmb, and Keith's
+    /// iPod Photo Reader.
+    /// </remarks>
     /// </summary>
     internal static bool DecodeYuv422Clcl(ReadOnlySpan<byte> src, byte* dst, int w, int h)
     {

@@ -10,7 +10,27 @@ internal static unsafe partial class IthmbCodecPlugin
 {
     // ---------- YCbCr 4:2:0 (planar) ----------
 
-    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    /// <summary>
+    /// Decode a 12-bit YCbCr 4:2:0 frame packed into 2 Bpp.
+    /// Used by iPod Classic 6G and Nano 3G (format ID 1067).
+    /// </summary>
+    /// <remarks>
+    /// Frame layout:
+    /// <code>
+    ///   [Y plane]         w × h bytes
+    ///   [Cb/Cr pairs]     ((w+1)/2) × ((h+1)/2) × 2 bytes
+    /// </code>
+    /// The Y plane is full resolution. Chroma is stored as interleaved Cb/Cr at
+    /// half resolution (4:2:0 subsampling). The 12-bit packing means each pixel
+    /// occupies 12 bits on average but is stored in 2 bytes (no unused bits).
+    /// Always slot-padded when used in iPod firmware.
+    /// </remarks>
+    /// <param name="src">Raw frame data (Y plane + interleaved Cb/Cr).</param>
+    /// <param name="dst">Output BGRA pixel buffer.</param>
+    /// <param name="w">Image width in pixels.</param>
+    /// <param name="h">Image height in pixels.</param>
+    /// <param name="swapChromaPlanes">Swap Cb/Cr order if true (some device variants).</param>
+    /// <returns>False when the input buffer is too small (defensive guard).</returns>
     internal static bool DecodeYcbcr420(ReadOnlySpan<byte> src, byte* dst, int w, int h,
         bool swapChromaPlanes = false)
     {

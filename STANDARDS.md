@@ -4,12 +4,14 @@ This file documents which automation and design standards apply to this specific
 It is the applied version of the universal standards in the project-retrospective-methodology repo.
 
 **Universal reference**: `github.com/B67687/project-retrospective-methodology`
+>
+> **⚠️ Retrospective**: This file documents the current state after retrospective application. These standards were **not** present from Day 1 — they were applied after the fact. See the [Version](#version) table for when each item was introduced.
 
 ---
 
 ## Automation Standards Applied
 
-### Tier 0 — Day 1 (present at project creation)
+### Tier 0 — Core Infrastructure (retrospectively applied)
 
 | Item | Status | How |
 |------|--------|-----|
@@ -22,7 +24,7 @@ It is the applied version of the universal standards in the project-retrospectiv
 | CHANGELOG | ✅ | Keep a Changelog format, `[Unreleased]` header present |
 | README skeleton | ✅ | What, Why, How, Status, People sections present |
 
-### Tier 1 — Within 10 Commits (present by v1.5.0)
+### Tier 1 — Development Discipline (retrospectively applied)
 
 | Item | Status | How |
 |------|--------|-----|
@@ -37,7 +39,7 @@ It is the applied version of the universal standards in the project-retrospectiv
 || Signed release tags | ✅ | Tag signature validation in build-linux.yml. v1.6.0 tag pushed signed. |
 | Concurrency-safe state | ✅ | Retrofitted in v1.6.0 (Lock, Interlocked, ConcurrentDictionary) |
 
-### Tier 2 — Within First Release (present by v1.6.0)
+### Tier 2 — Production Readiness (retrospectively applied)
 
 | Item | Status | How |
 |------|--------|-----|

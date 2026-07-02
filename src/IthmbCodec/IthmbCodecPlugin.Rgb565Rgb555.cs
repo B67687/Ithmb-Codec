@@ -18,7 +18,20 @@ internal static unsafe partial class IthmbCodecPlugin
 
     // ---------- RGB565 ----------
 
-    /// <summary>Returns false when the input buffer is too small (defensive guard).</summary>
+    /// <summary>
+    /// Decode an RGB565 frame (2 Bpp). The most common encoding across all iPod
+    /// generations. Used by format IDs 1005–1093 (Classic, Nano) and others.
+    /// </summary>
+    /// <remarks>
+    /// Each pixel is 16-bit RGB565:
+    /// <code>
+    ///   Bits:  R4 R3 R2 R1 R0 G5 G4 G3 G2 G1 G0 B4 B3 B2 B1 B0
+    /// </code>
+    /// Default byte order is little-endian. Big-endian variants exist (e.g.
+    /// iPod Photo 4G format 1013, Motorola 2002/2003). Motorola formats also
+    /// swap R and B channels (swapRgbChannels=true).
+    /// SIMD accelerated: SSE2/AVX-512BW (x86) and NEON (ARM64).
+    /// </remarks>
     internal static bool DecodeRgb565(ReadOnlySpan<byte> src, byte* dst, int w, int h, bool littleEndian, bool swapRgbChannels = false)
     {
         if (w <= 0 || h <= 0) return false;
