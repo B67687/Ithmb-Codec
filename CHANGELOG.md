@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+### Docs
+- **FORMAT.md**: Complete format specification covering all 6 known ithmb variants, header structures, profile tables, JPEG embedding, PhotoDB/ArtworkDB chunk format
+- **XML doc comments**: Added /// documentation to 6 decoder files (DecodeFormatCl, DecodeFormatClcl, DecodeFormatYcbcr420, JpegDecode, Rgb565Rgb555, UyvyYuv)
+- **STANDARDS.md**: Marked as retrospective (standards applied after the fact); deduplicated Tier 2 table
+
 ## [1.6.0] — 2026-06-30
 
 ### Added
