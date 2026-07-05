@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = ["ithmb-core", "pymod", "crates/ithmb-cli", "crates/cabi", "crates/ithmb-gen"]
+exclude = ["fuzz"]
+
+[workspace.package]
+version = "0.3.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/B67687/Ithmb-Codec"
+homepage = "https://github.com/B67687/Ithmb-Codec"
+documentation = "https://docs.rs/ithmb-core"
+description = "Rust codec for Apple IThmb thumbnail files (iPod/iPhone PhotoDB)"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+unused_crate_dependencies = "deny"
+rust_2018_idioms = { level = "deny", priority = -1 }
+
+[workspace.lints.clippy]
+correctness = "deny"
+suspicious = "deny"
+complexity = "deny"
+perf = "deny"
+style = "deny"
+pedantic = "deny"

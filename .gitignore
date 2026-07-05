@@ -1,44 +1,44 @@
-# Whitelist pattern: block everything by default, then unblock specific paths.
-# This prevents accidentally tracking stray files (build artifacts, IDE files, temp files).
+# Whitelist convention: block everything by default, unblock specific paths.
+# Prevents accidentally tracking stray files (build artifacts, IDE files, temp files).
 /*
 !/.gitignore
 !/.gitattributes
 !.editorconfig
+!/LICENSE
+!/Cargo.toml
+!/Cargo.lock
+!/*.md
 !/.github/
 !/.github/**
-!/LICENSE
-!/*.md
+!/.githooks/
+!/.githooks/**
 !/docs/
-!/docs/*
-!/src/
-!/src/**/*
-!/tools/
-!/tools/**/*
-!/samples/
-!/samples/**
-!/scripts/
-!/scripts/**
+!/docs/**
+!/fuzz/
+!/fuzz/**
 !/tests/
 !/tests/**
+!/scripts/
+!/scripts/**
+!/crates/
+!/crates/**
+pymod/.venv/
+pymod/__pycache__/
 
-# Sub-blacklists — re-block specific paths within whitelisted directories
-bin/
-obj/
-*.dll
-*.so
-*.dylib
-*.exe
-*.pdb
-*.ithmb
-/samples/*
-!/samples/reuhno-synthetic/
-!/samples/reuhno-synthetic/**
-!/samples/synthetic/
-!/samples/synthetic/**
+!/ithmb-core/
+!/ithmb-core/**
+!/pymod/
+!/pymod/**
+!/tools/
+!/tools/**
+!/samples/
+!/samples/**
 
-.vscode/
-.idea/
-*.user
-*.suo
-*.DotSettings.user
-*.log
+# Whitelist exceptions — re-exclude specific paths within whitelisted areas
+target/
+.omo/
+tools/mcp-server/
+mcp/
+.ruff_cache/
+*.bak
+pymod/.pytest_cache/

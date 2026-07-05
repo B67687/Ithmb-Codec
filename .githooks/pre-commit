@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+GLOBAL_HOOKS="$HOME/.config/git/ai-commit-hooks/pre-commit"
+
+if [ -x "$GLOBAL_HOOKS" ]; then
+    . "$GLOBAL_HOOKS"
+fi
+
+echo "⟳ cargo fmt --check ..."
+cargo fmt --check
+echo "✓ cargo fmt --check passed"
+
+echo "⟳ cargo clippy ..."
+cargo clippy --workspace -- -D warnings
+echo "✓ cargo clippy passed"
+
+echo "⟳ cargo test (workspace) ..."
+cargo test --workspace 2>/dev/null
+echo "✓ cargo test passed"

@@ -1,6 +1,6 @@
-# ADR-0001: Native AOT Plugin Boundary
+# ADR-0001: C# Native AOT Plugin Boundary (Archived)
 
-**Status**: Accepted (2026-06-08)
+**Status**: Superseded (Archived 2026-07-04). The Rust port uses a cdylib export (see cabi/src/lib.rs) instead of Native AOT. This ADR is retained for historical reference of the original C# design.
 **Context**: ImageGlass requires plugins as Native AOT-compiled libraries exposing `ig_plugin_get_api`.
 
 ## Decision

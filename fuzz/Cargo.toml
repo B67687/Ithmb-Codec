@@ -1,0 +1,28 @@
+[package]
+name = "ithmb-core-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.ithmb-core]
+path = "../ithmb-core"
+
+[[bin]]
+name = "fuzz_decode_ithmb"
+path = "fuzz_targets/fuzz_decode_ithmb.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_open_ithmb"
+path = "fuzz_targets/fuzz_open_ithmb.rs"
+test = false
+doc = false
+bench = false

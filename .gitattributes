@@ -1,16 +1,10 @@
 # Auto-detect text files and normalize line endings
 * text=auto
 
-# C# source
-*.cs text diff=csharp
-
-# Shell scripts (enforce LF line endings)
-*.sh text eol=lf
-
-# Project files
-*.csproj text
-*.sln text
-*.slnx text
+# Rust source
+*.rs text
+*.toml text
+*.lock text
 
 # Documentation
 *.md text diff=markdown

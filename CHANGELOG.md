@@ -7,10 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Initial Rust port** — Full C#→Rust conversion of Ithmb-Codec as a pure Rust workspace (3 crates: ithmb-core, ithmb-cli, ithmb-core-cabi)
+- **8 pixel decoders** — RGB565, RGB555, ReorderedRGB555 (Morton Z-order), UYVY (YUV422), YCbCr420, CLCL (nibble-chroma), CL (per-pixel chroma), JPEG
+- **7 synthetic encoders** — All raw formats with BuildIthmbFile dispatch, rotation, padding, interlacing
+- **PhotoDB/ArtworkDB** — Binary chunk parser, writer, and integrity checker (9 chunk types: MHFD, MHSD, MHLI, MHII, MHNI, MHBA, MHIA, MHIF, MHOD)
+- **DeviceProfiles** — 18-device iPod/iPhone format lookup tables
+- **SIMD acceleration** — SSE2 for YUV conversion (UYVY, YCbCr420, CL, CLCL) with AVX2 and ARM NEON runtime dispatch behind `--features simd`
+- **Python bindings** — PyO3/maturin crate (abi3-py312 stable ABI), expose decode/open_ithmb functions
+- **LRU raw file cache** — RwLock<LruCache> backed CachedDecoder behind `cache` feature
+- **Decode timing metrics** — 7 per-format atomic counters behind `metrics` feature
+- **Cancellation polling** — AtomicBool parameter in all decoder functions, DecodeError::Canceled variant
+- **Fuzz testing** — 2 libfuzzer targets (fuzz_decode_ithmb, fuzz_open_ithmb), 1.2M+ iterations, 0 crashes
+- **Exhaustive roundtrip tests** — 65k RGB565 values, 32k RGB555, 15k+ CL nibble combos
+- **Concurrency stress tests** — 11 threaded decode scenarios (Barrier sync, cancellation, repeated decode)
+- **Statistical validation** — Decorrelation, entropy, histogram analysis of decoded output
+- **Edge case coverage** — Zero-dimension, corruption, partial data, truncation, oversized inputs
+- **Synthetic test vectors** — 36 programmatic test vector generation functions
+- **Golden test vectors** — 15 reference files across all 7 encoding formats
+- **Benchmark suite** — 10 divan benchmarks for decoders, encoders, and pipeline throughput
+- **Format specification** — docs/format.md: complete .ithmb format reference (5,446 words, 46 sections)
+- **CLI tool** — ithmb binary with decode, info, list-profiles, frame extraction, raw output, PNG output, benchmarks
+- **Sample generator CLI** — ithmb-gen crate for generating test .ithmb files in all 7 formats
+- **C ABI** — cdylib exposing ImageGlass v10 plugin ABI for FFI integration
+
+### Changed
+- **SIMD architecture** — RGB565/RGB555 use auto-vectorized scalar (hand-written SSE2/AVX2 was 34× slower on Intel due to AVX frequency downclock). SIMD kept only for YUV BT.601 arithmetic where it provides 1.5×+ speedup
+- **CL/CLCL nibble scaling** — Corrected from ×17 to ×16 (<<4), matching SIMD expansion. 15,625 nibble combos verified
+- **ReorderedRGB555 decoder** — Fixed row-major→Morton Z-order de-interleave for correct >2×2 decode
+- **CI** — Added `--features simd` test matrix, aarch64 runner, cargo audit, cargo-llvm-cov, cargo fuzz build
+
+### Fixed
+- **CL/CLCL scalar nibble bug** — Cb/Cr variable swap and wrong expansion (×17 instead of <<4) corrected
+- **ReorderedRGB555 Morton mismatch** — Decoder read row-major but encoder wrote Z-order Morton; now correctly de-interleaves
+- **All clippy warnings** — 74+ warnings fixed across workspace, pedantic=deny enforced
+
+### Removed
+- **C# CI workflow** — dotnet.yml and related .NET infrastructure removed (project is now pure Rust)
+- **C# ADR documents** — Stale architecture decision records from C# era deleted
+- **AVX-512 dispatch** — Removed after benchmarking showed 34× regression on Intel (frequency downclock + port-5 bottleneck)
+
+### Infrastructure
+- **Rust workspace** — ithmb-core, ithmb-cli, ithmb-core-cabi, ithmb-gen, pymod (Python bindings)
+- **CI/CD** — rust-ci.yml with build, test, clippy (pedantic=deny), fmt, fuzz build, coverage (cargo-llvm-cov), cargo audit, aarch64 runner
+- **Version 0.1.0 → 0.2.0 → 0.3.0** — crates.io metadata complete (publishing deferred)
+
 ### Docs
 - **FORMAT.md**: Complete format specification covering all 6 known ithmb variants, header structures, profile tables, JPEG embedding, PhotoDB/ArtworkDB chunk format
 - **XML doc comments**: Added /// documentation to 6 decoder files (DecodeFormatCl, DecodeFormatClcl, DecodeFormatYcbcr420, JpegDecode, Rgb565Rgb555, UyvyYuv)
 - **STANDARDS.md**: Marked as retrospective (standards applied after the fact); deduplicated Tier 2 table
+
+---
+
+_The sections below record the C# era (v1.0 – v1.6). For Rust codec history, see [Unreleased] above._
 
 ## [1.6.0] — 2026-06-30
 

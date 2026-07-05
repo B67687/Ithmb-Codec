@@ -1,0 +1,24 @@
+[package]
+name = "ithmb-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI tool for inspecting, decoding, and re-encoding .ithmb thumbnail cache files"
+repository = "https://github.com/B67687/ithmb-codec"
+homepage = "https://github.com/B67687/ithmb-codec"
+documentation = "https://docs.rs/ithmb-cli"
+keywords = ["ithmb", "thumbnail", "apple", "imageglass", "image"]
+categories = ["multimedia::images", "multimedia::video"]
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "ithmb"
+path = "src/main.rs"
+
+[dependencies]
+ithmb-core = { path = "../../ithmb-core", version = "0.3" }
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+png = "0.18"

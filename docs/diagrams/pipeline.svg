@@ -1,4 +1,164 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 245" font-family="Arial,sans-serif" font-size="13">
-<defs><marker id="a" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10Z" fill="#666"/></marker><style>
-rect.bx{fill:#e8f4f8;stroke:#4a90d9;stroke-width:1.5;rx:5}rect.ci{fill:#d4e8f0;stroke:#4a90d9;stroke-width:1;rx:3}rect.gr{fill:#d4edda;stroke:#5cb85c;stroke-width:1.5;rx:5}rect.or{fill:#fdf0d5;stroke:#f0ad4e;stroke-width:1;rx:3}text.t{fill:#2c6fa0;font-weight:bold;font-size:14px;text-anchor:middle}text.l{fill:#333;text-anchor:middle;font-size:13px}path.e{stroke:#666;stroke-width:1.5;fill:none;marker-end:url(#a)}
-</style></defs><rect x="35" y="30" width="170" height="185" class="bx"/><text x="120" y="50" class="t">Development</text><rect x="45" y="65" width="150" height="28" class="gr"/><text x="120" y="83" class="l">dotnet build -c Release</text><path d="M120,93 L120,117" class="e"/><rect x="45" y="117" width="150" height="28" class="gr"/><text x="120" y="135" class="l">dotnet test</text><path d="M120,145 L120,169" class="e"/><rect x="45" y="169" width="150" height="28" class="gr"/><text x="120" y="187" class="l">IthmbDecoder CLI Tool</text><rect x="229" y="30" width="170" height="185" class="bx"/><text x="314" y="50" class="t">CI (GitHub Actions)</text><rect x="239" y="65" width="150" height="28" class="ci"/><text x="314" y="83" class="l">git push to main</text><path d="M314,93 L314,117" class="e"/><rect x="239" y="117" width="150" height="28" class="ci"/><text x="314" y="135" class="l">Build + Tests ✓</text><path d="M314,145 L314,169" class="e"/><rect x="239" y="169" width="150" height="28" class="ci"/><text x="314" y="187" class="l">CodeQL Security Scan</text><rect x="423" y="30" width="170" height="185" class="bx"/><text x="508" y="50" class="t">Release</text><rect x="433" y="65" width="150" height="28" class="or"/><text x="508" y="83" class="l">dotnet publish</text><path d="M508,93 L508,117" class="e"/><rect x="433" y="117" width="150" height="28" class="or"/><text x="508" y="135" class="l">Package .zip</text><path d="M508,145 L508,169" class="e"/><rect x="433" y="169" width="150" height="28" class="or"/><text x="508" y="187" class="l">GitHub Release</text><rect x="617" y="30" width="170" height="185" class="gr"/><text x="702" y="50" class="t">Usage</text><rect x="627" y="82" width="150" height="28" class="ci"/><text x="702" y="100" class="l">ImageGlass v10 Plugin</text><path d="M702,110 L702,134" class="e"/><rect x="627" y="134" width="150" height="28" class="ci"/><text x="702" y="152" class="l">Standalone CLI Decoder</text><path d="M205,122 L229,122" class="e"/><path d="M399,122 L423,122" class="e"/><path d="M593,122 L617,122" class="e"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 545" font-family="system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10Z" fill="#C95A2B"/>
+    </marker>
+    <style>
+      .box { fill: #FFFBF7; stroke: #DE5833; stroke-width: 1.5; rx: 6; }
+      .hdr { fill: #5C3A21; stroke: #DE5833; stroke-width: 1.5; rx: 6; }
+      .sub1 { fill: #FDF0E8; stroke: #E0926E; stroke-width: 0.8; rx: 3; }
+      .sub2 { fill: #EAF2FA; stroke: #7A9EBD; stroke-width: 0.8; rx: 3; }
+      .sub3 { fill: #EDF7ED; stroke: #6BAF6B; stroke-width: 0.8; rx: 3; }
+      .sub4 { fill: #FEF6F0; stroke: #DE5833; stroke-width: 0.8; rx: 3; }
+      .t1 { fill: #fff; font-weight: bold; font-size: 13px; text-anchor: middle; }
+      .t2 { fill: #3d2b1f; font-weight: bold; font-size: 12px; text-anchor: middle; }
+      .t3 { fill: #665; font-size: 11px; text-anchor: middle; }
+      .t4 { fill: #3d2b1f; font-size: 11px; text-anchor: middle; }
+      .t5 { fill: #1a6a1a; font-weight: bold; font-size: 11px; text-anchor: middle; }
+      .edge { stroke: #C95A2B; stroke-width: 1.8; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <!-- ============================== -->
+  <!-- ROW 1: Survey → Extraction → Implementation -->
+  <!-- ============================== -->
+
+  <!-- Stage 1: Format Survey -->
+  <rect x="20" y="30" width="235" height="225" class="box"/>
+  <rect x="20" y="30" width="235" height="30" class="hdr"/>
+  <text x="137.5" y="50" class="t1">1. Format Survey</text>
+
+  <text x="137.5" y="80" class="t2">33 OSS .ithmb implementations</text>
+  <text x="137.5" y="96" class="t3">found and analyzed</text>
+
+  <rect x="30" y="112" width="215" height="26" class="sub1"/>
+  <text x="137.5" y="130" class="t4">iPod Photo 4G through iPhone 2G</text>
+
+  <rect x="30" y="144" width="215" height="26" class="sub2"/>
+  <text x="137.5" y="162" class="t4">Cross-platform: Linux · macOS · Windows</text>
+
+  <rect x="30" y="176" width="215" height="26" class="sub3"/>
+  <text x="137.5" y="194" class="t5">22 unique implementations surveyed</text>
+
+  <rect x="30" y="208" width="215" height="26" class="sub1"/>
+  <text x="137.5" y="226" class="t4">iPod Classic 6G hardware validation</text>
+
+  <!-- Arrow 1→2 -->
+  <path d="M255,142.5 L280,142.5" class="edge"/>
+
+  <!-- Stage 2: Format Table Extraction -->
+  <rect x="280" y="30" width="235" height="225" class="box"/>
+  <rect x="280" y="30" width="235" height="30" class="hdr"/>
+  <text x="397.5" y="50" class="t1">2. Format Table Extraction</text>
+
+  <text x="397.5" y="80" class="t2">iOpenPod · libgpod · community RE</text>
+  <text x="397.5" y="96" class="t3">50+ empirical entries cross-referenced</text>
+
+  <rect x="290" y="112" width="215" height="26" class="sub2"/>
+  <text x="397.5" y="130" class="t4">Format ID cross-referencing (22 sources)</text>
+
+  <rect x="290" y="144" width="215" height="26" class="sub3"/>
+  <text x="397.5" y="162" class="t5">54 unique format profiles</text>
+
+  <rect x="290" y="176" width="215" height="26" class="sub1"/>
+  <text x="397.5" y="194" class="t4">15 dimension discrepancies resolved</text>
+
+  <rect x="290" y="208" width="215" height="26" class="sub2"/>
+  <text x="397.5" y="226" class="t4">18 device reference tables</text>
+
+  <!-- Arrow 2→3 -->
+  <path d="M515,142.5 L540,142.5" class="edge"/>
+
+  <!-- Stage 3: Implementation -->
+  <rect x="540" y="30" width="235" height="225" class="box"/>
+  <rect x="540" y="30" width="235" height="30" class="hdr"/>
+  <text x="657.5" y="50" class="t1">3. Implementation</text>
+
+  <text x="657.5" y="80" class="t2">Pure Rust Workspace</text>
+  <text x="657.5" y="96" class="t3">5 crates · 21 modules</text>
+
+  <rect x="550" y="112" width="215" height="26" class="sub1"/>
+  <text x="657.5" y="130" class="t4">8 decoders · 7 synthetic encoders</text>
+
+  <rect x="550" y="144" width="215" height="26" class="sub2"/>
+  <text x="657.5" y="162" class="t4">PhotoDB / ArtworkDB read + write</text>
+
+  <rect x="550" y="176" width="215" height="26" class="sub1"/>
+  <text x="657.5" y="194" class="t4">CLI · PyO3 · C ABI · ithmb-gen</text>
+
+  <rect x="550" y="208" width="215" height="26" class="sub3"/>
+  <text x="657.5" y="226" class="t5">SIMD: SSE2 · AVX2 · NEON dispatch</text>
+
+  <!-- Return arrow Row 1 → Row 2 -->
+  <path d="M657.5,255 L657.5,272 L137.5,272 L137.5,290" class="edge"/>
+
+  <!-- ============================== -->
+  <!-- ROW 2: Testing → Review → Release -->
+  <!-- ============================== -->
+
+  <!-- Stage 4: Testing -->
+  <rect x="20" y="290" width="235" height="225" class="box"/>
+  <rect x="20" y="290" width="235" height="30" class="hdr"/>
+  <text x="137.5" y="310" class="t1">4. Testing</text>
+
+  <text x="137.5" y="340" class="t2">486+ tests · 12 suites</text>
+  <text x="137.5" y="356" class="t3">All passing</text>
+
+  <rect x="30" y="375" width="215" height="26" class="sub3"/>
+  <text x="137.5" y="393" class="t5">cargo test · divan benchmarks</text>
+
+  <rect x="30" y="407" width="215" height="26" class="sub2"/>
+  <text x="137.5" y="425" class="t4">Fuzz: 1.2M+ iterations, 0 crashes</text>
+
+  <rect x="30" y="439" width="215" height="26" class="sub1"/>
+  <text x="137.5" y="457" class="t4">Roundtrip · Concurrency · Statistical</text>
+
+  <rect x="30" y="471" width="215" height="26" class="sub4"/>
+  <text x="137.5" y="489" class="t4">Golden vector cross-verification</text>
+
+  <!-- Arrow 4→5 -->
+  <path d="M255,402.5 L280,402.5" class="edge"/>
+
+  <!-- Stage 5: Review -->
+  <rect x="280" y="290" width="235" height="225" class="box"/>
+  <rect x="280" y="290" width="235" height="30" class="hdr"/>
+  <text x="397.5" y="310" class="t1">5. Review</text>
+
+  <text x="397.5" y="340" class="t2">5 rounds multi-agent review</text>
+  <text x="397.5" y="356" class="t3">47 findings fixed</text>
+
+  <rect x="290" y="375" width="215" height="26" class="sub3"/>
+  <text x="397.5" y="393" class="t5">Miri: 21 SSE2 tests · 0 UB found</text>
+
+  <rect x="290" y="407" width="215" height="26" class="sub3"/>
+  <text x="397.5" y="425" class="t5">clippy -D warnings · pedantic=deny</text>
+
+  <rect x="290" y="439" width="215" height="26" class="sub2"/>
+  <text x="397.5" y="457" class="t4">cargo fmt · cargo audit</text>
+
+  <rect x="290" y="471" width="215" height="26" class="sub1"/>
+  <text x="397.5" y="489" class="t4">SAFETY comments on all unsafe blocks</text>
+
+  <!-- Arrow 5→6 -->
+  <path d="M515,402.5 L540,402.5" class="edge"/>
+
+  <!-- Stage 6: Release -->
+  <rect x="540" y="290" width="235" height="225" class="box"/>
+  <rect x="540" y="290" width="235" height="30" class="hdr"/>
+  <text x="657.5" y="310" class="t1">6. Release</text>
+
+  <text x="657.5" y="340" class="t2">GitHub Releases</text>
+  <text x="657.5" y="356" class="t3">Signed tags</text>
+
+  <rect x="550" y="375" width="215" height="26" class="sub3"/>
+  <text x="657.5" y="393" class="t5">cargo build --release</text>
+
+  <rect x="550" y="407" width="215" height="26" class="sub2"/>
+  <text x="657.5" y="425" class="t4">CI: build + test + clippy + fmt</text>
+
+  <rect x="550" y="439" width="215" height="26" class="sub2"/>
+  <text x="657.5" y="457" class="t4">Cross-platform binaries</text>
+
+  <rect x="550" y="471" width="215" height="26" class="sub1"/>
+  <text x="657.5" y="489" class="t4">CI-automated publishing</text>
+</svg>

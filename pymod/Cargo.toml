@@ -1,0 +1,19 @@
+[package]
+name = "ithmb-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ithmb-core = { path = "../ithmb-core" }
+pyo3 = { version = "0.29", features = ["extension-module", "abi3", "abi3-py312", "auto-initialize"] }
+
+[features]
+simd = ["ithmb-core/simd"]
+default = []
+
+[lints]
+workspace = true

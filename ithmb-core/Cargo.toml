@@ -1,0 +1,48 @@
+[package]
+name = "ithmb-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pure Rust decoder and encoder for Apple iThmb thumbnail cache files — supports 8 pixel formats, PhotoDB containers, and 54 device profiles"
+repository = "https://github.com/B67687/ithmb-codec"
+homepage = "https://github.com/B67687/ithmb-codec"
+documentation = "https://docs.rs/ithmb-core"
+keywords = ["ithmb", "thumbnail", "apple", "imageglass", "image"]
+categories = ["multimedia::images", "multimedia::video"]
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+jpeg-decoder = "0.3"
+lru = { version = "0.18.0", optional = true }
+thiserror = "2"
+
+[features]
+default = []
+simd = []
+cache = ["dep:lru"]
+metrics = []
+
+[dev-dependencies]
+divan = "0.1.21"
+
+[[bench]]
+name = "decoders"
+harness = false
+
+[[bench]]
+name = "encoders"
+harness = false
+
+[[bench]]
+name = "pipeline"
+harness = false
+
+[[bench]]
+name = "simd_compare"
+harness = false
+

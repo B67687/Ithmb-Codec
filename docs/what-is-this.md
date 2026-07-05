@@ -13,7 +13,7 @@ There are two kinds:
 
 ## What Does the Codec Do?
 
-It reads an `.ithmb` file and converts it to a normal image (BGRA pixels) that ImageGlass can display.
+It reads an `.ithmb` file and converts it to a normal image (BGRA pixels). You can use it as a Rust library crate in your own projects, as a standalone CLI tool, or as an ImageGlass plugin.
 
 The logic goes:
 
@@ -28,19 +28,19 @@ A profile is a set of settings that tells the decoder how to interpret a raw .it
 
 - A **format ID** — a number like 1019 or 1024 that identifies the image format
 - **Width and height** — the image dimensions
-- An **encoding** — which pixel format to use (RGB565, RGB555, UYVY, YCbCr420, CLCL, or CL)
+- An **encoding** — which pixel format to use (RGB565, RGB555, ReorderedRGB555, UYVY, YCbCr420, CLCL, or CL)
 - Various flags — things like whether the pixel data is packed or padded, whether channels are swapped, etc.
 
 There are 54 built-in profiles covering known iPod/iPhone devices from 2004 through 2016.
 
 ## What's a Decoder?
 
-A decoder is code that converts raw pixel data from one format to BGRA (blue, green, red, alpha — what ImageGlass displays). This project has 7 decoders:
-
+A decoder is code that converts raw pixel data from one format to BGRA (blue, green, red, alpha — what ImageGlass displays). This project has 8 decoders:
 | Decoder | Used by iPod/iPhone |
 |---------|-------------------|
 | RGB565 | 16-bit RGB (5 bits red, 6 bits green, 5 bits blue) |
 | RGB555 | 15-bit RGB (5 bits per channel) |
+| ReorderedRGB555 | Byte-swapped 15-bit RGB variant |
 | UYVY | YUV 4:2:2 (luminance + color difference, packed) |
 | YCbCr 4:2:0 | YUV with subsampled color (common in video) |
 | YUV422 Interlaced | Same as UYVY but stored as two interleaved fields |
@@ -61,22 +61,21 @@ iPods and iPhones don't just store individual `.ithmb` files — they also have 
 
 ## What's the CLI?
 
-The `tools/IthmbDecoder/` directory has a command-line tool that doesn't need ImageGlass. It can:
-
-- `IthmbDecoder file.ithmb out.bmp` — decode a single file to BMP
-- `IthmbDecoder --list-pd PhotoDB` — list all entries in a PhotoDB file
-- `IthmbDecoder --pd-index 0 PhotoDB` — decode entry 0 from a PhotoDB
-- `IthmbDecoder --extract-all-pd PhotoDB` — decode all entries from a PhotoDB
-- `IthmbDecoder --check-pd PhotoDB` — validate a PhotoDB file
-- `IthmbDecoder --list-devices` — show which formats each iPod model uses
-- `IthmbDecoder --help` — show all options
+The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Install it with `cargo install ithmb-cli` (or build from source with `cargo build --release`). Then:
+- `ithmb decode <file> [output]` — decode a single .ithmb file to PNG (or BMP with `.bmp` extension)
+- `ithmb info <file>` — print metadata (size, prefix, profile, frame count)
+- `ithmb list-profiles` — list all 54 known profiles in a formatted table
+- `ithmb list-devices` — show which formats each iPod model uses
+- `ithmb extract-pd <photodb> <index>` — decode entry N from a PhotoDB file
+- `ithmb check-pd <photodb>` — validate a PhotoDB file's integrity
+- `ithmb encode <width> <height> <format> <input> <output>` — encode raw BGRA data back to .ithmb format
 
 ## Why BMP?
 
-The CLI outputs BMP files because BMP is the simplest image format — a short header followed by raw pixel data. No compression, no encoding libraries needed. The decoder already has the raw BGRA pixels in memory, so writing them to a BMP file is just adding a 54-byte header and saving.
+The CLI can output BMP files because BMP is the simplest image format — a short header followed by raw pixel data. No compression, no encoding libraries needed. The decoder already has the raw BGRA pixels in memory, so writing them to a BMP file is just adding a 54-byte header and saving.
 
-ImageMagick can convert BMP to anything else (`magick out.bmp out.png`), or you can use the ImageMagick delegate to open `.ithmb` files directly:
+ImageMagick can convert BMP to anything else (`magick out.bmp out.png`). Or use `ithmb` directly to output PNG:
 
 ```
-magick file.ithmb out.jpg
+ithmb decode file.ithmb out.png
 ```

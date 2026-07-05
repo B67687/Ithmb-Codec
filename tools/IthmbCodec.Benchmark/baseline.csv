@@ -1,8 +1,0 @@
-Method,MeanNs
-DecodeYuv422Cl,200300
-DecodeYuv422Clcl,198200
-DecodeRgb555,43420
-DecodeRgb565,44350
-DecodeYuv422,197300
-DecodeYcbcr420,236400
-DecodeYuv422Interlaced,187200
