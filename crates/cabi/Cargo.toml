@@ -4,8 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "C ABI plugin for ImageGlass to decode .ithmb files using ithmb-core"
-repository = "https://github.com/B67687/ithmb-codec"
-homepage = "https://github.com/B67687/ithmb-codec"
+repository = "https://github.com/B67687/Ithmb-Codec"
+homepage = "https://github.com/B67687/Ithmb-Codec"
 documentation = "https://docs.rs/ithmb-core-cabi"
 keywords = ["ithmb", "thumbnail", "apple", "imageglass", "image"]
 categories = ["multimedia::images", "multimedia::video"]
@@ -24,4 +24,4 @@ rust_2018_idioms = "deny"
 
 [lints.clippy]
 all = "deny"
-pedantic = "warn"
+pedantic = "deny"
