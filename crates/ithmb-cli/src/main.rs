@@ -35,6 +35,7 @@ enum OutputFormat {
 /// .ithmb image decoder
 #[derive(Parser)]
 #[command(name = "ithmb", version, about)]
+#[allow(clippy::struct_excessive_bools)]
 struct Cli {
     /// Input .ithmb file path
     input: Option<PathBuf>,
@@ -61,6 +62,10 @@ struct Cli {
     /// Print metadata only, don't decode pixels
     #[arg(long)]
     info: bool,
+
+    /// Open a PhotoDB/ArtworkDB container and extract all entries
+    #[arg(long)]
+    open: bool,
 }
 
 // ---------------------------------------------------------------------------
@@ -84,6 +89,11 @@ fn main() -> Result<()> {
     // --info: print metadata and exit
     if cli.info {
         return print_info(input);
+    }
+
+    // --open: process PhotoDB/ArtworkDB container
+    if cli.open {
+        return open_container(input);
     }
 
     // -- Decode path --
@@ -145,6 +155,40 @@ fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<DecodedImag
     frame_buf.extend_from_slice(&data[offset..end]);
 
     pipeline::decode_with_profile(&frame_buf, &profile, &std::sync::atomic::AtomicBool::new(false)).map_err(Into::into)
+}
+
+// ---------------------------------------------------------------------------
+// Container (PhotoDB / ArtworkDB) extraction
+// ---------------------------------------------------------------------------
+
+/// Open a PhotoDB/ArtworkDB container and extract all entries as numbered PNGs.
+fn open_container(input: &Path) -> Result<()> {
+    let data = fs::read(input).with_context(|| format!("failed to read '{}'", input.display()))?;
+    let images = pipeline::open_ithmb(&data, &std::sync::atomic::AtomicBool::new(false), None)?;
+
+    if images.is_empty() {
+        bail!("no images found in container");
+    }
+
+    let out_dir = if let Some(parent) = input.parent() {
+        let stem = input.file_stem().and_then(|s| s.to_str()).unwrap_or("output");
+        parent.join(stem)
+    } else {
+        PathBuf::from("output")
+    };
+    fs::create_dir_all(&out_dir)
+        .with_context(|| format!("failed to create output directory '{}'", out_dir.display()))?;
+
+    for (i, img) in images.iter().enumerate() {
+        let n = i + 1;
+        let mut path = out_dir.join(format!("thumb_{n:04}"));
+        path.set_extension("png");
+        write_png(img, &path)?;
+        println!("Wrote {} ({}x{})", path.display(), img.width, img.height);
+    }
+    let len = images.len();
+    eprintln!("Extracted {len} images to {}", out_dir.display());
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,44 @@
-//! C ABI entry point and API tables for the ithmb-core-cabi cdylib.
+//! C ABI entry point and API tables for the ithmb-core-cabi dynamic library.
 //!
-//! This module implements the `ImageGlass` v10 native plugin ABI entry point
-//! `ig_plugin_get_api` and the static function tables that define the
-//! plugin's capabilities and codec interface.
+//! This crate compiles as a cdylib (`.so` / `.dylib` / `.dll`) that
+//! implements the `ImageGlass` v10 native plugin ABI. Any language that
+//! can call C functions can load this library and use it to decode .ithmb files.
+//!
+//! ## Public C API
+//!
+//! The only symbol exported by this library is:
+//!
+//! ```c
+//! const IGPluginApi* ig_plugin_get_api(i32 abi_version);
+//! ```
+//!
+//! Call this to obtain the plugin API table, which exposes:
+//! - `codec_capability` — get decoder capability flags
+//! - `codec_sniff` — test if data is a supported .ithmb format
+//! - `codec_sniff_mime` — test by MIME type
+//! - `codec_load_metadata` — read file dimensions without decoding pixels
+//! - `codec_decode` — decode the full image
+//! - `codec_decode_raster` — direct BGRA raster decode
+//!
+//! See the `types` module for struct definitions (`IGPluginApi`, `IGCodecApi`,
+//! `IGPixelBuffer`, etc.) and the `ImageGlass` plugin SDK documentation.
+//!
+//! ## Usage from Python (ctypes)
+//!
+//! ```python
+//! import ctypes
+//! lib = ctypes.CDLL("./libithmb_core_cabi.so")
+//! api = lib.ig_plugin_get_api(1_000_000)
+//! # api contains function pointers for decoding
+//! ```
+//!
+//! ## Usage from C / C++
+//!
+//! ```c
+//! #include "ig_plugin.h"
+//! const IGPluginApi* api = ig_plugin_get_api(IG_PLUGIN_ABI_VERSION);
+//! const IGCodecApi* codec = api->get_codec_api(api, 0);
+//! ```
 
 // The usize ↔ i32 casts are required by the ImageGlass ABI (all length
 // fields are `i32`).  Our strings are tiny; truncation is impossible.

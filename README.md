@@ -35,6 +35,8 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 - Cross-platform (Linux x64/ARM64, macOS x64/ARM64, Windows x64)
 - C ABI library for FFI integration into existing applications
 - CLI tool for decoding, inspection, and frame extraction
+- Python bindings (PyO3) for scripting and ML pipelines
+- Full SIMD acceleration (SSE2+AVX2+NEON runtime dispatch) for YUV conversion paths
 - Full SIMD acceleration (SSE2+AVX2+NEON runtime dispatch) for YUV conversion paths
 
 > Not an iOS 13+ thumbnail decoder — those use a different proprietary format.
@@ -51,8 +53,29 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 > [!TIP]
 > New to `.ithmb` files? See [docs/what-is-this.md](docs/what-is-this.md) for a plain-english explainer.
 > Confused by technical terms? See [docs/GLOSSARY.md](docs/GLOSSARY.md) for simple definitions.
+> Want to extract photos from your iPod? See [docs/GUIDE.md](docs/GUIDE.md) for a walkthrough.
 
 ---
+
+## Quick start
+
+```bash
+# Build from source
+cargo build --release
+
+# Decode a single .ithmb file to PNG
+./target/release/ithmb my_photo.ithmb output.png
+
+# Open a PhotoDB container and extract all thumbnails
+./target/release/ithmb --open PhotoDB
+
+# Or use from Python
+pip install ithmb-python  # (not yet published — build from pymod/)
+```
+
+For detailed build instructions see [Build from source](#build-from-source).
+
+## Table of Contents
 
 ## Table of Contents
 
