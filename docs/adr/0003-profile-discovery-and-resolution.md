@@ -35,3 +35,15 @@ Three-tier profile architecture:
 | SQLite database | Increases deployment size, Native AOT SQLite interop complexity |
 | Remote registry server | Offline use case, single-user tool |
 | Load all from external JSON at startup | Boot failure if file missing. Embedded fallback required anyway. |
+
+### Rust Port Notes
+
+The Rust implementation ported this design as follows:
+- `ProfilesJson.cs` → `src/profile_parser.rs` (JSON parsing)
+- `FrozenDictionary<i32, IthmbVariantProfile>` → `HashMap<i32, Profile>` in `src/profile_db.rs`
+- `ProfileSystem` → `src/profile_db.rs` (in-memory store + external override)
+- `IthmbVariantProfile` → `src/profile.rs` (Profile struct)
+- External profile override via `ProfileDb::load_external()`
+- No runtime profile caching needed — `OnceLock<ProfileDb>` initialized on first use
+- Profile data embedded via `include_str!("../data/profiles.json")` instead of C# resource files
+- Custom JSON parser ported from C# Native AOT requirement (no `serde_json` dependency)

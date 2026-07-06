@@ -137,6 +137,9 @@ impl Parser<'_> {
     fn parse_number_i32(&mut self) -> Result<i32, DecodeError> {
         self.skip_ws();
         let start = self.pos;
+        if self.pos >= self.bytes.len() {
+            return Err(DecodeError::Profile(format!("expected number at offset {}", self.pos)));
+        }
         if self.peek() == Some(b'-') {
             self.pos += 1;
         }
@@ -154,6 +157,9 @@ impl Parser<'_> {
 
     fn parse_bool(&mut self) -> Result<bool, DecodeError> {
         self.skip_ws();
+        if self.pos >= self.bytes.len() {
+            return Err(DecodeError::Profile(format!("expected bool at offset {}", self.pos)));
+        }
         if self.bytes[self.pos..].starts_with(b"true") {
             self.pos += 4;
             Ok(true)

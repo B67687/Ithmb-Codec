@@ -159,7 +159,7 @@ A profile is a recipe that tells the decoder how to interpret the pixel data. It
 
 **Format IDs** are numbers like `1007`, `1019`, `1061` that Apple assigned to specific screen resolutions on specific iPod models. We have **54 known profiles** — the most complete public reference.
 
-**Example**: Profile `1007` = 320×320 RGB565 (iPod Photo/Classic album art). Profile `1019` = interlaced UYVY 4:2:2 (iPod Classic 6G photo thumbnail).
+**Example**: Profile `1007` = 480×864 RGB565 (iPod Photo/Classic album art). Profile `1019` = interlaced UYVY 4:2:2 (iPod Classic 6G photo thumbnail).
 
 ---
 
@@ -357,7 +357,7 @@ Our fuzz suite includes:
 
 **Miri** is a Rust tool that interprets Rust code and checks for **Undefined Behavior (UB)** — things like reading uninitialized memory, violating pointer aliasing rules, or using SIMD instructions incorrectly. It's an interpreter, not a native runner — about **100–500× slower** than normal execution.
 
-All our unsafe SIMD code paths pass Miri verification (15 tests). Six additional exhaustive tests (68,000+ total iterations across 5 values⁶ for YUV and 16⁴ nibble combinations for CL) are skipped under Miri because they would take minutes — the same tests complete in ~20ms natively. The skip uses standard Rust `#[cfg_attr(miri, ignore)]` convention, not a bug or infinite loop.
+All our unsafe SIMD code paths pass Miri verification (21 tests). Six additional exhaustive tests (68,000+ total iterations across 5 values⁶ for YUV and 16⁴ nibble combinations for CL) are skipped under Miri because they would take minutes — the same tests complete in ~20ms natively. The skip uses standard Rust `#[cfg_attr(miri, ignore)]` convention, not a bug or infinite loop.
 
 ---
 

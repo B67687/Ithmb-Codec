@@ -11,9 +11,14 @@ echo "⟳ cargo fmt --check ..."
 cargo fmt --check
 echo "✓ cargo fmt --check passed"
 
-echo "⟳ cargo clippy ..."
-cargo clippy --workspace -- -D warnings
-echo "✓ cargo clippy passed"
+# Only run clippy when Rust source files are staged
+if git diff --cached --name-only --diff-filter=ACM -- '*.rs' | head -1 | grep -q .; then
+    echo "➳ cargo clippy (--all-features --all-targets) ..."
+    cargo clippy --workspace --all-features --all-targets -- -D warnings
+    echo "✓ cargo clippy passed"
+else
+    echo "✓ cargo clippy (skipped — no .rs files staged)"
+fi
 
 echo "⟳ cargo test (workspace) ..."
 cargo test --workspace 2>/dev/null

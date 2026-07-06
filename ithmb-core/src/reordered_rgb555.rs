@@ -125,7 +125,6 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
 /// Used by `EncodeReorderedRgb555` — the encoder counterpart of the
 /// reordered-RGB555 decoder.
 #[inline]
-#[must_use]
 pub(crate) fn morton_interleave(x: u32, y: u32, bits: u32) -> u32 {
     let mut z = 0u32;
     for i in 0..bits {
@@ -143,7 +142,6 @@ pub(crate) fn morton_interleave(x: u32, y: u32, bits: u32) -> u32 {
 /// and y at even bit positions (2i). To increment x, we fill even bits
 /// with 1 so carry propagates through them, then mask to odd bits.
 #[inline]
-#[must_use]
 fn morton_inc_x(z: u32) -> u32 {
     let x_bits = z & 0xAAAA_AAAA; // odd bits = x
     let y_bits = z & 0x5555_5555; // even bits = y

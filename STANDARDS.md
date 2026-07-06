@@ -16,7 +16,7 @@ This file documents the Rust engineering standards applied in this workspace.
 | 1 | EditorConfig | ✅ `.editorconfig` with LF, UTF-8, 4-space indent |
 | 1 | Toolchain pinning | ✅ `rust-toolchain.toml` with stable channel, clippy + rustfmt components |
 | 1 | Concurrency-safe state | ✅ `RwLock<LruCache>` for cache, `AtomicBool` for cancellation |
-| 2 | Benchmarks | ✅ `ithmb-core/benches/` — 3 Divan benchmarks (decoders, encoders, pipeline) |
+| 2 | Benchmarks | ✅ `ithmb-core/benches/` — 4 Divan benchmarks (decoders, encoders, pipeline) |
 | 2 | Fuzz testing | ✅ `fuzz/` — 2 libfuzzer targets, CI fuzz build check, 1.2M+ iterations, 0 crashes |
 | 2 | Golden test vectors | ✅ 14+ reference files across 7 encoding formats |
 | 2 | `--features simd` CI | ✅ CI tests with `--features simd` for SIMD code paths |
@@ -39,7 +39,7 @@ This file documents the Rust engineering standards applied in this workspace.
 
 ## Code Rules
 
-- **Unsafe**: Only in `simd/` (behind `#![allow(unsafe_code)]`) and `cabi/` (FFI). Denied at workspace level (`unsafe_code = "warn"`).
+- **Unsafe**: Only in `simd/` (behind `#![allow(unsafe_code)]`) and `cabi/` (FFI). Denied at workspace level (`unsafe_code = "deny"`).
 - **Errors**: `DecodeError` enum with typed variants. Never `Box<dyn Error>`. `?` operator throughout.
 - **Unwrap/Expect**: None in production code. Only in tests and `fn main()`.
 - **Dead code**: Zero. Every function is used or behind `#[cfg(test)]`. Every fallback is `#[cfg(not(...))]`-gated — no `#[allow(unreachable_code)]`.

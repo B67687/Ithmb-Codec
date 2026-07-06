@@ -1,4 +1,4 @@
-# rust-ci.yml — Fast build + test + lint.
+# rust-ci.yml — Build matrix (OS × features) + full verification.
 name: rust-ci
 on:
   push: { branches: [main] }
@@ -6,17 +6,43 @@ on:
 permissions: { contents: read }
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        features: ["", "simd", "cache,metrics"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "${{ matrix.os }}-build-${{ matrix.features }}-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Build
+        run: cargo build --workspace ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }}
+      - name: Test
+        run: cargo test --workspace ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }}
+
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy, rustfmt
           cache: true
-          cache-key: "clippy-${{ hashFiles('rust-toolchain.toml') }}"
-      - run: cargo build --workspace
-      - run: cargo test --workspace
-      - run: cargo clippy --workspace -- -D warnings
-      - run: cargo fmt --check
+          cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Run cargo audit
+        continue-on-error: true
+        run: |
+          if command -v cargo-audit &>/dev/null; then
+            cargo audit
+          else
+            echo "cargo-audit not installed, installing..."
+            cargo install cargo-audit && cargo audit
+          fi
+      - name: Run verify-all
+        run: bash scripts/verify-all.sh

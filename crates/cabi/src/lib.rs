@@ -317,7 +317,10 @@ unsafe extern "C" fn plugin_initialize(_plugin: *const IGPluginApi, host: *const
         }
 
         // Store the host API pointer so T7 (decode dispatch) can access it.
-        let _ = HOST_API.set(HostApiPtr(host));
+        // If set() fails, the host pointer was already stored (double init).
+        if HOST_API.set(HostApiPtr(host)).is_err() {
+            return IGStatus::Internal;
+        }
 
         // Log successful initialisation.
         if let Some(host_ptr) = HOST_API.get() {

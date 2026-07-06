@@ -21,8 +21,8 @@ pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub(crate) fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
-    let left = uyvy_quad_to_bgra(&quads[..4].try_into().unwrap());
-    let right = uyvy_quad_to_bgra(&quads[4..].try_into().unwrap());
+    let left = uyvy_quad_to_bgra(&[quads[0], quads[1], quads[2], quads[3]]);
+    let right = uyvy_quad_to_bgra(&[quads[4], quads[5], quads[6], quads[7]]);
     let mut out = [0u8; 16];
     out[..8].copy_from_slice(&left);
     out[8..].copy_from_slice(&right);

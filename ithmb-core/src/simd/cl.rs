@@ -43,15 +43,12 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
     let g = _mm_sub_epi32(_mm_sub_epi32(y, gb), gr);
     let b = _mm_add_epi32(y, bc);
 
-    let mut r_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    let mut g_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    let mut b_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    _mm_storeu_si128(r_tmp.as_mut_ptr(), r);
-    _mm_storeu_si128(g_tmp.as_mut_ptr(), g);
-    _mm_storeu_si128(b_tmp.as_mut_ptr(), b);
-    let r_arr: [i32; 4] = core::mem::transmute(r_tmp.assume_init());
-    let g_arr: [i32; 4] = core::mem::transmute(g_tmp.assume_init());
-    let b_arr: [i32; 4] = core::mem::transmute(b_tmp.assume_init());
+    let mut r_arr = [0i32; 4];
+    let mut g_arr = [0i32; 4];
+    let mut b_arr = [0i32; 4];
+    _mm_storeu_si128(r_arr.as_mut_ptr().cast::<__m128i>(), r);
+    _mm_storeu_si128(g_arr.as_mut_ptr().cast::<__m128i>(), g);
+    _mm_storeu_si128(b_arr.as_mut_ptr().cast::<__m128i>(), b);
 
     let mut out = [0u8; 16];
     for i in 0..4 {
@@ -427,15 +424,12 @@ pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
     let g_lo = _mm256_extracti128_si256(g, 0);
     let b_lo = _mm256_extracti128_si256(b, 0);
 
-    let mut r_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    let mut g_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    let mut b_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    _mm_storeu_si128(r_tmp.as_mut_ptr(), r_lo);
-    _mm_storeu_si128(g_tmp.as_mut_ptr(), g_lo);
-    _mm_storeu_si128(b_tmp.as_mut_ptr(), b_lo);
-    let r_arr: [i32; 4] = core::mem::transmute(r_tmp.assume_init());
-    let g_arr: [i32; 4] = core::mem::transmute(g_tmp.assume_init());
-    let b_arr: [i32; 4] = core::mem::transmute(b_tmp.assume_init());
+    let mut r_arr = [0i32; 4];
+    let mut g_arr = [0i32; 4];
+    let mut b_arr = [0i32; 4];
+    _mm_storeu_si128(r_arr.as_mut_ptr().cast::<__m128i>(), r_lo);
+    _mm_storeu_si128(g_arr.as_mut_ptr().cast::<__m128i>(), g_lo);
+    _mm_storeu_si128(b_arr.as_mut_ptr().cast::<__m128i>(), b_lo);
 
     let mut out = [0u8; 16];
     for i in 0..4 {

@@ -62,17 +62,16 @@ iPods and iPhones don't just store individual `.ithmb` files — they also have 
 ## What's the CLI?
 
 The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Install it with `cargo install ithmb-cli` (or build from source with `cargo build --release`). Then:
-- `ithmb decode <file> [output]` — decode a single .ithmb file to PNG (or BMP with `.bmp` extension)
-- `ithmb info <file>` — print metadata (size, prefix, profile, frame count)
-- `ithmb list-profiles` — list all 54 known profiles in a formatted table
-- `ithmb list-devices` — show which formats each iPod model uses
-- `ithmb extract-pd <photodb> <index>` — decode entry N from a PhotoDB file
-- `ithmb check-pd <photodb>` — validate a PhotoDB file's integrity
-- `ithmb encode <width> <height> <format> <input> <output>` — encode raw BGRA data back to .ithmb format
+- `ithmb input.ithmb [output.png]` — decode a single .ithmb file to PNG (auto-detects format from extension)
+- `ithmb --info input.ithmb` — print metadata (size, prefix, profile, frame count)
+- `ithmb --list-profiles` — list all 54 known profiles in a formatted table
+- `ithmb --open input.ithmb` — open a PhotoDB/ArtworkDB container and extract all entries as numbered PNGs
+- `ithmb --frame N input.ithmb [output.png]` — extract a specific frame from a multi-frame file
+- `ithmb --raw input.ithmb [output.bin]` — output raw BGRA binary instead of PNG
 
-## Why BMP?
+## Output formats
 
-The CLI can output BMP files because BMP is the simplest image format — a short header followed by raw pixel data. No compression, no encoding libraries needed. The decoder already has the raw BGRA pixels in memory, so writing them to a BMP file is just adding a 54-byte header and saving.
+The CLI produces PNG images by default (auto-detected from the `.png` output extension). Use `--raw` for raw BGRA binary output, or `--format bin` / `--format png` to set the format explicitly.
 
 ImageMagick can convert BMP to anything else (`magick out.bmp out.png`). Or use `ithmb` directly to output PNG:
 

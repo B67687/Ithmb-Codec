@@ -37,7 +37,7 @@ pub(crate) fn clamp_u8(v: i32) -> u8 {
 /// caller to short-circuit the decode loop.
 #[inline]
 pub(crate) fn check_canceled(canceled: &AtomicBool, name: &str) -> Result<(), DecodeError> {
-    if canceled.load(Ordering::Relaxed) {
+    if canceled.load(Ordering::Acquire) {
         return Err(DecodeError::Canceled(name.into()));
     }
     Ok(())

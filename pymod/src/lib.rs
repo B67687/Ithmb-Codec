@@ -41,6 +41,9 @@ fn decoded_image_to_dict<'py>(
     dict.set_item("height", img.height)?;
     dict.set_item("data", PyBytes::new(py, &img.data))?;
     dict.set_item("format", "BGRA")?;
+    // NOTE: DecodedImage does not carry rotation info; the decoder applies
+    // rotation internally during decode. Expose 0 as a placeholder until the
+    // decoder exposes an explicit rotation field.
     dict.set_item("rotation", 0i32)?;
     Ok(dict)
 }
@@ -65,7 +68,9 @@ fn decoded_image_to_dict<'py>(
 #[pyo3(signature = (data, canceled=None))]
 fn decode_ithmb(py: Python<'_>, data: &[u8], canceled: Option<bool>) -> PyResult<Py<PyAny>> {
     let flag = AtomicBool::new(canceled.unwrap_or(false));
-    let img = codec::decode_ithmb(data, &flag).map_err(|e| decode_error_to_py(&e))?;
+    let img = py
+        .detach(|| codec::decode_ithmb(data, &flag))
+        .map_err(|e| decode_error_to_py(&e))?;
     let dict = decoded_image_to_dict(py, &img)?;
     Ok(dict.into())
 }
@@ -83,9 +88,12 @@ fn decode_ithmb(py: Python<'_>, data: &[u8], canceled: Option<bool>) -> PyResult
 ///     `ValueError`: If the data cannot be decoded.
 ///     `RuntimeError`: If an I/O or cancellation error occurs.
 #[pyfunction]
-fn open_ithmb(py: Python<'_>, data: &[u8]) -> PyResult<Vec<Py<PyAny>>> {
-    let flag = AtomicBool::new(false);
-    let images = codec::open_ithmb(data, &flag, None).map_err(|e| decode_error_to_py(&e))?;
+#[pyo3(signature = (data, canceled=None))]
+fn open_ithmb(py: Python<'_>, data: &[u8], canceled: Option<bool>) -> PyResult<Vec<Py<PyAny>>> {
+    let flag = AtomicBool::new(canceled.unwrap_or(false));
+    let images = py
+        .detach(|| codec::open_ithmb(data, &flag, None))
+        .map_err(|e| decode_error_to_py(&e))?;
     images
         .into_iter()
         .map(|img| {

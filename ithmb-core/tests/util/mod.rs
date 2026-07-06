@@ -49,6 +49,7 @@ pub fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
             i32::try_from(wu * hu + uv_w * uv_h * 2).unwrap()
         }
         Encoding::Jpeg => 0,
+        _ => unreachable!("Unknown encoding variant"),
     };
     Profile {
         prefix: 9999,

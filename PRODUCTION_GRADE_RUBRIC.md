@@ -31,7 +31,7 @@ mean of all eight category percentages.
 | 1.5 | Module-split discipline | Logical split, no cross-file coupling | Some cross-file coupling | Chaotic split |
 
 **Structural Integrity Score =** (sum of 1.1–1.5) / 10
-**Current: 90% (9/10)** — 1.1/1.3/1.5 at 2/2 (17 modules, each decoder in own file, PhotoDB in submodule). 1.2 at 1/2 — `src/simd.rs` is 2038 SLOC (SIMD intrinsics with ISA-gated blocks; SIZE_OK rationale applies but technically exceeds threshold). 1.4 at 2/2 — Rust module system enforces no cycles at compile time.
+**Current: 90% (9/10)** — 1.1/1.3/1.5 at 2/2 (21 modules, each decoder in own file, PhotoDB in submodule). 1.2 at 1/2 — `src/simd.rs` is 2038 SLOC (SIMD intrinsics with ISA-gated blocks; SIZE_OK rationale applies but technically exceeds threshold). 1.4 at 2/2 — Rust module system enforces no cycles at compile time.
 
 ---
 
@@ -67,16 +67,14 @@ mean of all eight category percentages.
 
 | Decoder | Throughput |
 |---------|-----------|
-| RGB565 | 41 µs, 6.3 GB/s |
-| RGB555 | 55 µs, 4.8 GB/s |
-| ReorderedRGB555 | 973 µs, 269 MB/s |
-| UYVY (YUV422) | 114 µs, 2.3 GB/s |
-| YCbCr420 | 130 µs, 2.0 GB/s |
-| CL | 221 µs, 1.2 GB/s |
-| CLCL | 272 µs, 964 MB/s |
-| JPEG (64×64) | 39 µs, 416 MB/s |
-| SIMD RGB565 row | 36 µs, 7.3 GB/s |
-| SIMD RGB555 row | 37 µs, 7.0 GB/s |
+| RGB565 | 7.5 µs, 35 GB/s |
+| RGB555 | 7.7 µs, 34 GB/s |
+| ReorderedRGB555 | 106 µs, 2.5 GB/s |
+| UYVY (YUV422) | 17 µs, 15 GB/s |
+| YCbCr420 | 38 µs, 6.9 GB/s |
+| CL | 49 µs, 5.3 GB/s |
+| CLCL | 2.9 µs, 90 GB/s |
+| JPEG (64×64) | 54 µs, 301 MB/s |
 
 ---
 
@@ -106,7 +104,7 @@ mean of all eight category percentages.
 | 5.5 | Regression suite runtime | <30 s | <60 s | >60 s |
 
 **Testing Score =** (sum of 5.1–5.5) / 10
-**Current: 90% (9/10)** — 5.2–5.5 all at 2/2 (roundtrip across all 7 decoders + encoders; 11 concurrency stress tests with Barrier sync + cancellation; 2 libfuzzer targets with 1.2M+ iterations at 0 crashes; 0.45s runtime for 486 tests across 12 suites). 5.1 at 1/2 — coverage data collected by `cargo-llvm-cov` (report published) but no minimum rate confirmed; SIMD paths are unreachable on x64 CI without `--features simd`.
+**Current: 90% (9/10)** — 5.2–5.5 all at 2/2 (roundtrip across all 8 decoders + encoders; 11 concurrency stress tests with Barrier sync + cancellation; 2 libfuzzer targets with 1.2M+ iterations at 0 crashes; 0.45s runtime for 489 tests across 12 suites). 5.1 at 1/2 — coverage data collected by `cargo-llvm-cov` (report published) but no minimum rate confirmed; SIMD paths are unreachable on x64 CI without `--features simd`.
 
 ---
 
@@ -121,7 +119,7 @@ mean of all eight category percentages.
 | 6.5 | Release validation | Tag pattern check, CHANGELOG diff, crates.io publish action | Tag check only | Manual release |
 
 **CI/CD Score =** (sum of 6.1–6.5) / 10
-**Current: 70% (7/10)** — 6.1–6.3 at 2/2 (fmt, clippy pedantic=deny, all 486 tests pass). 6.4 at 1/2 — `cargo-llvm-cov` runs in CI and publishes report, but no minimum threshold enforces the gate. 6.5 at 0/2 — no crates.io publishing yet (git deps only), no tag-pattern verification in CI, no signed tag enforcement.
+**Current: 70% (7/10)** — 6.1–6.3 at 2/2 (fmt, clippy pedantic=deny, all 489 tests pass). 6.4 at 1/2 — `cargo-llvm-cov` runs in CI and publishes report, but no minimum threshold enforces the gate. 6.5 at 0/2 — no crates.io publishing yet (git deps only), no tag-pattern verification in CI, no signed tag enforcement.
 
 **CI pipeline** (`.github/workflows/rust-ci.yml`):
 - Build (`cargo build --workspace`)
@@ -186,7 +184,7 @@ Overall = (Axis1% + Axis2% + Axis3% + Axis4% + Axis5% + Axis6% + Axis7% + Axis8%
 | 2. Code Quality | 100% | `unsafe_code=deny`, typed errors | — |
 | 3. Performance | 50% | LRU cache, zero-alloc raw decoders | No LTO, SIMD feature-gated, no bench regression gate |
 | 4. Security | 50% | NUL guard, 32 MB limit | No gitleaks, no cargo audit in CI |
-| 5. Testing | 90% | 486 tests, fuzz 1.2M, 0.45s | Coverage rate unconfirmed |
+| 5. Testing | 90% | 489 tests, fuzz 1.2M, 0.45s | Coverage rate unconfirmed |
 | 6. CI/CD | 70% | fmt+clippy+test all enforced | No coverage gate, no crates.io publish |
 | 7. Documentation | 90% | README gate-verified, ADRs | Some modules lack rustdoc |
 | 8. Observability | 62.5% | Per-format metrics, typed errors | No tracing, no correlation IDs |

@@ -45,4 +45,5 @@ harness = false
 [[bench]]
 name = "simd_compare"
 harness = false
+required-features = ["simd"]
 

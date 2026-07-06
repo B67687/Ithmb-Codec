@@ -221,6 +221,7 @@ pub fn ig_status_from_decode_error(err: &DecodeError) -> IGStatus {
         DecodeError::InvalidFormat(_) | DecodeError::BufferTooShort { .. } => IGStatus::InvalidArg,
         DecodeError::Unsupported(_) => IGStatus::Unsupported,
         DecodeError::Canceled(_) => IGStatus::Canceled,
+        _ => IGStatus::Internal,
     }
 }
 

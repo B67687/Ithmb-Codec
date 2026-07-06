@@ -12,6 +12,8 @@
 !/.github/**
 !/.githooks/
 !/.githooks/**
+!/.opencode/
+!/.opencode/**
 !/docs/
 !/docs/**
 !/fuzz/

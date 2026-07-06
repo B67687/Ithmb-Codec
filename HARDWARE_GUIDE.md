@@ -1,7 +1,7 @@
 # Hardware Validation Guide
 
 > [!NOTE]
-> **Validation status: resolved.** The iOpenPod project (TheRealSavi) empirically validated 50+ format profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 53 profiles derive from the same format ID sources — hardware validation is covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
+> **Validation status: resolved.** The iOpenPod project (TheRealSavi) empirically validated 50+ format profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 54 profiles derive from the same format ID sources — hardware validation is covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 >
 > This guide is retained for reference in case new formats or unknown profiles are encountered in the future.
 
@@ -85,9 +85,9 @@ Run the CLI decoder tool on each `.ithmb` file:
 
 ```bash
 # From the repo root:
-dotnet run --project tools/IthmbDecoder -c Release -- F1019_1.ithmb F1019_decoded.bmp
-dotnet run --project tools/IthmbDecoder -c Release -- F1024_1.ithmb F1024_decoded.bmp
-dotnet run --project tools/IthmbDecoder -c Release -- F1066_1.ithmb F1066_decoded.bmp
+./target/release/ithmb F1019_1.ithmb F1019_decoded.bmp
+./target/release/ithmb F1024_1.ithmb F1024_decoded.bmp
+./target/release/ithmb F1066_1.ithmb F1066_decoded.bmp
 # ...etc for each file
 ```
 

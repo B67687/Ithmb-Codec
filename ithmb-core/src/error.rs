@@ -34,6 +34,7 @@ pub struct DecodedImage {
 ///
 /// Every variant carries a human-readable detail string or structured fields.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum DecodeError {
     /// An I/O-level failure (e.g. end of stream, read error).
     #[error("I/O error: {0}")]

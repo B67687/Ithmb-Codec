@@ -6,6 +6,7 @@
 
 /// Known encoding variants for raw .ithmb frames.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Encoding {
     /// 16-bit RGB (5 bits red, 6 bits green, 5 bits blue).
     Rgb565,
@@ -154,9 +155,11 @@ impl Profile {
 // ---------------------------------------------------------------------------
 
 /// Returns the built-in set of known profiles.
+/// Returns a list of all known built-in profiles.
 ///
-/// This is the Rust version of the embedded `ProfilesJson.cs` — the same 53
-/// (plus 1 speculative disabled) profiles that the C# plugin knows about.
+/// If the embedded profile database cannot be parsed (JSON corruption),
+/// an empty `Vec` is returned instead of panicking. Use [`ProfileDb::load_builtin`]
+/// directly if you need to distinguish "no profiles" from "parse failure".
 #[must_use]
 pub fn built_in_profiles() -> Vec<Profile> {
     match crate::profile_db::ProfileDb::load_builtin() {

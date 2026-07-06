@@ -38,29 +38,34 @@ echo "--- 5. cargo clippy --workspace --all-targets --features simd ---"
 cargo clippy --workspace --all-targets --features simd 2>&1 | scripts/check-zero-warnings.py
 echo "OK"
 
-# 6. Test (default)
-echo "--- 6. cargo test --workspace ---"
+# 6. Clippy (all-features, strict)
+echo "--- 6. cargo clippy --workspace --all-features --all-targets -- -D warnings ---"
+cargo clippy --workspace --all-features --all-targets -- -D warnings
+echo "OK"
+
+# 7. Test (default)
+echo "--- 7. cargo test --workspace ---"
 cargo test --workspace
 echo "OK"
 
-# 7. Test (simd)
-echo "--- 7. cargo test --workspace --features simd ---"
+# 8. Test (simd)
+echo "--- 8. cargo test --workspace --features simd ---"
 cargo test --workspace --features simd
 echo "OK"
 
-# 8. Doc (full, with private items)
-echo "--- 8. cargo doc --workspace --no-deps --document-private-items ---"
+# 9. Doc (full, with private items)
+echo "--- 9. cargo doc --workspace --no-deps --document-private-items ---"
 cargo doc --workspace --no-deps --document-private-items 2>&1 | scripts/check-zero-warnings.py
 echo "OK"
 
 if [ -z "${RAPID}" ]; then
-    # 9. Build (all-features)
-    echo "--- 9. cargo build --workspace --all-features ---"
+    # 10. Build (all-features)
+    echo "--- 10. cargo build --workspace --all-features ---"
     cargo build --workspace --all-features 2>&1 | scripts/check-zero-warnings.py
     echo "OK"
 
-    # 10. Clippy (all-features)
-    echo "--- 10. cargo clippy --workspace --all-targets --all-features ---"
+    # 11. Clippy (all-features, zero-warnings check)
+    echo "--- 11. cargo clippy --workspace --all-targets --all-features ---"
     cargo clippy --workspace --all-targets --all-features 2>&1 | scripts/check-zero-warnings.py
     echo "OK"
 fi

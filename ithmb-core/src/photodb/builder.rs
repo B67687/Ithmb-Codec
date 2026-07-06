@@ -16,7 +16,6 @@
     clippy::doc_markdown,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
-    clippy::unnecessary_trailing_comma,
     clippy::manual_let_else,
     clippy::match_same_arms,
     clippy::single_match_else,

@@ -3,6 +3,7 @@ name = "ithmb-core-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
+license.workspace = true
 
 [package.metadata]
 cargo-fuzz = true
@@ -23,6 +24,13 @@ bench = false
 [[bin]]
 name = "fuzz_open_ithmb"
 path = "fuzz_targets/fuzz_open_ithmb.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_cabi_decode"
+path = "fuzz_targets/fuzz_cabi_decode.rs"
 test = false
 doc = false
 bench = false

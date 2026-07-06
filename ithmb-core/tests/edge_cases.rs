@@ -425,10 +425,8 @@ fn test_photodb_invalid_chunk_type_in_tree() {
     data.extend_from_slice(b"xxxx\x0c\x00\x00\x00\x00\x00\x00\x00");
 
     let result = open_ithmb(&data, &CANCELED, None);
-    // The parser should not crash; it might silently stop walking or return an error.
     // The parser should not crash; it may return Ok (skip unknown) or Err.
-    // Test passes if no panic occurs.
-    let _ = result;
+    assert!(result.is_ok(), "parser must not panic on invalid chunk type");
 }
 
 #[test]
@@ -484,8 +482,8 @@ fn test_photodb_mhni_with_offset_out_of_bounds() {
 
     let result = open_ithmb(&data, &CANCELED, None);
     // Should not panic. The entry data is out of bounds so it is skipped.
-    // Should not panic. The entry data is out of bounds so it is skipped.
-    assert!(result.is_ok() || result.is_err(), "unexpected panic");
+    // Out-of-bounds MHNI entries are silently skipped (parser does not error).
+    assert!(result.is_ok(), "out-of-bounds MHNI offset should be skipped gracefully");
 }
 
 // ---------------------------------------------------------------------------

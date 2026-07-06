@@ -60,6 +60,18 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
     let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "CLCL dimensions must be positive", 2)?;
     let pixel_count = w * h;
     let chroma_len = pixel_count.div_ceil(2);
+    // CLCL layout needs: pixel_count (Y) + 2 * chroma_len (Cb + Cr).
+    // validate_dimensions only checked src.len() >= pixel_count * 2, which
+    // under-counts by 1 when pixel_count is odd (e.g. 3x1 needs 7 bytes, not 6).
+    if pixel_count % 2 != 0 {
+        let total_needed = pixel_count + 2 * chroma_len;
+        if src.len() < total_needed {
+            return Err(DecodeError::BufferTooShort {
+                expected: total_needed,
+                actual: src.len(),
+            });
+        }
+    }
     let y_len = pixel_count;
     let mut dst = vec![0u8; pixel_count * 4];
 

@@ -16,8 +16,7 @@
 //!
 //! ## SIMD
 //!
-//! This module starts with a correct scalar implementation. SIMD (SSE2/NEON/AVX-512)
-//! will be added in subsequent iterations.
+//! SIMD implementations exist in [`simd::rgb555`] (SSE2/AVX2/NEON runtime dispatch).
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;
@@ -63,12 +62,12 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         }
 
         // Scalar fallback (handles BE endianness and swap natively)
-        for x in 0..w {
-            let src_idx = row_start + x * 2;
+        let src_row = &src[row_start..row_start + w * 2];
+        for (src_pixel, dst_pixel) in src_row.chunks_exact(2).zip(row_dst.chunks_exact_mut(4)) {
             let raw = if le {
-                u16::from_le_bytes([src[src_idx], src[src_idx + 1]])
+                u16::from_le_bytes([src_pixel[0], src_pixel[1]])
             } else {
-                u16::from_be_bytes([src[src_idx], src[src_idx + 1]])
+                u16::from_be_bytes([src_pixel[0], src_pixel[1]])
             };
             let (r5, g5, b5) = if swap {
                 (
@@ -83,11 +82,12 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
                     u32::from(raw & 0x1F),
                 )
             };
-            let dst_idx = x * 4;
-            row_dst[dst_idx] = crate::pixel_utils::msb_replicate_5(b5);
-            row_dst[dst_idx + 1] = crate::pixel_utils::msb_replicate_5(g5);
-            row_dst[dst_idx + 2] = crate::pixel_utils::msb_replicate_5(r5);
-            row_dst[dst_idx + 3] = 255;
+            dst_pixel.copy_from_slice(&[
+                crate::pixel_utils::msb_replicate_5(b5),
+                crate::pixel_utils::msb_replicate_5(g5),
+                crate::pixel_utils::msb_replicate_5(r5),
+                255,
+            ]);
         }
     }
 

@@ -1,12 +1,11 @@
 //! AArch64 NEON SIMD implementations for pixel conversions.
 //! Only compiled when `--features simd` is enabled and target is `aarch64`.
 
-#![allow(unsafe_code)]
-
 use core::arch::aarch64::*;
 
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
     debug_assert_eq!(dst.len(), n_pixels * 4);
@@ -50,6 +49,7 @@ pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
 
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn rgb555_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
     debug_assert_eq!(dst.len(), n_pixels * 4);
@@ -89,6 +89,7 @@ pub(crate) unsafe fn rgb555_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
 
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn fill_gray_row_neon(gray: &[u8]) -> Vec<u8> {
     let n = gray.len();
     let mut dst = vec![0u8; n * 4];
@@ -116,6 +117,7 @@ pub(crate) unsafe fn fill_gray_row_neon(gray: &[u8]) -> Vec<u8> {
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
 #[must_use]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn cl_quad_to_bgra_neon(quad: &[u8; 8]) -> [u8; 16] {
     // ---- Pre-compute chroma contributions (scalar, one per pixel) ----
     // Matching SSE2 convention: low nibble = Cb, high nibble = Cr.
@@ -172,6 +174,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_neon(quad: &[u8; 8]) -> [u8; 16] {
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
 #[allow(clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn cl_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
     let (y, chroma) = src.split_at(n_pixels);
@@ -243,6 +246,7 @@ pub(crate) unsafe fn cl_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
 #[inline]
 #[must_use]
 #[allow(clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
     use core::arch::aarch64::{
         vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u8, vmovl_u16, vqmovn_s32,
@@ -315,6 +319,7 @@ pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
 #[inline]
 #[must_use]
 #[allow(clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
     use core::arch::aarch64::{vgetq_lane_u16, vld1_u8, vmovl_u8};
 
@@ -350,6 +355,7 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
 #[inline]
 #[must_use]
 #[allow(clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] {
     use core::arch::aarch64::{
         vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u8, vmovl_u16, vmulq_s32,

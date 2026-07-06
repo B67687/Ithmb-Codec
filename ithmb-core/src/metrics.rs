@@ -147,7 +147,7 @@ impl DecodeMetrics {
     /// Panics if `idx >= NUM_COUNTERS`.
     #[must_use]
     pub fn nanos(&self, idx: usize) -> u64 {
-        self.counters[idx].load(Ordering::Relaxed)
+        self.counters.get(idx).map_or(0, |c| c.load(Ordering::Relaxed))
     }
 
     /// Reset all counters to zero.

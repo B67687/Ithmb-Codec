@@ -119,13 +119,28 @@ fn encode(format: Format, bgra: &[u8], w: u32, h: u32) -> Vec<u8> {
 // Entry point
 // ---------------------------------------------------------------------------
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
     let pixels = generate_pixels(args.width, args.height, args.seed);
     let encoded = encode(args.format, &pixels, args.width, args.height);
 
-    std::fs::write(&args.output, &encoded).expect("failed to write output file");
+    // Build a profile to get the 4-byte big-endian prefix for this format.
+    let prefix = match args.format {
+        Format::Rgb565 => 1024_i32,
+        Format::Rgb555 => 3005,
+        Format::ReorderedRgb555 => 3001,
+        Format::Uyvy => 1019,
+        Format::Ycbcr420 => 1067,
+        Format::Clcl => 9001,
+        Format::Cl => 9002,
+    };
+
+    let mut output = Vec::with_capacity(4 + encoded.len());
+    output.extend_from_slice(&prefix.to_be_bytes());
+    output.extend_from_slice(&encoded);
+
+    std::fs::write(&args.output, &output)?;
 
     // Format name for display (e.g. "reordered-rgb555" from the enum)
     let format_name = match args.format {
@@ -144,6 +159,8 @@ fn main() {
         args.height,
         format_name,
         args.output.display(),
-        encoded.len(),
+        output.len(),
     );
+
+    Ok(())
 }

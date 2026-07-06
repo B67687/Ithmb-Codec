@@ -28,7 +28,6 @@ use std::sync::atomic::AtomicBool;
 /// | Variant | Condition |
 /// |---|---|
 /// | `InvalidFormat` | Non-positive width or height, or odd height with interlacing |
-#[allow(clippy::manual_is_multiple_of)]
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
     let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
 
@@ -102,7 +101,7 @@ fn decode_interlaced(src: &[u8], w: usize, h: usize, dst: &mut [u8], canceled: &
 ///
 /// Processes pixels in groups of 2 using the 4-byte UYVY group format.
 /// For odd widths the last pixel reads its Y and U from the trailing
-#[allow(clippy::manual_is_multiple_of)]
+#[allow(clippy::similar_names)]
 fn decode_row(row_src: &[u8], w: usize, row_dst: &mut [u8]) {
     let groups = w / 2;
 

@@ -3,12 +3,16 @@ name = "ithmb-python"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+description = "Python bindings for Ithmb-Codec — decode Apple .ithmb thumbnail files"
+repository = "https://github.com/B67687/Ithmb-Codec"
+homepage = "https://github.com/B67687/Ithmb-Codec"
+documentation = "https://docs.rs/ithmb-python"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-ithmb-core = { path = "../ithmb-core" }
+ithmb-core = { path = "../ithmb-core", version = "0.3" }
 pyo3 = { version = "0.29", features = ["extension-module", "abi3", "abi3-py312", "auto-initialize"] }
 
 [features]

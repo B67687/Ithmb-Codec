@@ -93,11 +93,6 @@ Blue-Green-Red-Alpha, as used by Apple's `vImage` framework and ImageGlass.
 
 ### CI Baseline
 
-After each full benchmark run, the JSON results are saved to `target/bench/baseline.json`.
-CI compares this against the committed baseline at `.github/baseline.json`:
-
-- A performance **regression >20%** on any decoder at any size fails the CI step.
-- A **warning at 10-20%** posts an annotation but does not fail.
-
-The baseline must be updated periodically by running the full suite and committing
-the new baseline. See `.github/workflows/rust-ci.yml` for the exact comparison logic.
+After each full benchmark run, the JSON results are saved to `target/bench/baseline.json` for
+local comparison between runs. CI does **not** currently perform automated baseline comparison
+or regression gating -- benchmarks are run in CI for build verification only.

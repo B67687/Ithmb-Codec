@@ -17,6 +17,9 @@ workspace = true
 name = "ithmb"
 path = "src/main.rs"
 
+[features]
+simd = ["ithmb-core/simd"]
+
 [dependencies]
 ithmb-core = { path = "../../ithmb-core", version = "0.3" }
 clap = { version = "4", features = ["derive"] }

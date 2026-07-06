@@ -135,17 +135,21 @@ pub const CHECKERBOARD_JPEG_64: &[u8] = &[
 /// (usually `false`/`0`).
 #[must_use]
 pub fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
-    let bpp = match encoding {
-        Encoding::Rgb565 | Encoding::Rgb555 | Encoding::ReorderedRgb555 | Encoding::Yuv422 => 2,
-        Encoding::Ycbcr420 => 3, // worst case; exact = 1.5
+    let frame_byte_length = match encoding {
+        Encoding::Rgb565 | Encoding::Rgb555 | Encoding::ReorderedRgb555 | Encoding::Yuv422 => w * h * 2,
+        Encoding::Ycbcr420 => {
+            // Y plane: w*h, Cb+Cr planes: ceil(w/2)*ceil(h/2)*2
+            w * h + (w + 1) / 2 * (h + 1) / 2 * 2
+        }
         Encoding::Jpeg => 0,
+        _ => 0,
     };
     Profile {
         prefix: 9999,
         width: w,
         height: h,
         encoding,
-        frame_byte_length: w * h * bpp,
+        frame_byte_length,
         ..Default::default()
     }
 }

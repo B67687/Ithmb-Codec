@@ -46,15 +46,12 @@ pub(crate) unsafe fn yuv420_quad_to_bgra_sse2(quad: &[u8; 6]) -> [u8; 16] {
     // ---- Store via `__m128i` temporaries (16-byte aligned, no cast_alignment) ----
     // The SIMD arithmetic still wins on the 4-wide BT.601; the store+clamp
     // is scalar but avoids needing SSE4.1 (min/max_epi32) or SSSE3 (pshufb).
-    let mut r_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    let mut g_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    let mut b_tmp = core::mem::MaybeUninit::<__m128i>::uninit();
-    _mm_storeu_si128(r_tmp.as_mut_ptr(), r);
-    _mm_storeu_si128(g_tmp.as_mut_ptr(), g);
-    _mm_storeu_si128(b_tmp.as_mut_ptr(), b);
-    let r_arr: [i32; 4] = core::mem::transmute(r_tmp.assume_init());
-    let g_arr: [i32; 4] = core::mem::transmute(g_tmp.assume_init());
-    let b_arr: [i32; 4] = core::mem::transmute(b_tmp.assume_init());
+    let mut r_arr = [0i32; 4];
+    let mut g_arr = [0i32; 4];
+    let mut b_arr = [0i32; 4];
+    _mm_storeu_si128(r_arr.as_mut_ptr().cast::<__m128i>(), r);
+    _mm_storeu_si128(g_arr.as_mut_ptr().cast::<__m128i>(), g);
+    _mm_storeu_si128(b_arr.as_mut_ptr().cast::<__m128i>(), b);
 
     let mut out = [0u8; 16];
     for i in 0..4 {

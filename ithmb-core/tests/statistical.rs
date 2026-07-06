@@ -36,7 +36,6 @@ mod util;
 const NUM_CHANNELS: usize = 4;
 
 /// Return the mean of channel `ch` (0 = B, 1 = G, 2 = R, 3 = A) across all
-#[allow(clippy::manual_is_multiple_of)]
 fn mean_channel(data: &[u8], ch: usize) -> u8 {
     assert!(data.len() % 4 == 0, "BGRA data length must be a multiple of 4");
     let n = data.len() / 4;
@@ -52,7 +51,6 @@ fn mean_channel(data: &[u8], ch: usize) -> u8 {
 /// `Var = E[X²] - E[X]²` with purely integer arithmetic.
 ///
 /// Note: For very low-variance data the integer subtraction may truncate to
-#[allow(clippy::manual_is_multiple_of)]
 fn variance_channel(data: &[u8], ch: usize) -> u64 {
     assert!(data.len() % 4 == 0, "BGRA data length must be a multiple of 4");
     let n = data.len() / 4;
@@ -393,6 +391,7 @@ fn decoded_random_frames_in_0_255_range() {
         assert_eq!(img.width, w as u32, "width should match");
         assert_eq!(img.height, h as u32, "height should match");
         assert!(!img.data.is_empty(), "decoded data should not be empty");
+        // Note: data is Vec<u8> so values are always in 0-255 range by type
     }
 }
 

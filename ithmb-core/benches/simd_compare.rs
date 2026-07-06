@@ -220,18 +220,20 @@ fn main() {
     fn decode_uyvy_simd(bencher: divan::Bencher) {
         let bgra = bgra_checkerboard(W, H);
         let enc = enc::encode_uyvy(&bgra, W as i32, H as i32);
-        let quads = enc.len() / 4;
-        let dst = vec![0u8; quads * 8];
+        let row_stride = W * 2; // UYVY: 2 bytes per pixel
+        let groups_per_row = W / 2;
+        let dst = vec![0u8; W * H * 4];
         bencher
             .counter(BytesCount::new(OUTPUT_BYTES))
             .with_inputs(|| (enc.clone(), dst.clone()))
             .bench_refs(|(src, d)| {
-                for g in 0..quads {
-                    let si = g * 4;
-                    let q: &[u8; 4] = src[si..si + 4].try_into().unwrap();
-                    let px = simd::uyvy_quad_to_bgra(q);
-                    let di = g * 8;
-                    d[di..di + 8].copy_from_slice(&px);
+                for row in 0..H {
+                    let src_off = row * row_stride;
+                    let dst_off = row * W * 4;
+                    simd::uyvy_row_to_bgra(
+                        &src[src_off..src_off + row_stride],
+                        &mut d[dst_off..dst_off + groups_per_row * 8],
+                    );
                 }
             });
     }
@@ -273,33 +275,28 @@ fn main() {
     fn decode_ycbcr420_simd(bencher: divan::Bencher) {
         let bgra = bgra_checkerboard(W, H);
         let enc = enc::encode_ycbcr420(&bgra, W as i32, H as i32, false);
-        let uv_w = W.div_ceil(2);
-        let uv_h = H.div_ceil(2);
-        let uv_size = uv_w * uv_h;
         let y_size = W * H;
+        let cb_w = W / 2;
+        let cb_size = cb_w * (H / 2);
         let dst = vec![0u8; W * H * 4];
         bencher
             .counter(BytesCount::new(OUTPUT_BYTES))
             .with_inputs(|| (enc.clone(), dst.clone()))
             .bench_refs(|(src, d)| {
-                for cy in 0..uv_h {
-                    for cx in 0..uv_w {
-                        let quad = [
-                            src[cy * 2 * W + cx * 2],
-                            src[cy * 2 * W + cx * 2 + 1],
-                            src[(cy * 2 + 1) * W + cx * 2],
-                            src[(cy * 2 + 1) * W + cx * 2 + 1],
-                            src[y_size + cy * uv_w + cx],
-                            src[y_size + uv_size + cy * uv_w + cx],
-                        ];
-                        let px = simd::yuv420_quad_to_bgra(&quad);
-                        let di = (cy * 2 * W + cx * 2) * 4;
-                        let di2 = ((cy * 2 + 1) * W + cx * 2) * 4;
-                        d[di..di + 4].copy_from_slice(&px[..4]);
-                        d[di + 4..di + 8].copy_from_slice(&px[4..8]);
-                        d[di2..di2 + 4].copy_from_slice(&px[8..12]);
-                        d[di2 + 4..di2 + 8].copy_from_slice(&px[12..]);
-                    }
+                let y_plane = &src[..y_size];
+                let cb_plane = &src[y_size..y_size + cb_size];
+                let cr_plane = &src[y_size + cb_size..y_size + cb_size * 2];
+                for cy in 0..H / 2 {
+                    let y_base = cy * 2 * W;
+                    let cb_base = cy * cb_w;
+                    simd::yuv420_row_pair_to_bgra(
+                        &y_plane[y_base..y_base + 2 * W],
+                        &cb_plane[cb_base..cb_base + cb_w],
+                        &cr_plane[cb_base..cb_base + cb_w],
+                        &mut d[y_base * 4..(y_base + 2 * W) * 4],
+                        W,
+                        cb_w,
+                    );
                 }
             });
     }

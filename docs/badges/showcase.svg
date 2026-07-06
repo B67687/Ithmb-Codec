@@ -320,7 +320,7 @@
   <!-- Status bar -->
   <rect x="8" y="660" width="944" height="24" fill="#0078d4"/>
   <text x="16" y="675" fill="#fff" font-size="10">320 × 320 px  ·  100%  ·  204.8 KB  ·  Frame 1 / 10</text>
-  <text x="936" y="675" text-anchor="end" fill="#fff" font-size="10">Ithmb Codec v1.4</text>
+  <text x="936" y="675" text-anchor="end" fill="#fff" font-size="10">Ithmb Codec v0.3</text>
 
   <!-- Attribution -->
   <text x="480" y="695" text-anchor="middle" fill="#888" font-size="9" font-style="italic">

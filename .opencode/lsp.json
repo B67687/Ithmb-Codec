@@ -1,0 +1,12 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization": {
+        "check": {
+          "command": "clippy",
+          "extraArgs": ["--", "-D", "warnings"]
+        }
+      }
+    }
+  }
+}

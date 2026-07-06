@@ -36,7 +36,6 @@ impl SeededRng {
     ///
     /// # Panics
     /// Panics if `buf.len()` is not a multiple of 4.
-    #[allow(clippy::manual_is_multiple_of)]
     pub fn fill_bgra(&mut self, buf: &mut [u8]) {
         assert!(
             buf.len() % 4 == 0,

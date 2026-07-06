@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ithmb-codec": {
+      "type": "local",
+      "command": ["node", "/home/nami/projects/dev/Ithmb-Codec/mcp/server.js"],
+      "enabled": true
+    }
+  }
+}

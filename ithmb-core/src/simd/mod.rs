@@ -218,7 +218,7 @@ pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
 /// When `src` is not a multiple of 4 bytes, or when `dst` is not `src.len() * 2` bytes.
 #[cfg(feature = "simd")]
 #[inline]
-pub(crate) fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
+pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     #[cfg(all(feature = "simd", target_arch = "x86_64"))]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
@@ -349,14 +349,7 @@ pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
 /// * `cb_w` - Chroma width (`w / 2`)
 #[cfg(feature = "simd")]
 #[inline]
-pub(crate) fn yuv420_row_pair_to_bgra(
-    y_row: &[u8],
-    cb_row: &[u8],
-    cr_row: &[u8],
-    dst: &mut [u8],
-    w: usize,
-    cb_w: usize,
-) {
+pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: &mut [u8], w: usize, cb_w: usize) {
     #[cfg(all(feature = "simd", target_arch = "x86_64"))]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
@@ -924,7 +917,7 @@ mod tests {
                     gray.push((state >> 16) as u8);
                 }
                 let result = fill_gray_row(&gray);
-                let expected = fill_gray_row(&gray);
+                let expected = super::scalar::fill_gray_row(&gray);
                 assert_eq!(result, expected, "fill_gray_row mismatch for len={len}");
             }
         }
@@ -972,7 +965,7 @@ mod tests {
                                 let chroma = (cr_n << 4) | cb_n;
                                 let quad = [y0, y1, y2, y3, chroma, chroma, chroma, chroma];
                                 let result = super::cl_quad_to_bgra(&quad);
-                                let expected = cl_quad_to_bgra(&quad);
+                                let expected = super::scalar::cl_quad_to_bgra(quad);
                                 assert_eq!(&result[..], &expected[..], "cl_quad mismatch");
                             }
                         }
@@ -1046,7 +1039,7 @@ mod tests {
                 *b = (state >> 16) as u8;
             }
             let result = super::cl_quad_to_bgra(&quad);
-            let expected = cl_quad_to_bgra(&quad);
+            let expected = super::scalar::cl_quad_to_bgra(quad);
             assert_eq!(&result[..], &expected[..], "cl_quad mismatch for random quad");
         }
     }

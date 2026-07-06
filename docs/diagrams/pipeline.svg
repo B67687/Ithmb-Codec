@@ -101,7 +101,7 @@
   <rect x="20" y="290" width="235" height="30" class="hdr"/>
   <text x="137.5" y="310" class="t1">4. Testing</text>
 
-  <text x="137.5" y="340" class="t2">486+ tests · 12 suites</text>
+  <text x="137.5" y="340" class="t2">489+ tests · 12 suites</text>
   <text x="137.5" y="356" class="t3">All passing</text>
 
   <rect x="30" y="375" width="215" height="26" class="sub3"/>
