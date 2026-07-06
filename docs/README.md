@@ -10,4 +10,3 @@
 | `GUIDE.md` | End-to-end iPod thumbnail extraction walkthrough |
 | `diagrams/` | Architecture and pipeline SVG diagrams |
 | `adr/` | Architecture Decision Records |
-| `synthesis/` | Cross-cutting analysis documents |
