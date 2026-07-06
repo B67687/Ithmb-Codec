@@ -4,47 +4,6 @@ This file explains every technical term in the project for people who aren't cod
 
 ---
 
-## Table of Contents
-
-- [Codec](#codec)
-- [Decoder vs Encoder](#decoder-vs-encoder)
-- [Lossy vs Lossless](#lossy-vs-lossless)
-- [Roundtrip](#roundtrip)
-- [RGB, YUV, BGRA — Color Formats](#rgb-yuv-bgra--color-formats)
-- [Bit Depth — What Does 565 or 555 Mean?](#bit-depth--what-does-565-or-555-mean)
-- [Chroma Subsampling — 4:2:2, 4:2:0](#chroma-subsampling--422-420)
-- [F-prefix and T-prefix](#f-prefix-and-t-prefix)
-- [Profile / Format ID](#profile--format-id)
-- [PhotoDB / ArtworkDB](#photodb--artworkdb)
-- [Pipeline](#pipeline)
-- [SIMD / SSE2 / AVX2 / NEON](#simd--sse2--avx2--neon)
-- [BGRA Output — Why Blue First?](#bgra-output--why-blue-first)
-- [Endianness — Big Endian vs Little Endian](#endianness--big-endian-vs-little-endian)
-- [C ABI](#c-abi)
-- [Frame / Multi-frame](#frame--multi-frame)
-- [Cancellation](#cancellation)
-- [Crop and Rotation](#crop-and-rotation)
-- [Stable Roundtrip](#stable-roundtrip)
-- [Golden Tests](#golden-tests)
-- [Fuzz Testing](#fuzz-testing)
-- [Miri](#miri)
-- [LRU Cache](#lru-cache)
-- [CLI Tool](#cli-tool)
-- [Nibble — 4 Bits](#nibble--4-bits)
-- [Morton / Z-order](#morton--z-order)
-- [EXIF — JPEG Camera Metadata](#exif--jpeg-camera-metadata)
-- [SOI / EOI — JPEG Markers](#soi--eoi--jpeg-markers)
-- [Macroblock](#macroblock)
-- [CLI — Command-Line Interface](#cli--command-line-interface)
-- [FFI — Foreign Function Interface](#ffi--foreign-function-interface)
-- [PyO3 — Rust ↔ Python Bridge](#pyo3--rust--python-bridge)
-- [OnceLock](#oncelock)
-- [cdylib — C Dynamic Library](#cdylib--c-dynamic-library)
-- [LTO / PGO — Build Optimization](#lto--pgo--build-optimization)
-- [Further Reading](#further-reading)
-
----
-
 ## Codec
 
 Short for **encoder/decoder**. A codec takes image data, compresses it (encodes) for storage, and decompresses it (decodes) for display. This project is a codec for Apple's `.ithmb` format used by iPods and iPhones for thumbnail caches.
@@ -89,6 +48,23 @@ The process: **take image → encode to .ithmb → decode back to image**. A rou
 **Stable roundtrip**: If you encode a file, decode it, and re-encode the result, the second `.ithmb` file is bit-identical to the first. This proves our encoder/decoder pair is mathematically stable — they've agreed on what the data means.
 
 **Why this matters**: If your roundtrip test passes, you know the decoder didn't introduce bugs. The only "loss" is what the format itself intended.
+
+---
+
+## Stable Roundtrip
+
+A stronger form of the [roundtrip](#roundtrip) test. A format has a **stable roundtrip** if:
+
+```
+encode(decode(encode(input))) == encode(input)
+```
+
+In plain English: if you decode an existing `.ithmb` file and re-encode the result, you get the exact same bytes back. This proves:
+1. The encoder and decoder agree on the format specification exactly
+2. No information is lost beyond what the format inherently discards
+3. The codec is self-consistent
+
+**Our codec passes stable roundtrip for all 7 raw formats.**
 
 ---
 
@@ -157,6 +133,10 @@ The iPod used 4:2:2 and 4:2:0 because thumbnails are small and the loss is barel
 
 ---
 
+## Nibble — 4 Bits
+
+A **nibble** is half a byte (4 bits). CL and CLCL formats store color information in nibbles — each byte contains two pieces of color data (high nibble and low nibble), which is why they're called "nibble-chroma" formats.
+
 ## F-prefix and T-prefix
 
 `.ithmb` files start with a 4-byte prefix that tells the decoder what's inside:
@@ -202,6 +182,16 @@ Our codec can:
 
 ---
 
+## Frame / Multi-frame
+
+Some `.ithmb` files contain multiple images concatenated together. Each image is one **frame**. Multi-frame files are common in iPod photo caches — a single file might contain multiple thumbnail sizes of the same photo.
+
+Our CLI can extract individual frames with `--frame N`. Frame 0 is the first image. Out-of-range frame indices return an error.
+
+T-prefix (JPEG) files are always single-frame.
+
+---
+
 ## Pipeline
 
 The pipeline is the code path that a file follows when you call `open_ithmb()`:
@@ -215,6 +205,44 @@ input → peek prefix → JPEG scan → profile lookup → decode → crop/rotat
 It's called a "pipeline" because data flows through stages like a factory assembly line. Each stage handles one job, then passes the result to the next.
 
 ---
+
+## Macroblock
+
+A **macroblock** is a group of pixels processed together. In YCbCr 4:2:0 format, a macroblock is 2×2 pixels — 4 pixels share the same color information. Our decoders process one macroblock at a time, checking cancellation between macroblocks.
+
+## Cancellation
+
+Decoding can be cancelled mid-operation via an `AtomicBool` flag. When the flag is set to `true`, the decoder checks at periodic points and returns a `Canceled` error.
+
+**Why this matters**: If a user opens 100 thumbnails and closes the window, the codec can stop decoding the remaining files immediately instead of wasting CPU cycles. The cancellation polling checkpoints are at macroblock boundaries — small images decode too fast to cancel, but large images respect it.
+
+---
+
+## Crop and Rotation
+
+After decoding, the pipeline can optionally crop the image to a region or rotate it by 90°, 180°, or 270°. These parameters come from the profile or the JPEG EXIF orientation tag.
+
+**Crop**: Some iPod profiles store a full frame but only display a portion. Crop parameters (`crop_x`, `crop_y`, `crop_w`, `crop_h`) define the visible rectangle.
+
+**Rotation**: JPEG files from iPhone cameras embed an orientation tag (0x0112 in EXIF). Our codec reads this and rotates the decoded image to match the display orientation (not the sensor orientation).
+
+---
+
+## EXIF — JPEG Camera Metadata
+
+**EXIF** (Exchangeable Image File Format) is metadata embedded in JPEG files — things like camera model, date taken, and **orientation**. The orientation tag (0x0112) tells software which way is "up" on a photo. iPhones use EXIF orientation heavily.
+
+Our JPEG decoder reads this orientation tag and rotates the decoded image to match the correct display orientation.
+
+## SOI / EOI — JPEG Markers
+
+JPEG files are divided into sections, each starting with a **marker** — a 2-byte code. The important ones:
+
+- **SOI** (Start Of Image) = `FF D8` — every JPEG file starts with this
+- **EOI** (End Of Image) = `FF D9` — every JPEG file ends with this
+- **APP1** (Application Segment 1) — contains EXIF data, if present
+
+Our codec scans for SOI to detect JPEG-embedded .ithmb files (T-prefix), then extracts the region from SOI to EOI for JPEG decoding.
 
 ## SIMD / SSE2 / AVX2 / NEON
 
@@ -231,6 +259,12 @@ These are the SIMD instruction sets supported by different CPUs:
 | **NEON** | ARM Advanced SIMD (not an acronym) | 128-bit SIMD (similar to SSE2) | All ARM64 CPUs (Apple Silicon, Android) |
 
 **Dispatch**: the codec checks your CPU at runtime and picks the fastest available path. SSE2 is guaranteed on any x86-64 machine. SIMD is only used where it measurably helps (YUV math).
+
+## Morton / Z-order
+
+**Morton order** (also called Z-order) is a way of arranging pixels in memory that keeps nearby pixels close together even in 2D space. It's called Z-order because the pixel traversal path looks like the letter Z. The ReorderedRGB555 format uses Morton order instead of the usual row-by-row layout.
+
+This means pixel (0,0) is stored first, then (1,0), then (0,1), then (1,1) — the first 4 pixels form a 2x2 block before moving to the next block. Our decoder handles this with an algorithm called **Morton de-interleave**.
 
 ## BGRA Output — Why Blue First?
 
@@ -259,6 +293,24 @@ Our codec handles both. `profile.little_endian = false` means big-endian.
 
 ---
 
+## CLI — Command-Line Interface
+
+**CLI** means a program you run from the terminal/command prompt by typing commands. Our `ithmb` tool is a CLI — you run `ithmb input.ithmb output.png` from your terminal.
+
+## CLI Tool
+
+The `ithmb` command-line tool provides:
+
+```bash
+ithmb input.ithmb output.png        # Decode to PNG
+ithmb --info input.ithmb              # Show metadata
+ithmb --list-profiles                 # List all 54 profiles
+ithmb --frame 2 input.ithmb out.png  # Extract specific frame
+ithmb --raw input.ithmb output.bin   # Raw BGRA output (no PNG)
+```
+
+Built with `clap` for argument parsing and `png` crate for PNG output.
+
 ## C ABI
 
 **C ABI** (Application Binary Interface) is a standard way for programming languages to call each other's code. By exposing our codec as a C ABI shared library (`.so` / `.dylib` / `.dll`), any language that can call C functions (Python, C++, Swift, Go, etc.) can use our decoder without knowing Rust.
@@ -267,50 +319,17 @@ The `ithmb-core-cabi` crate implements the ImageGlass v10 plugin API (`ig_plugin
 
 ---
 
-## Frame / Multi-frame
+## FFI — Foreign Function Interface
 
-Some `.ithmb` files contain multiple images concatenated together. Each image is one **frame**. Multi-frame files are common in iPod photo caches — a single file might contain multiple thumbnail sizes of the same photo.
+**FFI** (Foreign Function Interface) is a way for code in one programming language to call code written in another language. Our `cabi/` crate exposes a C FFI, which means Python (via ctypes), C++, Swift, Go, and other languages can call our decoder without needing to know Rust.
 
-Our CLI can extract individual frames with `--frame N`. Frame 0 is the first image. Out-of-range frame indices return an error.
+## PyO3 — Rust ↔ Python Bridge
 
-T-prefix (JPEG) files are always single-frame.
+**PyO3** is a Rust library that makes it easy to write Python modules in Rust. Our `pymod/` crate uses PyO3 to expose three functions to Python: `decode()`, `open_ithmb()`, and `list_profiles()`. Users can `pip install ithmb-python` and use it from Python scripts.
 
----
+## cdylib — C Dynamic Library
 
-## Cancellation
-
-Decoding can be cancelled mid-operation via an `AtomicBool` flag. When the flag is set to `true`, the decoder checks at periodic points and returns a `Canceled` error.
-
-**Why this matters**: If a user opens 100 thumbnails and closes the window, the codec can stop decoding the remaining files immediately instead of wasting CPU cycles. The cancellation polling checkpoints are at macroblock boundaries — small images decode too fast to cancel, but large images respect it.
-
----
-
-## Crop and Rotation
-
-After decoding, the pipeline can optionally crop the image to a region or rotate it by 90°, 180°, or 270°. These parameters come from the profile or the JPEG EXIF orientation tag.
-
-**Crop**: Some iPod profiles store a full frame but only display a portion. Crop parameters (`crop_x`, `crop_y`, `crop_w`, `crop_h`) define the visible rectangle.
-
-**Rotation**: JPEG files from iPhone cameras embed an orientation tag (0x0112 in EXIF). Our codec reads this and rotates the decoded image to match the display orientation (not the sensor orientation).
-
----
-
-## Stable Roundtrip
-
-A stronger form of the [roundtrip](#roundtrip) test. A format has a **stable roundtrip** if:
-
-```
-encode(decode(encode(input))) == encode(input)
-```
-
-In plain English: if you decode an existing `.ithmb` file and re-encode the result, you get the exact same bytes back. This proves:
-1. The encoder and decoder agree on the format specification exactly
-2. No information is lost beyond what the format inherently discards
-3. The codec is self-consistent
-
-**Our codec passes stable roundtrip for all 7 raw formats.**
-
----
+**`cdylib`** (C dynamic library) is a Rust compilation mode that produces a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) file that other programs can load at runtime. Our `ithmb-core-cabi` crate compiles as a `cdylib`.
 
 ## Golden Tests
 
@@ -350,69 +369,9 @@ The cache is behind a `cache` feature flag (not enabled by default). Size limit:
 
 ---
 
-## CLI Tool
-
-The `ithmb` command-line tool provides:
-
-```bash
-ithmb input.ithmb output.png        # Decode to PNG
-ithmb --info input.ithmb              # Show metadata
-ithmb --list-profiles                 # List all 54 profiles
-ithmb --frame 2 input.ithmb out.png  # Extract specific frame
-ithmb --raw input.ithmb output.bin   # Raw BGRA output (no PNG)
-```
-
-Built with `clap` for argument parsing and `png` crate for PNG output.
-
-## Nibble — 4 Bits
-
-A **nibble** is half a byte (4 bits). CL and CLCL formats store color information in nibbles — each byte contains two pieces of color data (high nibble and low nibble), which is why they're called "nibble-chroma" formats.
-
-## Morton / Z-order
-
-**Morton order** (also called Z-order) is a way of arranging pixels in memory that keeps nearby pixels close together even in 2D space. It's called Z-order because the pixel traversal path looks like the letter Z. The ReorderedRGB555 format uses Morton order instead of the usual row-by-row layout.
-
-This means pixel (0,0) is stored first, then (1,0), then (0,1), then (1,1) — the first 4 pixels form a 2x2 block before moving to the next block. Our decoder handles this with an algorithm called **Morton de-interleave**.
-
-## EXIF — JPEG Camera Metadata
-
-**EXIF** (Exchangeable Image File Format) is metadata embedded in JPEG files — things like camera model, date taken, and **orientation**. The orientation tag (0x0112) tells software which way is "up" on a photo. iPhones use EXIF orientation heavily.
-
-Our JPEG decoder reads this orientation tag and rotates the decoded image to match the correct display orientation.
-
-## SOI / EOI — JPEG Markers
-
-JPEG files are divided into sections, each starting with a **marker** — a 2-byte code. The important ones:
-
-- **SOI** (Start Of Image) = `FF D8` — every JPEG file starts with this
-- **EOI** (End Of Image) = `FF D9` — every JPEG file ends with this
-- **APP1** (Application Segment 1) — contains EXIF data, if present
-
-Our codec scans for SOI to detect JPEG-embedded .ithmb files (T-prefix), then extracts the region from SOI to EOI for JPEG decoding.
-
-## Macroblock
-
-A **macroblock** is a group of pixels processed together. In YCbCr 4:2:0 format, a macroblock is 2×2 pixels — 4 pixels share the same color information. Our decoders process one macroblock at a time, checking cancellation between macroblocks.
-
-## CLI — Command-Line Interface
-
-**CLI** means a program you run from the terminal/command prompt by typing commands. Our `ithmb` tool is a CLI — you run `ithmb input.ithmb output.png` from your terminal.
-
-## FFI — Foreign Function Interface
-
-**FFI** (Foreign Function Interface) is a way for code in one programming language to call code written in another language. Our `cabi/` crate exposes a C FFI, which means Python (via ctypes), C++, Swift, Go, and other languages can call our decoder without needing to know Rust.
-
-## PyO3 — Rust ↔ Python Bridge
-
-**PyO3** is a Rust library that makes it easy to write Python modules in Rust. Our `pymod/` crate uses PyO3 to expose three functions to Python: `decode()`, `open_ithmb()`, and `list_profiles()`. Users can `pip install ithmb-python` and use it from Python scripts.
-
 ## OnceLock
 
 **`OnceLock`** is a Rust type for lazy initialization. It holds a value that gets set exactly once (the first time it's accessed) and then stays fixed forever. We use it for the profile database — it's loaded from JSON the first time it's needed, then cached.
-
-## cdylib — C Dynamic Library
-
-**`cdylib`** (C dynamic library) is a Rust compilation mode that produces a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) file that other programs can load at runtime. Our `ithmb-core-cabi` crate compiles as a `cdylib`.
 
 ## LTO / PGO — Build Optimization
 
