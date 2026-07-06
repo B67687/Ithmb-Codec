@@ -50,6 +50,7 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 
 > [!TIP]
 > New to `.ithmb` files? See [docs/what-is-this.md](docs/what-is-this.md) for a plain-english explainer.
+> Confused by technical terms? See [docs/GLOSSARY.md](docs/GLOSSARY.md) for simple definitions.
 
 ---
 
