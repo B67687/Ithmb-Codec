@@ -7,9 +7,9 @@
 Benchmarks are run on the following reference hardware (CI may differ):
 
 - **CPU**: AMD Ryzen AI 9 HX 370 (12C/24T, Zen 5)
-- **Caches**: L1d 384 KiB, L2 12 MiB, L3 24 MiB
-- **RAM**: 32 GB LPDDR5x-7500
-- **OS**: Arch Linux, kernel 6.x
+- **Caches**: L1d 576 KiB, L2 12 MiB, L3 24 MiB
+- **RAM**: 32 GiB LPDDR5x-7500 (28 GiB available, shared with iGPU)
+- **OS**: Ubuntu 26.04 LTS, kernel 7.0.0
 
 ### CPU State Preparation
 

@@ -33,7 +33,7 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1043    | 130×88     | RGB565           | iPod Photo 4G (alias for 1015)                   |
 | 1044    | 128×128    | RGB565           | Compatibility alias for 1055                     |
 | ~~1064~~ | ~~320×240~~ | ~~YCbCr 4:2:0~~  | ~~iPod Nano 8GB 3G (photo library, speculative — disabled, no real sample)~~ |
-|| 1061    | 56×56      | RGB565           | Classic (cover art small, UseMhniDimensions=true — actual dims from MHNI)     |
+| 1061    | 56×56      | RGB565           | Classic (cover art small, UseMhniDimensions=true — actual dims from MHNI)     |
 | 1066    | 64×64      | RGB565           | iPod Classic 6G (square photo)                   |
 | 1067    | 720×480    | YCbCr 4:2:0      | iPod Classic 6G / Nano 3G (padded)               |
 | 1068    | 128×128    | RGB565           | Classic/Nano (cover art variant)                 |
@@ -52,10 +52,10 @@ Additional profiles can be added at runtime via `profiles.json` without recompil
 | 1093    | 512×512    | RGB565           | iPod Nano 6G (full-screen photo)                 |
 | 2002    | 50×50      | RGB565 BE        | iPod Mobile / Motorola ROKR (cover art)          |
 | 2003    | 150×150    | RGB565 BE        | iPod Mobile / Motorola ROKR (cover art)          |
-|| 3001    | 256×256    | **Reordered RGB555** | iPod touch (cover art large, quad-tree Morton order)                         |
-|| 3002    | 128×128    | **Reordered RGB555** | iPod touch (cover art medium, quad-tree Morton order)                        |
-|| 3003    | 64×64      | **Reordered RGB555** | iPod touch (cover art small, quad-tree Morton order)                         |
-|| 3004    | 56×55      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb, slot-padded 8192)                     |
+| 3001    | 256×256    | **Reordered RGB555** | iPod touch (cover art large, quad-tree Morton order)                         |
+| 3002    | 128×128    | **Reordered RGB555** | iPod touch (cover art medium, quad-tree Morton order)                        |
+| 3003    | 64×64      | **Reordered RGB555** | iPod touch (cover art small, quad-tree Morton order)                         |
+| 3004    | 56×55      | RGB555           | iPhone 1G/2G, iPod Touch (photo thumb, slot-padded 8192)                     |
 | 3005    | 320×320    | RGB555           | iPod touch (cover art xlarge)                    |
 | 3006    | 56×56      | RGB555           | iPod touch (cover art, padded slot 8192)          |
 | 3007    | 88×88      | RGB555           | iPod touch (cover art, padded slot 16384)         |
