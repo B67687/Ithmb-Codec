@@ -379,7 +379,7 @@ The cache is behind a `cache` feature flag (not enabled by default). Size limit:
 
 **PGO** (Profile-Guided Optimization) runs the program first, observes which code paths are most used, then recompiles with that knowledge — like a restaurant that watches which dishes are most popular and rearranges the kitchen to make those faster.
 
-Both are enabled in release builds for maximum decode performance.
+Both are available in release builds but not currently configured in `Cargo.toml`.
 
 ---
 

@@ -144,15 +144,14 @@ Add the `ithmb-core` crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ithmb-core = { git = "https://github.com/B67687/ithmb-codec" }
-```
+ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec" }
 
-Or use the CLI binary directly (see [releases](https://github.com/B67687/ithmb-codec/releases)).
+Or use the CLI binary directly (see [releases](https://github.com/B67687/Ithmb-Codec/releases)).
 
 ### CLI binary
 
 ```bash
-cargo install --git https://github.com/B67687/ithmb-codec ithmb-cli
+cargo install --git https://github.com/B67687/Ithmb-Codec ithmb-cli
 ```
 
 This installs the `ithmb` binary.
@@ -170,8 +169,8 @@ This installs the `ithmb` binary.
 
 ```bash
 # Clone the repository
-git clone https://github.com/B67687/ithmb-codec.git
-cd ithmb-codec
+git clone https://github.com/B67687/Ithmb-Codec.git
+cd Ithmb-Codec
 
 # Build everything in release mode
 cargo build --release
@@ -251,7 +250,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 
 | Module | Purpose |
 |--------|---------|
-| `pipeline.rs` | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
+|| `pipeline/` | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
 | `jpeg.rs` | JPEG decoder wrapper (`jpeg-decoder` crate), EXIF orientation parsing |
 | `rgb565.rs` | RGB565 decoder (16-bit RGB 5/6/5) |
 | `rgb555.rs` | RGB555 decoder (15-bit RGB 5/5/5) |
@@ -391,7 +390,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 > [!WARNING]
 > **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (489+ total).
 >
-> **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
+> **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) if you encounter one.
 >
 > **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
 >
@@ -405,12 +404,12 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 
 | Symptom                      | Likely cause / What to do                                                                                               |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/ithmb-codec/issues) with a sample.    |
-| Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/ithmb-codec/issues). |
+|| File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample.    |
+|| Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues). |
 | "File too large" error       | File exceeds the **32 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.              |
 
 > [!TIP]
-> If a file doesn't decode correctly, [open an issue](https://github.com/B67687/ithmb-codec/issues) with a sample link. You can also try [ithmb.org](https://ithmb.org) — a browser-based .ithmb decoder (offline, no upload) — to compare results.
+> If a file doesn't decode correctly, [open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample link. You can also try [ithmb.org](https://ithmb.org) — a browser-based .ithmb decoder (offline, no upload) — to compare results.
 
 ---
 

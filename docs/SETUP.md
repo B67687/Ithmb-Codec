@@ -23,7 +23,7 @@ Always sign commits with the correct author date:
 
 ```bash
 # Using the helper script (recommended):
-bash tools/git-commit-dated.sh -m "feat: my change"
+bash scripts/git-commit-dated.sh -m "feat: my change"
 
 # Manual (preserve date):
 GIT_COMMITTER_DATE="$(git log -1 --format=%aD)" git commit -S --date="$(git log -1 --format=%aD)" -m "feat: my change"
@@ -35,7 +35,7 @@ Commit messages follow Conventional Commits:
 ## Standards
 
 This project follows the standards documented in `STANDARDS.md` and
-the methodology in `docs/synthesis/v1.6.0.md`.
+`RUST_STANDARDS.md`.
 
 ### Before committing
 
@@ -43,7 +43,7 @@ the methodology in `docs/synthesis/v1.6.0.md`.
 - [ ] `cargo fmt --check` passes
 - [ ] Tests pass: `cargo test --workspace`
 - [ ] Clippy clean: `cargo clippy --workspace -- -D warnings`
-- [ ] File sizes within 250 SLOC: `bash tools/check-file-sizes.sh`
+- [ ] File sizes within 250 SLOC: `bash scripts/check-file-sizes.sh`
 - [ ] Commit signed
 - [ ] (Nightly) Miri: `cargo +nightly miri test --features simd -p ithmb-core`
 

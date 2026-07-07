@@ -101,7 +101,7 @@ The decoded output is **BGRA** pixel data (Blue-Green-Red-Alpha). When saved as 
 |---------|-------------------|
 | "File not found: PhotoDB" | The file path is wrong — double-check the iPod's file structure |
 | "Buffer too short" | The file is truncated or not a valid .ithmb file |
-| "Unknown format prefix" | This iPod may use a format variant not yet documented. [Open an issue](https://github.com/B67687/ithmb-codec/issues) with a sample |
+| "Unknown format prefix" | This iPod may use a format variant not yet documented. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample |
 | Garbled image | JPEG false positive or wrong format ID. Try with `--info` to see metadata first |
 | "32 MB file size guard" | File is unreasonably large for a thumbnail. May not be a valid .ithmb file |
 
@@ -110,4 +110,4 @@ The decoded output is **BGRA** pixel data (Blue-Green-Red-Alpha). When saved as 
 - [`what-is-this.md`](what-is-this.md) — What .ithmb files are
 - [`GLOSSARY.md`](GLOSSARY.md) — Explanation of technical terms
 - [`ECOSYSTEM.md`](ECOSYSTEM.md) — Research contributions to the .ithmb format
-- [GitHub Issues](https://github.com/B67687/ithmb-codec/issues) — Report problems or ask questions
+- [GitHub Issues](https://github.com/B67687/Ithmb-Codec/issues) — Report problems or ask questions

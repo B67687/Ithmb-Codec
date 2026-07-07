@@ -85,9 +85,9 @@ Run the CLI decoder tool on each `.ithmb` file:
 
 ```bash
 # From the repo root:
-./target/release/ithmb F1019_1.ithmb F1019_decoded.bmp
-./target/release/ithmb F1024_1.ithmb F1024_decoded.bmp
-./target/release/ithmb F1066_1.ithmb F1066_decoded.bmp
+./target/release/ithmb F1019_1.ithmb F1019_decoded.png
+./target/release/ithmb F1024_1.ithmb F1024_decoded.png
+./target/release/ithmb F1066_1.ithmb F1066_decoded.png
 # ...etc for each file
 ```
 
