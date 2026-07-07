@@ -442,6 +442,18 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
+## Support
+
+If this project helps you recover iPod photos, decode thumbnails, or save old memories:
+
+<div align="center">
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ThumbNami)
+
+</div>
+
+Every bit helps keep the research going. Thank you 🙏
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
