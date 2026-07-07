@@ -31,7 +31,7 @@
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;
-#[allow(unused_imports)]
+#[allow(unused_imports)] // yuv is used by SIMD dispatch, unused in scalar-only builds
 use crate::yuv;
 use std::sync::atomic::AtomicBool;
 

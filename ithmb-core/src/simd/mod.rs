@@ -320,21 +320,12 @@ pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
         yuv::yuv420_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(all(feature = "simd", target_arch = "aarch64"))]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::yuv420_quad_to_bgra_neon(quad);
-    }
-
-    #[cfg(not(any(
-        all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),
-        all(feature = "simd", target_arch = "aarch64"),
-    )))]
+    #[cfg(not(any(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),)))]
+    // Scalar fallback (used on all non-x86_64 platforms, including aarch64+simd)
     scalar::yuv420_quad_to_bgra(quad)
 }
 
-/// Convert an entire row-pair of YCbCr 4:2:0 data (2 rows of Y, 1 row each of Cb/Cr)
-/// to BGRA output, processing all macroblocks in one call.
+/// Convert an entire row-pair of YCbCr 4:2:0 data (2 rows of Y, 1 row each of Cb/Cr
 ///
 /// Each 4-pixel macroblock (2x2) is decoded via the platform-specific SIMD primitive,
 /// bypassing the per-macroblock dispatch overhead.
@@ -372,9 +363,6 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
         #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
         // SAFETY: x86_64/x86 guarantees SSE2.
         let out = unsafe { yuv::yuv420_quad_to_bgra_sse2(&quad) };
-        #[cfg(target_arch = "aarch64")]
-        // SAFETY: aarch64 guarantees NEON.
-        let out = unsafe { neon::yuv420_quad_to_bgra_neon(&quad) };
         #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
         let out = scalar::yuv420_quad_to_bgra(&quad);
 
