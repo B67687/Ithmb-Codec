@@ -20,6 +20,8 @@
 !/fuzz/**
 !/scripts/
 !/scripts/**
+!/tools/
+!/tools/**
 !/crates/
 !/crates/**
 pymod/.venv/

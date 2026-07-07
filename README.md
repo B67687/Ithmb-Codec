@@ -174,12 +174,12 @@ cargo build --release
 
 The workspace produces four artifacts:
 
-| Crate | Binary/Library | Location |
-|-------|---------------|----------|
-| `ithmb-core`    | `libithmb_core.rlib` (static library)       | `target/release/`   |
-| `ithmb-cli`     | `ithmb` (CLI binary)                        | `target/release/`   |
-| `ithmb-python`    | `libithmb_python.so` (PyO3 abi3-py312)      | `target/release/`   |
-| `ithmb-gen`       | `ithmb-gen` (sample generator binary)       | `target/release/`   |
+| Crate | Artifact | Install |
+|-------|----------|---------|
+| `ithmb-core`   | `libithmb_core.rlib` (static library) | `cargo add ithmb-core` (crates.io) |
+| `ithmb-cli`    | `ithmb` CLI binary                   | `cargo install --path crates/ithmb-cli` |
+| `ithmb-python` | `libithmb_python.{so,dylib,pyd}`     | `pip install pymod/` (or crates.io when published) |
+| `ithmb-gen`    | `ithmb-gen` sample generator binary | `cargo install --path crates/ithmb-gen` |
 
 A separate C ABI shared library for ImageGlass integration is maintained at [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
 
@@ -369,6 +369,12 @@ Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s
 > layout allows 8-pixel SSE2 row processing without address interleave overhead.
 
 ---
+
+## Project History
+
+This codec was first implemented in **C#** as a Native AOT plugin for ImageGlass v10. The **Rust** workspace evolved from that reference to enable broader distribution (crates.io, CLI, Python bindings). See [EVOLUTION.md](docs/EVOLUTION.md) for the full migration story, architecture decisions, and acknowledgments.
+
+The C# reference repository ([B67687/Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)) is archived but remains the authoritative source for algorithm verification.
 ## Profile Reference
 
 **54 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
@@ -453,6 +459,29 @@ If this project helps you recover iPod photos, decode thumbnails, or save old me
 </div>
 
 Every bit helps keep the research going. Thank you 🙏
+
+---
+
+## Quality Assurance
+
+This codec has been systematically reviewed across multiple rounds:
+
+| Round | Scope | Date |
+|-------|-------|------|
+| 1 | Initial code audit — format profiles, pipeline, all 7 decoders | 2026-06 |
+| 2 | Documentation review — all 19 markdown files, link checking (lychee) | 2026-06 |
+| 3 | C# reference parity — golden vectors, exhaustive roundtrip, SIMD constants, zero-alloc audit | 2026-07 |
+| 4 | Coverage expansion — SIMD tail boundaries, cancellation, profile validation, statistical completeness | 2026-07 |
+| 5 | Polish — benchmark regression baseline, ADR docs, review documentation | 2026-07 |
+
+**Current test count:** See [STATS.md](STATS.md) for the latest count and suite breakdown.
+
+**Known gaps:**
+- macOS ARM NEON is gated (known CI runner edge case) — falls back to scalar. See [STANDARDS.md](docs/standards/STANDARDS.md).
+- No dedicated NEON CI runner (deferred — no reliable ARM64 CI available at this time).
+- Cache concurrency stress tests (deferred — feature-gated LRU cache, low user impact).
+
+The C# reference implementation ([B67687/Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)) underwent 5 review rounds of its own before being archived. The Rust port builds on that foundation with cross-platform distribution as its primary goal.
 
 ## License
 
