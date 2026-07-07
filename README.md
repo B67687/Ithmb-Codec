@@ -249,7 +249,7 @@ See **[STATS.md](STATS.md)** for current test counts and suite breakdown. Covera
 
 ## Architecture
 
-The project is organized as a Rust workspace with five crates:
+The project is organized as a Rust workspace with four crates:
 
 ### ithmb-core (library)
 
@@ -314,9 +314,9 @@ ithmb --frame 2 input.ithmb output.png
 ithmb --raw input.ithmb output.bin
 ```
 
-### ithmb-core-cabi (C ABI shared library)
+### ithmb-core-cabi (C ABI shared library) — [separate repo](https://github.com/B67687/imageglass-ithmb-plugin)
 
-A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer **(Windows-only)**. The C ABI layer delegates all decode logic to `ithmb-core`. The shared library (`.so`/`.dylib`/`.dll`) can also be used for FFI from any language on its respective platform.
+A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer **(Windows-only)**. Now maintained in its [own repository](https://github.com/B67687/imageglass-ithmb-plugin) to keep the plugin scope separate from the format codec.
 
 ### ithmb-python (PyO3 bindings)
 

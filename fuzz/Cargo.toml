@@ -28,9 +28,3 @@ test = false
 doc = false
 bench = false
 
-[[bin]]
-name = "fuzz_cabi_decode"
-path = "fuzz_targets/fuzz_cabi_decode.rs"
-test = false
-doc = false
-bench = false

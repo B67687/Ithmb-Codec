@@ -285,14 +285,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ithmb-core-cabi"
-version = "1.9.0"
-dependencies = [
- "ithmb-core",
- "libc",
-]
-
-[[package]]
 name = "ithmb-gen"
 version = "1.9.0"
 dependencies = [

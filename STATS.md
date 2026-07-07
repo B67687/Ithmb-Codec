@@ -31,7 +31,7 @@ Canonical numbers for the Ithmb-Codec Rust workspace. All other documentation sh
 | Stat | Value |
 |------|-------|
 | Source modules | 21 (default) / 23 (with cache+metrics features) |
-| Crates | 5 (ithmb-core, ithmb-cli, ithmb-core-cabi, ithmb-gen, pymod) |
+| Crates | 4 (ithmb-core, ithmb-cli, ithmb-gen, pymod) |
 | Git commits | 284+ |
 | Signed tags | 7 |
 
