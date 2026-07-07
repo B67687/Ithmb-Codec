@@ -28,7 +28,7 @@ Beyond building a working codec, this project made several original contribution
 
 **Exhaustive roundtrip tests** — All 7 format encoders pass stable roundtrip (encode→decode→encode produces bit-identical output). 65,536-value exhaustive tests for RGB565, 32,768 for RGB555, 15,625 nibble combinations for CL. All passing.
 
-**Miri verification** — All SIMD code paths (15 tests) verified for memory safety and absence of Undefined Behavior.
+- **Miri verification** — All SIMD code paths (21 tests) verified for memory safety — zero undefined behavior.
 
 ## Negative Knowledge
 
