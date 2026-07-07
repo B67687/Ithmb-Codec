@@ -107,7 +107,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 ### File size guard
 
 > [!NOTE]
-> Files larger than **32 MB** are rejected before reading to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB). The 32 MB limit covers ~40 max-size raw frames — far beyond any realistic thumbnail cache. Researched from scratch: no evidence that libgpod's commonly-cited 256 MB limit is a real firmware constant. Re-verified 2026-06-30: 40 max-size (P1007) frames = 31.64 MB, within limit.
+> Files larger than **32 MB** are rejected before reading to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB). The 32 MB limit covers ~40 max-size raw frames — a generous safety margin: the actual iPod firmware caps individual .ithmb files at ~500 MB, and no single frame exceeds 810 KB. See [ADR-0005](docs/adr/0005-file-size-guard-limit.md) for the full research.
 
 ## Acknowledgments
 
@@ -145,6 +145,7 @@ Add the `ithmb-core` crate to your `Cargo.toml`:
 ```toml
 [dependencies]
 ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec" }
+```
 
 Or use the CLI binary directly (see [releases](https://github.com/B67687/Ithmb-Codec/releases)).
 
