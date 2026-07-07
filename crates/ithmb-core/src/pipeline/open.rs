@@ -15,6 +15,9 @@ use crate::pipeline::profile_loader::{fallback_jpeg_profile, get_db};
 use crate::profile::Encoding;
 use std::sync::atomic::AtomicBool;
 
+/// Files larger than this are rejected before decoding.
+pub(crate) const MAX_RAW_FILE_SIZE: usize = 8 * 1024 * 1024; // 8 MiB
+
 /// Open a `PhotoDB` container file and decode all contained thumbnails.
 ///
 /// When the input is a bare .ithmb file (no MHFD magic), the entire input is
@@ -42,6 +45,12 @@ pub fn open_ithmb(
     canceled: &AtomicBool,
     device_name: Option<&str>,
 ) -> Result<Vec<DecodedImage>, DecodeError> {
+    if src.len() > MAX_RAW_FILE_SIZE {
+        return Err(DecodeError::FileTooLarge {
+            size: src.len(),
+            limit: MAX_RAW_FILE_SIZE,
+        });
+    }
     if can_open_photodb(src) {
         let mut entries = Vec::new();
         try_parse_photodb(src, &mut entries)?;

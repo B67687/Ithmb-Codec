@@ -68,6 +68,15 @@ pub enum DecodeError {
     /// The operation was canceled by the caller.
     #[error("Canceled: {0}")]
     Canceled(String),
+
+    /// The input file exceeds the maximum allowed size.
+    #[error("File too large: {size} bytes exceeds limit of {limit} bytes")]
+    FileTooLarge {
+        /// Actual file size in bytes.
+        size: usize,
+        /// Maximum allowed size in bytes.
+        limit: usize,
+    },
 }
 
 // Manual impls for traits that derive cannot produce for enum variants with

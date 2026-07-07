@@ -58,6 +58,13 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
         });
     }
 
+    if src.len() > open::MAX_RAW_FILE_SIZE {
+        return Err(DecodeError::FileTooLarge {
+            size: src.len(),
+            limit: open::MAX_RAW_FILE_SIZE,
+        });
+    }
+
     let prefix = i32::from_be_bytes([src[0], src[1], src[2], src[3]]);
     let is_jpeg_stream = src[0] == 0xFF && src[1] == 0xD8;
 

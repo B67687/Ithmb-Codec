@@ -1,11 +1,11 @@
 # ADR-0005: File Size Guard Limit
 
-**Status**: Accepted (2026-07-07)
-**Context**: The codec rejects files larger than 32 MB before decoding to prevent OOM/DoS attacks from pathological input. This limit was inherited from the C# codebase without verification. We needed to determine whether 32 MB is empirically justified or merely an arbitrary value.
+**Status**: Revised (2026-07-07)
+**Context**: The C# codebase defined a 32 MB `MaxDecodeFileSize` limit (see `IthmbCodecPlugin.Helpers.cs:29`). The Rust port initially omitted this guard entirely — the README documented it but the code never enforced it. We needed to implement the guard properly and determine the right limit for the Rust codec.
 
 ## Decision
 
-Keep the **32 MB** limit. It is not derived from any external specification but serves as a generous safety margin — 40× the largest known real frame — with zero practical downside (the size check is free).
+Keep the **8 MB** limit. This is tighter than the C# original (32 MB) but still provides ~10× margin on the largest known frame (810 KB). The C# limit of 32 MB was arbitrary — 40× margin on a 810 KB frame is excessive. 8 MB is a reasonable engineering safety margin that covers all known real-world usage while still catching pathological inputs early.
 
 ## Research Sources
 
@@ -68,6 +68,7 @@ The largest confirmed real file (F1024_1 at 255 MB from 2005) fits within the iP
 
 | Limit | Source | Basis | Single-Frame Coverage | Multi-Frame Coverage |
 |-------|--------|-------|----------------------|---------------------|
-| 32 MB | This codec (C# legacy) | Engineering safety margin | ✅ All frames | ✅ Up to 40 max-size frames |
+| 8 MB | This codec (Rust, revised) | Engineering safety margin | ✅ All frames | ✅ Up to 10 max-size frames |
+| 32 MB | This codec (C# original) | Arbitrary (40× margin) | ✅ All frames | ✅ Up to 40 max-size frames |
 | 256 MB | libgpod | Application buffer | ✅ All frames | ✅ Up to 315 max-size frames |
 | 500 MB | iPod firmware | Hardware memory map | ✅ All frames | ✅ All known collections |

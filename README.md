@@ -107,7 +107,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 ### File size guard
 
 > [!NOTE]
-> Files larger than **32 MB** are rejected before reading to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB). The 32 MB limit covers ~40 max-size raw frames — a generous safety margin: the actual iPod firmware caps individual .ithmb files at ~500 MB, and no single frame exceeds 810 KB. See [ADR-0005](docs/adr/0005-file-size-guard-limit.md) for the full research.
+> Files larger than **8 MB** are rejected before decoding to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB), and the largest single frame is 810 KB — so 8 MB provides ~10× margin on the largest frame. The actual iPod firmware caps individual .ithmb files at ~500 MB. See [ADR-0005](docs/adr/0005-file-size-guard-limit.md) for the full research.
 
 ## Acknowledgments
 
