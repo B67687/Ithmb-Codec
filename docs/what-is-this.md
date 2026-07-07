@@ -1,6 +1,6 @@
 # What Is This?
 
-This is a plugin for [ImageGlass](https://imageglass.org) (an image viewer for Windows) that lets it open `.ithmb` files.
+This is a pure Rust codec for Apple's `.ithmb` thumbnail format — used as a Rust library, a standalone CLI tool, or as an [ImageGlass plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin) on Windows.
 
 ## What's an .ithmb File?
 
@@ -13,7 +13,7 @@ There are two kinds:
 
 ## What Does the Codec Do?
 
-It reads an `.ithmb` file and converts it to a normal image (BGRA pixels). You can use it as a Rust library crate in your own projects, as a standalone CLI tool, or as an ImageGlass plugin.
+It reads an `.ithmb` file and converts it to a normal image (BGRA pixels). You can use it as a [Rust library crate](https://crates.io/crates/ithmb-core), as a standalone CLI tool, or as an [ImageGlass plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
 
 The logic goes:
 
@@ -61,7 +61,7 @@ iPods and iPhones don't just store individual `.ithmb` files — they also have 
 
 ## What's the CLI?
 
-The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Install it with `cargo install ithmb-cli` (or build from source with `cargo build --release`). Then:
+The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Build from source: `cargo build --release` in the repo root, then `./target/release/ithmb`. Then:
 - `ithmb input.ithmb [output.png]` — decode a single .ithmb file to PNG (auto-detects format from extension)
 - `ithmb --info input.ithmb` — print metadata (size, prefix, profile, frame count)
 - `ithmb --list-profiles` — list all 54 known profiles in a formatted table
@@ -71,7 +71,7 @@ The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Instal
 
 ## Output formats
 
-The CLI produces PNG images by default (auto-detected from the `.png` output extension). Use `--raw` for raw BGRA binary output, or `--format bin` / `--format png` to set the format explicitly.
+The CLI produces PNG images by default (auto-detected from the `.png` output extension). Use `--raw` for raw BGRA binary output.
 
 ImageMagick can convert BMP to anything else (`magick out.bmp out.png`). Or use `ithmb` directly to output PNG:
 

@@ -32,6 +32,8 @@ Beyond building a working codec, this project made several original contribution
 
 **Exhaustive roundtrip tests** — All 7 format encoders pass stable roundtrip (encode→decode→encode produces bit-identical output). 65,536-value exhaustive tests for RGB565, 32,768 for RGB555, 15,625 nibble combinations for CL. All passing.
 
+**Independent tiled-layout discovery** — The [ipod-photo-recovery](https://github.com/mgminformatique/ipod-photo-recovery) project (Python, MIT, July 2026) independently investigates whether some `.ithmb` format variants use **48×48 tiled Morton-order** pixel storage instead of linear row-major layout, plus snake-row and column-tiled orderings. Their work suggests that hardware-level tiling (common in iPod-era display controllers) may be a real format variant not yet accounted for in any decoder.
+
 **Miri verification** — All SIMD code paths (21 tests) verified for memory safety — zero undefined behavior.
 
 ## Negative Knowledge

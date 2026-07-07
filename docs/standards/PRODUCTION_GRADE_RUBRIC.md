@@ -41,7 +41,7 @@ mean of all eight category percentages.
 |---|-----------|----------|-------------|----------|
 | 2.1 | Type safety | No escape hatches (`unsafe` denied at workspace level) | 1–3 justified escapes | Broad suppression |
 | 2.2 | Error handling | `thiserror` enum catches all, no empty blocks | Majority catch, some gaps | Bare catch or empty blocks |
-| 2.3 | Edge-case coverage | Known edges guarded (NUL, bounds, zero, 32 MB guard) | Major edges covered | Reactive only |
+| 2.3 | Edge-case coverage | Known edges guarded (NUL, bounds, zero, 8 MB guard) | Major edges covered | Reactive only |
 | 2.4 | Locale/explicit culture | All string ops invariant or explicit | Most ops safe, 1–2 gaps | Turkish-i style bugs |
 | 2.5 | Code-smell discipline | No negative naming, >3 params, redundant verify | ≤2 smells | 3+ or systematic |
 
@@ -82,14 +82,14 @@ mean of all eight category percentages.
 
 | # | Criterion | 2 (pass) | 1 (partial) | 0 (fail) |
 |---|-----------|----------|-------------|----------|
-| 4.1 | Input validation at boundary | Every untrusted source validated (NUL, size, bounds, 32 MB guard) | Major paths validated | Minimal validation |
+| 4.1 | Input validation at boundary | Every untrusted source validated (NUL, size, bounds, 8 MB guard) | Major paths validated | Minimal validation |
 | 4.2 | Supply-chain integrity | All GH actions SHA-pinned, Cargo.lock committed, `cargo deny` in CI | Pinned, Cargo.lock, no deny/audit in CI | Unpinned actions |
 | 4.3 | SAST in CI | Clippy pedantic=deny + cargo audit + cargo deny in CI | Clippy only, no audit/deny in CI | None |
 | 4.4 | Secret scanning | gitleaks or trufflehog in CI | Manual scanning | None |
 | 4.5 | Profiles integrity | External profiles verified by hash before use | CRC logged but not verified | Loaded with trust |
 
 **Security Score =** (sum of 4.1–4.5) / 10
-**Current: 50% (5/10)** — 4.1 at 2/2 (NUL guard, 32 MB file-size guard, buffer-too-small guards in all decoders, frame-index bounds check). 4.2 at 1/2 — GH actions SHA-pinned (`actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`), `Cargo.lock` committed, but `cargo deny` and `cargo audit` not wired into CI. 4.3 at 1/2 — clippy with `pedantic = "deny"` enforced, but no dependency audit in CI. 4.4 at 0/2 — no secret scanning. 4.5 at 1/2 — `profiles.json` parsed at init with full validation, but not verified against a trusted hash.
+**Current: 50% (5/10)** — 4.1 at 2/2 (NUL guard, 8 MB file-size guard, buffer-too-small guards in all decoders, frame-index bounds check). 4.2 at 1/2 — GH actions SHA-pinned (`actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`), `Cargo.lock` committed, but `cargo deny` and `cargo audit` not wired into CI. 4.3 at 1/2 — clippy with `pedantic = "deny"` enforced, but no dependency audit in CI. 4.4 at 0/2 — no secret scanning. 4.5 at 1/2 — `profiles.json` parsed at init with full validation, but not verified against a trusted hash.
 
 ---
 
@@ -183,7 +183,7 @@ Overall = (Axis1% + Axis2% + Axis3% + Axis4% + Axis5% + Axis6% + Axis7% + Axis8%
 | 1. Structural Integrity | 90% | Module split by decoder, no cycles | simd.rs exceeds 250 SLOC |
 | 2. Code Quality | 100% | `unsafe_code=deny`, typed errors | — |
 | 3. Performance | 50% | LRU cache, zero-alloc raw decoders | No LTO, SIMD feature-gated, no bench regression gate |
-| 4. Security | 50% | NUL guard, 32 MB limit | No gitleaks, no cargo audit in CI |
+| 4. Security | 50% | NUL guard, 8 MB limit | No gitleaks, no cargo audit in CI |
 | 5. Testing | 90% | 489 tests, fuzz 1.2M, 0.45s | Coverage rate unconfirmed |
 | 6. CI/CD | 70% | fmt+clippy+test all enforced | No coverage gate, no crates.io publish |
 | 7. Documentation | 90% | README gate-verified, ADRs | Some modules lack rustdoc |

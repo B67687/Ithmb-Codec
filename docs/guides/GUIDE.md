@@ -4,7 +4,7 @@
 
 - An iPod Classic, Nano, Touch, or iPhone (any model that syncs photos via iTunes)
 - A computer with USB port (Windows, Mac, or Linux)
-- The `ithmb` CLI tool ([build from source](../README.md#build) or download a release)
+- The `ithmb` CLI tool ([build from source](../../README.md#build-from-source) or download a release)
 - Optional: a PNG viewer to look at extracted photos
 
 ## Step 1: Connect Your iPod
@@ -103,11 +103,11 @@ The decoded output is **BGRA** pixel data (Blue-Green-Red-Alpha). When saved as 
 | "Buffer too short" | The file is truncated or not a valid .ithmb file |
 | "Unknown format prefix" | This iPod may use a format variant not yet documented. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample |
 | Garbled image | JPEG false positive or wrong format ID. Try with `--info` to see metadata first |
-| "32 MB file size guard" | File is unreasonably large for a thumbnail. May not be a valid .ithmb file |
+| "8 MB file size guard" | File is unreasonably large for a thumbnail. May not be a valid .ithmb file |
 
 ## Further Reading
 
-- [`what-is-this.md`](what-is-this.md) — What .ithmb files are
-- [`GLOSSARY.md`](GLOSSARY.md) — Explanation of technical terms
-- [`ECOSYSTEM.md`](ECOSYSTEM.md) — Research contributions to the .ithmb format
+- [`what-is-this.md`](../what-is-this.md) — What .ithmb files are
+- [`GLOSSARY.md`](../GLOSSARY.md) — Explanation of technical terms
+- [`ECOSYSTEM.md`](../ECOSYSTEM.md) — Research contributions to the .ithmb format
 - [GitHub Issues](https://github.com/B67687/Ithmb-Codec/issues) — Report problems or ask questions

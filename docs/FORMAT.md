@@ -639,7 +639,7 @@ The encoder uses the same BT.601 forward-transform coefficients for YUV formats.
 
 ## 10. File Size Guard
 
-A 32 MB file size limit is enforced before any decoding begins. This prevents out-of-memory conditions from pathological or corrupt input. All known real `.ithmb` files are under 1 MB (maximum observed: 852 KB). The 32 MB limit covers approximately 40 max-size raw frames (profile 1007 at 480x864 RGB565 = 829 KB per frame), providing a generous safety margin.
+An 8 MB file size limit is enforced before any decoding begins. This prevents out-of-memory conditions from pathological or corrupt input. All known real `.ithmb` files are under 1 MB (maximum observed: 852 KB). The 8 MB limit provides ~10× margin over the largest known single frame (810 KB).
 
 ---
 

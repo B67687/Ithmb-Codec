@@ -51,6 +51,7 @@ These projects were surveyed during research. Their format behavior was studied 
 | moerdowo/Minpod | moerdowo | https://github.com/moerdowo/Minpod | Swift | MIT | iPod sync tool, ArtworkDB ithmb creation |
 | atimevil/Ithmb-Converter | atimevil | https://github.com/atimevil/Ithmb-Converter | Python | MIT | Korean converter with AI upscaling |
 | yosoyemi/ithmb-converter-a-jpg | yosoyemi | https://github.com/yosoyemi/ithmb-converter-a-jpg | Python | MIT | UYVY big-endian decode |
+| mgminformatique/ipod-photo-recovery | mgminformatique | https://github.com/mgminformatique/ipod-photo-recovery | Python | MIT | Independent tiled-pixel layout RE (Morton-order 48×48 tiles, snake-row, field88 analysis) |
  
 ### Lost / unrecoverable
 

@@ -50,19 +50,19 @@ The libgpod project cites a 256 MB limit. This is an application-level buffer al
 | iLounge (2005) | F1024_1.ithmb (1743 frames) | 255 MB |
 | iLounge (2005) | F1019_1.ithmb (759+ frames) | 500 MB |
 
-The largest confirmed real file (F1024_1 at 255 MB from 2005) fits within the iPod's 500 MB firmware cap but exceeds both libgpod's 256 MB limit and our 32 MB guard.
+The largest confirmed real file (F1024_1 at 255 MB from 2005) fits within the iPod's 500 MB firmware cap but exceeds both libgpod's 256 MB limit and the original C# codec's 32 MB guard. The Rust codec uses **8 MB** (see Decision).
 
 ## Consequences
 
 ### Positive
-- **32 MB protects against OOM** on low-memory devices (ImageGlass plugin on 32-bit Windows).
+- **8 MB protects against OOM** on low-memory devices (ImageGlass plugin on 32-bit Windows) while maintaining ~10× margin over the largest known frame.
 - **Zero false positives** for single-frame decode — no real thumbnail exceeds 810 KB.
 - **Free operation** — the size check is a single `io::Error` before any allocation.
-- **PhotoDB containers stay under limit** — a real ArtworkDB (5-20 frames) is at most ~16 MB.
+- **PhotoDB containers stay under limit** — a real ArtworkDB (5-20 frames) is at most ~16 MB (the 8 MB guard applies per blob after container splitting, not to the container itself).
 
 ### Negative
-- **32 MB will reject** very large multi-frame containers (500+ album art entries, or a full PhotoDB with thousands of photos). These are decoded via `open_ithmb()` in the CLI, which could hit the guard when using the `--open` flag.
-- **Mitigation**: The guard is checked per-file, and `open_ithmb` splits the container into individual .ithmb blobs before passing to `decode_ithmb`. A real 255 MB F1024 file would be rejected at the blob level if any individual frame exceeds the 32 MB guard — but no single frame exceeds 810 KB.
+- **8 MB will reject** very large multi-frame containers (500+ album art entries, or a full PhotoDB with thousands of photos) at the individual blob level. These are decoded via `open_ithmb()` in the CLI, which splits the container before decoding.
+- **Mitigation**: The guard is checked per-blob after `open_ithmb` splits the container. A real 255 MB F1024 file would be rejected at the blob level if any individual frame exceeds the 8 MB guard — but no single frame exceeds 810 KB.
 
 ### Comparison Table
 
