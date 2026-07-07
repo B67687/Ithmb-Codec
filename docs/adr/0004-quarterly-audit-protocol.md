@@ -39,7 +39,6 @@ Extract findings into 3 layers:
 ### Phase 4 — Write Artifacts (20 min)
 
 - Update STANDARDS.md with new gaps found
-- Append to `docs/synthesis/v<next>.md`
 - File GitHub issues for each actionable finding
 - Create new ADRs for decisions made during audit
 
@@ -48,7 +47,6 @@ Extract findings into 3 layers:
 - [ ] All 4 agents dispatched and results collected
 - [ ] Claims verified against actual code
 - [ ] New bugs filed as GitHub issues
-- [ ] Patterns documented in synthesis
 - [ ] STANDARDS.md updated
 - [ ] New ADRs created for design decisions
 - [ ] Audit results shared with team

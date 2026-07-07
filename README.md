@@ -150,13 +150,8 @@ Or use the CLI binary directly (see [releases](https://github.com/B67687/Ithmb-C
 
 ### CLI binary
 
-```bash
-cargo install --git https://github.com/B67687/Ithmb-Codec ithmb-cli
-```
-
-This installs the `ithmb` binary.
-
----
+Install with `cargo install --git https://github.com/B67687/Ithmb-Codec ithmb-cli` or use a [prebuilt binary](https://github.com/B67687/Ithmb-Codec/releases).
+Full usage: see the [CLI tool](#cli-tool) section.
 
 ## Build from source
 
@@ -336,20 +331,8 @@ Output options: `--raw` for raw BGRA binary, `--format bin` for explicit binary,
 
 ## Benchmarks
 
-Decode throughput (divan, 256×256 with `--features simd`, Ryzen AI 9 HX 370):
-
-| Decoder | Time | Throughput | vs Scalar |
-|---------|------|-----------|-----------|
-| RGB565 | **7.5 µs** | **35 GB/s** | **4.7×** SSE2 8px + AVX2 16px dispatch |
-| RGB555 | **7.7 µs** | **34 GB/s** | **5.2×** SSE2 8px + AVX2 16px dispatch |
-| CL | **49 µs** | **5.3 GB/s** | **3.1×** SSSE3 pshufb nibble + SSE4.1 packed YUV (inlined row) |
-| CLCL | **2.9 µs** | **90 GB/s** | **71×** row-level SSE2 (separate plane layout) |
-| UYVY | **17 µs** | **15 GB/s** | **4.0×** AVX2 16px vpshufb + packed clamp |
-| YCbCr 4:2:0 | **38 µs** | **6.9 GB/s** | **2.3×** AVX2 8-macroblock batch |
-| ReorderedRGB555 | **106 µs** | **2.5 GB/s** | **3.7×** LUT + incremental Morton (AVX2 gather slower) |
-| JPEG | **54 µs** | **301 MB/s** | External crate (`jpeg-decoder`) |
-
-Run with: `cargo bench --features simd`
+See [`BENCHMARKS.md`](BENCHMARKS.md) for full benchmark data across all decoders, sizes, and input patterns.
+The command `cargo bench --features simd -p ithmb-core` reproduces the results on your hardware.
 
 ### Performance Limits
 
@@ -365,7 +348,11 @@ Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s
 | YCbCr 4:2:0 | **38 µs** | ~15 µs | Per-pixel YUV clamp+pack (same UYVY bottleneck) | ~60% |
 | ReorderedRGB555 | **106 µs** | ~80 µs | Z-order Morton non-linear address pattern | ~25% |
 
-Simple pixel unpack (RGB565, RGB555) is memory-bandwidth limited. YUV formats (UYVY, YCbCr420, CL, CLCL) are ALU-limited by per-pixel BT.601 arithmetic. CLCL achieves near-memory-bandwidth despite the ALU bottleneck because its plane-separated layout allows 8-pixel SSE2 row processing without address interleave overhead.
+> **Note on bottlenecks** — Simple pixel unpack (RGB565, RGB555) is memory-bandwidth limited.
+> YUV formats (UYVY, YCbCr420, CL, CLCL) are ALU-limited by per-pixel BT.601 arithmetic.
+> CLCL achieves near-memory-bandwidth despite the ALU bottleneck because its plane-separated
+> layout allows 8-pixel SSE2 row processing without address interleave overhead.
+
 ---
 
 
@@ -404,8 +391,8 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 
 | Symptom                      | Likely cause / What to do                                                                                               |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-|| File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample.    |
-|| Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues). |
+| File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample.    |
+| Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues). |
 | "File too large" error       | File exceeds the **32 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.              |
 
 > [!TIP]
@@ -441,15 +428,8 @@ cargo fuzz build                           # Fuzz targets compile check
 
 ## Contributions to the ecosystem
 
-This project made several original contributions to the .ithmb reverse-engineering space. The full write-up is in [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md).
-
-- **54 profile cross-reference** — consolidated from 22 implementations, corrected 15 dimension errors, identified 18 new format IDs
-- **PhotoDB/ArtworkDB read-write** — first OSS implementation that can write valid ArtworkDB from scratch
-- **Device-specific format tables** — mapped which formats each of 18 iPod/iPhone generations actually uses
-- **Hardware validation** — first systematic hardware confirmation via community collaboration with iOpenPod
-- **Synthetic test vectors** — first public F-prefix test vectors (CC0) for raw .ithmb decoding
-- **C#→Rust cross-verification** — pixel-for-pixel verified against C# reference across all 7 formats, both encode and decode
-- **Clean-room Rust port** — full decode+encode+container pipeline verified with 489 tests, fuzzing (1.2M+ iterations), and Miri UB checks
+This project made several original contributions to the .ithmb reverse-engineering space.
+See [`docs/ECOSYSTEM.md`](docs/ECOSYSTEM.md) for the full write-up.
 
 ## Changelog
 
