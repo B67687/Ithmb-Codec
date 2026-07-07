@@ -34,8 +34,8 @@ Commit messages follow Conventional Commits:
 
 ## Standards
 
-This project follows the standards documented in `STANDARDS.md` and
-`RUST_STANDARDS.md`.
+This project follows the standards documented in `docs/standards/STANDARDS.md` and
+`docs/standards/RUST_STANDARDS.md`.
 
 ### Before committing
 

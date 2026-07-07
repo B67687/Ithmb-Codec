@@ -137,12 +137,12 @@ mean of all eight category percentages.
 |---|-----------|----------|-------------|----------|
 | 7.1 | README | Stats gate-verified, architecture diagram, getting-started | Comprehensive but not gate-verified | Minimal or stale |
 | 7.2 | CHANGELOG | `[Unreleased]` kept current, categorized, no duplication | Exists, occasionally stale | None |
-| 7.3 | Profiles documentation | PROFILES.md reflects actual code, 54 entries, complete | Mostly accurate | Not maintained |
+| 7.3 | Profiles documentation | [`PROFILES.md`](../../PROFILES.md) reflects actual code, 54 entries, complete | Mostly accurate | Not maintained |
 | 7.4 | Rustdoc comments | All public API documented | Key methods documented | None |
 | 7.5 | Architecture decision records | docs/adr/ with rationale for major design choices | Inline comments only | No rationale |
 
 **Documentation Score =** (sum of 7.1–7.5) / 10
-**Current: 90% (9/10)** — 7.1–7.3 at 2/2 (README stats gate-verified via `tools/check-readme-stats.sh`, architecture diagram in docs/, getting-started with build instructions). CHANGELOG covers both C# history and Rust 0.3.0 entries, `[Unreleased]` maintained. PROFILES.md reflects 54 entries accurately. 7.4 at 1/2 — core public API (decoders, pipeline, profile) has rustdoc; some modules (enc_helpers, photodb types) lack comprehensive doc comments. 7.5 at 2/2 — `docs/adr/` has 4 records covering AOT plugin boundary, SIMD dispatch, profile discovery, and quarterly audit protocol.
+**Current: 90% (9/10)** — 7.1–7.3 at 2/2 (README stats gate-verified via `scripts/check-readme-stats.sh`, architecture diagram in docs/, getting-started with build instructions). CHANGELOG covers both C# history and Rust 0.3.0 entries, `[Unreleased]` maintained. PROFILES.md reflects 54 entries accurately. 7.4 at 1/2 — core public API (decoders, pipeline, profile) has rustdoc; some modules (enc_helpers, photodb types) lack comprehensive doc comments. 7.5 at 2/2 — `docs/adr/` has 4 records covering AOT plugin boundary, SIMD dispatch, profile discovery, and quarterly audit protocol.
 
 ---
 

@@ -12,7 +12,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 
 [dependencies.ithmb-core]
-path = "../ithmb-core"
+path = "../crates/ithmb-core"
 
 [[bin]]
 name = "fuzz_decode_ithmb"

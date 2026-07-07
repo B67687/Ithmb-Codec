@@ -331,7 +331,7 @@ Output options: `--raw` for raw BGRA binary, `--format bin` for explicit binary,
 
 ## Benchmarks
 
-See [`BENCHMARKS.md`](BENCHMARKS.md) for full benchmark data across all decoders, sizes, and input patterns.
+See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full benchmark data across all decoders, sizes, and input patterns.
 The command `cargo bench --features simd -p ithmb-core` reproduces the results on your hardware.
 
 ### Performance Limits
@@ -381,7 +381,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 >
 > **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
 >
-> **Hardware validation details** — see [HARDWARE_GUIDE.md](HARDWARE_GUIDE.md) for the full device testing matrix and methodology.
+> **Hardware validation details** — see [HARDWARE_GUIDE.md](docs/guides/HARDWARE_GUIDE.md) for the full device testing matrix and methodology.
 >
 > **SIMD acceleration** — SSE2 for YUV conversion paths (UYVY, YCbCr420, CL, CLCL). AVX2 and ARM NEON runtime dispatch via `--features simd`. RGB565/RGB555 pixel-unpack formats use auto-vectorized scalar loops (hand-written SIMD was 34× slower due to Intel AVX frequency downclock).
 

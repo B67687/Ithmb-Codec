@@ -28,15 +28,12 @@ pymod/__pycache__/
 !/ithmb-core/**
 !/pymod/
 !/pymod/**
-!/tools/
-!/tools/**
 !/samples/
 !/samples/**
 
 # Whitelist exceptions — re-exclude specific paths within whitelisted areas
 target/
 .omo/
-tools/mcp-server/
 mcp/
 .ruff_cache/
 *.bak

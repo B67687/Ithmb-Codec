@@ -37,4 +37,4 @@ Canonical numbers for the Ithmb-Codec Rust workspace. All other documentation sh
 
 ## Performance
 
-See [`BENCHMARKS.md`](BENCHMARKS.md) for full benchmark data across all decoders, resolutions, and input patterns.
+See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full benchmark data across all decoders, resolutions, and input patterns.
