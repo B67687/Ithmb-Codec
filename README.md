@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/badges/ithmb-icon.svg" alt="ITHMB Codec" width="96" height="96">
+<img src="docs/badges/ithmb-icon.svg" alt="IThmb Thumbnail Codec" width="96" height="96">
 
-# ITHMB Codec for ImageGlass v10
+# IThmb Thumbnail Codec
 
 [![License: MIT](docs/badges/license.svg)](LICENSE)
 [![Rust](docs/badges/rust.svg)](https://rust-lang.org)
@@ -52,7 +52,7 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 > [!TIP]
 > New to `.ithmb` files? See [docs/what-is-this.md](docs/what-is-this.md) for a plain-english explainer.
 > Confused by technical terms? See [docs/GLOSSARY.md](docs/GLOSSARY.md) for simple definitions.
-> Want to extract photos from your iPod? See [docs/GUIDE.md](docs/GUIDE.md) for a walkthrough.
+> Want to extract photos from your iPod? See [docs/guides/GUIDE.md](docs/guides/GUIDE.md) for a walkthrough.
 
 ---
 
@@ -69,7 +69,7 @@ cargo build --release
 ./target/release/ithmb --open PhotoDB
 
 # Or use from Python
-pip install ithmb-python  # (not yet published — build from pymod/)
+pip install ithmb-python  # (not yet published — build from pymod/ instead)
 ```
 
 For detailed build instructions see [Build from source](#build-from-source).
@@ -144,14 +144,14 @@ Add the `ithmb-core` crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec" }
+ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec", branch = "main" }
 ```
 
 Or use the CLI binary directly (see [releases](https://github.com/B67687/Ithmb-Codec/releases)).
 
 ### CLI binary
 
-Install with `cargo install --git https://github.com/B67687/Ithmb-Codec ithmb-cli` or use a [prebuilt binary](https://github.com/B67687/Ithmb-Codec/releases).
+Install the CLI binary from source (see build instructions below).
 Full usage: see the [CLI tool](#cli-tool) section.
 
 ## Build from source
@@ -210,6 +210,9 @@ cargo build --release --features simd
 
 Available features: `simd` (SSE2/AVX2/NEON YUV conversion), `cache` (LRU raw file cache), `metrics` (decode timing counters).
 
+> [!NOTE]
+> RGB565/RGB555 pixel-unpack formats use auto-vectorized scalar loops instead of hand-written SIMD — the hand-written SSE2/AVX2 was 34× slower on Intel due to AVX frequency downclock and port-5 bottleneck.
+
 ---
 
 ## Testing & validation
@@ -218,7 +221,17 @@ Available features: `simd` (SSE2/AVX2/NEON YUV conversion), `cache` (LRU raw fil
 cargo test
 ```
 
-See **[STATS.md](STATS.md)** for current test counts and suite breakdown: roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 8 decoders + 10,000 random byte mutations), 2 libfuzzer targets (1.2M+ iterations, 0 crashes), concurrency stress tests, statistical validation + golden vector verification, YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, device-specific format tables, corruption fuzz, format ID profile tests, encoder helpers (interlace fields + BT.601 color conversion), and decoder fallback paths.
+See **[STATS.md](STATS.md)** for current test counts and suite breakdown. Coverage includes:
+
+- **Roundtrip** — RGB565 (65,536 values), RGB555 (32,768), CL (15,625 nibble combos)
+- **Fuzz** — 350+ mutated inputs across all 8 decoders + 10,000 random byte mutations + 2 libfuzzer targets (1.2M+ iterations, 0 crashes)
+- **Golden vectors** — 14 reference files verified against expected output
+- **Concurrency** — 11 stress tests (Barrier sync, cancellation, repeated decode)
+- **Statistical** — decorrelation, entropy, histogram analysis of decoded output
+- **Edge cases** — zero dimension, corruption, partial data, truncation, oversized inputs
+- **Speculative** — CL/CLCL, rotation, swapped chroma, trailing padding, JPEG carving fallback
+- **PhotoDB** — roundtrip write, integrity, JPEG blob decode, device-specific format tables
+- **Encoder** — interlace fields, BT.601 color conversion, all format generators
 
 **12 test suites** across the workspace, all passing.
 
@@ -303,7 +316,7 @@ ithmb --raw input.ithmb output.bin
 
 ### ithmb-core-cabi (C ABI shared library)
 
-A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer on Windows. The C ABI layer delegates all decode logic to `ithmb-core`. This is built separately from the core library and is only needed for ImageGlass plugin integration.
+A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer **(Windows-only)**. The C ABI layer delegates all decode logic to `ithmb-core`. The shared library (`.so`/`.dylib`/`.dll`) can also be used for FFI from any language on its respective platform.
 
 ### ithmb-python (PyO3 bindings)
 
@@ -384,7 +397,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 >
 > **Hardware validation details** — see [HARDWARE_GUIDE.md](docs/guides/HARDWARE_GUIDE.md) for the full device testing matrix and methodology.
 >
-> **SIMD acceleration** — SSE2 for YUV conversion paths (UYVY, YCbCr420, CL, CLCL). AVX2 and ARM NEON runtime dispatch via `--features simd`. RGB565/RGB555 pixel-unpack formats use auto-vectorized scalar loops (hand-written SIMD was 34× slower due to Intel AVX frequency downclock).
+> **SIMD acceleration** — SSE2 for YUV conversion paths (UYVY, YCbCr420, CL, CLCL). AVX2 and ARM NEON runtime dispatch via `--features simd`. On macOS ARM, NEON is gated (known runner edge case) and falls back to scalar — see [STANDARDS.md](docs/standards/STANDARDS.md) for details.
 
 ---
 

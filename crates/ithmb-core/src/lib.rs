@@ -20,7 +20,6 @@ pub mod clcl;
 pub mod decoder_helpers;
 pub mod device_profiles;
 pub mod enc;
-pub mod enc_helpers;
 pub mod error;
 pub mod jpeg;
 pub mod photodb;

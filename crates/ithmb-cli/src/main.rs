@@ -1,8 +1,7 @@
 //! CLI tool for decoding `.ithmb` thumbnail cache files.
 //!
-//! Supports raw binary BGRA output and optional PNG encoding.
+//! Supports raw binary BGRA output and optional PNG encoding (default feature).
 
-use std::io::BufWriter;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
 
@@ -109,11 +108,12 @@ fn main() -> Result<()> {
 
     let output = resolve_output_path(input, cli.output.as_ref(), cli.format, cli.raw);
 
+    #[cfg(feature = "png-output")]
     if should_use_png(Some(&output), cli.format, cli.raw) {
-        write_png(&img, &output).with_context(|| format!("failed to write PNG to '{}'", output.display()))?;
-    } else {
-        write_raw(&img, &output).with_context(|| format!("failed to write to '{}'", output.display()))?;
+        return write_png(&img, &output).with_context(|| format!("failed to write PNG to '{}'", output.display()));
     }
+
+    write_raw(&img, &output).with_context(|| format!("failed to write to '{}'", output.display()))?;
 
     Ok(())
 }
@@ -162,6 +162,7 @@ fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<DecodedImag
 // ---------------------------------------------------------------------------
 
 /// Open a PhotoDB/ArtworkDB container and extract all entries as numbered PNGs.
+#[cfg(feature = "png-output")]
 fn open_container(input: &Path) -> Result<()> {
     let data = fs::read(input).with_context(|| format!("failed to read '{}'", input.display()))?;
     let images = pipeline::open_ithmb(&data, &std::sync::atomic::AtomicBool::new(false), None)?;
@@ -189,6 +190,11 @@ fn open_container(input: &Path) -> Result<()> {
     let len = images.len();
     eprintln!("Extracted {len} images to {}", out_dir.display());
     Ok(())
+}
+
+#[cfg(not(feature = "png-output"))]
+fn open_container(_input: &Path) -> Result<()> {
+    bail!("--open requires PNG encoding (rebuild with default features: `cargo build --features png-output`)");
 }
 
 // ---------------------------------------------------------------------------
@@ -317,6 +323,15 @@ fn should_use_png(output: Option<&Path>, format: OutputFormat, raw: bool) -> boo
     if raw {
         return false;
     }
+    #[cfg(not(feature = "png-output"))]
+    {
+        // Without the png-output feature, PNG encoding is unavailable.
+        // If Png was explicitly requested, the user gets a .bin fallback.
+        let _ = format;
+        let _ = output;
+        return false;
+    }
+    #[cfg(feature = "png-output")]
     match format {
         OutputFormat::Png => true,
         OutputFormat::Bin => false,
@@ -336,8 +351,11 @@ fn write_raw(img: &DecodedImage, path: &Path) -> io::Result<()> {
     fs::write(path, &img.data)
 }
 
-/// Write decoded pixel data as a PNG image.
+/// Write decoded pixel data as a PNG image (requires `png-output` feature).
+#[cfg(feature = "png-output")]
 fn write_png(img: &DecodedImage, path: &Path) -> Result<()> {
+    use std::io::BufWriter;
+
     let file = fs::File::create(path).with_context(|| format!("failed to create '{}'", path.display()))?;
     let w = BufWriter::new(file);
     let mut encoder = png::Encoder::new(w, img.width, img.height);

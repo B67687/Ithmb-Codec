@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Encoder: CLCL — separate Cb/Cr nibble planes, 2 bytes per pixel
 
-use crate::enc_helpers::{bt601_cb, bt601_cr, bt601_y};
+use crate::enc::helpers::{bt601_cb, bt601_cr, bt601_y};
 use crate::pixel_utils::clamp_u8;
 
 /// Encode BGRA pixels to CLCL nibble-chroma planar format.

@@ -1,10 +1,8 @@
-// SPDX-License-Identifier: MIT
 // Encoder helper utilities: interlaced field encoding and BT.601 color conversion tables
 //
 // Ported from C# `IthmbCodecPlugin.EncoderHelpers.cs`.
 //! Shared encoder utilities: BT.601 forward transform, field interlace, clamp.
 
-// Forward-export functions intentionally dead until T2+ encoder modules land.
 #![allow(clippy::similar_names)]
 
 use crate::profile::Encoding;

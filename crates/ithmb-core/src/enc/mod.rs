@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 // Encoder module — 7 per-format encoder sub-modules + build_ithmb_file orchestration
 //
 // Ported from the C# `IthmbCodecPlugin.Encoding.cs` encoder logic.
@@ -17,7 +16,7 @@
     clippy::cast_precision_loss
 )]
 
-use crate::enc_helpers::interlace_fields;
+use self::helpers::interlace_fields;
 use crate::profile::{Encoding, Profile};
 
 // ---------------------------------------------------------------------------
@@ -26,6 +25,7 @@ use crate::profile::{Encoding, Profile};
 
 mod cl;
 mod clcl;
+mod helpers;
 mod reordered;
 mod rgb555;
 mod rgb565;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Encoder: YCbCr 4:2:0 — planar, 3 bytes per pixel effective
 
-use crate::enc_helpers::{bt601_cb, bt601_cr, bt601_y};
+use crate::enc::helpers::{bt601_cb, bt601_cr, bt601_y};
 use crate::pixel_utils::clamp_u8;
 
 /// Encode BGRA pixels to planar YCbCr 4:2:0.

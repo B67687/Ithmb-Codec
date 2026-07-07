@@ -18,10 +18,12 @@ name = "ithmb"
 path = "src/main.rs"
 
 [features]
+default = ["png-output"]
 simd = ["ithmb-core/simd"]
+png-output = ["dep:png"]
 
 [dependencies]
-ithmb-core = { path = "../../crates/ithmb-core", version = "0.3" }
+ithmb-core = { path = "../../crates/ithmb-core", version = "1.9" }
 clap = { version = "4", features = ["derive"] }
 anyhow = "1"
-png = "0.18"
+png = { version = "0.18", optional = true }

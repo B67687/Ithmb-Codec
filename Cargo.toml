@@ -4,9 +4,9 @@ members = ["crates/ithmb-core", "pymod", "crates/ithmb-cli", "crates/cabi", "cra
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "0.3.0"
+version = "1.9.0"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.88.0"
 license = "MIT"
 repository = "https://github.com/B67687/Ithmb-Codec"
 homepage = "https://github.com/B67687/Ithmb-Codec"

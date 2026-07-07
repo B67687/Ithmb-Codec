@@ -12,7 +12,7 @@ documentation.workspace = true
 workspace = true
 
 [dependencies]
-ithmb-core = { path = "../../crates/ithmb-core", version = "0.3" }
+ithmb-core = { path = "../../crates/ithmb-core", version = "1.9" }
 clap = { version = "4", features = ["derive"] }
 
 [[bin]]
