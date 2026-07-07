@@ -9,7 +9,7 @@
 
 ## Step 1: Connect Your iPod
 
-Plug your iPod into your computer via USB. On Windows, iTunes should open automatically. On Mac, it may open Photos. On Linux, the iPod should mount as a USB mass storage device (latest iPod Classic 6G/7G only; older models require libgpod).
+Plug your iPod into your computer via USB. On Windows, iTunes should open automatically. On Mac, it appears in **Finder** (macOS Catalina+) or launches **iTunes** (older macOS). On Linux, the iPod should mount as a USB mass storage device (latest iPod Classic 6G/7G only; older models require libgpod).
 
 > **Important**: Your iPod must NOT be encrypted or passcode-locked. The file system must be readable.
 

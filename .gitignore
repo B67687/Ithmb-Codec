@@ -13,14 +13,10 @@
 !/.github/**
 !/.githooks/
 !/.githooks/**
-!/.opencode/
-!/.opencode/**
 !/docs/
 !/docs/**
 !/fuzz/
 !/fuzz/**
-!/tests/
-!/tests/**
 !/scripts/
 !/scripts/**
 !/crates/
