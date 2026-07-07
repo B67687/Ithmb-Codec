@@ -1,10 +1,12 @@
 //! AArch64 NEON SIMD implementations for pixel conversions.
+//! AArch64 NEON SIMD implementations for pixel conversions.
 //! Only compiled when `--features simd` is enabled and target is `aarch64`.
-
 use core::arch::aarch64::*;
 
+#[cfg(test)]
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
+#[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
@@ -49,6 +51,7 @@ pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
 
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
 #[inline]
+#[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn rgb555_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;

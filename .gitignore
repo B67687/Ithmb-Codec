@@ -5,6 +5,7 @@
 !/.gitattributes
 !.editorconfig
 !/LICENSE
+!/rust-toolchain.toml
 !/Cargo.toml
 !/Cargo.lock
 !/*.md

@@ -7,6 +7,7 @@
     clippy::cast_sign_loss
 )]
 
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 use core::arch::x86_64::__m128i;
 
 // ---- SSE2 quad (4× Y + 1× Cb + 1× Cr -> 16× BGRA) ----

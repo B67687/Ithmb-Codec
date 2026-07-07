@@ -552,12 +552,11 @@ pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
     unsafe {
         return neon::cl_quad_to_bgra_neon(quad);
     }
-
     #[cfg(not(all(
         feature = "simd",
         any(target_arch = "x86_64", target_arch = "aarch64", target_arch = "x86")
     )))]
-    // Scalar fallback
+    // Scalar fallback (not needed when SIMD covers all platforms)
     scalar::cl_quad_to_bgra(*quad)
 }
 
