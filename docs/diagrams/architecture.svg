@@ -31,15 +31,16 @@
 <path d="M560,32 L560,55" class="e"/>
 
 <!-- ==================== THREE-COLUMN LAYER ==================== -->
-<!-- Plugin ABI Layer (cabi) -->
-<rect x="50" y="55" width="240" height="115" class="bx"/>
-<text x="170" y="73" class="t">Plugin ABI Layer (cabi)</text>
+<!-- ImageGlass Plugin (separate repo) -->
+<rect x="50" y="55" width="240" height="130" class="bx"/>
+<text x="170" y="73" class="t">ImageGlass C ABI Plugin</text>
 <rect x="60" y="82" width="220" height="22" class="i"/>
 <text x="170" y="97" class="l">ig_plugin_get_api()</text>
 <rect x="60" y="107" width="220" height="22" class="i"/>
 <text x="170" y="122" class="l">decode_ithmb()</text>
 <rect x="60" y="132" width="220" height="22" class="i"/>
 <text x="170" y="147" class="l">FreePixelBuffer()</text>
+<text x="170" y="170" class="s">(separate repo)</text>
 
 <!-- Decode Pipeline -->
 <rect x="380" y="55" width="240" height="115" class="bx"/>

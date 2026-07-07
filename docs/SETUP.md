@@ -51,7 +51,7 @@ This project follows the standards documented in `docs/standards/STANDARDS.md` a
 
 | Workflow | Trigger | What it does |
 |----------|---------|-------------|
-| `rust-ci.yml` | push/PR to main | Build, test, clippy, fmt, cabi build + symbol-export check |
+| `rust-ci.yml` | push/PR to main | Build, test, clippy, fmt, deny (advisory check) |
 
 ## Architecture
 

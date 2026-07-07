@@ -315,13 +315,13 @@ Built with `clap` for argument parsing and `png` crate for PNG output.
 
 **C ABI** (Application Binary Interface) is a standard way for programming languages to call each other's code. By exposing our codec as a C ABI shared library (`.so` / `.dylib` / `.dll`), any language that can call C functions (Python, C++, Swift, Go, etc.) can use our decoder without knowing Rust.
 
-The `ithmb-core-cabi` crate implements the ImageGlass v10 plugin API (`ig_plugin_get_api()`), which is how the ImageGlass image viewer loads native codec plugins on Windows.
+The `ithmb-core-cabi` crate (now in its [own repository](https://github.com/B67687/Imageglass-Ithmb-Plugin)) implements the ImageGlass v10 plugin API (`ig_plugin_get_api()`), which is how the ImageGlass image viewer loads native codec plugins on Windows.
 
 ---
 
 ## FFI — Foreign Function Interface
 
-**FFI** (Foreign Function Interface) is a way for code in one programming language to call code written in another language. Our `cabi/` crate exposes a C FFI, which means Python (via ctypes), C++, Swift, Go, and other languages can call our decoder without needing to know Rust.
+**FFI** (Foreign Function Interface) is a way for code in one programming language to call code written in another language. The ImageGlass plugin [repo](https://github.com/B67687/Imageglass-Ithmb-Plugin) exposes a C FFI, which means Python (via ctypes), C++, Swift, Go, and other languages can call our decoder without needing to know Rust.
 
 ## PyO3 — Rust ↔ Python Bridge
 
@@ -329,7 +329,7 @@ The `ithmb-core-cabi` crate implements the ImageGlass v10 plugin API (`ig_plugin
 
 ## cdylib — C Dynamic Library
 
-**`cdylib`** (C dynamic library) is a Rust compilation mode that produces a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) file that other programs can load at runtime. Our `ithmb-core-cabi` crate compiles as a `cdylib`.
+**`cdylib`** (C dynamic library) is a Rust compilation mode that produces a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) file that other programs can load at runtime. The ImageGlass plugin [repo](https://github.com/B67687/Imageglass-Ithmb-Plugin) compiles as a `cdylib`.
 
 ## Golden Tests
 

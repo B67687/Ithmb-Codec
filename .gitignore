@@ -8,6 +8,7 @@
 !/rust-toolchain.toml
 !/Cargo.toml
 !/Cargo.lock
+!/deny.toml
 !/*.md
 !/.github/
 !/.github/**

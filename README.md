@@ -172,15 +172,16 @@ cd Ithmb-Codec
 cargo build --release
 ```
 
-The workspace produces five artifacts:
+The workspace produces four artifacts:
 
 | Crate | Binary/Library | Location |
 |-------|---------------|----------|
 | `ithmb-core`    | `libithmb_core.rlib` (static library)       | `target/release/`   |
 | `ithmb-cli`     | `ithmb` (CLI binary)                        | `target/release/`   |
-| `ithmb-core-cabi` | `libithmb_core_cabi.so` / `.dylib` / `.dll` (C ABI shared library) | `target/release/` |
 | `ithmb-python`    | `libithmb_python.so` (PyO3 abi3-py312)      | `target/release/`   |
 | `ithmb-gen`       | `ithmb-gen` (sample generator binary)       | `target/release/`   |
+
+A separate C ABI shared library for ImageGlass integration is maintained at [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
 
 ### Cross-compilation
 
@@ -314,9 +315,9 @@ ithmb --frame 2 input.ithmb output.png
 ithmb --raw input.ithmb output.bin
 ```
 
-### ithmb-core-cabi (C ABI shared library) — [separate repo](https://github.com/B67687/imageglass-ithmb-plugin)
+### ithmb-core-cabi (C ABI shared library) — [separate repo](https://github.com/B67687/Imageglass-Ithmb-Plugin)
 
-A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer **(Windows-only)**. Now maintained in its [own repository](https://github.com/B67687/imageglass-ithmb-plugin) to keep the plugin scope separate from the format codec.
+A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer **(Windows-only)**. Now maintained in its [own repository](https://github.com/B67687/Imageglass-Ithmb-Plugin) to keep the plugin scope separate from the format codec.
 
 ### ithmb-python (PyO3 bindings)
 
@@ -368,16 +369,6 @@ Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s
 > layout allows 8-pixel SSE2 row processing without address interleave overhead.
 
 ---
-
-
-## C ABI
-
-The `ithmb-core-cabi` crate compiles to a `cdylib` (`.so`/`.dylib`/`.dll`) exposing the ImageGlass v10 plugin ABI entry point `ig_plugin_get_api()`. This allows:
-
-- Integration with [ImageGlass](https://imageglass.org) on Windows for native `.ithmb` viewing
-- FFI integration from C/C++, Python (via `ctypes`/`cffi`), or any language with C FFI support
-- Zero-overhead cross-language decode without subprocess calls
-
 ## Profile Reference
 
 **54 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.

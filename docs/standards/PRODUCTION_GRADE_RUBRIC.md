@@ -46,7 +46,7 @@ mean of all eight category percentages.
 | 2.5 | Code-smell discipline | No negative naming, >3 params, redundant verify | ≤2 smells | 3+ or systematic |
 
 **Code Quality Score =** (sum of 2.1–2.5) / 10
-**Current: 100% (10/10)** — All five criteria at 2/2. `unsafe_code = "deny"` at workspace level (only `cabi/` lifts it per-target for FFI). `thiserror` enum with typed variants (`Io`, `Jpeg`, `InvalidFormat`, `Unsupported`, `BufferTooShort`, `Profile`, `Canceled`). NUL guard in path handling, 32 MB file-size guard in pipeline. No locale-dependent string operations in codec logic. No negative naming or parameter bloat found in audit.
+**Current: 100% (10/10)** — All five criteria at 2/2. `unsafe_code = "deny"` at workspace level (the [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin) repo lifts it only for FFI). `thiserror` enum with typed variants (`Io`, `Jpeg`, `InvalidFormat`, `Unsupported`, `BufferTooShort`, `Profile`, `Canceled`). NUL guard in path handling, 8 MB file-size guard in pipeline. No locale-dependent string operations in codec logic. No negative naming or parameter bloat found in audit.
 
 ---
 
@@ -126,8 +126,8 @@ mean of all eight category percentages.
 - Test (`cargo test --workspace`)
 - Clippy (`cargo clippy --workspace -- -D warnings`)
 - Format check (`cargo fmt --check`)
-- cabi cdylib build + symbol export verification (`nm -D | grep ig_plugin_get_api`)
-- Also runs: `--features simd` test matrix, aarch64 cross-compilation, `cargo audit`, `cargo-llvm-cov`, `cargo fuzz build`
+- C ABI plugin: [separate repo](https://github.com/B67687/Imageglass-Ithmb-Plugin) with symbol export verification (`nm -D | grep ig_plugin_get_api`)
+- Also runs: `--features simd` test matrix, aarch64 cross-compilation, `cargo deny check`, `cargo fuzz build`
 
 ---
 

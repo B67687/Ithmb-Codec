@@ -26,7 +26,7 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 | 2 | `--features simd` CI | ✅ CI tests with `--features simd` for SIMD code paths |
 | 2 | Python bindings CI | ✅ `pymod/` built via maturin/abi3-py312 |
 | 2 | File size gate (250 LOC) | 🟡 Script at `tools/check-file-sizes.sh`, not yet wired into CI |
-| 2 | C ABI release integrity | ✅ `cabi/` built in CI; `nm` verifies `ig_plugin_get_api` symbol export |
+| 2 | C ABI release integrity | ✅ Built in the [plugin repo](https://github.com/B67687/Imageglass-Ithmb-Plugin); `nm` verifies `ig_plugin_get_api` symbol export |
 | 2 | Cancellation polling | ✅ `AtomicBool` parameter in all decoder functions |
 | 2 | C# cross-verification | ✅ All 7 formats verified pixel-for-pixel against C# oracle during development |
 | 2 | Miri unsafety check | ✅ `cargo +nightly miri test --features simd` — 21 SSE2 tests verified, 0 UB |
@@ -39,7 +39,7 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 | **Data Flow** | Unidirectional: pipeline detect → prefix match → per-format decoder → DecodedImage. No back-edges. |
 | **Fail-Fast** | Buffer-too-small guards in every decoder. Cancellation polled at macroblock boundaries. |
 | **Parse-Don't-Validate** | 54 built-in profiles parsed at compile-time into `ProfileDb`. |
-| **Layered Dependencies** | `ithmb-core` → `ithmb-cli`, `ithmb-core-cabi`, `pymod`. No cycles. |
+| **Layered Dependencies** | `ithmb-core` → `ithmb-cli`, `pymod`. No cycles. |
 
 ## Code Rules
 

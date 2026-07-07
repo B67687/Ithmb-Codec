@@ -20,7 +20,7 @@ Canonical numbers for the Ithmb-Codec Rust workspace. All other documentation sh
 | Test suites | 12 |
 | Golden test vectors | 14 |
 | Concurrency tests | 11 |
-| libfuzzer targets | 3 (fuzz_decode_ithmb, fuzz_open_ithmb, fuzz_cabi_decode) |
+| libfuzzer targets | 2 (fuzz_decode_ithmb, fuzz_open_ithmb) |
 | Fuzz iterations | 1.2M+ |
 | Miri tests | 21 |
 | Fuzz crashes | 0 |

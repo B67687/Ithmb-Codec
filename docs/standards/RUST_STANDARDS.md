@@ -21,7 +21,7 @@ It is based on authoritative external sources (linked below) and our own experie
 
 ```toml
 [lints.rust]
-unsafe_code = "deny"        # unsafe only in simd/ and cabi/
+unsafe_code = "deny"        # unsafe only in simd/ (intrinsics)
 
 [lints.clippy]
 all = "deny"
