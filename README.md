@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/badges/ithmb-icon.svg" alt="IThmb Thumbnail Codec" width="96" height="96">
+<img src="docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
 
-# IThmb Thumbnail Codec
+# Ithmb Image Codec
 
 [![License: MIT](docs/badges/license.svg)](LICENSE)
 [![Rust](docs/badges/rust.svg)](https://rust-lang.org)
@@ -33,7 +33,7 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 - BGR15 channel-swap for iPhone compatibility
 - JPEG-embedded T-prefix decoding via pure Rust JPEG decoder
 - Cross-platform (Linux x64/ARM64, macOS x64/ARM64, Windows x64)
-- C ABI library for FFI integration into existing applications
+- C ABI shared library for FFI integration — see [separate plugin repo](https://github.com/B67687/Imageglass-Ithmb-Plugin)
 - CLI tool for decoding, inspection, and frame extraction
 - Python bindings (PyO3) for scripting and ML pipelines
 - Full SIMD acceleration (SSE2+AVX2+NEON runtime dispatch) for YUV conversion paths
@@ -83,7 +83,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 - [Testing & validation](#testing--validation)
 - [Architecture](#architecture)
 - [CLI tool](#cli-tool)
-- [C ABI](#c-abi)
+- [C ABI shared library](#c-abi-shared-library)
 - [Profile Reference](#profile-reference)
 - [Limitations](#limitations)
 - [Troubleshooting](#troubleshooting)
@@ -158,7 +158,7 @@ Full usage: see the [CLI tool](#cli-tool) section.
 
 ### Requirements
 
-- [Rust](https://rust-lang.org) 1.85 or later (edition 2024)
+- [Rust](https://rust-lang.org) 1.88 or later (edition 2024)
 - A C compiler toolchain (for native code linking)
 
 ### Build
@@ -273,7 +273,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 || `simd/` | SSE2/AVX2/NEON YUV conversion dispatch (feature-gated), per-format SIMD sub-modules |
 | `device_profiles.rs` | 18-device iPod/iPhone format lookup table |
 | `enc.rs` | Synthetic encoders for all raw formats |
-| `enc_helpers.rs` | Shared encoder helpers (InterlaceFields, BT.601) |
+| `enc/helpers.rs` | Shared encoder helpers (InterlaceFields, BT.601) |
 | `profile.rs` | Profile struct (IthmbVariantProfile, IthmbEncoding) |
 | `profile_db.rs` | Built-in profile database (54 entries) |
 | `profile_parser.rs` | JSON parser for external `profiles.json` |
@@ -315,9 +315,9 @@ ithmb --frame 2 input.ithmb output.png
 ithmb --raw input.ithmb output.bin
 ```
 
-### ithmb-core-cabi (C ABI shared library) — [separate repo](https://github.com/B67687/Imageglass-Ithmb-Plugin)
+### C ABI shared library
 
-A `cdylib` that implements the ImageGlass v10 native plugin ABI via `ig_plugin_get_api()`, enabling integration into the ImageGlass image viewer **(Windows-only)**. Now maintained in its [own repository](https://github.com/B67687/Imageglass-Ithmb-Plugin) to keep the plugin scope separate from the format codec.
+The C ABI library (`ithmb-core-cabi`) — a `cdylib` implementing the ImageGlass v10 native plugin ABI — is now maintained in its [own repository](https://github.com/B67687/Imageglass-Ithmb-Plugin) to keep the plugin scope separate from the format codec. It enables integration into the ImageGlass image viewer **(Windows-only)** and provides FFI from any language with C FFI support.
 
 ### ithmb-python (PyO3 bindings)
 

@@ -7,6 +7,7 @@ description = "Pure Rust decoder and encoder for Apple iThmb thumbnail cache fil
 repository = "https://github.com/B67687/Ithmb-Codec"
 homepage = "https://github.com/B67687/Ithmb-Codec"
 documentation = "https://docs.rs/ithmb-core"
+readme = "README.md"
 keywords = ["ithmb", "thumbnail", "apple", "imageglass", "image"]
 categories = ["multimedia::images", "multimedia::video"]
 

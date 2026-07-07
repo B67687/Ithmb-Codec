@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Rust toolchain** — install via [rustup](https://rustup.rs). Edition 2024 requires Rust 1.85+.
+- **Rust toolchain** — install via [rustup](https://rustup.rs). Edition 2024 requires Rust 1.88+.
 - **Git** with commit signing configured (`commit.gpgsign = true`)
 - **Pre-commit hooks** — run once: `git config core.hooksPath .githooks`
 - **LSP** — `.opencode/lsp.json` configures rust-analyzer with clippy as the check command

@@ -52,6 +52,17 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace --all-features --all-targets -- -D warnings
 
+  check_links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress README.md docs/
+          fail: true
+
   verify_deny:
     runs-on: ubuntu-latest
     timeout-minutes: 5

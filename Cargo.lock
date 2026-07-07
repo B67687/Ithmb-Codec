@@ -266,7 +266,7 @@ checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
 name = "ithmb-cli"
-version = "1.9.0"
+version = "1.9.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -276,7 +276,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-core"
-version = "1.9.0"
+version = "1.9.1"
 dependencies = [
  "divan",
  "jpeg-decoder",
@@ -286,7 +286,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-gen"
-version = "1.9.0"
+version = "1.9.1"
 dependencies = [
  "clap",
  "ithmb-core",
@@ -294,7 +294,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-python"
-version = "1.9.0"
+version = "1.9.1"
 dependencies = [
  "ithmb-core",
  "pyo3",
