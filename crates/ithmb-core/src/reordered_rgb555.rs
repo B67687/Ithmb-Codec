@@ -47,8 +47,9 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
     let mut dst = vec![0u8; total_pixels * 4];
     let bits = std::cmp::max(w, h).next_power_of_two().trailing_zeros();
 
-    // Pre-allocate row offset LUT (reused per row, saves per-allocation churn)
-    let mut row_offsets = vec![0u32; w];
+    // Stack-allocated row offset LUT: max known profile width is 480,
+    // so 1024 u32s (4 KB) is more than sufficient and avoids a heap alloc.
+    let mut row_offsets = [0u32; 1024];
 
     for y in 0..h {
         crate::pixel_utils::check_canceled(canceled, "reordered_rgb555 decode canceled")?;
@@ -57,7 +58,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         // Phase 1: Build row offset table via Morton x-increment (C's approach)
         // Full morton_interleave for x=0, then 5-op increment for x=1..w-1
         let mut z = morton_interleave(0, y as u32, bits);
-        for entry in &mut row_offsets {
+        for entry in &mut row_offsets[..w] {
             *entry = z;
             z = morton_inc_x(z);
         }
@@ -81,7 +82,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
             dst[dst_idx..dst_idx + 16].copy_from_slice(&bgra);
             x += 4;
         }
-        for (rx, entry) in row_offsets.iter().enumerate().take(w).skip(x) {
+        for (rx, entry) in row_offsets[..w].iter().enumerate().skip(x) {
             let src_idx = *entry as usize * 2;
             let raw = if src_idx + 1 < src.len() {
                 if le {

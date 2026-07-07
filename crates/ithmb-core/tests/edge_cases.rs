@@ -24,6 +24,7 @@
 // ---------------------------------------------------------------------------
 
 use divan as _;
+use image as _;
 use ithmb_core::enc::*;
 use ithmb_core::error::DecodeError;
 use ithmb_core::pipeline::decode_with_profile;

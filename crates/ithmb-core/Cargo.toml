@@ -30,6 +30,7 @@ metrics = []
 
 [dev-dependencies]
 divan = "0.1.21"
+image = "0.25"
 
 [[bench]]
 name = "decoders"

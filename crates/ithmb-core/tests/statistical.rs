@@ -18,6 +18,7 @@
 )]
 
 use divan as _;
+use image as _;
 use ithmb_core::enc::*;
 use ithmb_core::pipeline::decode_with_profile;
 use ithmb_core::profile::{Encoding, Profile};
@@ -500,4 +501,356 @@ fn synthetic_gradient_variance_rgb565_nonzero() {
         "synthetic gradient should have positive variance \
          (R={var_r}, G={var_g}, B={var_b})"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Test 7 — Interlaced UYVY
+// ---------------------------------------------------------------------------
+
+#[test]
+fn decoded_interlaced_uyvy_golden_valid_ranges() {
+    // Given: golden interlaced UYVY 4×4
+    let enc = include_bytes!("fixtures/uyvy_interlaced_4x4.enc");
+    let profile = Profile {
+        is_interlaced: true,
+        ..util::make_profile(4, 4, Encoding::Yuv422)
+    };
+    // When: decoding
+    let img = decode_golden(enc, &profile);
+    // Then: all pixel values have alpha = 255 and valid dimensions
+    for (i, px) in img.data.chunks_exact(4).enumerate() {
+        assert_eq!(px[3], 255, "interlaced UYVY alpha not 255 at pixel {i}");
+    }
+    // Verify dimensions
+    assert_eq!(img.width, 4, "interlaced width should match");
+    assert_eq!(img.height, 4, "interlaced height should match");
+    assert!(!img.data.is_empty(), "decoded data should not be empty");
+}
+
+#[test]
+fn decoded_interlaced_uyvy_synthetic_flat_roundtrip() {
+    // Given: synthetic flat-gray 4×4 BGRA
+    let w = 4i32;
+    let h = 4i32;
+    let n = (w * h) as usize;
+    let bgra: Vec<u8> = std::iter::repeat([128u8, 128, 128, 255])
+        .flatten()
+        .take(n * 4)
+        .collect();
+    let profile = Profile {
+        is_interlaced: true,
+        ..util::make_profile(w, h, Encoding::Yuv422)
+    };
+    // When: encode (interlaced) → decode (interlaced)
+    let img = roundtrip(&bgra, w, h, &profile);
+    // Then: each color channel mean near 128 (BT.601 may lose ±2)
+    for ch in 0..3 {
+        let m = mean_channel(&img.data, ch);
+        assert!(
+            m.abs_diff(128) <= 16,
+            "interlaced flat-gray channel {ch} mean {m} differs from 128 by more than 16"
+        );
+    }
+    assert_eq!(mean_channel(&img.data, 3), 255, "alpha must be 255");
+    assert_eq!(img.width, w as u32, "width mismatch");
+    assert_eq!(img.height, h as u32, "height mismatch");
+}
+
+// ---------------------------------------------------------------------------
+// Test 8 — CLCL (nibble-chroma planar)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn decoded_clcl_golden_white_mean_near_255() {
+    // Given: golden CLCL solid-white 4×4
+    let enc = include_bytes!("fixtures/clcl_solid_white_4x4.enc");
+    let profile = Profile {
+        clcl_chroma: true,
+        ..util::make_profile(4, 4, Encoding::Yuv422)
+    };
+    // When: decoding
+    let img = decode_golden(enc, &profile);
+    // Then: each channel mean within ±8 of 255 (CLCL nibble quantization)
+    for ch in 0..NUM_CHANNELS {
+        let m = mean_channel(&img.data, ch);
+        assert!(
+            m.abs_diff(255) <= 8,
+            "CLCL white channel {ch} mean {m} differs from 255 by more than 8"
+        );
+    }
+}
+
+#[test]
+fn decoded_clcl_deterministic() {
+    // Given: golden CLCL solid-white 4×4
+    let enc = include_bytes!("fixtures/clcl_solid_white_4x4.enc");
+    let profile = Profile {
+        clcl_chroma: true,
+        ..util::make_profile(4, 4, Encoding::Yuv422)
+    };
+    // When: decoding twice
+    let img1 = decode_golden(enc, &profile);
+    let img2 = decode_golden(enc, &profile);
+    // Then: both decodes produce identical pixel data
+    assert_eq!(img1.data, img2.data, "CLCL decode must be deterministic");
+    assert_eq!(img1.width, img2.width);
+    assert_eq!(img1.height, img2.height);
+}
+
+#[test]
+fn decoded_clcl_synthetic_gradient_positive_variance() {
+    // Given: synthetic 4×4 gradient
+    let w = 4i32;
+    let h = 4i32;
+    let n = (w * h) as usize;
+    let mut bgra = vec![0u8; n * 4];
+    for y in 0..h {
+        for x in 0..w {
+            let idx = ((y * w + x) * 4) as usize;
+            let t = (y * w + x) as u8;
+            bgra[idx] = t * 17; // B
+            bgra[idx + 1] = t * 7; // G
+            bgra[idx + 2] = 255 - t * 11; // R
+            bgra[idx + 3] = 255; // A
+        }
+    }
+    let profile = Profile {
+        clcl_chroma: true,
+        ..util::make_profile(w, h, Encoding::Yuv422)
+    };
+    // When: encode as CLCL, decode back
+    let img = roundtrip(&bgra, w, h, &profile);
+    // Then: at least one color channel has positive variance
+    let var_r = variance_channel(&img.data, 2);
+    let var_g = variance_channel(&img.data, 1);
+    let var_b = variance_channel(&img.data, 0);
+    assert!(
+        var_r > 0 || var_g > 0 || var_b > 0,
+        "CLCL gradient should have positive variance (R={var_r}, G={var_g}, B={var_b})"
+    );
+    // Verify validity
+    for px in img.data.chunks_exact(4) {
+        assert_eq!(px[3], 255, "CLCL gradient alpha");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Test 9 — CL (per-pixel nibble chroma)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn decoded_cl_golden_white_mean_near_255() {
+    // Given: golden CL solid-white 4×4
+    let enc = include_bytes!("fixtures/cl_solid_white_4x4.enc");
+    let profile = Profile {
+        cl_chroma: true,
+        ..util::make_profile(4, 4, Encoding::Yuv422)
+    };
+    // When: decoding
+    let img = decode_golden(enc, &profile);
+    // Then: each channel mean within ±8 of 255 (CL nibble quantization)
+    for ch in 0..NUM_CHANNELS {
+        let m = mean_channel(&img.data, ch);
+        assert!(
+            m.abs_diff(255) <= 8,
+            "CL white channel {ch} mean {m} differs from 255 by more than 8"
+        );
+    }
+}
+
+#[test]
+fn decoded_cl_deterministic() {
+    // Given: golden CL solid-white 4×4
+    let enc = include_bytes!("fixtures/cl_solid_white_4x4.enc");
+    let profile = Profile {
+        cl_chroma: true,
+        ..util::make_profile(4, 4, Encoding::Yuv422)
+    };
+    // When: decoding twice
+    let img1 = decode_golden(enc, &profile);
+    let img2 = decode_golden(enc, &profile);
+    // Then: both decodes produce identical pixel data
+    assert_eq!(img1.data, img2.data, "CL decode must be deterministic");
+    assert_eq!(img1.width, img2.width);
+    assert_eq!(img1.height, img2.height);
+}
+
+#[test]
+fn decoded_cl_synthetic_gradient_positive_variance() {
+    // Given: synthetic 4×4 gradient
+    let w = 4i32;
+    let h = 4i32;
+    let n = (w * h) as usize;
+    let mut bgra = vec![0u8; n * 4];
+    for y in 0..h {
+        for x in 0..w {
+            let idx = ((y * w + x) * 4) as usize;
+            let t = (y * w + x) as u8;
+            bgra[idx] = t * 17; // B
+            bgra[idx + 1] = t * 7; // G
+            bgra[idx + 2] = 255 - t * 11; // R
+            bgra[idx + 3] = 255; // A
+        }
+    }
+    let profile = Profile {
+        cl_chroma: true,
+        ..util::make_profile(w, h, Encoding::Yuv422)
+    };
+    // When: encode as CL, decode back
+    let img = roundtrip(&bgra, w, h, &profile);
+    // Then: at least one color channel has positive variance
+    let var_r = variance_channel(&img.data, 2);
+    let var_g = variance_channel(&img.data, 1);
+    let var_b = variance_channel(&img.data, 0);
+    assert!(
+        var_r > 0 || var_g > 0 || var_b > 0,
+        "CL gradient should have positive variance (R={var_r}, G={var_g}, B={var_b})"
+    );
+    // Verify validity
+    for px in img.data.chunks_exact(4) {
+        assert_eq!(px[3], 255, "CL gradient alpha");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Test 10 — Swapped chroma YCbCr420
+// ---------------------------------------------------------------------------
+
+#[test]
+fn decoded_swap_chroma_ycbcr420_synthetic_roundtrip() {
+    // Given: synthetic 4×4 gradient
+    let w = 4i32;
+    let h = 4i32;
+    let n = (w * h) as usize;
+    let mut bgra = vec![0u8; n * 4];
+    for y in 0..h {
+        for x in 0..w {
+            let idx = ((y * w + x) * 4) as usize;
+            let t = (y * w + x) as u8;
+            bgra[idx] = t * 17; // B
+            bgra[idx + 1] = t * 7; // G
+            bgra[idx + 2] = 255 - t * 11; // R
+            bgra[idx + 3] = 255; // A
+        }
+    }
+    let profile = Profile {
+        swap_chroma_planes: true,
+        ..util::make_profile(w, h, Encoding::Ycbcr420)
+    };
+    // When: encode with swapped chroma → decode
+    let img = roundtrip(&bgra, w, h, &profile);
+    // Then: at least one color channel has positive variance
+    let var_r = variance_channel(&img.data, 2);
+    let var_g = variance_channel(&img.data, 1);
+    let var_b = variance_channel(&img.data, 0);
+    assert!(
+        var_r > 0 || var_g > 0 || var_b > 0,
+        "swap chroma gradient should have positive variance (R={var_r}, G={var_g}, B={var_b})"
+    );
+    // Verify validity: values in range and alpha = 255
+    for px in img.data.chunks_exact(4) {
+        assert_eq!(px[3], 255, "swap chroma alpha");
+    }
+}
+
+#[test]
+fn decoded_swap_chroma_ycbcr420_deterministic() {
+    // Given: synthetic flat 4×4 BGRA
+    let w = 4i32;
+    let h = 4i32;
+    let n = (w * h) as usize;
+    let bgra: Vec<u8> = std::iter::repeat([100u8, 150, 200, 255])
+        .flatten()
+        .take(n * 4)
+        .collect();
+    let profile = Profile {
+        swap_chroma_planes: true,
+        ..util::make_profile(w, h, Encoding::Ycbcr420)
+    };
+    // When: encode → decode, then encode → decode again
+    let encoded1 = ithmb_core::enc::encode_bgra(&bgra, w, h, &profile);
+    let prefix1 = (profile.prefix as u32).to_be_bytes();
+    let mut wp1 = Vec::with_capacity(4 + encoded1.len());
+    wp1.extend_from_slice(&prefix1);
+    wp1.extend_from_slice(&encoded1);
+    let img1 =
+        decode_with_profile(&wp1, &profile, &std::sync::atomic::AtomicBool::new(false)).expect("swap chroma decode 1");
+
+    let encoded2 = ithmb_core::enc::encode_bgra(&bgra, w, h, &profile);
+    let prefix2 = (profile.prefix as u32).to_be_bytes();
+    let mut wp2 = Vec::with_capacity(4 + encoded2.len());
+    wp2.extend_from_slice(&prefix2);
+    wp2.extend_from_slice(&encoded2);
+    let img2 =
+        decode_with_profile(&wp2, &profile, &std::sync::atomic::AtomicBool::new(false)).expect("swap chroma decode 2");
+
+    // Then: both encodes and decodes produce identical pixel data
+    assert_eq!(encoded1, encoded2, "swap chroma encode must be deterministic");
+    assert_eq!(img1.data, img2.data, "swap chroma decode must be deterministic");
+    // Verify validity
+    assert_eq!(mean_channel(&img1.data, 3), 255, "alpha must be 255");
+}
+
+// ---------------------------------------------------------------------------
+// Test 11 — Multi-format fuzz range check
+// ---------------------------------------------------------------------------
+
+#[allow(clippy::type_complexity)]
+#[test]
+fn decoded_fuzz_multi_format_range_check() {
+    // Given: deterministic pseudo-random BGRA images across multiple formats
+    let sizes: &[i32] = &[2, 4, 6];
+    let seed: [u8; 4] = [0xAB, 0xCD, 0xEF, 0x01];
+
+    // Test each format with several random images
+    let format_tests: &[(Encoding, &str, fn(&mut Profile))] = &[
+        (Encoding::Rgb565, "RGB565", |_| {}),
+        (Encoding::Rgb555, "RGB555", |_| {}),
+        (Encoding::Yuv422, "UYVY", |_| {}),
+        (Encoding::Ycbcr420, "YCbCr420", |_| {}),
+        (Encoding::Yuv422, "UYVY interlaced", |p| {
+            p.is_interlaced = true;
+        }),
+        (Encoding::Yuv422, "CLCL", |p| {
+            p.clcl_chroma = true;
+        }),
+        (Encoding::Yuv422, "CL", |p| {
+            p.cl_chroma = true;
+        }),
+        (Encoding::Ycbcr420, "YCbCr420 swap", |p| {
+            p.swap_chroma_planes = true;
+        }),
+    ];
+
+    for trial in 0..20 {
+        let w = sizes[trial % sizes.len()];
+        let h = sizes[(trial / 3) % sizes.len()];
+        let n = (w * h) as usize;
+
+        // Generate pseudo-random BGRA
+        let mut bgra = vec![0u8; n * 4];
+        for (i, px) in bgra.chunks_exact_mut(4).enumerate() {
+            let mix = (trial * 13 + i * 7) as u8;
+            px[0] = seed[0].wrapping_add(mix); // B
+            px[1] = seed[1].wrapping_sub(mix.wrapping_mul(3)); // G
+            px[2] = seed[2].wrapping_mul(mix.wrapping_add(1)); // R
+            px[3] = 255; // A
+        }
+
+        let (encoding, name, profile_fn) = &format_tests[trial % format_tests.len()];
+        let mut profile = util::make_profile(w, h, *encoding);
+        profile_fn(&mut profile);
+
+        // When: encode → decode
+        let img = roundtrip(&bgra, w, h, &profile);
+
+        // Then: dimensions preserved, alpha=255, data not empty
+        assert_eq!(img.width, w as u32, "{name} trial {trial}: width mismatch");
+        assert_eq!(img.height, h as u32, "{name} trial {trial}: height mismatch");
+        assert!(!img.data.is_empty(), "{name} trial {trial}: empty data");
+        // For color channels, u8 range is enforced by type; verify alpha and dimensions
+        for px in img.data.chunks_exact(4) {
+            assert_eq!(px[3], 255, "{name} trial {trial}: alpha not 255");
+        }
+    }
 }

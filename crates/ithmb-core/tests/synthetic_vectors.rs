@@ -30,6 +30,7 @@ use std::sync::atomic::AtomicBool;
 
 // Suppress unused-dev-dependency warnings (workspace-wide deps).
 use divan as _;
+use image as _;
 use jpeg_decoder as _;
 #[cfg(feature = "cache")]
 use lru as _;
