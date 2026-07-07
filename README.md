@@ -37,7 +37,6 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 - CLI tool for decoding, inspection, and frame extraction
 - Python bindings (PyO3) for scripting and ML pipelines
 - Full SIMD acceleration (SSE2+AVX2+NEON runtime dispatch) for YUV conversion paths
-- Full SIMD acceleration (SSE2+AVX2+NEON runtime dispatch) for YUV conversion paths
 
 > Not an iOS 13+ thumbnail decoder — those use a different proprietary format.
 
@@ -74,8 +73,6 @@ pip install ithmb-python  # (not yet published — build from pymod/)
 ```
 
 For detailed build instructions see [Build from source](#build-from-source).
-
-## Table of Contents
 
 ## Table of Contents
 
@@ -152,7 +149,7 @@ ithmb-core = { git = "https://github.com/B67687/ithmb-codec" }
 
 Or use the CLI binary directly (see [releases](https://github.com/B67687/ithmb-codec/releases)).
 
-### CLI tool
+### CLI binary
 
 ```bash
 cargo install --git https://github.com/B67687/ithmb-codec ithmb-cli
@@ -189,6 +186,7 @@ The workspace produces five artifacts:
 | `ithmb-core-cabi` | `libithmb_core_cabi.so` / `.dylib` / `.dll` (C ABI shared library) | `target/release/` |
 | `ithmb-python`    | `libithmb_python.so` (PyO3 abi3-py312)      | `target/release/`   |
 | `ithmb-gen`       | `ithmb-gen` (sample generator binary)       | `target/release/`   |
+
 ### Cross-compilation
 
 Cross-compiling for other targets requires the appropriate target toolchain installed via `rustup target add`:
