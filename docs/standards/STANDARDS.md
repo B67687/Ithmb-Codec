@@ -71,22 +71,23 @@ pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 16] {
     #[cfg(all(feature = "simd", target_arch = "x86_64"))]
     unsafe { return uyvy::sse2(quad); }
 
-    #[cfg(all(feature = "simd", target_arch = "aarch64"))]
+    #[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
     unsafe { return neon::neon_impl(quad); }
 
     #[cfg(not(all(feature = "simd",
-        any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")
+        any(target_arch = "x86_64", target_arch = "x86", all(target_arch = "aarch64", not(target_os = "macos")))
     )))]
     scalar::uyvy_quad_to_bgra(quad)
-}
 ```
+
 
 ### Platform Coverage
 
 | Platform | Default SIMD | Our Dispatch |
 |----------|-------------|--------------|
 | x86_64 (Linux, macOS Intel, Windows) | SSE2 guaranteed | AVX2 -> SSE4.1 -> SSE2 -> scalar |
-| aarch64 (macOS ARM) | NEON guaranteed | NEON -> scalar (no runtime check needed) |
+| aarch64 (Linux ARM) | NEON guaranteed | NEON -> scalar |
+| aarch64 (macOS ARM) | NEON guaranteed | Scalar (NEON gated — known edge case, see below) |
 | x86 (32-bit) | SSE2 | SSE2 -> scalar |
 | Other (RISC-V, etc.) | None | scalar only |
 
@@ -144,6 +145,7 @@ Over the course of development, we discovered and fixed these cross-platform iss
 | Windows uses PowerShell, not bash | Build script syntax error | Added `shell: bash` to CI steps |
 | Cache key with commas in features | Windows CI key validation error | Removed features from cache key |
 | pymod links Python on macOS ARM | Linker fails | Added `--exclude ithmb-python` on macOS in CI |
+| macOS ARM NEON edge case | `macOS+simd` CI fails on test or runtime | Gated NEON dispatch behind `not(target_os = "macos")`; macOS+simd uses scalar fallback. Known issue tracked in [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140) — may be a QEMU or runner quirk rather than codec bug. |
 
 ### CI Matrix
 
@@ -154,7 +156,7 @@ We test 6 platform/feature combinations plus clippy verification:
 | build | ubuntu-latest | — | Core compatibility |
 | build | ubuntu-latest | simd | x86_64 SIMD coverage |
 | build | macos-latest | — | aarch64 ARM coverage |
-| build | macos-latest | simd | ARM NEON coverage |
+| build | macos-latest | simd | ARM coverage (scalar fallback — NEON gated, see below) |
 | build | windows-latest | — | Windows/ImageGlass support |
 | build | windows-latest | simd | Windows SIMD |
 | verify_clippy | ubuntu-latest | — | Clippy + audit |

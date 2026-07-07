@@ -27,7 +27,7 @@ A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and 
 - 54 built-in profiles (+ 1 speculative disabled) covering known iPod/iPhone formats
 - 8 decoders (RGB565, RGB555, ReorderedRGB555, UYVY, YCbCr420, CLCL, CL, JPEG)
 - 7 synthetic encoders for all raw formats
-- Roundtrip-proven tests (489+ passing)
+- Roundtrip-proven tests — see [STATS.md](STATS.md) for current count and suite breakdown
 - PhotoDB/ArtworkDB read, write, and integrity checking
 - Multi-frame F-prefix raw file support
 - BGR15 channel-swap for iPhone compatibility
@@ -96,7 +96,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 
 ## How it works
 
-1. **Peek read** — reads the entire file into memory (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos). A 32 MB size guard prevents OOM from pathological input.
+1. **Peek read** — reads the entire file into memory (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos). An 8 MB size guard prevents OOM from pathological input (see [ADR-0005](docs/adr/0005-file-size-guard-limit.md)).
 
 2. **JPEG scan** — checks for the JPEG SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via `jpeg-decoder`, and its EXIF orientation tag (0x0112) is exposed through the profile system.
 
@@ -218,7 +218,7 @@ Available features: `simd` (SSE2/AVX2/NEON YUV conversion), `cache` (LRU raw fil
 cargo test
 ```
 
-**489 tests** across 12 suites: roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 8 decoders + 10,000 random byte mutations), 2 libfuzzer targets (1.2M+ iterations, 0 crashes), concurrency stress tests, statistical validation + golden vector verification, YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, device-specific format tables, corruption fuzz, format ID profile tests, encoder helpers (interlace fields + BT.601 color conversion), and decoder fallback paths.
+See **[STATS.md](STATS.md)** for current test counts and suite breakdown: roundtrip (RGB565: 65,536 values, RGB555: 32,768), fuzz (350+ inputs across all 8 decoders + 10,000 random byte mutations), 2 libfuzzer targets (1.2M+ iterations, 0 crashes), concurrency stress tests, statistical validation + golden vector verification, YUV tolerance, parsers, speculative decoder paths (CL, CLCL, rotation, swapped chroma), buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, BGR15 channel-swap, PhotoDB roundtrip write/integrity/JPEG blob decode, device-specific format tables, corruption fuzz, format ID profile tests, encoder helpers (interlace fields + BT.601 color conversion), and decoder fallback paths.
 
 **12 test suites** across the workspace, all passing.
 
@@ -376,7 +376,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (489+ total).
+> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (see [STATS.md](STATS.md) for current count).
 >
 > **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) if you encounter one.
 >
@@ -394,7 +394,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample.    |
 | Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues). |
-| "File too large" error       | File exceeds the **32 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.              |
+| "File too large" error       | File exceeds the **8 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.               |
 
 > [!TIP]
 > If a file doesn't decode correctly, [open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample link. You can also try [ithmb.org](https://ithmb.org) — a browser-based .ithmb decoder (offline, no upload) — to compare results.
@@ -408,7 +408,7 @@ The library was developed through iterative research, implementation, review, an
 1. **Format survey** — 33 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 54 profiles
 3. **Implementation** — Pure Rust workspace with 8 decoders, JPEG decode, PhotoDB/ArtworkDB support, CLI tooling, PyO3 Python bindings, and sample generator
-4. **Testing** — 489+ unit tests across roundtrip, fuzz, libfuzzer, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, byte-level corruption fuzz, BGR15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, concurrency stress tests, and format ID profile tests
+4. **Testing** — Current test count in [STATS.md](STATS.md); unit tests across roundtrip, fuzz, libfuzzer, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, byte-level corruption fuzz, BGR15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, concurrency stress tests, and format ID profile tests
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, buffer overflow, integer overflow, and defense-in-depth
 6. **Release** — Published via GitHub Releases
 
@@ -422,7 +422,7 @@ Quality checks run locally before release:
 
 ```bash
 cargo clippy --all-targets -- -D warnings  # Lint
-cargo test                                 # All tests (489+ across 12 suites)
+cargo test                                 # All tests (see [STATS.md](STATS.md) for current count)
 cargo audit                                # Advisory check
 cargo fuzz build                           # Fuzz targets compile check
 ```

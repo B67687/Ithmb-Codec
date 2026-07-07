@@ -5,10 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.9.0] — 2026-07-07
 
 ### Added
-- **Initial Rust port** — Full C#→Rust conversion of Ithmb-Codec as a pure Rust workspace (3 crates: ithmb-core, ithmb-cli, ithmb-core-cabi)
+- **Initial Rust port** — Full C#→Rust conversion of Ithmb-Codec as a pure Rust workspace (5 crates: ithmb-core, ithmb-cli, ithmb-core-cabi, ithmb-gen, pymod)
 - **8 pixel decoders** — RGB565, RGB555, ReorderedRGB555 (Morton Z-order), UYVY (YUV422), YCbCr420, CLCL (nibble-chroma), CL (per-pixel chroma), JPEG
 - **7 synthetic encoders** — All raw formats with BuildIthmbFile dispatch, rotation, padding, interlacing
 - **PhotoDB/ArtworkDB** — Binary chunk parser, writer, and integrity checker (9 chunk types: MHFD, MHSD, MHLI, MHII, MHNI, MHBA, MHIA, MHIF, MHOD)
@@ -26,36 +26,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Synthetic test vectors** — 36 programmatic test vector generation functions
 - **Golden test vectors** — 15 reference files across all 7 encoding formats
 - **Benchmark suite** — 10 divan benchmarks for decoders, encoders, and pipeline throughput
-- **Format specification** — docs/format.md: complete .ithmb format reference (5,446 words, 46 sections)
+- **Format specification** — docs/FORMAT.md: complete .ithmb format reference (5,446 words, 46 sections)
 - **CLI tool** — ithmb binary with decode, info, list-profiles, frame extraction, raw output, PNG output, benchmarks
 - **Sample generator CLI** — ithmb-gen crate for generating test .ithmb files in all 7 formats
 - **C ABI** — cdylib exposing ImageGlass v10 plugin ABI for FFI integration
+- **STATS.md** — Canonical single-source-of-truth for test counts, suite breakdown, and project statistics (README now references STATS.md instead of hardcoding)
+- **ADR-0005: 8 MB file size guard** — Systematic research-driven limit with 10× margin on largest known frame (see docs/adr/0005-file-size-guard-limit.md)
+- **GLOSSARY.md, GUIDE.md** — Plain-english explainer for newcomers and iPod extraction walkthrough
+- **ECOSYSTEM.md** — Documented original contributions to the .ithmb reverse-engineering space
 
 ### Changed
 - **SIMD architecture** — RGB565/RGB555 use auto-vectorized scalar (hand-written SSE2/AVX2 was 34× slower on Intel due to AVX frequency downclock). SIMD kept only for YUV BT.601 arithmetic where it provides 1.5×+ speedup
 - **CL/CLCL nibble scaling** — Corrected from ×17 to ×16 (<<4), matching SIMD expansion. 15,625 nibble combos verified
 - **ReorderedRGB555 decoder** — Fixed row-major→Morton Z-order de-interleave for correct >2×2 decode
-- **CI** — Added `--features simd` test matrix, aarch64 runner, cargo audit, cargo-llvm-cov, cargo fuzz build
+- **CI** — Added `--features simd` test matrix, aarch64 runner, clippy pedantic=deny enforcement
+- **Docs reorganized**: docs/standards/, docs/benchmarks/, docs/guides/ under docs/ directory
+- **README restructured**: Hardcoded test/profile counts replaced with STATS.md cross-refs; badge layout grouped; troubleshooting table pipe syntax fixed; unclosed code block fixed
 
 ### Fixed
 - **CL/CLCL scalar nibble bug** — Cb/Cr variable swap and wrong expansion (×17 instead of <<4) corrected
 - **ReorderedRGB555 Morton mismatch** — Decoder read row-major but encoder wrote Z-order Morton; now correctly de-interleaves
 - **All clippy warnings** — 74+ warnings fixed across workspace, pedantic=deny enforced
+- **macOS ARM NEON edge case** — NEON dispatch gated behind `not(target_os = "macos")`; macOS+simd uses scalar fallback. Documented in STANDARDS.md
+- **File size guard (C# port gap)** — 8 MB limit with `DecodeError::FileTooLarge` variant, matching C# MaxDecodeFileSize
+- **README URL casing** — Normalized ithmb-codec→Ithmb-Codec across all docs
+- **CI checkout bumped** — actions/checkout v4→v7
+- **Stale 32 MB references** — All README references updated to 8 MB (matching ADR-0005)
 
 ### Removed
 - **C# CI workflow** — dotnet.yml and related .NET infrastructure removed (project is now pure Rust)
 - **C# ADR documents** — Stale architecture decision records from C# era deleted
 - **AVX-512 dispatch** — Removed after benchmarking showed 34× regression on Intel (frequency downclock + port-5 bottleneck)
+- **tools/mcp-server/** — 27 MB node_modules deleted from repo
+- **Stale v0.3.0 tag** — Orphan tag from squashed history, not on main
 
 ### Infrastructure
 - **Rust workspace** — ithmb-core, ithmb-cli, ithmb-core-cabi, ithmb-gen, pymod (Python bindings)
-- **CI/CD** — rust-ci.yml with build, test, clippy (pedantic=deny), fmt, fuzz build, coverage (cargo-llvm-cov), cargo audit, aarch64 runner
-- **Version 0.1.0 → 0.2.0 → 0.3.0** — crates.io metadata complete (publishing deferred)
+- **CI/CD** — rust-ci.yml with build, test, clippy (pedantic=deny), fuzz build
+- **.omo/** — Agent orchestration infrastructure for structured work tracking
 
 ### Docs
 - **FORMAT.md**: Complete format specification covering all 6 known ithmb variants, header structures, profile tables, JPEG embedding, PhotoDB/ArtworkDB chunk format
-- **XML doc comments**: Added /// documentation to 6 decoder files (DecodeFormatCl, DecodeFormatClcl, DecodeFormatYcbcr420, JpegDecode, Rgb565Rgb555, UyvyYuv)
-- **STANDARDS.md**: Marked as retrospective (standards applied after the fact); deduplicated Tier 2 table
+- **STANDARDS.md**: Cross-platform SIMD lessons learned table; macOS NEON limitation documented; dispatch pseudocode updated with platform cfg
+- **ADR-0004**: Quarterly audit protocol (removed stale synthesis reference)
+- **ADR-0005**: 8 MB file size guard research and rationale
+
+## [Unreleased]
+
+### Added
+
+*(placeholder for future changes)*
 
 ---
 
@@ -404,7 +424,8 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.6.0...v1.9.0
 [1.6.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.3.0...v1.4.0
