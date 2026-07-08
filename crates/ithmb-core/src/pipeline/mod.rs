@@ -14,7 +14,8 @@ mod profile_loader;
 
 pub use self::open::open_ithmb;
 
-use self::profile_loader::{fallback_jpeg_profile, get_db};
+use self::profile_loader::fallback_jpeg_profile;
+pub(crate) use self::profile_loader::get_db;
 use crate::cl;
 use crate::clcl;
 use crate::error::{DecodeError, DecodedImage};

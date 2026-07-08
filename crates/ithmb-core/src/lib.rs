@@ -1,4 +1,3 @@
-#![warn(missing_docs)]
 //! # ithmb-core
 //!
 //! Pure Rust decoder for Apple `.ithmb` thumbnail cache files — the format used
@@ -7,9 +6,14 @@
 //!
 //! This is the canonical reference implementation. All decoder logic lives here;
 //! language-specific wrappers (C# FFI, WASM, Python bindings) call into this core.
+
 // When compiled with `--cfg test` (bench/test targets), divan is available as a
 // dev-dependency but unused by the library itself — suppress the lint.
+#![warn(missing_docs)]
 #![cfg_attr(test, allow(unused_crate_dependencies))]
+
+#[cfg(feature = "c")]
+pub mod c_api;
 #[cfg(feature = "cache")]
 pub mod cache;
 #[cfg(feature = "metrics")]
@@ -32,9 +36,9 @@ pub mod rgb555;
 pub mod rgb565;
 pub mod simd;
 pub mod uyvy;
+pub mod ycbcr420;
 pub mod yuv;
 
-pub mod ycbcr420;
 /// Re-export error types for convenience.
 pub use error::{DecodeError, DecodedImage};
 pub mod pipeline;
