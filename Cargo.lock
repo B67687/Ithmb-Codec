@@ -615,6 +615,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ithmb-wasm"
+version = "1.9.1"
+dependencies = [
+ "ithmb-core",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "jobserver"
 version = "0.1.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"

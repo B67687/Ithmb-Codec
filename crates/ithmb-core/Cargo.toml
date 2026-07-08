@@ -15,7 +15,7 @@ categories = ["multimedia::images", "multimedia::video"]
 workspace = true
 
 [lib]
-crate-type = ["lib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 jpeg-decoder = "0.3"
@@ -27,6 +27,7 @@ default = []
 simd = []
 cache = ["dep:lru"]
 metrics = []
+c = []
 
 [dev-dependencies]
 divan = "0.1.21"
