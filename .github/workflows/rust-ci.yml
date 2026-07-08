@@ -114,6 +114,24 @@ jobs:
         run: cargo fuzz run fuzz_open_ithmb -- -max_total_time=30 2>&1 | tail -5
         working-directory: ./fuzz
       - name: Fuzz encode roundtrip
+        run: cargo fuzz run fuzz_encode_roundtrip -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
+
+  build_c_api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "c-api-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Build with c feature
+        run: cargo build -p ithmb-core --features c
+      - name: Verify C symbols are exported
+        run: nm -D target/debug/libithmb_core.so | grep -E 'ithmb_decode|ithmb_prefix_to_profile'
+      - name: Run C API integration test
+        run: cargo test -p ithmb-core --features c --test c_api_test
 
   wasm:
     runs-on: ubuntu-latest
@@ -129,5 +147,3 @@ jobs:
         run: cargo install wasm-pack --debug 2>&1 | tail -3
       - name: Build wasm
         run: wasm-pack build crates/ithmb-wasm/
-        run: cargo fuzz run fuzz_encode_roundtrip -- -max_total_time=30 2>&1 | tail -5
-        working-directory: ./fuzz

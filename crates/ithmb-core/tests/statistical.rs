@@ -14,7 +14,9 @@
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
     clippy::similar_names,
-    clippy::unnecessary_cast
+    clippy::unnecessary_cast,
+    clippy::pedantic,
+    clippy::unwrap_used
 )]
 
 use divan as _;

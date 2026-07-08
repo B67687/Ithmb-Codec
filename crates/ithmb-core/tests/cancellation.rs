@@ -2,7 +2,9 @@
     unused_crate_dependencies,
     clippy::match_same_arms,
     clippy::borrow_interior_mutable_const,
-    clippy::declare_interior_mutable_const
+    clippy::declare_interior_mutable_const,
+    clippy::pedantic,
+    clippy::unwrap_used
 )]
 //! Cancellation tests for decoder operations.
 //!

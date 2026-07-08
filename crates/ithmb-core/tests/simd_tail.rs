@@ -13,6 +13,7 @@
 //! | 3     | all remainder  | all remainder   |
 //! | 7     | all remainder  | all remainder   |
 //! | 15    | 1 iter + 7 rem | all remainder  |
+#![allow(clippy::pedantic, clippy::unwrap_used)]
 //! | 16    | 2 iters, 0 rem | 1 iter, 0 rem  |
 //! | 17    | 2 iters + 1 rem| 1 iter + 1 rem |
 //!
