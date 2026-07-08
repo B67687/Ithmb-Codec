@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>.ithmb Decoder Demo</title>
+<style>
+  :root { --bg: #0d1117; --fg: #c9d1d9; --border: #30363d; --accent: #58a6ff; --success: #3fb950; --error: #f85149; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+  h1 { color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; width: 100%; max-width: 640px; text-align: center; }
+  .info { color: #8b949e; font-size: 0.9em; margin-bottom: 1.5rem; text-align: center; }
+
+  #drop-zone {
+    width: 100%; max-width: 640px; min-height: 200px;
+    border: 2px dashed var(--border); border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0.5rem; padding: 2rem;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+  }
+  #drop-zone.dragover { border-color: var(--accent); background: #161b22; }
+  #drop-zone.has-file { border-style: solid; border-color: var(--success); }
+  #drop-zone .icon { font-size: 2.5rem; opacity: 0.6; }
+  #drop-zone .label { font-size: 1rem; }
+  #drop-zone .hint { font-size: 0.85rem; color: #8b949e; }
+
+  #status { margin-top: 1rem; font-size: 0.9rem; min-height: 1.4em; text-align: center; }
+  #status.error { color: var(--error); }
+  #status.success { color: var(--success); }
+  #status.loading { color: var(--accent); }
+
+  #canvas-wrapper { margin-top: 1.5rem; display: none; flex-direction: column; align-items: center; gap: 0.5rem; }
+  #canvas-wrapper.visible { display: flex; }
+  canvas { border: 1px solid var(--border); border-radius: 4px; max-width: 100%; image-rendering: pixelated; }
+  #meta { color: #8b949e; font-size: 0.85rem; }
+
+  #error-detail { margin-top: 1rem; max-width: 640px; width: 100%; }
+  #error-detail pre { background: #161b22; padding: 1rem; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border); color: var(--error); font-size: 0.85rem; white-space: pre-wrap; display: none; }
+
+  .footer { margin-top: 3rem; border-top: 1px solid var(--border); padding-top: 1rem; width: 100%; max-width: 640px; text-align: center; color: #8b949e; font-size: 0.85em; }
+  .footer a { color: var(--accent); }
+  code { background: #161b22; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<h1>.ithmb Decoder</h1>
+<p class="info">Drop an <code>.ithmb</code> file to decode and render it in the browser.</p>
+
+<div id="drop-zone">
+  <div class="icon">&#x1f5bc;</div>
+  <div class="label">Drop .ithmb file here</div>
+  <div class="hint">or click to select</div>
+</div>
+
+<div id="status"></div>
+
+<div id="canvas-wrapper">
+  <canvas id="canvas"></canvas>
+  <div id="meta"></div>
+</div>
+
+<div id="error-detail"><pre id="error-text"></pre></div>
+
+<div class="footer">
+  <p><a href="https://github.com/B67687/Ithmb-Codec">Ithmb-Codec</a> &middot; decode via <code>ithmb-wasm</code> &middot; <a href="https://github.com/B67687/Ithmb-Codec/tree/main/docs/demo">source</a></p>
+</div>
+
+<script type="module">
+// ---------------------------------------------------------------------------
+// WASM loader
+// ---------------------------------------------------------------------------
+const WASM_URL = './pkg/ithmb_wasm.js';
+
+let wasmModule = null;
+
+async function loadWasm() {
+  try {
+    const mod = await import(WASM_URL);
+    wasmModule = mod;
+    return true;
+  } catch (err) {
+    console.error('Failed to load wasm module:', err);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// DOM refs
+// ---------------------------------------------------------------------------
+const dropZone = document.getElementById('drop-zone');
+const statusEl = document.getElementById('status');
+const canvasWrapper = document.getElementById('canvas-wrapper');
+const canvas = document.getElementById('canvas');
+const metaEl = document.getElementById('meta');
+const errorDetail = document.getElementById('error-detail');
+const errorText = document.getElementById('error-text');
+
+// ---------------------------------------------------------------------------
+// Status helpers
+// ---------------------------------------------------------------------------
+function setStatus(msg, cls) {
+  statusEl.textContent = msg;
+  statusEl.className = cls || '';
+}
+
+function showError(msg, detail) {
+  setStatus(msg, 'error');
+  errorText.textContent = detail || msg;
+  errorText.style.display = 'block';
+  canvasWrapper.classList.remove('visible');
+}
+
+function showCanvas(imgData, width, height) {
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) { showError('Canvas 2D context not available'); return; }
+
+  const imageData = ctx.createImageData(width, height);
+  imageData.data.set(imgData);
+  ctx.putImageData(imageData, 0, 0);
+
+  canvasWrapper.classList.add('visible');
+  metaEl.textContent = `${width} × ${height} px`;
+  errorText.style.display = 'none';
+  setStatus('Decoded successfully', 'success');
+}
+
+// ---------------------------------------------------------------------------
+// Decode handler
+// ---------------------------------------------------------------------------
+async function handleFile(file) {
+  if (!file.name.toLowerCase().endsWith('.ithmb')) {
+    showError('Not an .ithmb file', `Expected .ithmb extension, got "${file.name}"`);
+    return;
+  }
+
+  if (!wasmModule) {
+    setStatus('Loading WASM module...', 'loading');
+    const ok = await loadWasm();
+    if (!ok) {
+      showError(
+        'WASM module not found',
+        'Run <code>wasm-pack build crates/ithmb-wasm/</code> and copy <code>pkg/</code> to <code>docs/demo/pkg/</code>. Then reload this page.'
+      );
+      return;
+    }
+  }
+
+  setStatus(`Decoding ${file.name}...`, 'loading');
+
+  try {
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+
+    const result = wasmModule.decode_ithmb(bytes);
+    if (!result) {
+      showError('Decode failed', 'The decoder returned null. The file may use an unsupported format or be corrupt.');
+      return;
+    }
+
+    // Result layout: [width: 4 bytes LE][height: 4 bytes LE][RGBA pixels ...]
+    const view = new DataView(result.buffer, result.byteOffset, result.byteLength);
+    const width = view.getUint32(0, true);
+    const height = view.getUint32(4, true);
+    const pixelData = new Uint8Array(result.buffer, result.byteOffset + 8, result.byteLength - 8);
+
+    showCanvas(pixelData, width, height);
+  } catch (err) {
+    showError('Decode error', err.message || String(err));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Drag-and-drop
+// ---------------------------------------------------------------------------
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+// Click-to-select
+dropZone.addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.ithmb';
+  input.onchange = () => {
+    if (input.files[0]) handleFile(input.files[0]);
+  };
+  input.click();
+});
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+setStatus('Drop an .ithmb file to begin');
+loadWasm().then((ok) => {
+  if (ok) {
+    console.log('WASM module loaded');
+  } else {
+    console.warn('WASM not available — build it first');
+  }
+});
+</script>
+</body>
+</html>
