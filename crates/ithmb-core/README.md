@@ -23,16 +23,48 @@ ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec", branch = "main" }
 
 # Or from crates.io:
 # ithmb-core = "1.9.1"
-# ithmb-core = "1.9.0"
 ```
+
+### Basic decode
 
 ```rust
 use ithmb_core::pipeline::decode_bytes;
 
 let data = std::fs::read("photo.ithmb").unwrap();
-let img = decode_bytes(&data, &Default::default()).unwrap();
-// img.data: Vec<u8> — BGRA pixel data
-// img.width, img.height: decoded dimensions
+match decode_bytes(&data, &Default::default()) {
+    Ok(img) => {
+        // img.data: Vec<u8> — BGRA pixel data
+        // img.width, img.height: decoded dimensions
+        println!("Decoded {}x{} image", img.width, img.height);
+    }
+    Err(e) => eprintln!("Decode failed: {e}"),
+}
+```
+
+### With a specific profile
+
+```rust
+use ithmb_core::pipeline::decode_with_profile;
+use ithmb_core::profile::get_profile;
+use std::sync::atomic::AtomicBool;
+
+let data = std::fs::read("F1061_1.ithmb").unwrap();
+let profile = get_profile(1061).unwrap();
+let canceled = AtomicBool::new(false);
+let img = decode_with_profile(&data, &profile, &canceled).unwrap();
+// img.data, img.width, img.height
+```
+
+### PhotoDB/ArtworkDB container
+
+```rust
+use ithmb_core::photodb::parser::parse_photodb;
+
+let data = std::fs::read("PhotoDB").unwrap();
+let db = parse_photodb(&data).unwrap();
+for entry in &db.entries {
+    println!("Frame: {}x{} format_id={}", entry.width, entry.height, entry.format_id);
+}
 ```
 
 ## Crate features

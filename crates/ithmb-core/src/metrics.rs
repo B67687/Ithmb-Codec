@@ -1,32 +1,24 @@
 //! Decode-timing metrics for ithmb-core.
 //!
-//! This module provides [`DecodeMetrics`], a set of lightweight atomic counters
-//! that track cumulative nanoseconds spent decoding each pixel format.  All
+//! This module provides [`crate::metrics::DecodeMetrics`], a set of lightweight atomic counters
+//! that track cumulative nanoseconds spent decoding each pixel format. All
 //! operations use [`core::sync::atomic::Ordering::Relaxed`] — the counters are
 //! statistical observability aids and do not participate in cross-thread
 //! synchronisation.
 //!
 //! # Format index constants
 //!
-//! | Index | Constant                | [`Encoding`] variant      |
+//! | Index | Constant                | `Encoding` variant       |
 //! |-------|-------------------------|---------------------------|
-//! | 0     | [`M_RGB565`]           | [`Rgb565`]               |
-//! | 1     | [`M_RGB555`]           | [`Rgb555`]               |
-//! | 2     | [`M_RGB555_REORDERED`] | [`ReorderedRgb555`]      |
-//! | 3     | [`M_UYVY`]             | [`Yuv422`]               |
-//! | 4     | [`M_YCBCR420`]         | [`Ycbcr420`]             |
-//! | 5     | [`M_CLCL`]             | *(reserved)*             |
-//! | 6     | [`M_CL`]               | *(reserved)*             |
-//! | 7     | [`M_JPEG`]             | [`Jpeg`]                 |
-//! | 8     | [`M_TOTAL`]            | —                        |
-//!
-//! [`Encoding`]: crate::profile::Encoding
-//! [`Rgb565`]: crate::profile::Encoding::Rgb565
-//! [`Rgb555`]: crate::profile::Encoding::Rgb555
-//! [`ReorderedRgb555`]: crate::profile::Encoding::ReorderedRgb555
-//! [`Yuv422`]: crate::profile::Encoding::Yuv422
-//! [`Ycbcr420`]: crate::profile::Encoding::Ycbcr420
-//! [`Jpeg`]: crate::profile::Encoding::Jpeg
+//! | 0     | `M_RGB565`              | `Rgb565`                 |
+//! | 1     | `M_RGB555`              | `Rgb555`                 |
+//! | 2     | `M_RGB555_REORDERED`    | `ReorderedRgb555`        |
+//! | 3     | `M_UYVY`                | `Yuv422`                 |
+//! | 4     | `M_YCBCR420`            | `Ycbcr420`               |
+//! | 5     | `M_CLCL`                | *(reserved)*             |
+//! | 6     | `M_CL`                  | *(reserved)*             |
+//! | 7     | `M_JPEG`                | `Jpeg`                   |
+//! | 8     | `M_TOTAL`               | —                        |
 
 use core::sync::atomic::{AtomicU64, Ordering};
 use core::time::Duration;

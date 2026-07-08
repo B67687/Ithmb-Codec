@@ -145,7 +145,6 @@ The following areas are deferred (not blocking functionality):
 | Gap | Reason | Status |
 |-----|--------|--------|
 | **NEON CI runner** | No reliable free ARM64 CI. macOS runners have known edge cases (STANDARDS.md). NEON code exists but untested in CI. | Deferred |
-| **Cache concurrency stress** | LRU cache is feature-gated and simple — low user impact. | Done (2026-07) |
 | **Real-device validation** | Golden vectors are from synthetic data. Savi (iOpenPod) validated against real hardware. | Deferred (needs hardware donation) |
 
 

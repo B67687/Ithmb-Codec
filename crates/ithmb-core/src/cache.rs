@@ -1,7 +1,7 @@
 //! LRU cache for decoded `.ithmb` file data.
 //!
-//! Wraps [`LruCache`] behind a [`RwLock`], keyed by a `SipHash` of the raw input
-//! bytes. Cache hit avoids re-decoding; miss delegates to [`decode_with_profile`]
+//! Wraps [`lru::LruCache`] behind a [`std::sync::RwLock`], keyed by a `SipHash` of the raw input
+//! bytes. Cache hit avoids re-decoding; miss delegates to [`crate::pipeline::decode_with_profile`]
 //! and stores the result.
 //!
 //! The cache stores the full [`DecodedImage`] (pixel data + dimensions) encoded
