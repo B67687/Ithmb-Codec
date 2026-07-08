@@ -28,3 +28,9 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "fuzz_encode_roundtrip"
+path = "fuzz_targets/fuzz_encode_roundtrip.rs"
+test = false
+doc = false
+bench = false
