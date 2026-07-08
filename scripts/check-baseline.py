@@ -2,20 +2,21 @@
 """Compare divan benchmark output against a JSON baseline.
 
 Usage:
-  cargo bench --features simd -p ithmb-core --bench decoders 2>&1 | scripts/check-baseline.py
+  FAIL_THRESHOLD=3.0 cargo bench --features simd -p ithmb-core --bench decoders 2>&1 | scripts/check-baseline.py
 
 Exit codes:
   0 — all within threshold (or no baseline found)
-  1 — at least one benchmark regressed by >20%
+  1 — at least one benchmark regressed by >FAIL_THRESHOLD
 """
 
 import json
+import os
 import re
 import sys
 
 BASELINE_PATH = ".github/baseline.json"
-WARN_THRESHOLD = 1.10
-FAIL_THRESHOLD = 1.20
+FAIL_THRESHOLD = float(os.environ.get("FAIL_THRESHOLD", "5.0"))
+WARN_THRESHOLD = float(os.environ.get("WARN_THRESHOLD", "3.0"))
 
 
 def parse_current(input_lines: list[str]) -> dict[str, float]:

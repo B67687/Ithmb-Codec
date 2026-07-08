@@ -107,6 +107,16 @@ bench_decoder!(
 );
 
 bench_decoder!(
+    decode_uyvy_interlaced,
+    |bgra: &[u8], w: i32, h: i32| enc::encode_uyvy(bgra, w, h),
+    Encoding::Yuv422,
+    uyvy::decode,
+    |profile: &mut ithmb_core::profile::Profile| {
+        profile.is_interlaced = true;
+    }
+);
+
+bench_decoder!(
     decode_ycbcr420,
     |bgra: &[u8], w: i32, h: i32| enc::encode_ycbcr420(bgra, w, h, false),
     Encoding::Ycbcr420,

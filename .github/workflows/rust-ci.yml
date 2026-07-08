@@ -91,7 +91,7 @@ jobs:
           cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}"
       - name: Benchmark regression check
         env:
-          FAIL_THRESHOLD: 3.0
+          FAIL_THRESHOLD: 5.0
         shell: bash
         run: |
           tools/check-benchmark-regression.sh

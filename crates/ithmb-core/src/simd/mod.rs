@@ -579,6 +579,15 @@ pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
 pub(crate) fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     debug_assert_eq!(dst.len(), src.len() * 2);
 
+    // AVX2 path (runtime-detected — fastest 256-bit arithmetic)
+    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            return cl::cl_row_to_bgra_avx2(src, dst);
+        }
+    }
+
     // SSE4.1 packed YUV path (runtime-detected — faster packed clamp + pack)
     #[cfg(all(feature = "simd", target_arch = "x86_64"))]
     // SAFETY: checked by is_x86_feature_detected! below.
