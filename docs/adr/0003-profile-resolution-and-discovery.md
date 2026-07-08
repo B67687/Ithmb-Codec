@@ -168,4 +168,4 @@ The 54 profiles in `data/profiles.json` derive from:
 - Device-specific overrides: `crates/ithmb-core/src/device_profiles.rs`
 - External profiles mechanism: [README.md](../../README.md#profile-reference)
 - Migration context: [EVOLUTION.md](../EVOLUTION.md#adr-3-54-built-in-profiles--external-profilesjson)
-- C# profile architecture (predecessor): [ADR-0003](0003-profile-discovery-and-resolution.md)
+- C# profile architecture (predecessor): [ADR-0003](csharp/0003-profile-discovery-and-resolution.md)

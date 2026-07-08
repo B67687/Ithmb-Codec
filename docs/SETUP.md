@@ -56,6 +56,6 @@ This project follows the standards documented in `docs/standards/STANDARDS.md` a
 ## Architecture
 
 See `docs/adr/` for Architecture Decision Records covering key design choices:
-- ADR-0001: Native AOT plugin boundary
-- ADR-0002: SIMD dispatch strategy
-- ADR-0003: Profile discovery and resolution
+- ADR-0001: Cross-platform SIMD dispatch
+- ADR-0002: C ABI plugin split
+- ADR-0003: Profile resolution and discovery

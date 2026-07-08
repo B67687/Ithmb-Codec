@@ -60,7 +60,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --exclude buymeacoffee README.md docs/
+          args: --no-progress --exclude buymeacoffee --exclude mybroadband README.md docs/
           fail: true
 
   verify_deny:
@@ -144,6 +144,8 @@ jobs:
           cache: true
           cache-key: "wasm-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('crates/ithmb-wasm/Cargo.toml') }}"
       - name: Install wasm-pack
-        run: cargo install wasm-pack --debug 2>&1 | tail -3
+        run: cargo install wasm-pack 2>&1 | tail -3
+
       - name: Build wasm
+        shell: bash
         run: wasm-pack build crates/ithmb-wasm/

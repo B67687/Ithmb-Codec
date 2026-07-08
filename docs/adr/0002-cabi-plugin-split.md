@@ -91,7 +91,7 @@ The plugin is not published to crates.io because its ImageGlass SDK dependency i
 
 ## References
 
-- C# Native AOT approach (superseded): [ADR-0001](0001-use-native-aot-plugin-boundary.md)
+- C# Native AOT approach (superseded): [ADR-0001](csharp/0001-use-native-aot-plugin-boundary.md)
 - Migration context: [EVOLUTION.md](../EVOLUTION.md#phase-3-c-abi-split)
 - Plugin repository: [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin)
 - ABI integrity standard: [STANDARDS.md](../standards/STANDARDS.md) (C ABI release integrity)

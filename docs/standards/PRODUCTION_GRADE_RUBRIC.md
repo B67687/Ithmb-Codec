@@ -137,7 +137,7 @@ mean of all eight category percentages.
 |---|-----------|----------|-------------|----------|
 | 7.1 | README | Stats gate-verified, architecture diagram, getting-started | Comprehensive but not gate-verified | Minimal or stale |
 | 7.2 | CHANGELOG | `[Unreleased]` kept current, categorized, no duplication | Exists, occasionally stale | None |
-| 7.3 | Profiles documentation | [`PROFILES.md`](../../PROFILES.md) reflects actual code, 54 entries, complete | Mostly accurate | Not maintained |
+| 7.3 | Profiles documentation | [`PROFILES.md`](../PROFILES.md) reflects actual code, 54 entries, complete | Mostly accurate | Not maintained |
 | 7.4 | Rustdoc comments | All public API documented | Key methods documented | None |
 | 7.5 | Architecture decision records | docs/adr/ with rationale for major design choices | Inline comments only | No rationale |
 

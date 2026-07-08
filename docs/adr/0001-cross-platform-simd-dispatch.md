@@ -101,6 +101,6 @@ Benchmarking showed hand-written SSE2/AVX2 RGB565→BGRA was 34× slower than LL
 ## References
 
 - Cross-platform SIMD lessons learned: [STANDARDS.md](../standards/STANDARDS.md#cross-platform-simd)
-- C# SIMD strategy (superseded): [ADR-0002](0002-simd-dispatch-strategy.md)
+- C# SIMD strategy (superseded): [ADR-0002](csharp/0002-simd-dispatch-strategy.md)
 - Migration context: [EVOLUTION.md](../EVOLUTION.md#adr-1-cross-platform-simd-dispatch)
 - Benchmark data: [BENCHMARKS.md](../benchmarks/BENCHMARKS.md)

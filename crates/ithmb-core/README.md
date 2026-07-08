@@ -22,6 +22,7 @@ Pure Rust decoder and encoder for Apple `.ithmb` thumbnail-cache files — the f
 ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec", branch = "main" }
 
 # Or from crates.io:
+# ithmb-core = "1.9.1"
 # ithmb-core = "1.9.0"
 ```
 
