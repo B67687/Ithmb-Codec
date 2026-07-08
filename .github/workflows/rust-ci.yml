@@ -90,10 +90,11 @@ jobs:
           cache: true
           cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}"
       - name: Benchmark regression check
+        env:
+          FAIL_THRESHOLD: 1.25
         shell: bash
         run: |
-          tools/check-benchmark-regression.sh  # -- FAIL_THRESHOLD=1.10 is too tight for CI runner noise; set to 1.25
-
+          tools/check-benchmark-regression.sh
   fuzz:
     runs-on: ubuntu-latest
     needs: [build, verify_clippy]
