@@ -92,7 +92,23 @@ Decoded output is 32-bit BGRA (4 bytes per pixel) in channel order
 Blue-Green-Red-Alpha, as used by Apple's `vImage` framework and ImageGlass.
 
 ### CI Baseline
+### CI Baseline
 
-After each full benchmark run, the JSON results are saved to `target/bench/baseline.json` for
-local comparison between runs. CI does **not** currently perform automated baseline comparison
-or regression gating -- benchmarks are run in CI for build verification only.
+The CI pipeline runs a benchmark regression check after each push (`continue-on-error: true`).
+Results are compared against [`.github/baseline.json`](https://github.com/B67687/Ithmb-Codec/blob/main/.github/baseline.json) with a 1.25× threshold.
+See [`tools/check-benchmark-regression.sh`](https://github.com/B67687/Ithmb-Codec/blob/main/tools/check-benchmark-regression.sh) for implementation.
+## Decoder Throughput (Baseline)
+
+Measured on AMD Ryzen AI 9 HX 370 with `--features simd`.
+
+| Decoder | 64×64 | 256×256 | 512×512 | 720×480 |
+|---------|-------|---------|---------|---------|
+| RGB565 | 2.43 µs | 37.8 µs | 156 µs | 193 µs |
+| RGB555 | 1.17 µs | 18.2 µs | 77.5 µs | 217 µs |
+| Reordered RGB555 | 24.1 µs | 398 µs | 820 µs | 1020 µs |
+| UYVY | 13.9 µs | 189 µs | 460 µs | 611 µs |
+| YCbCr 4:2:0 | 8.73 µs | 139 µs | 558 µs | 734 µs |
+| CL | 16.4 µs | 256 µs | 488 µs | 651 µs |
+| CLCL | 11.1 µs | 178 µs | 712 µs | 942 µs |
+
+> For CI baseline, encoder throughput, and SIMD comparison, see the machine-readable data in [`.github/baseline.json`](https://github.com/B67687/Ithmb-Codec/blob/main/.github/baseline.json).

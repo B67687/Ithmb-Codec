@@ -129,4 +129,4 @@ Public sample files are hosted on personal and university servers and may contai
 
 ## License Note
 
-The original IthmbDecoder reference implementation (ImageGlass PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316)) was GPL-3.0. This plugin is a clean-room implementation for the v10 SDK ABI, informed by format behavior described in that PR but using no GPL code. The codebase is MIT-licensed — see [LICENSE](LICENSE).
+The original IthmbDecoder reference implementation (ImageGlass PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316)) was GPL-3.0. This plugin is a clean-room implementation for the v10 SDK ABI, informed by format behavior described in that PR but using no GPL code. The codebase is MIT-licensed — see [LICENSE](../LICENSE).

@@ -46,7 +46,7 @@
 <rect x="380" y="55" width="240" height="115" class="bx"/>
 <text x="500" y="73" class="t">Decode Pipeline</text>
 <rect x="390" y="89" width="220" height="22" class="i"/>
-<text x="500" y="104" class="l">Size Guard (&lt; 32 MB)</text>
+<text x="500" y="104" class="l">Size Guard (&lt; 8 MB)</text>
 <rect x="390" y="114" width="220" height="22" class="i"/>
 <text x="500" y="129" class="l">Peek 4B: Detect JPEG / mhfd / 4B</text>
 

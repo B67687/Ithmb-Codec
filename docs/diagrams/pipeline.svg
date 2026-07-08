@@ -75,16 +75,15 @@
   <text x="657.5" y="50" class="t1">3. Implementation</text>
 
   <text x="657.5" y="80" class="t2">Pure Rust Workspace</text>
-  <text x="657.5" y="96" class="t3">5 crates · 21 modules</text>
+  <text x="657.5" y="96" class="t3">4 crates · 21 modules</text>
 
   <rect x="550" y="112" width="215" height="26" class="sub1"/>
   <text x="657.5" y="130" class="t4">8 decoders · 7 synthetic encoders</text>
 
   <rect x="550" y="144" width="215" height="26" class="sub2"/>
   <text x="657.5" y="162" class="t4">PhotoDB / ArtworkDB read + write</text>
-
   <rect x="550" y="176" width="215" height="26" class="sub1"/>
-  <text x="657.5" y="194" class="t4">CLI · PyO3 · C ABI · ithmb-gen</text>
+  <text x="657.5" y="194" class="t4">CLI · PyO3 · WASM · ithmb-gen</text>
 
   <rect x="550" y="208" width="215" height="26" class="sub3"/>
   <text x="657.5" y="226" class="t5">SIMD: SSE2 · AVX2 · NEON dispatch</text>
@@ -101,14 +100,14 @@
   <rect x="20" y="290" width="235" height="30" class="hdr"/>
   <text x="137.5" y="310" class="t1">4. Testing</text>
 
-  <text x="137.5" y="340" class="t2">489+ tests · 12 suites</text>
+  <text x="137.5" y="340" class="t2">500+ tests · 13 suites</text>
   <text x="137.5" y="356" class="t3">All passing</text>
 
   <rect x="30" y="375" width="215" height="26" class="sub3"/>
   <text x="137.5" y="393" class="t5">cargo test · divan benchmarks</text>
 
   <rect x="30" y="407" width="215" height="26" class="sub2"/>
-  <text x="137.5" y="425" class="t4">Fuzz: 1.2M+ iterations, 0 crashes</text>
+  <text x="137.5" y="425" class="t4">Fuzz: 2 targets · 1.2M+ iterations</text>
 
   <rect x="30" y="439" width="215" height="26" class="sub1"/>
   <text x="137.5" y="457" class="t4">Roundtrip · Concurrency · Statistical</text>
@@ -157,8 +156,8 @@
   <text x="657.5" y="425" class="t4">CI: build + test + clippy + fmt</text>
 
   <rect x="550" y="439" width="215" height="26" class="sub2"/>
-  <text x="657.5" y="457" class="t4">Cross-platform binaries</text>
+  <text x="657.5" y="457" class="t4">Cargo install from source</text>
 
   <rect x="550" y="471" width="215" height="26" class="sub1"/>
-  <text x="657.5" y="489" class="t4">CI-automated publishing</text>
+  <text x="657.5" y="489" class="t4">Manual crates.io publish</text>
 </svg>

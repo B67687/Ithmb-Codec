@@ -13,21 +13,31 @@
 <a href="./docs/badges/showcase.svg"><img src="docs/badges/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
 <i>Concept render — not an actual screenshot.</i>
 <hr style="max-width: 360px;">
-<sub>Built with AI assistance — see <a href="./CREDITS.md">CREDITS.md</a></sub>
+<sub>Built with AI assistance — see <a href="./docs/CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek v4 Flash Oh My OpenAgent"></a>
-<a href="./CREDITS.md"><img src="docs/badges/opencode.svg" alt="Harness OpenCode Oh My OpenAgent"></a>
+<a href="./docs/CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek"></a>
+<a href="./docs/CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode"></a>
+<a href="./docs/CREDITS.md"><img src="docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
+
+
+
+
+
+
+<br>
+
+
 </div>
 <br>
 
-A pure Rust codec library, CLI tool, and ImageGlass v10 plugin for decoding and encoding Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails.
+A pure Rust codec library, CLI tool, and C ABI shared library for decoding and encoding Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails.
 
 **Key features**
 
 - 54 built-in profiles (+ 1 speculative disabled) covering known iPod/iPhone formats
 - 8 decoders (RGB565, RGB555, ReorderedRGB555, UYVY, YCbCr420, CLCL, CL, JPEG)
 - 7 synthetic encoders for all raw formats
-- Roundtrip-proven tests — see [STATS.md](STATS.md) for current count and suite breakdown
+- Roundtrip-proven tests — see [STATS.md](docs/STATS.md) for current count and suite breakdown
 - PhotoDB/ArtworkDB read, write, and integrity checking
 - Multi-frame F-prefix raw file support
 - BGR15 channel-swap for iPhone compatibility
@@ -122,7 +132,7 @@ This project builds on the work of the iPod reverse-engineering community. Key r
 | [OrgZ](https://github.com/FoxCouncil/OrgZ) | Fox | C# ArtworkDB+ithmb read/write |
 | [pyithmb](https://github.com/wrinklykong/pyithmb) | wrinklykong | Python YUV reference decoder |
 
-See [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md) for the full list (33 projects, sample file sources, academic references, and color conversion standards).
+See [ACKNOWLEDGMENTS.md](docs/ACKNOWLEDGMENTS.md) for the full list (33 projects, sample file sources, academic references, and color conversion standards).
 
 ### Contribution breakdown
 
@@ -222,7 +232,7 @@ Available features: `simd` (SSE2/AVX2/NEON YUV conversion), `cache` (LRU raw fil
 cargo test
 ```
 
-See **[STATS.md](STATS.md)** for current test counts and suite breakdown. Coverage includes:
+See **[STATS.md](docs/STATS.md)** for current test counts and suite breakdown. Coverage includes:
 
 - **Roundtrip** — RGB565 (65,536 values), RGB555 (32,768), CL (15,625 nibble combos)
 - **Fuzz** — 350+ mutated inputs across all 8 decoders + 10,000 random byte mutations + 2 libfuzzer targets (1.2M+ iterations, 0 crashes)
@@ -248,6 +258,8 @@ See **[STATS.md](STATS.md)** for current test counts and suite breakdown. Covera
 
 ---
 
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for a full diagram showing how all crates, bindings, and the ImageGlass plugin relate.
+
 ## Architecture
 
 The project is organized as a Rust workspace with four crates:
@@ -260,7 +272,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 
 | Module | Purpose |
 |--------|---------|
-|| `pipeline/` | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
+| `pipeline/` | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
 | `jpeg.rs` | JPEG decoder wrapper (`jpeg-decoder` crate), EXIF orientation parsing |
 | `rgb565.rs` | RGB565 decoder (16-bit RGB 5/6/5) |
 | `rgb555.rs` | RGB555 decoder (15-bit RGB 5/5/5) |
@@ -270,7 +282,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 | `clcl.rs` | CLCL nibble-chroma decoder (YUV→BGRA uses SSE2/AVX2/NEON with `--features simd`) |
 | `cl.rs` | CL per-pixel chroma decoder (YUV→BGRA uses SSE2/AVX2/NEON with `--features simd`) |
 | `yuv.rs` | Shared YUV conversion helpers, SSE2/AVX2/NEON runtime dispatch |
-|| `simd/` | SSE2/AVX2/NEON YUV conversion dispatch (feature-gated), per-format SIMD sub-modules |
+| `simd/` | SSE2/AVX2/NEON YUV conversion dispatch (feature-gated), per-format SIMD sub-modules |
 | `device_profiles.rs` | 18-device iPod/iPhone format lookup table |
 | `enc.rs` | Synthetic encoders for all raw formats |
 | `enc/helpers.rs` | Shared encoder helpers (InterlaceFields, BT.601) |
@@ -346,9 +358,15 @@ Output options: `--raw` for raw BGRA binary, `--format bin` for explicit binary,
 
 ## Benchmarks
 
-See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full benchmark data across all decoders, sizes, and input patterns.
-The command `cargo bench --features simd -p ithmb-core` reproduces the results on your hardware.
+| Decoder | 64×64 | 720×480 |
+|---------|-------|--------|
+| RGB565 | 2.43 µs | 193 µs |
+| UYVY | 13.9 µs | 611 µs |
+| YCbCr 4:2:0 | 8.73 µs | 734 µs |
+| CL | 16.4 µs | 651 µs |
+| CLCL | 11.1 µs | 942 µs |
 
+See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full results (all 4 sizes, all 7 decoders, encoder throughput, methodology).
 ### Performance Limits
 
 Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s bandwidth):
@@ -377,7 +395,7 @@ This codec was first implemented in **C#** as a Native AOT plugin for ImageGlass
 The C# reference repository ([B67687/Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)) is archived but remains the authoritative source for algorithm verification.
 ## Profile Reference
 
-**54 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [PROFILES.md](PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
+**54 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [docs/PROFILES.md](docs/PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
 
 Each profile defines the pixel encoding, dimensions, byte length per frame, and post-processing flags (crop, rotation, channel swap, dimension swap, interlacing, padding).
 
@@ -386,7 +404,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (see [STATS.md](STATS.md) for current count).
+> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (see [STATS.md](docs/STATS.md) for current count).
 >
 > **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) if you encounter one.
 >
@@ -418,7 +436,7 @@ The library was developed through iterative research, implementation, review, an
 1. **Format survey** — 33 open-source .ithmb implementations found and analyzed
 2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 54 profiles
 3. **Implementation** — Pure Rust workspace with 8 decoders, JPEG decode, PhotoDB/ArtworkDB support, CLI tooling, PyO3 Python bindings, and sample generator
-4. **Testing** — Current test count in [STATS.md](STATS.md); unit tests across roundtrip, fuzz, libfuzzer, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, byte-level corruption fuzz, BGR15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, concurrency stress tests, and format ID profile tests
+4. **Testing** — Current test count in [STATS.md](docs/STATS.md); unit tests across roundtrip, fuzz, libfuzzer, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, byte-level corruption fuzz, BGR15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, concurrency stress tests, and format ID profile tests
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, buffer overflow, integer overflow, and defense-in-depth
 6. **Release** — Published via GitHub Releases
 
@@ -432,7 +450,7 @@ Quality checks run locally before release:
 
 ```bash
 cargo clippy --all-targets -- -D warnings  # Lint
-cargo test                                 # All tests (see [STATS.md](STATS.md) for current count)
+cargo test                                 # All tests (see [STATS.md](docs/STATS.md) for current count)
 cargo audit                                # Advisory check
 cargo fuzz build                           # Fuzz targets compile check
 ```
@@ -474,7 +492,7 @@ This codec has been systematically reviewed across multiple rounds:
 | 4 | Coverage expansion — SIMD tail boundaries, cancellation, profile validation, statistical completeness | 2026-07 |
 | 5 | Polish — benchmark regression baseline, ADR docs, review documentation | 2026-07 |
 
-**Current test count:** See [STATS.md](STATS.md) for the latest count and suite breakdown.
+**Current test count:** See [STATS.md](docs/STATS.md) for the latest count and suite breakdown.
 
 **Known gaps:**
 - macOS ARM NEON is gated (known CI runner edge case) — falls back to scalar. See [STANDARDS.md](docs/standards/STANDARDS.md).
