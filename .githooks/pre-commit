@@ -19,3 +19,12 @@ if git diff --cached --name-only --diff-filter=ACM -- '*.rs' | head -1 | grep -q
 else
     echo "✓ cargo clippy (skipped — no .rs files staged)"
 fi
+
+# Quick lib test check (skips integration tests for speed)
+if git diff --cached --name-only --diff-filter=ACM -- '*.rs' | head -1 | grep -q .; then
+    echo "➳ cargo test --lib (workspace) ..."
+    cargo test --lib --workspace 2>/dev/null
+    echo "✓ cargo test --lib passed"
+else
+    echo "✓ cargo test --lib (skipped — no .rs files staged)"
+fi
