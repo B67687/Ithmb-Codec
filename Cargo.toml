@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/ithmb-core", "pymod", "crates/ithmb-cli", "crates/ithmb-gen"]
+members = ["crates/ithmb-core", "pymod", "crates/ithmb-cli", "crates/ithmb-gen", "crates/ithmb-wasm"]
 exclude = ["fuzz"]
 
 [workspace.package]
