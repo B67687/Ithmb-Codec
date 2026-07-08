@@ -158,8 +158,7 @@ impl Profile {
 /// Returns a list of all known built-in profiles.
 ///
 /// If the embedded profile database cannot be parsed (JSON corruption),
-/// an empty `Vec` is returned instead of panicking. Use [`ProfileDb::load_builtin`]
-/// directly if you need to distinguish "no profiles" from "parse failure".
+/// an empty `Vec` is returned instead of panicking. Use [`crate::profile_db::ProfileDb::load_builtin`]
 #[must_use]
 pub fn built_in_profiles() -> Vec<Profile> {
     match crate::profile_db::ProfileDb::load_builtin() {

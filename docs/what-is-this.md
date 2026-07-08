@@ -53,7 +53,7 @@ SIMD (Single Instruction, Multiple Data) is a technique where the CPU processes 
 
 ## What's PhotoDB?
 
-iPods and iPhones don't just store individual `.ithmb` files — they also have a database file (PhotoDB or ArtworkDB) that catalogs all the thumbnails. This database uses a binary chunk format. The plugin can:
+The library can:
 
 - **Read** the database, find all thumbnails, and decode them
 - **Write** a new database from scratch (useful for syncing artwork back to an iPod without iTunes)

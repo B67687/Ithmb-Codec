@@ -16,7 +16,7 @@
 //!
 //! ## SIMD
 //!
-//! SIMD implementations exist in [`simd::rgb555`] (SSE2/AVX2/NEON runtime dispatch).
+//! SIMD implementations exist in [`crate::simd`] (SSE2/AVX2/NEON runtime dispatch).
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;

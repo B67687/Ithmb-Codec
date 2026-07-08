@@ -32,7 +32,7 @@ assignees: ''
 
 ### Phase 4 — Write Artifacts
 - [ ] GitHub issues filed for each actionable finding
-- [ ] Synthesis appended to `docs/synthesis/v<next>.md`
+- [ ] Synthesis appended to `docs/synthesis/v<next>.md` (or deleted if no findings)
 - [ ] STANDARDS.md updated with new gaps
 - [ ] ADRs created for design decisions made during audit
 

@@ -16,11 +16,11 @@ Canonical numbers for the Ithmb-Codec Rust workspace. All other documentation sh
 
 | Stat | Value |
 |------|-------|
-| Unit tests | 489 |
-| Test suites | 12 |
+| Unit tests | 570 |
+| Test suites | 17 |
 | Golden test vectors | 14 |
 | Concurrency tests | 11 |
-| libfuzzer targets | 2 (fuzz_decode_ithmb, fuzz_open_ithmb) |
+| libfuzzer targets | 3 |
 | Fuzz iterations | 1.2M+ |
 | Miri tests | 21 |
 | Fuzz crashes | 0 |

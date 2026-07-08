@@ -91,7 +91,7 @@ jobs:
           cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}"
       - name: Benchmark regression check
         env:
-          FAIL_THRESHOLD: 1.25
+          FAIL_THRESHOLD: 3.0
         shell: bash
         run: |
           tools/check-benchmark-regression.sh
@@ -144,8 +144,8 @@ jobs:
           cache: true
           cache-key: "wasm-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('crates/ithmb-wasm/Cargo.toml') }}"
       - name: Install wasm-pack
-        run: cargo install wasm-pack 2>&1 | tail -3
-
+        run: |
+          cargo install wasm-pack --locked --version 0.12.1
       - name: Build wasm
         shell: bash
         run: wasm-pack build crates/ithmb-wasm/

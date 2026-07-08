@@ -1,6 +1,6 @@
 //! C FFI bindings for ithmb-core.
 //! The API is caller-allocated: the caller provides an output buffer via
-//! [`IthmbImage::data`] and the functions write decoded pixels into it.
+//! [`crate::c_api::IthmbImage::data`] and the functions write decoded pixels into it.
 //!
 //! # Safety
 //! All functions are `extern "C"` and inherently unsafe. The caller must
