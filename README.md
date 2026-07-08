@@ -358,15 +358,21 @@ Output options: `--raw` for raw BGRA binary, `--format bin` for explicit binary,
 
 ## Benchmarks
 
+Measured on AMD Ryzen AI 9 HX 370 with `--features simd`. Same order across both Rust and C#.
+
 | Decoder | 64×64 | 720×480 |
 |---------|-------|--------|
-| RGB565 | 2.43 µs | 193 µs |
-| UYVY | 13.9 µs | 611 µs |
-| YCbCr 4:2:0 | 8.73 µs | 734 µs |
-| CL | 16.4 µs | 651 µs |
-| CLCL | 11.1 µs | 942 µs |
+| RGB565 | 0.52 µs | 45 µs |
+| RGB555 | 0.55 µs | 47 µs |
+| UYVY | 0.97 µs | 82 µs |
+| UYVY (interlaced) | 2.05 µs | 82 µs |
+| YCbCr 4:2:0 | 3.6 µs | 199 µs |
+| CL | 1.3 µs | 112 µs |
+| CLCL | 0.22 µs | 19 µs |
+| Reordered RGB555 | — | 632 µs (512×512) |
 
-See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full results (all 4 sizes, all 7 decoders, encoder throughput, methodology).
+See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full results (all 4 sizes, encoder throughput, methodology).
+With `--features simd`, Rust is faster than the C# original on 5 of 8 decoders (see BENCHMARKS.md for full comparison).
 ### Performance Limits
 
 Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s bandwidth):

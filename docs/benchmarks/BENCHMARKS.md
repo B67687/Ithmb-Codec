@@ -99,16 +99,19 @@ Results are compared against [`.github/baseline.json`](https://github.com/B67687
 See [`tools/check-benchmark-regression.sh`](https://github.com/B67687/Ithmb-Codec/blob/main/tools/check-benchmark-regression.sh) for implementation.
 ## Decoder Throughput (Baseline)
 
-Measured on AMD Ryzen AI 9 HX 370 with `--features simd`.
+Measured on AMD Ryzen AI 9 HX 370 with `--features simd` (SSE2/AVX2 for x64).
+Decoders listed in standard order used across both Rust and C# repos.
 
 | Decoder | 64×64 | 256×256 | 512×512 | 720×480 |
 |---------|-------|---------|---------|---------|
-| RGB565 | 2.43 µs | 37.8 µs | 156 µs | 193 µs |
-| RGB555 | 1.17 µs | 18.2 µs | 77.5 µs | 217 µs |
-| Reordered RGB555 | 24.1 µs | 398 µs | 820 µs | 1020 µs |
-| UYVY | 13.9 µs | 189 µs | 460 µs | 611 µs |
-| YCbCr 4:2:0 | 8.73 µs | 139 µs | 558 µs | 734 µs |
-| CL | 16.4 µs | 256 µs | 488 µs | 651 µs |
-| CLCL | 11.1 µs | 178 µs | 712 µs | 942 µs |
+| RGB565 | 0.52 µs | 7.5 µs | 33.3 µs | 45.3 µs |
+| RGB555 | 0.55 µs | 7.9 µs | 35.3 µs | 47.2 µs |
+| UYVY | 0.97 µs | 14.5 µs | 61.1 µs | 82.0 µs |
+| UYVY (interlaced) | 2.05 µs | 30.8 µs | 60.8 µs | 81.6 µs |
+| YCbCr 4:2:0 | 3.6 µs | 36.7 µs | 150 µs | 199 µs |
+| CL | 1.3 µs | 20 µs | 84 µs | 112 µs |
+| CLCL | 0.22 µs | 2.9 µs | 12.9 µs | 19.4 µs |
+| Reordered RGB555 | — | 108 µs | 463 µs | 632 µs |
 
-> For CI baseline, encoder throughput, and SIMD comparison, see the machine-readable data in [`.github/baseline.json`](https://github.com/B67687/Ithmb-Codec/blob/main/.github/baseline.json).
+> Reordered RGB555 is square-only (w == h). 720×480 uses 512×512 as the nearest equivalent.
+> For CI baseline, encoder throughput, and full data, see [`.github/baseline.json`](https://github.com/B67687/Ithmb-Codec/blob/main/.github/baseline.json).
