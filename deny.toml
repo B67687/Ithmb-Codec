@@ -1,5 +1,9 @@
 [advisories]
-ignore = []
+ignore = [
+    # paste 1.0.15 — unmaintained, transitive through rav1e→ravif→image
+    # (image is a dev-dependency for golden-vector tests only — not a runtime concern)
+    "RUSTSEC-2024-0436",
+]
 
 [licenses]
 allow = [
