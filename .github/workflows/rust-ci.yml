@@ -93,3 +93,25 @@ jobs:
         shell: bash
         run: |
           tools/check-benchmark-regression.sh
+
+  fuzz:
+    runs-on: ubuntu-latest
+    needs: [build, verify_clippy]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "fuzz-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('fuzz/Cargo.toml') }}"
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --debug 2>&1 | tail -3
+      - name: Fuzz decode_ithmb
+        run: cargo fuzz run fuzz_decode_ithmb -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
+      - name: Fuzz open_ithmb
+        run: cargo fuzz run fuzz_open_ithmb -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
+      - name: Fuzz encode roundtrip
+        run: cargo fuzz run fuzz_encode_roundtrip -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
