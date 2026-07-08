@@ -7,6 +7,7 @@
 //! 4. Decodes using [`decode_with_profile`] (the same pipeline real files go through)
 //! 5. Asserts the decoded pixels match the originals (within quantization tolerance
 //!    for lossy YUV / nibble-chroma formats).
+#![allow(clippy::pedantic, clippy::unwrap_used)]
 
 use divan as _;
 use image as _;

@@ -3,6 +3,7 @@
 //! Each test reads a raw `.enc` input (produced by the C# reference encoder),
 //! decodes it with the Rust decoder, and compares the BGRA output against the
 //! reference `.bin` file — proving bit-exact compatibility.
+#![allow(clippy::pedantic, clippy::unwrap_used)]
 
 use divan as _;
 use jpeg_decoder as _;

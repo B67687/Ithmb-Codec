@@ -50,3 +50,9 @@ name = "simd_compare"
 harness = false
 required-features = ["simd"]
 
+[[test]]
+name = "cache_concurrency"
+path = "tests/cache_concurrency.rs"
+harness = true
+required-features = ["cache"]
+

@@ -4,7 +4,7 @@
 //! counterpart byte-for-byte and lane-for-lane.  This is a read-only test — no
 //! decoder code is exercised, only the constant loading intrinsics.
 
-#![allow(unsafe_code)]
+#![allow(unsafe_code, clippy::pedantic, clippy::unwrap_used)]
 #![allow(unused_crate_dependencies)]
 #![allow(unsafe_op_in_unsafe_fn)]
 #![allow(

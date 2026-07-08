@@ -17,7 +17,9 @@
     clippy::cast_sign_loss,
     clippy::cast_possible_wrap,
     clippy::doc_markdown,
-    clippy::declare_interior_mutable_const
+    clippy::declare_interior_mutable_const,
+    clippy::pedantic,
+    clippy::unwrap_used
 )]
 // ---------------------------------------------------------------------------
 // Imports

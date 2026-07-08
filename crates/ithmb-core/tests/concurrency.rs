@@ -6,7 +6,9 @@
     clippy::many_single_char_names,
     clippy::match_same_arms,
     unused_crate_dependencies,
-    unused_extern_crates
+    unused_extern_crates,
+    clippy::pedantic,
+    clippy::unwrap_used
 )]
 
 use std::num::NonZero;

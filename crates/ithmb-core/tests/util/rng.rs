@@ -3,6 +3,7 @@
 //! Uses the **splitmix64** algorithm (higher quality than LCG) to produce
 //! reproducible pseudo-random byte sequences from a 64-bit seed.  All tests
 //! and benchmarks that need random pixel data share this one implementation.
+#![allow(clippy::pedantic, clippy::unwrap_used)]
 
 /// Minimal deterministic splitmix64 RNG.
 pub struct SeededRng(u64);

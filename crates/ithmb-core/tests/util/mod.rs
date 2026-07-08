@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, clippy::pedantic, clippy::unwrap_used)]
 //! Shared test utilities for ithmb-core integration tests.
 //!
 //! Provides profile builders, roundtrip helpers, pattern generators, and

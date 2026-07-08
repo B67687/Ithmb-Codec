@@ -19,14 +19,31 @@ It is based on authoritative external sources (linked below) and our own experie
 
 ## Lint Configuration
 
-```toml
-[lints.rust]
-unsafe_code = "deny"        # unsafe only in simd/ (intrinsics)
+### Workspace (production code)
 
+```toml
 [lints.clippy]
 all = "deny"
 pedantic = "deny"
 ```
+
+Individual modules may `#[allow(unsafe_code)]` with justification.
+
+### Test files
+
+Test files (`tests/*.rs`, `**/*test*`) SHOULD start with:
+
+```rust
+#![allow(clippy::pedantic, clippy::unwrap_used, clippy::cast_possible_truncation)]
+```
+
+**Rationale:** Test code is different from library code. `unwrap()` is acceptable in tests,
+type truncation is intentional in test fixtures, and pedantic lints add noise without catching
+real bugs. This does NOT disable correctness lints (`cargo check` still catches type errors),
+style lints (`cargo fmt` still enforces formatting), or safety lints (`unsafe_code` is still deny).
+
+**Exceptions:** If a test file genuinely needs pedantic-level strictness (e.g., FFI boundary tests,
+golden vector comparison tests), omit the `allow` and add targetted `#[allow(...)]` per function.
 
 Individual modules may `#[allow(unsafe_code)]` with justification.
 

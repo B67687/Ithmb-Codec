@@ -13,6 +13,7 @@
 //!   6. `is_interlaced` ⇒ encoding is `Yuv422`
 //!   7. `swap_chroma_planes` ⇒ encoding is `Ycbcr420`
 //!   8. `frame_byte_length` matches the formula for the given encoding/dimensions
+#![allow(clippy::pedantic, clippy::unwrap_used)]
 //!      (with tolerance for `is_padded` profiles — they may exceed the minimum)
 
 use std::collections::HashSet;
