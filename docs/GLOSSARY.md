@@ -107,7 +107,17 @@ Your phone or monitor shows **8 bits per channel** (24-bit / 16.7 million colors
 
 **Real effect**: A gradient that looks smooth on your phone will show faint banding on an iPod thumbnail. Our decoders accurately reproduce the iPod's lower-quality output — they don't invent the missing bits.
 
----
+## ReorderedRGB555
+
+A 15-bit RGB variant used by the iPod Nano 7G. Same color depth as [RGB555](#bit-depth--what-does-565-or-555-mean), but the pixels are arranged in **Morton order** (see [Morton / Z-order](#morton--z-order)) instead of the usual row-by-row layout. The Morton layout keeps 2×2 pixel blocks adjacent in memory, which improves cache locality during display.
+
+Our decoder de-interleaves the Morton order back to row-major BGRA using a dedicated SIMD path.
+
+## Interlaced Encoding
+
+Some iPod profiles store UYVY data in **interlaced** form: even rows are stored first, then odd rows. This is similar to how old TV broadcasts interlace video — one field has half the scan lines, and the second field fills the gaps.
+
+Profile IDs `1019`, `1061`, and `2002` use interlaced UYVY. Our decoder detects this automatically via the `profile.interlaced` flag.
 
 ## Chroma Subsampling — 4:2:2, 4:2:0
 
@@ -130,6 +140,7 @@ The iPod used 4:2:2 and 4:2:0 because thumbnails are small and the loss is barel
 - **UYVY** = 4:2:2 (horizontal sharing)
 - **YCbCr 4:2:0** = 4:2:0 (2×2 block sharing)
 - **CL/CLCL** = even more aggressive color compression using nibble-sized (4-bit) color values
+- **Interlaced UYVY** = Same as UYVY but even/odd rows stored separately. Used by iPod Classic 6G photo thumbnails.
 
 ---
 
@@ -204,6 +215,12 @@ input → peek prefix → JPEG scan → profile lookup → decode → crop/rotat
 
 It's called a "pipeline" because data flows through stages like a factory assembly line. Each stage handles one job, then passes the result to the next.
 
+## JPEG Carving / Fallback
+
+If the 4-byte prefix doesn't match any known format, the decoder falls back to **JPEG carving**: scanning the file for JPEG Start-Of-Image markers (`FF D8`) and extracting whatever JPEG data is found.
+
+This handles corrupted or unknown-prefix `.ithmb` files that still contain a valid JPEG thumbnail inside. The fallback is purely byte-level — no format-specific logic is needed beyond JPEG decoding.
+
 ---
 
 ## Macroblock
@@ -266,6 +283,11 @@ These are the SIMD instruction sets supported by different CPUs:
 
 This means pixel (0,0) is stored first, then (1,0), then (0,1), then (1,1) — the first 4 pixels form a 2x2 block before moving to the next block. Our decoder handles this with an algorithm called **Morton de-interleave**.
 
+## Field88 — 48×48 Tiled Layout
+
+**Field88** is a specific Morton-order pixel layout used by early iPod models (iPod Photo, iPod Classic). The name comes from the format ID `F0088`. Each 48×48 tile is stored in Z-order within an 8×8 block grid — 36 tiles (6×6) arranged in snake-row order.
+
+This layout was reverse-engineered and [documented](https://github.com/mgminformatique/ipod-photo-recovery) by the `mgminformatique/ipod-photo-recovery` project. Our decoder handles it through the [ReorderedRGB555](#reorderedrgb555) path with specific profile parameters.
 ## BGRA Output — Why Blue First?
 
 Most image formats store pixels as Red-Green-Blue (RGB). But Windows graphics APIs (DirectX, GDI) expect Blue-Green-Red-Alpha (BGRA). Our decoders output BGRA because:
@@ -347,7 +369,7 @@ When tests run, the decoder processes the `.ithmb` file and the test asserts the
 Fuzz testing feeds random, malformed, or unexpected data to the decoder to see if it crashes or panics. This finds security bugs that normal testing misses.
 
 Our fuzz suite includes:
-- **libfuzzer targets** (2 targets): 1.2M+ iterations, 0 crashes
+- **libfuzzer targets** (3 targets): 1.2M+ iterations, 0 crashes
 - **Random mutation fuzz**: 10,000 random byte mutations across all 8 decoders
 - **Edge cases**: empty input, truncated data, negative dimensions, garbage data
 
@@ -365,9 +387,21 @@ All our unsafe SIMD code paths pass Miri verification (21 tests). Six additional
 
 **LRU** = Least Recently Used. The LRU cache stores recently decoded file data in memory so that if the same file is requested again, it's served from memory instead of re-decoding from disk.
 
-The cache is behind a `cache` feature flag (not enabled by default). Size limit: 128 entries. Thread-safe via `RwLock`.
+The cache is behind a `cache` feature flag (not enabled by default). Size limit: 64 entries. Thread-safe via `RwLock`.
 
----
+## Feature Flags
+
+Our `Cargo.toml` defines optional features to keep the base build lean:
+
+| Flag | Default | What it enables |
+|------|---------|-----------------|
+| `simd` | off | SSE2/AVX2/NEON SIMD acceleration for YUV color conversion |
+| `cache` | off | LRU cache for decoded file data (64 entries) |
+| `c` | off | C ABI FFI exports (`ithmb_decode`, `ithmb_prefix_to_profile`) |
+| `metrics` | off | Decode timing counters for performance monitoring |
+| `png-output` | on | PNG image encoding support in the CLI (`--output` flag) |
+
+Enable with: `cargo build --release --features simd,cache`
 
 ## OnceLock
 
