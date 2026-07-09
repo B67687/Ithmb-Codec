@@ -149,3 +149,30 @@ jobs:
       - name: Build wasm
         shell: bash
         run: wasm-pack build crates/ithmb-wasm/
+
+  doc_check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rust-docs
+          cache: true
+          cache-key: "doc-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: cargo doc
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --no-deps --workspace
+
+  typos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: typos-cli check
+        shell: bash
+        run: |
+          cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
+          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/

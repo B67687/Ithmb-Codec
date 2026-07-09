@@ -270,7 +270,7 @@ pub fn generate_cl(w: i32, h: i32, bgra: &[[u8; 4]]) -> Vec<u8> {
     build_file(&profile, &encoded)
 }
 
-/// Prepand the 4-byte prefix and return a complete `.ithmb` file.
+/// Prepend the 4-byte prefix and return a complete `.ithmb` file.
 fn build_file(profile: &Profile, frame: &[u8]) -> Vec<u8> {
     let mut buf = Vec::with_capacity(4 + frame.len());
     buf.extend_from_slice(&(profile.prefix as u32).to_be_bytes());

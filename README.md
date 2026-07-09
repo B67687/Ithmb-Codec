@@ -140,7 +140,7 @@ See [ACKNOWLEDGMENTS.md](docs/ACKNOWLEDGMENTS.md) for the full list (33 projects
 |------|--------------|-----|
 | **Community foundations** | iOpenPod, libgpod, clickwheel, Keith's RE, pyithmb, ithmb-rs, 15+ more | Community |
 | **Hardware-validated profiles** | 50+ profiles empirically validated across multiple iPod models | Savi (iOpenPod) |
-| **Sample contribution** | First public F-prefix .ithmb test vectors + 30 reference PNGs (CC0) | Reuhno |
+| **Sample contribution** | First public F-prefix .ithmb test vectors + 30 reference PNG files (CC0) | Reuhno |
 | **AI execution** | Code, testing, documentation, CI, format cross-referencing | AI (Sisyphus + OMO) |
 | **Project lead** | Vision, architecture, quality control, community engagement, verification, hardware coordination | B67687 |
 
@@ -248,7 +248,7 @@ See **[STATS.md](docs/STATS.md)** for current test counts and suite breakdown. C
 
 **Real-device validation:**
 
-- **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR15 channel-swap, MSB replication — both confirmed correct). 30 reference PNGs match decoder output.
+- **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR15 channel-swap, MSB replication — both confirmed correct). 30 reference PNG files match decoder output.
 - **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 54 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 - **iPhone 5 (iOS 7):** 956 T-prefix files — 100% extraction
 - **Jakarade.com F00-F08:** 227 public T-prefix files — 100% JPEG+EXIF detection
@@ -337,7 +337,7 @@ A `cdylib` exposing ithmb-core to Python 3.12+ via PyO3 (abi3-py312). Built with
 
 ### ithmb-gen (sample generator)
 
-A CLI tool for generating synthetic `.ithmb` test vectors and reference PNGs used during development.
+A CLI tool for generating synthetic `.ithmb` test vectors and reference PNG files used during development.
 
 <div align="center"><img src="docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
 

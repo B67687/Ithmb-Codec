@@ -26,7 +26,7 @@ Beyond building a working codec, this project made several original contribution
 
 **Hardware validation** — Initiated cross-project collaboration with iOpenPod, whose developer purchased multiple iPod models and validated decoders across firmware generations. This closed a long-standing gap: none of the OSS .ithmb decoders had systematic hardware confirmation.
 
-**Synthetic test vectors (CC0)** — No public F-prefix test data existed before this project. Reuhno contributed generated CC0 vectors covering 3 slot geometries (56×55 slot with varying content rectangles, 128×128, 320×320) with 30 reference PNGs. These are the first public test vectors for raw .ithmb decoding.
+**Synthetic test vectors (CC0)** — No public F-prefix test data existed before this project. Reuhno contributed generated CC0 vectors covering 3 slot geometries (56×55 slot with varying content rectangles, 128×128, 320×320) with 30 reference PNG files. These are the first public test vectors for raw .ithmb decoding.
 
 **C#→Rust port with byte-identical verification** — The format was originally reverse-engineered and implemented in C# (now archived at [Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)). The Rust port was independently verified byte-for-byte against the C# reference decoders across all 7 raw pixel formats, both encode and decode directions, via a binary oracle bridge. The Rust version is now the canonical implementation, published on [crates.io](https://crates.io/crates/ithmb-core).
 
