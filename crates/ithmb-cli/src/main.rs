@@ -161,7 +161,7 @@ fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<DecodedImag
 // Container (PhotoDB / ArtworkDB) extraction
 // ---------------------------------------------------------------------------
 
-/// Open a PhotoDB/ArtworkDB container and extract all entries as numbered PNGs.
+/// Open a PhotoDB/ArtworkDB container and extract all entries as numbered PNG files.
 #[cfg(feature = "png-output")]
 fn open_container(input: &Path) -> Result<()> {
     let data = fs::read(input).with_context(|| format!("failed to read '{}'", input.display()))?;

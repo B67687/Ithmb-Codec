@@ -1,0 +1,10 @@
+# typos config
+# False positives to ignore
+[default.extend-words]
+# "PNG" file format — typos sees "PNG" and thinks "PN" should be "ON"
+PNG = "PNG"
+png = "png"
+# "iy" is a loop variable (ix, iy pattern) — not a typo
+iy = "iy"
+# "ba" is a short variable name for byte array — not a typo
+ba = "ba"

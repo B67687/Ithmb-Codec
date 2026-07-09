@@ -43,7 +43,7 @@ real bugs. This does NOT disable correctness lints (`cargo check` still catches 
 style lints (`cargo fmt` still enforces formatting), or safety lints (`unsafe_code` is still deny).
 
 **Exceptions:** If a test file genuinely needs pedantic-level strictness (e.g., FFI boundary tests,
-golden vector comparison tests), omit the `allow` and add targetted `#[allow(...)]` per function.
+golden vector comparison tests), omit the `allow` and add targeted `#[allow(...)]` per function.
 
 Individual modules may `#[allow(unsafe_code)]` with justification.
 

@@ -65,7 +65,7 @@ The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Build 
 - `ithmb input.ithmb [output.png]` — decode a single .ithmb file to PNG (auto-detects format from extension)
 - `ithmb --info input.ithmb` — print metadata (size, prefix, profile, frame count)
 - `ithmb --list-profiles` — list all 54 known profiles in a formatted table
-- `ithmb --open input.ithmb` — open a PhotoDB/ArtworkDB container and extract all entries as numbered PNGs
+- `ithmb --open input.ithmb` — open a PhotoDB/ArtworkDB container and extract all entries as numbered PNG files
 - `ithmb --frame N input.ithmb [output.png]` — extract a specific frame from a multi-frame file
 - `ithmb --raw input.ithmb [output.bin]` — output raw BGRA binary instead of PNG
 

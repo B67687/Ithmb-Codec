@@ -20,7 +20,7 @@ The C# codec was a **pure-managed Native AOT shared library** implementing the [
 - **Tests**: 594 passing, including 30 golden reference vectors from real iPod samples
 - **Coverage**: exhaustive RGB565 roundtrip (65,536 values), statistical validation (entropy, histogram, decorrelation), SIMD constant validation, cancellation tests
 - **Decoders**: 7 (RGB565, RGB555, UYVY, YCbCr 4:2:0, CL, CLCL, JPEG) + 53 profiles
-- **Thoroughness**: 30 reference decode PNGs from Reuhno's synthetic iPod data
+- **Thoroughness**: 30 reference decode PNG files from Reuhno's synthetic iPod data
 - **Limitations**: Windows-first (ImageGlass is Windows-only), no crates.io/PyPI distribution, no standalone CLI
 
 ### Strengths that carried forward
@@ -52,7 +52,7 @@ The initial Rust port prioritized coverage over thoroughness. Comparing the two 
 
 | Area | C# (after 5 review rounds) | Rust (current) |
 |---|---|---|
-| Golden vectors | 30 reference PNGs from real samples | 30 golden vectors + synthetic fixtures ✅ |
+| Golden vectors | 30 reference PNG files from real samples | 30 golden vectors + synthetic fixtures ✅ |
 | RGB565 roundtrip | All 65,536 values | All 65,536 values ✅ |
 | SIMD const validation | Dedicated test file | Dedicated test file ✅ |
 | Statistical validation | Decorrelation, entropy, histogram | Full parity ✅ |
@@ -155,7 +155,7 @@ The Rust codec stands on the shoulders of the C# version, which was itself built
 - **Keith's iPod Photo Reader (kebwi)** — original reverse engineering (2005), 13 decode methods, multi-frame confirmation
 - **clickwheel (dstaley)** — C# ArtworkDB read/write, format ID tables
 - **pyithmb (wrinklykong)** — Python YUV reference decoder
-- **Reuhno** — first public F-prefix .ithmb test vectors + 30 reference PNGs (CC0)
+- **Reuhno** — first public F-prefix .ithmb test vectors + 30 reference PNG files (CC0)
 - **mgminformatique** — iPod photo recovery tool, independent format analysis
 - **Frulko** — iPod sync tool and analysis
 - **ImageGlass** — plugin ABI that motivated the C# implementation

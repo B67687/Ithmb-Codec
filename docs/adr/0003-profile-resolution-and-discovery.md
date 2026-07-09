@@ -126,7 +126,7 @@ The 54 profiles in `data/profiles.json` derive from:
 | libgpod | PhotoDB format ID tables, padded slot handling, device-format mappings. |
 | Keith's iPod Photo Reader (kebwi) | Original RE (2005), 13 decode methods, multi-frame confirmation, crop/rotation parameters. |
 | clickwheel (dstaley) | C# ArtworkDB read/write, 40+ format IDs with byte order flags. |
-| Hardware validation (Reuhno) | iPod Classic 6G samples (F1061, F1055, F1060) confirming BGR15 channel-swap and MSB replication. 30 reference PNGs. |
+| Hardware validation (Reuhno) | iPod Classic 6G samples (F1061, F1055, F1060) confirming BGR15 channel-swap and MSB replication. 30 reference PNG files. |
 
 ## Consequences
 

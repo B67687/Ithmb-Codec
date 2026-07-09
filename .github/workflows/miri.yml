@@ -1,0 +1,28 @@
+# miri.yml — Miri nightly verification for unsafe blocks (SIMD/FFI)
+name: miri
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # weekly Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions: { contents: read }
+
+jobs:
+  miri:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly-2025-07-01
+          components: miri
+          cache: true
+          cache-key: "miri-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: cargo miri test (strict provenance + tree borrows)
+        run: |
+          cargo miri test --workspace --features simd,c --all-targets
+          # 2>&1 | tail -20
+        env:
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-permissive-provenance"
+          RUST_BACKTRACE: 1
