@@ -37,7 +37,7 @@ if [ ! -f "$BASELINE_PATH" ]; then
 fi
 
 echo "Running cargo bench -p ithmb-core ..."
-BENCH_OUTPUT=$(cargo bench -p ithmb-core 2>&1) || {
+BENCH_OUTPUT=$(cargo bench -p ithmb-core 2>&1 | tee /tmp/ci-benchmark-output.txt) || {
     echo "WARNING: cargo bench failed — skipping regression check."
     exit 0
 }
