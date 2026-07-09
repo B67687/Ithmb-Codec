@@ -1,23 +1,23 @@
 <div align="center">
 
-<img src="docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
+<img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
 
 # Ithmb Image Codec
 
-[![License: MIT](docs/badges/license.svg)](LICENSE)
-[![Rust](docs/badges/rust.svg)](https://rust-lang.org)
-[![Python](docs/badges/python.svg)](pymod/)
+[![License: MIT](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/license.svg)](LICENSE)
+[![Rust](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/rust.svg)](https://rust-lang.org)
+[![Python](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/python.svg)](pymod/)
 
-[![Platform](docs/badges/platform.svg)](README.md#build-from-source)
+[![Platform](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/platform.svg)](README.md#build-from-source)
 
-<a href="./docs/badges/showcase.svg"><img src="docs/badges/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
+<a href="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/showcase.svg"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
 <i>Concept render — not an actual screenshot.</i>
 <hr style="max-width: 360px;">
 <sub>Built with AI assistance — see <a href="./docs/CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./docs/CREDITS.md"><img src="docs/badges/deepseek.svg" alt="DeepSeek"></a>
-<a href="./docs/CREDITS.md"><img src="docs/badges/opencode.svg" alt="OpenCode"></a>
-<a href="./docs/CREDITS.md"><img src="docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/deepseek.svg" alt="DeepSeek"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/opencode.svg" alt="OpenCode"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
 
 
 
@@ -339,7 +339,7 @@ A `cdylib` exposing ithmb-core to Python 3.12+ via PyO3 (abi3-py312). Built with
 
 A CLI tool for generating synthetic `.ithmb` test vectors and reference PNG files used during development.
 
-<div align="center"><img src="docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
+<div align="center"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
 
 ---
 
@@ -446,7 +446,7 @@ The library was developed through iterative research, implementation, review, an
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, buffer overflow, integer overflow, and defense-in-depth
 6. **Release** — Published via GitHub Releases
 
-<div align="center"><img src="docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
+<div align="center"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
