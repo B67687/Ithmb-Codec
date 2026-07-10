@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
+<img src="docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
 
 # Ithmb Image Codec
 
