@@ -1,3 +1,7 @@
+> [!WARNING]
+> **This repository is archived and no longer actively maintained.** I may return for occasional updates, but expect no regular releases, CI fixes, or issue responses. The codec is feature-complete and published on crates.io.
+
+
 <div align="center">
 
 <img src="docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
