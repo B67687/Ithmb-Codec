@@ -107,7 +107,7 @@ fn list_profiles() {
 #[test]
 fn info_on_sample() {
     let sample = sample_ithmb();
-    assert!(sample.exists(), "sample file not found: {:?}", sample);
+    assert!(sample.exists(), "sample file not found: {sample:?}");
 
     let out = run_ithmb(&["--info", &sample.to_string_lossy()]);
     assert_ok(&out);
@@ -123,7 +123,7 @@ fn info_on_sample() {
 #[test]
 fn decode_to_png() {
     let sample = sample_ithmb();
-    assert!(sample.exists(), "sample file not found: {:?}", sample);
+    assert!(sample.exists(), "sample file not found: {sample:?}");
 
     let output = tmp_dir("decode_to_png").join("output.png");
     let out = run_ithmb(&[&sample.to_string_lossy(), &output.to_string_lossy()]);
@@ -137,7 +137,7 @@ fn decode_to_png() {
 #[test]
 fn decode_raw_bgra() {
     let sample = sample_ithmb();
-    assert!(sample.exists(), "sample file not found: {:?}", sample);
+    assert!(sample.exists(), "sample file not found: {sample:?}");
 
     let output = tmp_dir("decode_raw").join("output.bin");
     let out = run_ithmb(&["--raw", &sample.to_string_lossy(), &output.to_string_lossy()]);
@@ -152,7 +152,7 @@ fn decode_raw_bgra() {
 #[test]
 fn raw_explicit_format() {
     let sample = sample_ithmb();
-    assert!(sample.exists(), "sample file not found: {:?}", sample);
+    assert!(sample.exists(), "sample file not found: {sample:?}");
 
     let output = tmp_dir("raw_explicit").join("output.bin");
     let out = run_ithmb(&["--format", "bin", &sample.to_string_lossy(), &output.to_string_lossy()]);
@@ -197,6 +197,7 @@ fn info_on_jpeg_t_prefix() {
     assert!(stdout.contains("Prefix:"), "missing prefix info");
 }
 
+#[test]
 fn auto_output_to_png_with_explicit_path() {
     let sample = sample_ithmb();
     assert!(sample.exists());
