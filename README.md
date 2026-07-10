@@ -187,7 +187,7 @@ The workspace produces four artifacts:
 | Crate | Artifact | Install |
 |-------|----------|---------|
 | `ithmb-core`   | `libithmb_core.rlib` (static library) | `cargo add ithmb-core` (crates.io) |
-| `ithmb-cli`    | `ithmb` CLI binary                   | `cargo install --path crates/ithmb-cli` |
+| `ithmb-cli`    | `ithmb` CLI binary                   | `cargo install ithmb-cli` (crates.io) |
 | `ithmb-python` | `libithmb_python.{so,dylib,pyd}`     | `pip install pymod/` (or crates.io when published) |
 | `ithmb-gen`    | `ithmb-gen` sample generator binary | `cargo install --path crates/ithmb-gen` |
 
