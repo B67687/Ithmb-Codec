@@ -1,4 +1,4 @@
-# release.yml — Publish on tag
+# release.yml — Cross-compile enterprise release pipeline
 name: release
 on:
   push:
@@ -8,25 +8,104 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           cache: true
-          cache-key: "release-${{ hashFiles('rust-toolchain.toml') }}"
-      - name: Build release
-        run: cargo build --workspace --release
+          cache-key: "release-${{ matrix.target }}-${{ hashFiles('rust-toolchain.toml') }}"
+          targets: ${{ matrix.target }}
+      - name: Build ithmb-cli
+        run: cargo build -p ithmb-cli --release --target ${{ matrix.target }} --features simd
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: tar czf ithmb-cli-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release ithmb
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        run: 7z a ithmb-cli-${{ matrix.target }}.zip ./target/${{ matrix.target }}/release/ithmb.exe
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ithmb-cli-${{ matrix.target }}
+          path: |
+            ithmb-cli-${{ matrix.target }}.tar.gz
+            ithmb-cli-${{ matrix.target }}.zip
+          if-no-files-found: warn
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: ithmb-cli-*
+          merge-multiple: true
+      - name: Create RELEASE_NOTES.md
+        run: |
+          cat > RELEASE_NOTES.md << 'EOF'
+          # Ithmb-Codec Enterprise Release
+
+          This is an **Enterprise** cross-compiled release of Ithmb-Codec.
+
+          Built for:
+          - Linux x86_64
+          - Linux ARM64 (aarch64)
+          - macOS x86_64 (Intel)
+          - macOS ARM64 (Apple Silicon)
+          - Windows x86_64
+
+          All binaries are built with SIMD acceleration enabled.
+
+          ## Installation
+
+          Extract the archive for your platform and run the `ithmb` binary:
+
+          ```bash
+          # Linux / macOS
+          tar xzf ithmb-cli-<target>.tar.gz
+          ./ithmb --help
+
+          # Windows
+          # Extract ithmb-cli-<target>.zip and run ithmb.exe
+          ```
+          EOF
       - name: Generate changelog
         uses: orhun/git-cliff-action@v4
         with:
           config: cliff.toml
         env:
           OUTPUT: CHANGELOG.md
+      - name: Combine release notes
+        run: |
+          cat RELEASE_NOTES.md > BODY.md
+          echo "" >> BODY.md
+          echo "---" >> BODY.md
+          echo "" >> BODY.md
+          cat CHANGELOG.md >> BODY.md
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          body_path: CHANGELOG.md
+          body_path: BODY.md
           generate_release_notes: true
+          files: artifacts/*
