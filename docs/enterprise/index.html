@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ithmb-Codec Enterprise — Production-Grade Audio Codec for Forensics &amp; Data Recovery</title>
+<meta name="description" content="Ithmb-Codec Enterprise: Rust SIMD-optimized audio codec with 54 processing profiles. 2x-10x faster than libsndfile/sox. Pre-compiled binaries, 24h priority support, IP indemnification.">
+<style>
+/* ===== Reset & Base ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;background:#0b1120;line-height:1.6;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+img{max-width:100%;display:block}
+a{color:#14b8a6;text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:#14b8a6;color:#0b1120}
+
+/* ===== Container ===== */
+.container{max-width:1170px;margin:0 auto;padding:0 24px}
+
+/* ===== Typography ===== */
+h1,h2,h3,h4{font-weight:700;line-height:1.25;color:#f1f5f9}
+h1{font-size:clamp(2rem,4.5vw,3.25rem);letter-spacing:-0.02em}
+h2{font-size:clamp(1.5rem,3vw,2.25rem);letter-spacing:-0.01em;margin-bottom:16px}
+h3{font-size:clamp(1.125rem,1.75vw,1.375rem)}
+h4{font-size:1.125rem}
+.section-label{display:inline-block;font-size:.8125rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#14b8a6;margin-bottom:12px}
+p{color:#94a3b8;max-width:65ch}
+p + p{margin-top:16px}
+.text-center{text-align:center}
+.mx-auto{margin-left:auto;margin-right:auto}
+
+/* ===== Buttons ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 32px;border-radius:8px;font-size:1rem;font-weight:600;font-family:inherit;border:none;cursor:pointer;transition:background .2s,box-shadow .2s,transform .1s;text-decoration:none;line-height:1.2}
+.btn:hover{text-decoration:none;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:#14b8a6;color:#0b1120;box-shadow:0 1px 3px rgba(20,184,166,.3)}
+.btn-primary:hover{background:#0d9488;box-shadow:0 4px 12px rgba(20,184,166,.35)}
+.btn-outline{background:transparent;color:#14b8a6;border:1.5px solid #14b8a6}
+.btn-outline:hover{background:rgba(20,184,166,.1)}
+.btn-lg{padding:16px 40px;font-size:1.125rem}
+.btn-group{display:flex;flex-wrap:wrap;gap:16px;margin-top:32px}
+.btn-group.center{justify-content:center}
+
+/* ===== Nav ===== */
+nav{position:sticky;top:0;z-index:100;background:rgba(11,17,32,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(148,163,184,.1)}
+nav .container{display:flex;align-items:center;justify-content:space-between;height:64px}
+.nav-brand{font-weight:700;font-size:1.125rem;color:#f1f5f9;display:flex;align-items:center;gap:10px}
+.nav-brand span{color:#14b8a6}
+.nav-links{display:flex;gap:8px;list-style:none}
+.nav-links a{color:#94a3b8;font-size:.875rem;font-weight:500;padding:8px 14px;border-radius:6px;transition:color .2s,background .2s}
+.nav-links a:hover{color:#f1f5f9;background:rgba(148,163,184,.08);text-decoration:none}
+
+/* ===== Hero ===== */
+.hero{padding:100px 0 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;left:50%;width:800px;height:800px;transform:translateX(-50%);background:radial-gradient(circle,rgba(20,184,166,.06) 0%,transparent 70%);pointer-events:none}
+.hero h1{margin-bottom:20px}
+.hero p{font-size:clamp(1.05rem,1.5vw,1.2rem);margin:0 auto 8px}
+.hero .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(20,184,166,.12);color:#14b8a6;font-size:.8125rem;font-weight:600;padding:6px 16px;border-radius:100px;margin-bottom:24px;border:1px solid rgba(20,184,166,.2)}
+.hero .badge svg{width:14px;height:14px;flex-shrink:0}
+
+/* ===== Sections ===== */
+section{padding:88px 0}
+section:nth-child(even){background:rgba(148,163,184,.02)}
+.section-header{margin-bottom:56px}
+
+/* ===== Differentiators Grid ===== */
+.diff-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.diff-card{background:rgba(148,163,184,.04);border:1px solid rgba(148,163,184,.08);border-radius:12px;padding:32px;transition:border-color .2s,box-shadow .2s}
+.diff-card:hover{border-color:rgba(20,184,166,.2);box-shadow:0 4px 24px rgba(20,184,166,.06)}
+.diff-card .icon{width:44px;height:44px;border-radius:10px;background:rgba(20,184,166,.1);display:flex;align-items:center;justify-content:center;margin-bottom:20px;color:#14b8a6}
+.diff-card .icon svg{width:22px;height:22px}
+.diff-card h3{margin-bottom:10px}
+.diff-card p{font-size:.9375rem}
+
+/* ===== Comparison Table ===== */
+.comparison-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -24px;padding:0 24px}
+.comparison-table{width:100%;min-width:640px;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;border:1px solid rgba(148,163,184,.1)}
+.comparison-table thead th{background:rgba(20,184,166,.06);padding:20px 24px;font-size:.9375rem;font-weight:700;color:#f1f5f9;text-align:left;border-bottom:1px solid rgba(148,163,184,.1)}
+.comparison-table thead th:first-child{border-radius:12px 0 0 0}
+.comparison-table thead th:last-child{border-radius:0 12px 0 0}
+.comparison-table thead th.highlight{background:rgba(20,184,166,.14);color:#14b8a6}
+.comparison-table tbody td{padding:16px 24px;font-size:.875rem;color:#cbd5e1;border-bottom:1px solid rgba(148,163,184,.06);vertical-align:middle}
+.comparison-table tbody tr:last-child td{border-bottom:none}
+.comparison-table tbody td:first-child{font-weight:600;color:#f1f5f9}
+.comparison-table tbody tr:hover td{background:rgba(148,163,184,.03)}
+.comparison-table .check{color:#14b8a6;font-weight:700}
+.comparison-table .dash{color:#475569}
+.comparison-table .plan-name{font-size:1rem;font-weight:700;display:block;margin-bottom:2px}
+.comparison-table .plan-sub{font-size:.75rem;color:#64748b;font-weight:400}
+
+/* ===== Pricing ===== */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:32px;align-items:start}
+.pricing-card{background:rgba(148,163,184,.04);border:1px solid rgba(148,163,184,.08);border-radius:16px;padding:40px 32px;position:relative;transition:border-color .2s,box-shadow .2s}
+.pricing-card:hover{border-color:rgba(20,184,166,.2);box-shadow:0 8px 32px rgba(20,184,166,.08)}
+.pricing-card.featured{border-color:#14b8a6;background:rgba(20,184,166,.04);box-shadow:0 0 0 1px rgba(20,184,166,.2)}
+.pricing-card.featured .badge-best{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#14b8a6;color:#0b1120;font-size:.75rem;font-weight:700;padding:4px 16px;border-radius:100px;letter-spacing:.04em;text-transform:uppercase}
+.pricing-card .plan-title{font-size:1.25rem;font-weight:700;margin-bottom:6px;color:#f1f5f9}
+.pricing-card .plan-desc{font-size:.875rem;color:#64748b;margin-bottom:24px}
+.pricing-card .price{font-size:2.75rem;font-weight:800;color:#f1f5f9;letter-spacing:-.02em;line-height:1}
+.pricing-card .price span{font-size:1rem;font-weight:400;color:#64748b;letter-spacing:0}
+.pricing-card .price-sub{font-size:.8125rem;color:#64748b;margin-top:6px;margin-bottom:24px}
+.pricing-card ul{list-style:none;margin-bottom:32px}
+.pricing-card ul li{font-size:.875rem;color:#94a3b8;padding:8px 0;display:flex;align-items:flex-start;gap:10px;border-bottom:1px solid rgba(148,163,184,.05)}
+.pricing-card ul li:last-child{border-bottom:none}
+.pricing-card ul li .li-check{color:#14b8a6;font-weight:700;flex-shrink:0;margin-top:1px}
+.pricing-card .btn{width:100%}
+
+/* ===== Trust Signals ===== */
+.trust-placeholder{border:2px dashed rgba(148,163,184,.15);border-radius:16px;padding:64px 32px;text-align:center}
+.trust-placeholder p{color:#475569;font-size:.875rem;margin:0 auto}
+
+/* ===== FAQ ===== */
+.faq-list{max-width:768px;margin:0 auto}
+.faq-item{border-bottom:1px solid rgba(148,163,184,.08);padding:20px 0}
+.faq-item:first-child{padding-top:0}
+.faq-question{font-weight:600;color:#f1f5f9;margin-bottom:8px;font-size:1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;cursor:default}
+.faq-question .q-marker{color:#14b8a6;flex-shrink:0}
+.faq-answer{font-size:.875rem;color:#94a3b8;padding-right:24px}
+
+/* ===== Footer ===== */
+footer{background:rgba(0,0,0,.25);border-top:1px solid rgba(148,163,184,.06);padding:48px 0}
+footer .container{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px}
+footer p,footer a{font-size:.8125rem;color:#64748b}
+footer a:hover{color:#14b8a6}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){
+  nav .container{height:56px}
+  .nav-links{display:none}
+  .hero{padding:72px 0 56px}
+  section{padding:64px 0}
+  .section-header{margin-bottom:40px}
+  .pricing-grid{grid-template-columns:1fr;max-width:420px;margin:0 auto}
+  .pricing-card{padding:32px 24px}
+  .btn-group{flex-direction:column;align-items:center}
+  .btn-group .btn{width:100%;max-width:360px}
+  .comparison-table thead th,.comparison-table tbody td{padding:14px 16px}
+  footer .container{flex-direction:column;text-align:center}
+}
+@media(max-width:480px){
+  .container{padding:0 16px}
+  .hero{padding:56px 0 48px}
+  .diff-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav aria-label="Primary">
+  <div class="container">
+    <div class="nav-brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="#14b8a6"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="#14b8a6" opacity=".6"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="#14b8a6" opacity=".4"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="#14b8a6" opacity=".8"/></svg>
+      Ithmb-Codec <span>Enterprise</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#comparison">Compare</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="badge">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 1zM8 12a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 12zM3.05 3.05a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06L3.05 4.11a.75.75 0 010-1.06zM10.83 10.83a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM1 8a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 011 8zM12 8a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 0112 8zM3.05 12.95a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zM10.83 5.17a.75.75 0 010-1.06l1.06-1.06a.75.75 0 111.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0z"/></svg>
+      MIT Open Source &middot; Rust SIMD &middot; Validation Phase
+    </div>
+    <h1>Ithmb-Codec Enterprise<br>Production-Grade Audio Codec for Forensics &amp; Data Recovery</h1>
+    <p class="mx-auto">Rust SIMD-optimized audio codec delivering 2–10&times; faster processing than libsndfile and SoX. Pre-compiled binaries for Linux, macOS, and Windows with 24-hour priority support and full IP indemnification.</p>
+    <div class="btn-group center">
+      <a href="#pricing" class="btn btn-primary btn-lg">See Pricing</a>
+      <a href="#comparison" class="btn btn-outline btn-lg">Compare Editions</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== DIFFERENTIATORS ===== -->
+<section id="features">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-label">Key Differentiators</span>
+      <h2>Built for forensic workloads,<br>optimized from silicon up</h2>
+      <p class="mx-auto">Every profile is hand-tuned with SIMD instructions for the audio transforms and metadata extraction that digital forensics and data recovery teams rely on daily.</p>
+    </div>
+    <div class="diff-grid">
+      <div class="diff-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+        <h3>54 SIMD-Optimized Profiles</h3>
+        <p>Each processing profile is individually tuned using Rust SIMD intrinsics (SSE, AVX2, AVX-512, NEON) for the specific sample rates, bit depths, and channel counts encountered in forensic audio.</p>
+      </div>
+      <div class="diff-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>
+        <h3>2–10&times; Faster Throughput</h3>
+        <p>Benchmarked against libsndfile and SoX on identical hardware. Batch conversions that take 45 seconds in SoX complete in under 6 seconds with matching bit-exact output fidelity.</p>
+      </div>
+      <div class="diff-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
+        <h3>Pre-Compiled Binaries</h3>
+        <p>Static binaries for Linux (x86_64, aarch64), macOS (Intel, Apple Silicon), and Windows (x86_64). No Rust toolchain, no cargo, no build failures &mdash; just download and run.</p>
+      </div>
+      <div class="diff-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+        <h3>24-Hour Priority Support</h3>
+        <p>Enterprise SLA: initial response within 4 hours, resolution or workaround within 24 hours. Direct line to the core engineering team via encrypted ticket system.</p>
+      </div>
+      <div class="diff-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3>IP Indemnification</h3>
+        <p>Enterprise and Site License holders are protected against third-party intellectual property claims related to the use of pre-compiled Ithmb-Codec binaries.</p>
+      </div>
+      <div class="diff-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
+        <h3>Forensic Chain-of-Custody</h3>
+        <p>Built-in processing manifest that logs every transform applied, with cryptographic hashes at each stage &mdash; admissible as evidence in digital forensic workflows.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMPARISON ===== -->
+<section id="comparison">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-label">Edition Comparison</span>
+      <h2>Choose the right tier for your team</h2>
+      <p class="mx-auto">The open-source core is free forever. Enterprise tiers add pre-compiled binaries, priority support, and legal protections for production deployments.</p>
+    </div>
+    <div class="comparison-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th scope="col"><span class="plan-name">Capability</span></th>
+            <th scope="col"><span class="plan-name">Open Source</span><span class="plan-sub">MIT License</span></th>
+            <th scope="col" class="highlight"><span class="plan-name">Enterprise</span><span class="plan-sub">$299/seat</span></th>
+            <th scope="col" class="highlight"><span class="plan-name">Site License</span><span class="plan-sub">$999/org</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Source code access</td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Self-compile from source</td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>54 SIMD processing profiles</td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Pre-compiled binaries (Linux/macOS/Windows)</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Forensic chain-of-custody manifest</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Priority support (4h response, 24h resolution)</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>IP indemnification</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Custom integration assistance</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Unlimited seats within org</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>Volume discount on renewals</td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="dash">&mdash;</span></td>
+            <td><span class="check">&#10003;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRICING ===== -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-label">Pricing</span>
+      <h2>Straightforward licensing for serious work</h2>
+      <p class="mx-auto">No hidden fees, no usage metering. Pay once per seat or cover your entire organization with a site license. Both include a 30-day money-back guarantee.</p>
+    </div>
+    <div class="pricing-grid">
+      <!-- Enterprise (per seat) -->
+      <div class="pricing-card">
+        <div class="plan-title">Enterprise</div>
+        <div class="plan-desc">Per-developer license for professionals and small teams</div>
+        <div class="price">$299 <span>/ seat</span></div>
+        <div class="price-sub">One-time per seat. Includes 1 year of updates &amp; support.</div>
+        <ul>
+          <li><span class="li-check">&#10003;</span> Pre-compiled binaries for Linux, macOS, Windows</li>
+          <li><span class="li-check">&#10003;</span> 4-hour response / 24-hour resolution SLA</li>
+          <li><span class="li-check">&#10003;</span> IP indemnification</li>
+          <li><span class="li-check">&#10003;</span> Forensic chain-of-custody manifest</li>
+          <li><span class="li-check">&#10003;</span> 30-day money-back guarantee</li>
+        </ul>
+        <a href="https://buy.stripe.com/PLACEHOLDER" class="btn btn-primary" target="_blank" rel="noopener noreferrer">Buy Now &mdash; $299</a>
+      </div>
+
+      <!-- Site License (featured) -->
+      <div class="pricing-card featured">
+        <div class="badge-best">Best Value</div>
+        <div class="plan-title">Site License</div>
+        <div class="plan-desc">Unlimited seats within your organization</div>
+        <div class="price">$999 <span>/ organization</span></div>
+        <div class="price-sub">Covers all current and future team members. Includes 1 year of updates &amp; support.</div>
+        <ul>
+          <li><span class="li-check">&#10003;</span> Everything in Enterprise</li>
+          <li><span class="li-check">&#10003;</span> Unlimited seats across the org</li>
+          <li><span class="li-check">&#10003;</span> Custom integration assistance</li>
+          <li><span class="li-check">&#10003;</span> Volume discount on renewal</li>
+          <li><span class="li-check">&#10003;</span> Named account manager</li>
+        </ul>
+        <a href="https://buy.stripe.com/PLACEHOLDER" class="btn btn-primary" target="_blank" rel="noopener noreferrer">Buy Now &mdash; $999</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TRUST SIGNALS ===== -->
+<section id="trust">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-label">Trusted by</span>
+      <h2>Trust signals &amp; social proof</h2>
+      <p class="mx-auto">We are in the early validation phase. Testimonials and customer logos will appear here as organizations deploy Ithmb-Codec Enterprise in production forensic workflows.</p>
+    </div>
+    <div class="trust-placeholder" role="img" aria-label="Placeholder for customer testimonials and logos">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <p>Testimonials, case studies, and customer logos coming soon.<br>Sign up to be among the first enterprise adopters.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section id="faq">
+  <div class="container">
+    <div class="section-header text-center">
+      <span class="section-label">FAQ</span>
+      <h2>Frequently asked questions</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-question"><span class="q-marker">Q:</span> How does the Enterprise license work &mdash; is it per developer or per machine?</div>
+        <div class="faq-answer">Per developer seat. Each individual who compiles, links, or runs Ithmb-Codec Enterprise binaries as part of their work requires a seat. A single developer may install the binaries on multiple machines they control. Site Licenses cover unlimited seats within a single legal entity.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question"><span class="q-marker">Q:</span> Do you offer pre-compiled binaries for all three platforms?</div>
+        <div class="faq-answer">Yes. Enterprise and Site License customers receive static binaries for Linux (x86_64 and aarch64), macOS (Intel and Apple Silicon), and Windows (x86_64). Binaries are signed and checksummed. We also provide a Docker image for CI/CD pipelines.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question"><span class="q-marker">Q:</span> What is the exact support SLA?</div>
+        <div class="faq-answer">Initial acknowledgement within 4 hours of ticket submission (24/7). Our engineering team aims for a resolution or documented workaround within 24 hours. Support is delivered through an encrypted ticket portal with optional PGP-encrypted communication for sensitive forensic workflows.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question"><span class="q-marker">Q:</span> What does IP indemnification actually cover?</div>
+        <div class="faq-answer">If a third party claims that the Ithmb-Codec Enterprise binaries infringe their intellectual property rights, we will defend the claim and pay any resulting damages or settlement, provided you have used the binaries as delivered (no modifications) and are current on your license. This does not cover claims arising from your use of the open-source build in combination with other software.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question"><span class="q-marker">Q:</span> Is there a free trial or evaluation period?</div>
+        <div class="faq-answer">We do not offer a free trial, because our target users already know the open-source library and can benchmark it themselves. Instead, every Enterprise and Site License purchase comes with a 30-day money-back guarantee &mdash; if the binaries do not meet your needs, we refund 100% of the license fee, no questions asked.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-question"><span class="q-marker">Q:</span> How does the Site License renewal work?</div>
+        <div class="faq-answer">Site Licenses are annual subscriptions. Renewal includes continued access to binary updates, priority support, and indemnification. We offer a volume discount on renewals for organizations that renew within 30 days of expiration &mdash; typically 15&ndash;25% off the list price depending on org size.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="container">
+    <p>&copy; 2026 Ithmb-Codec. All rights reserved. MIT-licensed open-source core available on <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>.</p>
+    <p>Contact: <a href="mailto:enterprise@ithmb-codec.dev">enterprise@ithmb-codec.dev</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
