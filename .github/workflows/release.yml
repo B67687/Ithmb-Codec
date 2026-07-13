@@ -41,7 +41,7 @@ jobs:
         if: runner.os == 'Windows'
         run: 7z a ithmb-cli-${{ matrix.target }}.zip ./target/${{ matrix.target }}/release/ithmb.exe
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ithmb-cli-${{ matrix.target }}
           path: |
