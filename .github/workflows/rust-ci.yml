@@ -72,11 +72,10 @@ jobs:
         with:
           cache: true
           cache-key: "deny-${{ hashFiles('deny.toml') }}"
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
       - name: cargo deny check
-        uses: EmbarkStudios/cargo-deny-action@v2
-        with:
-          command: check
-          arguments: --workspace
+        run: cargo deny check --workspace
 
   benchmark_regression:
     runs-on: ubuntu-latest
