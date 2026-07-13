@@ -1,7 +1,3 @@
-> [!WARNING]
-> **This repository is archived and no longer actively maintained.** I may return for occasional updates, but expect no regular releases, CI fixes, or issue responses. The codec is feature-complete and published on crates.io.
-
-
 <div align="center">
 
 <img src="docs/badges/ithmb-icon.svg" alt="Ithmb Image Codec" width="96" height="96">
@@ -483,6 +479,8 @@ If this project helps you recover iPod photos, decode thumbnails, or save old me
 <div align="center">
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ThumbNami)
+
+[![Enterprise License](https://img.shields.io/badge/Enterprise_License-0b1120?logo=stripe&logoColor=white)](https://B67687.github.io/Ithmb-Codec-Dev/enterprise/)
 
 </div>
 

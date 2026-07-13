@@ -35,14 +35,13 @@ pub(crate) fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
 #[inline]
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
 pub(crate) fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
     let [y0, y1, y2, y3, cb, cr] = *quad;
     let mut out = [0u8; 16];
-    out[..4].copy_from_slice(&yuv::yuv_to_bgra(y0, cb, cr));
-    out[4..8].copy_from_slice(&yuv::yuv_to_bgra(y1, cb, cr));
-    out[8..12].copy_from_slice(&yuv::yuv_to_bgra(y2, cb, cr));
-    out[12..].copy_from_slice(&yuv::yuv_to_bgra(y3, cb, cr));
+    out[..4].copy_from_slice(&crate::yuv::yuv_to_bgra(y0, cb, cr));
+    out[4..8].copy_from_slice(&crate::yuv::yuv_to_bgra(y1, cb, cr));
+    out[8..12].copy_from_slice(&crate::yuv::yuv_to_bgra(y2, cb, cr));
+    out[12..].copy_from_slice(&crate::yuv::yuv_to_bgra(y3, cb, cr));
     out
 }
 

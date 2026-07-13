@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.0-enterprise] — 2026-07-13
+
+### Added
+- **WASM decoder** — Browser-based .ithmb decoder at [Ithmb-Codec-Dev](https://github.com/B67687/Ithmb-Codec-Dev)
+- **Opt-in format metadata sharing** — GitHub issue via checkbox-gated opt-in
+- **ADR-0006** — Zero-trust telemetry pattern documented
+- **Enterprise page redesign** — Apple-style light theme, realistic support promises
+- **Gen tool profile-aware defaults** — `ithmb-gen` generates at profile-matching dimensions
+
+### Fixed
+- **Plugin ABI rewrite** — IGCodecApi/IGCodecCapability matched to C# SDK
+- **Pixel format enum** — Unknown(0) to Bgra8Unorm(1) for ImageGlass compat
+- **Stack buffer overrun** — Removed monitor thread calling is_cancellation_requested(null)
+- **Metadata dimension parsing** — Fixed comma-formatted profile descriptions
+
 ## [1.9.0] — 2026-07-07
 
 ### Added

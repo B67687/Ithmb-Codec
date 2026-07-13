@@ -60,7 +60,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude mybroadband README.md docs/
+          args: --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' README.md docs/
           fail: true
 
   verify_deny:

@@ -368,15 +368,7 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
             cb_row[cx],
             cr_row[cx],
         ];
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-        // SAFETY: x86_64/x86 guarantees SSE2.
-        let out = unsafe { yuv::yuv420_quad_to_bgra_sse2(&quad) };
-        #[cfg(not(any(
-            target_arch = "x86_64",
-            target_arch = "x86",
-            all(target_arch = "aarch64", not(target_os = "macos"))
-        )))]
-        let out = scalar::yuv420_quad_to_bgra(&quad);
+        let out = yuv420_quad_to_bgra(&quad);
 
         let off = cx * 8;
         dst[off..off + 4].copy_from_slice(&out[0..4]);

@@ -37,3 +37,15 @@ pub fn decode_ithmb(bytes: &[u8]) -> Option<Vec<u8>> {
 
     Some(out)
 }
+
+/// Read the 4-byte big-endian format prefix from a byte slice.
+///
+/// Returns 0 if the slice is shorter than 4 bytes.
+#[must_use]
+#[wasm_bindgen]
+pub fn peek_prefix(bytes: &[u8]) -> u32 {
+    if bytes.len() < 4 {
+        return 0;
+    }
+    u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+}
