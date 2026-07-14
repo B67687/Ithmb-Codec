@@ -116,5 +116,5 @@ pub use error::{DecodeError, DecodedImage};
 /// Central decode dispatch — the primary entry point for `.ithmb` decoding.
 pub mod pipeline;
 
-/// Re-export of [`decode_ithmb`] and [`open_ithmb`] for convenience.
-pub use pipeline::{decode_ithmb, open_ithmb};
+/// Re-export of [`decode_ithmb`], [`open_ithmb`], and [`encoding_name_for_prefix`] for convenience.
+pub use pipeline::{decode_ithmb, encoding_name_for_prefix, open_ithmb};

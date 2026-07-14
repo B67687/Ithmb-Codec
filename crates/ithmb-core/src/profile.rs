@@ -22,6 +22,21 @@ pub enum Encoding {
     Jpeg,
 }
 
+impl Encoding {
+    /// Human-readable display name for the encoding variant.
+    #[must_use]
+    pub fn to_display_string(self) -> &'static str {
+        match self {
+            Self::Rgb565 => "RGB565",
+            Self::Rgb555 => "RGB555",
+            Self::ReorderedRgb555 => "Reordered RGB555",
+            Self::Yuv422 => "UYVY 4:2:2",
+            Self::Ycbcr420 => "YCbCr 4:2:0",
+            Self::Jpeg => "JPEG passthrough",
+        }
+    }
+}
+
 /// Decoding profile for a raw .ithmb frame format.
 ///
 /// Maps to `IthmbVariantProfile` in the C# implementation. Each field that

@@ -28,6 +28,17 @@ use crate::uyvy;
 use crate::ycbcr420;
 use std::sync::atomic::AtomicBool;
 
+/// Look up the human-readable encoding name for a given format prefix.
+/// Returns `"Unknown format"` if the prefix is not found in the built-in profiles.
+#[must_use]
+pub fn encoding_name_for_prefix(prefix: i32) -> String {
+    let db = get_db();
+    match db.get(prefix) {
+        Some(profile) => profile.encoding.to_display_string().to_string(),
+        None => "Unknown format".to_string(),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------

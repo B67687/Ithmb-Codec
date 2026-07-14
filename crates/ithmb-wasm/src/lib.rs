@@ -1,10 +1,9 @@
 //! WASM bindings for ithmb-core.
 //!
-//! Exposes a single `#[wasm_bindgen]` function:
+//! Exposes `#[wasm_bindgen]` functions:
 //! - `decode_ithmb(bytes) -> Option<Vec<u8>>`
-//!
-//! Callers check the Emscripten-style header bytes (width, height, then RGBA data)
-//! in the returned buffer, or `null` on decode failure.
+//! - `peek_prefix(bytes) -> u32`
+//! - `get_encoding_name(prefix) -> String`
 
 use wasm_bindgen::prelude::*;
 
@@ -48,4 +47,14 @@ pub fn peek_prefix(bytes: &[u8]) -> u32 {
         return 0;
     }
     u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])
+}
+
+/// Look up the human-readable encoding name for a given format prefix.
+///
+/// Returns `"Unknown format"` if the prefix is not recognized.
+#[must_use]
+#[allow(clippy::cast_possible_wrap)]
+#[wasm_bindgen]
+pub fn get_encoding_name(prefix: u32) -> String {
+    ithmb_core::encoding_name_for_prefix(prefix as i32)
 }
