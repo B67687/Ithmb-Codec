@@ -480,7 +480,7 @@ If this project helps you recover iPod photos, decode thumbnails, or save old me
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ThumbNami)
 
-[![Enterprise License](https://img.shields.io/badge/Enterprise_License-0b1120?logo=stripe&logoColor=white)](https://B67687.github.io/Ithmb-Codec-Dev/enterprise/)
+[![Enterprise License](https://img.shields.io/badge/Enterprise_License-0b1120?logo=stripe&logoColor=white)](https://ithmb-codec.dev/enterprise/)
 
 </div>
 
