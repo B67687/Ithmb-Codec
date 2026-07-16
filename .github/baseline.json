@@ -1,92 +1,236 @@
 {
-  "\u251c\u2500 (64, 64)": 8.956,
-  "\u251c\u2500 (256, 256)": 145.3,
-  "\u251c\u2500 (512, 512)": 147.0,
-  "\u2570\u2500 (720, 480)": 197.5,
-  "\u2500 decode_jpeg": 1392.0,
-  "\u2500 simd_rgb555_row_to_bgra": 7.884,
-  "\u2500 simd_rgb565_row_to_bgra": 7.653,
-  "\u2570\u2500 (512, 512)": 579.3,
-  "\u2500 (64, 64)": 9.026,
-  "\u2500 (256, 256)": 145.2,
-  "\u2500 (512, 512)": 579.5,
-  "\u2500 decode_cl": 82.81,
-  "\u2500 decode_clcl": 90.3,
-  "\u2500 decode_reordered_rgb555": 495.9,
-  "\u2500 decode_rgb555": 36.22,
-  "\u2500 decode_rgb565": 34.49,
-  "\u2500 decode_uyvy": 61.81,
-  "\u2500 decode_ycbcr420": 147.7,
-  "\u2500 build_ithmb_file_256": 98.32,
-  "\u2500 decode_ithmb_256": 7.513,
-  "\u2500 decode_ithmb_512": 32.71,
-  "\u2500 open_ithmb_photodb": 13.75,
-  "\u251c\u2500 p3001_ReorderedRGB555_256x256": 120.8,
-  "\u251c\u2500 p3002_ReorderedRGB555_128x128": 29.97,
-  "\u2570\u2500 p3003_ReorderedRGB555_64x64": 7.272,
-  "\u251c\u2500 p3004_RGB555_56x55": 0.9707,
-  "\u251c\u2500 p3005_RGB555_320x320": 12.21,
-  "\u251c\u2500 p3006_RGB555_56x56": 1.592,
-  "\u251c\u2500 p3007_RGB555_88x88": 2.674,
-  "\u251c\u2500 p3008_RGB555_640x480": 41.0,
-  "\u251c\u2500 p3009_RGB555_120x160": 3.846,
-  "\u2570\u2500 p3011_RGB555_80x79": 0.8107000000000001,
-  "\u251c\u2500 p1005_RGB565_80x80": 0.7807000000000001,
-  "\u251c\u2500 p1007_RGB565_480x864": 53.88,
-  "\u251c\u2500 p1009_RGB565_42x30": 0.5707000000000001,
-  "\u251c\u2500 p1010_RGB565_240x240": 6.781,
-  "\u251c\u2500 p1013_RGB565_220x176": 29.82,
-  "\u251c\u2500 p1015_RGB565_130x88": 1.471,
-  "\u251c\u2500 p1016_RGB565_140x140": 4.197,
-  "\u251c\u2500 p1017_RGB565_56x56": 0.9407000000000001,
-  "\u251c\u2500 p1020_RGB565_176x220": 12.72,
-  "\u251c\u2500 p1023_RGB565_176x132": 7.674,
-  "\u251c\u2500 p1024_RGB565_320x240": 9.076,
-  "\u251c\u2500 p1027_RGB565_100x100": 1.472,
-  "\u251c\u2500 p1028_RGB565_100x100": 1.481,
-  "\u251c\u2500 p1029_RGB565_200x200": 6.481,
-  "\u251c\u2500 p1031_RGB565_42x42": 0.7607,
-  "\u251c\u2500 p1032_RGB565_42x37": 0.6807000000000001,
-  "\u251c\u2500 p1036_RGB565_50x41": 0.35969999999999996,
-  "\u251c\u2500 p1042_RGB565_320x240": 9.066,
-  "\u251c\u2500 p1043_RGB565_130x88": 1.431,
-  "\u251c\u2500 p1044_RGB565_128x128": 1.922,
-  "\u251c\u2500 p1055_RGB565_128x128": 1.982,
-  "\u251c\u2500 p1056_RGB565_128x128": 1.983,
-  "\u251c\u2500 p1060_RGB565_320x320": 11.67,
-  "\u251c\u2500 p1061_RGB565_55x55": 0.8607,
-  "\u251c\u2500 p1062_RGB565_56x56": 0.9407000000000001,
-  "\u251c\u2500 p1066_RGB565_64x64": 0.5197,
-  "\u251c\u2500 p1068_RGB565_128x128": 1.932,
-  "\u251c\u2500 p1071_RGB565_240x240": 6.782,
-  "\u251c\u2500 p1073_RGB565_240x240": 6.811,
-  "\u251c\u2500 p1074_RGB565_50x50": 0.42969999999999997,
-  "\u251c\u2500 p1078_RGB565_80x80": 0.7807000000000001,
-  "\u251c\u2500 p1079_RGB565_80x80": 0.7807000000000001,
-  "\u251c\u2500 p1081_RGB565_640x480": 39.02,
-  "\u251c\u2500 p1083_RGB565_240x320": 9.056,
-  "\u251c\u2500 p1084_RGB565_240x240": 6.791,
-  "\u251c\u2500 p1085_RGB565_88x88": 1.712,
-  "\u251c\u2500 p1087_RGB565_384x384": 16.78,
-  "\u251c\u2500 p1089_RGB565_58x58": 1.111,
-  "\u251c\u2500 p1092_RGB565_80x80": 0.7807000000000001,
-  "\u251c\u2500 p1093_RGB565_512x512": 32.43,
-  "\u251c\u2500 p2002_RGB565_50x50": 0.8407,
-  "\u2570\u2500 p2003_RGB565_150x150": 7.273,
-  "\u2570\u2500 p1019_UYVY_720x480": 80.55,
-  "\u2500 p1067_YCbCr420_720x480": 197.2,
-  "\u2500 decode_cl_scalar": 56.3,
-  "\u2500 decode_cl_simd": 191.2,
-  "\u2500 decode_clcl_scalar": 188.0,
-  "\u2500 decode_clcl_simd": 21.42,
-  "\u2500 decode_gray_scalar": 0.006122,
-  "\u2500 decode_gray_simd": 0.001157,
-  "\u2500 decode_rgb555_scalar": 97.58,
-  "\u2500 decode_rgb555_simd": 7.603,
-  "\u2500 decode_rgb565_scalar": 84.96,
-  "\u2500 decode_rgb565_simd": 7.403,
-  "\u2500 decode_uyvy_scalar": 106.7,
-  "\u2500 decode_uyvy_simd": 13.49,
-  "\u2500 decode_ycbcr420_scalar": 179.2,
-  "\u2500 decode_ycbcr420_simd": 34.99
+  "decode_cl (64, 64)": {
+    "time_us": 14.33
+  },
+  "decode_cl (256, 256)": {
+    "time_us": 223.5
+  },
+  "decode_cl (512, 512)": {
+    "time_us": 901.6
+  },
+  "decode_cl (720, 480)": {
+    "time_us": 1199.0
+  },
+  "decode_clcl (64, 64)": {
+    "time_us": 21.82
+  },
+  "decode_clcl (256, 256)": {
+    "time_us": 335.9
+  },
+  "decode_clcl (512, 512)": {
+    "time_us": 1349.0
+  },
+  "decode_clcl (720, 480)": {
+    "time_us": 1770.0
+  },
+  "decode_jpeg": {
+    "time_us": 72.79
+  },
+  "decode_reordered_rgb555 (64, 64)": {
+    "time_us": 19.56
+  },
+  "decode_reordered_rgb555 (256, 256)": {
+    "time_us": 320.1
+  },
+  "decode_reordered_rgb555 (512, 512)": {
+    "time_us": 1312.0
+  },
+  "decode_reordered_rgb555 (720, 480)": {
+    "time_us": 1699.0
+  },
+  "decode_rgb555 (64, 64)": {
+    "time_us": 2.06
+  },
+  "decode_rgb555 (256, 256)": {
+    "time_us": 32.11
+  },
+  "decode_rgb555 (512, 512)": {
+    "time_us": 139.9
+  },
+  "decode_rgb555 (720, 480)": {
+    "time_us": 182.8
+  },
+  "decode_rgb565 (64, 64)": {
+    "time_us": 2.0
+  },
+  "decode_rgb565 (256, 256)": {
+    "time_us": 32.34
+  },
+  "decode_rgb565 (512, 512)": {
+    "time_us": 134.3
+  },
+  "decode_rgb565 (720, 480)": {
+    "time_us": 176.4
+  },
+  "decode_uyvy (64, 64)": {
+    "time_us": 13.94
+  },
+  "decode_uyvy (256, 256)": {
+    "time_us": 221.3
+  },
+  "decode_uyvy (512, 512)": {
+    "time_us": 890.4
+  },
+  "decode_uyvy (720, 480)": {
+    "time_us": 1182.0
+  },
+  "decode_uyvy_interlaced (64, 64)": {
+    "time_us": 13.98
+  },
+  "decode_uyvy_interlaced (256, 256)": {
+    "time_us": 221.5
+  },
+  "decode_uyvy_interlaced (512, 512)": {
+    "time_us": 892.0
+  },
+  "decode_uyvy_interlaced (720, 480)": {
+    "time_us": 1183.0
+  },
+  "decode_ycbcr420 (64, 64)": {
+    "time_us": 16.73
+  },
+  "decode_ycbcr420 (256, 256)": {
+    "time_us": 261.6
+  },
+  "decode_ycbcr420 (512, 512)": {
+    "time_us": 1052.0
+  },
+  "decode_ycbcr420 (720, 480)": {
+    "time_us": 1399.0
+  },
+  "simd_rgb555_row_to_bgra": {
+    "time_us": 144.5
+  },
+  "simd_rgb565_row_to_bgra": {
+    "time_us": 144.5
+  },
+  "encode_cl (64, 64)": {
+    "time_us": 17.83
+  },
+  "encode_cl (256, 256)": {
+    "time_us": 284.5
+  },
+  "encode_cl (512, 512)": {
+    "time_us": 1153.0
+  },
+  "encode_cl_be (64, 64)": {
+    "time_us": 17.85
+  },
+  "encode_cl_be (256, 256)": {
+    "time_us": 284.9
+  },
+  "encode_cl_be (512, 512)": {
+    "time_us": 1157.0
+  },
+  "encode_clcl (64, 64)": {
+    "time_us": 17.16
+  },
+  "encode_clcl (256, 256)": {
+    "time_us": 273.7
+  },
+  "encode_clcl (512, 512)": {
+    "time_us": 1109.0
+  },
+  "encode_clcl_be (64, 64)": {
+    "time_us": 17.15
+  },
+  "encode_clcl_be (256, 256)": {
+    "time_us": 273.9
+  },
+  "encode_clcl_be (512, 512)": {
+    "time_us": 1110.0
+  },
+  "encode_reordered_rgb555 (64, 64)": {
+    "time_us": 41.22
+  },
+  "encode_reordered_rgb555 (256, 256)": {
+    "time_us": 807.0
+  },
+  "encode_reordered_rgb555 (512, 512)": {
+    "time_us": 3446.0
+  },
+  "encode_reordered_rgb555_be (64, 64)": {
+    "time_us": 41.21
+  },
+  "encode_reordered_rgb555_be (256, 256)": {
+    "time_us": 807.9
+  },
+  "encode_reordered_rgb555_be (512, 512)": {
+    "time_us": 3799.0
+  },
+  "encode_rgb555 (64, 64)": {
+    "time_us": 6.5
+  },
+  "encode_rgb555 (256, 256)": {
+    "time_us": 103.1
+  },
+  "encode_rgb555 (512, 512)": {
+    "time_us": 415.0
+  },
+  "encode_rgb555_be (64, 64)": {
+    "time_us": 6.51
+  },
+  "encode_rgb555_be (256, 256)": {
+    "time_us": 103.4
+  },
+  "encode_rgb555_be (512, 512)": {
+    "time_us": 416.1
+  },
+  "encode_rgb565 (64, 64)": {
+    "time_us": 6.53
+  },
+  "encode_rgb565 (256, 256)": {
+    "time_us": 103.2
+  },
+  "encode_rgb565 (512, 512)": {
+    "time_us": 416.0
+  },
+  "encode_rgb565_be (64, 64)": {
+    "time_us": 6.51
+  },
+  "encode_rgb565_be (256, 256)": {
+    "time_us": 103.9
+  },
+  "encode_rgb565_be (512, 512)": {
+    "time_us": 416.7
+  },
+  "encode_uyvy (64, 64)": {
+    "time_us": 14.7
+  },
+  "encode_uyvy (256, 256)": {
+    "time_us": 234.0
+  },
+  "encode_uyvy (512, 512)": {
+    "time_us": 940.0
+  },
+  "encode_uyvy_be (64, 64)": {
+    "time_us": 14.68
+  },
+  "encode_uyvy_be (256, 256)": {
+    "time_us": 234.4
+  },
+  "encode_uyvy_be (512, 512)": {
+    "time_us": 940.5
+  },
+  "encode_ycbcr420 (64, 64)": {
+    "time_us": 17.73
+  },
+  "encode_ycbcr420 (256, 256)": {
+    "time_us": 281.9
+  },
+  "encode_ycbcr420 (512, 512)": {
+    "time_us": 1139.0
+  },
+  "build_ithmb_file_256": {
+    "time_us": 405.0
+  },
+  "decode_ithmb_256": {
+    "time_us": 32.19
+  },
+  "decode_ithmb_512": {
+    "time_us": 134.0
+  },
+  "open_ithmb_photodb": {
+    "time_us": 27.66
+  }
 }
