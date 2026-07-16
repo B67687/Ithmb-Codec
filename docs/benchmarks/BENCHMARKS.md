@@ -47,14 +47,14 @@ Output is written to `target/bench/`:
 
 All 6 targets are run by `run-bench-perf.sh`:
 
-| Target | Description |
-|--------|-------------|
-| `decoders` | Per-format decode throughput at 4 resolutions (64, 256, 512, 720×480) |
-| `encoders` | Per-format encode throughput at 3 resolutions (64, 256, 512) |
-| `pipeline` | End-to-end decode + encode pipeline timing |
-| `simd_compare` | SIMD vs scalar cross-validation at 512×512 |
-| `memory` | Heap allocation count and bytes per decode (8 formats at 512×512) |
-| `profiles` | Decode throughput for all 54 built-in profiles |
+| Target         | Description                                                           |
+| -------------- | --------------------------------------------------------------------- |
+| `decoders`     | Per-format decode throughput at 4 resolutions (64, 256, 512, 720×480) |
+| `encoders`     | Per-format encode throughput at 3 resolutions (64, 256, 512)          |
+| `pipeline`     | End-to-end decode + encode pipeline timing                            |
+| `simd_compare` | SIMD vs scalar cross-validation at 512×512                            |
+| `memory`       | Heap allocation count and bytes per decode (8 formats at 512×512)     |
+| `profiles`     | Decode throughput for all 54 built-in profiles                        |
 
 ### Framework
 
@@ -166,11 +166,9 @@ guarantees without validation against raw per-iteration data. They
 are useful for identifying decoders with heavy-tailed latency
 distributions (where max >> mean).
 
-### CI Baseline
-
-The CI pipeline runs a benchmark regression check after each push (`continue-on-error: true`).
+The CI pipeline runs a benchmark regression check after each push.
 Results are compared against [`.github/baseline.json`](https://github.com/B67687/Ithmb-Codec/blob/main/.github/baseline.json) with a 1.25× threshold.
-See [`tools/check-benchmark-regression.sh`](https://github.com/B67687/Ithmb-Codec/blob/main/tools/check-benchmark-regression.sh) for implementation.
+If the threshold is exceeded the CI run fails, preventing unnoticed regressions.
 
 ## Decoder Throughput (Baseline)
 
