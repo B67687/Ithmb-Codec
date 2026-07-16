@@ -13,12 +13,6 @@ pub fn encode_rgb565(bgra: &[u8], w: i32, h: i32, big_endian: bool) -> Vec<u8> {
     let n = wu * hu;
     let mut out = vec![0u8; n * 2];
 
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    {
-        crate::simd::enc::bgra_to_rgb565(bgra, &mut out, big_endian);
-        return out;
-    }
-
     for i in 0..n {
         let px = i * 4;
         let b = u32::from(bgra[px]);

@@ -13,8 +13,6 @@
 // ---------------------------------------------------------------------------
 mod cl;
 mod clcl;
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-pub(crate) mod enc;
 mod reordered;
 mod rgb555;
 mod rgb565;

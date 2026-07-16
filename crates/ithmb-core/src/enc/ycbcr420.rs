@@ -24,9 +24,6 @@ pub fn encode_ycbcr420(bgra: &[u8], w: i32, h: i32, swap_chroma: bool) -> Vec<u8
     let mut out = vec![0u8; y_size + c_size * 2];
 
     // Fill Y plane (SIMD-accelerated)
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    crate::simd::enc::bgra_to_y_plane(bgra, &mut out[..y_size]);
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
     for y in 0..hu {
         for x in 0..wu {
             let px = (y * wu + x) * 4;

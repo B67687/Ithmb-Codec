@@ -19,12 +19,6 @@ pub fn encode_uyvy(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let out_len = total_pairs * 4;
     let mut out = vec![0u8; out_len];
 
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    {
-        crate::simd::enc::bgra_to_uyvy(bgra, &mut out);
-        return out;
-    }
-
     let n = wu * mm;
     let mut px_i = 0;
     let mut o_i = 0;

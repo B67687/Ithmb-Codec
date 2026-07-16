@@ -1,236 +1,728 @@
-{
-  "decode_cl (64, 64)": {
-    "time_us": 14.33
-  },
-  "decode_cl (256, 256)": {
-    "time_us": 223.5
-  },
-  "decode_cl (512, 512)": {
-    "time_us": 901.6
-  },
-  "decode_cl (720, 480)": {
-    "time_us": 1199.0
-  },
-  "decode_clcl (64, 64)": {
-    "time_us": 21.82
-  },
-  "decode_clcl (256, 256)": {
-    "time_us": 335.9
-  },
-  "decode_clcl (512, 512)": {
-    "time_us": 1349.0
-  },
-  "decode_clcl (720, 480)": {
-    "time_us": 1770.0
-  },
-  "decode_jpeg": {
-    "time_us": 72.79
-  },
-  "decode_reordered_rgb555 (64, 64)": {
-    "time_us": 19.56
-  },
-  "decode_reordered_rgb555 (256, 256)": {
-    "time_us": 320.1
-  },
-  "decode_reordered_rgb555 (512, 512)": {
-    "time_us": 1312.0
-  },
-  "decode_reordered_rgb555 (720, 480)": {
-    "time_us": 1699.0
-  },
-  "decode_rgb555 (64, 64)": {
-    "time_us": 2.06
-  },
-  "decode_rgb555 (256, 256)": {
-    "time_us": 32.11
-  },
-  "decode_rgb555 (512, 512)": {
-    "time_us": 139.9
-  },
-  "decode_rgb555 (720, 480)": {
-    "time_us": 182.8
-  },
-  "decode_rgb565 (64, 64)": {
-    "time_us": 2.0
-  },
-  "decode_rgb565 (256, 256)": {
-    "time_us": 32.34
-  },
-  "decode_rgb565 (512, 512)": {
-    "time_us": 134.3
-  },
-  "decode_rgb565 (720, 480)": {
-    "time_us": 176.4
-  },
-  "decode_uyvy (64, 64)": {
-    "time_us": 13.94
-  },
-  "decode_uyvy (256, 256)": {
-    "time_us": 221.3
-  },
-  "decode_uyvy (512, 512)": {
-    "time_us": 890.4
-  },
-  "decode_uyvy (720, 480)": {
-    "time_us": 1182.0
-  },
-  "decode_uyvy_interlaced (64, 64)": {
-    "time_us": 13.98
-  },
-  "decode_uyvy_interlaced (256, 256)": {
-    "time_us": 221.5
-  },
-  "decode_uyvy_interlaced (512, 512)": {
-    "time_us": 892.0
-  },
-  "decode_uyvy_interlaced (720, 480)": {
-    "time_us": 1183.0
-  },
-  "decode_ycbcr420 (64, 64)": {
-    "time_us": 16.73
-  },
-  "decode_ycbcr420 (256, 256)": {
-    "time_us": 261.6
-  },
-  "decode_ycbcr420 (512, 512)": {
-    "time_us": 1052.0
-  },
-  "decode_ycbcr420 (720, 480)": {
-    "time_us": 1399.0
-  },
-  "simd_rgb555_row_to_bgra": {
-    "time_us": 144.5
-  },
-  "simd_rgb565_row_to_bgra": {
-    "time_us": 144.5
-  },
-  "encode_cl (64, 64)": {
-    "time_us": 17.83
-  },
-  "encode_cl (256, 256)": {
-    "time_us": 284.5
-  },
-  "encode_cl (512, 512)": {
-    "time_us": 1153.0
-  },
-  "encode_cl_be (64, 64)": {
-    "time_us": 17.85
-  },
-  "encode_cl_be (256, 256)": {
-    "time_us": 284.9
-  },
-  "encode_cl_be (512, 512)": {
-    "time_us": 1157.0
-  },
-  "encode_clcl (64, 64)": {
-    "time_us": 17.16
-  },
-  "encode_clcl (256, 256)": {
-    "time_us": 273.7
-  },
-  "encode_clcl (512, 512)": {
-    "time_us": 1109.0
-  },
-  "encode_clcl_be (64, 64)": {
-    "time_us": 17.15
-  },
-  "encode_clcl_be (256, 256)": {
-    "time_us": 273.9
-  },
-  "encode_clcl_be (512, 512)": {
-    "time_us": 1110.0
-  },
-  "encode_reordered_rgb555 (64, 64)": {
-    "time_us": 41.22
-  },
-  "encode_reordered_rgb555 (256, 256)": {
-    "time_us": 807.0
-  },
-  "encode_reordered_rgb555 (512, 512)": {
-    "time_us": 3446.0
-  },
-  "encode_reordered_rgb555_be (64, 64)": {
-    "time_us": 41.21
-  },
-  "encode_reordered_rgb555_be (256, 256)": {
-    "time_us": 807.9
-  },
-  "encode_reordered_rgb555_be (512, 512)": {
-    "time_us": 3799.0
-  },
-  "encode_rgb555 (64, 64)": {
-    "time_us": 6.5
-  },
-  "encode_rgb555 (256, 256)": {
-    "time_us": 103.1
-  },
-  "encode_rgb555 (512, 512)": {
-    "time_us": 415.0
-  },
-  "encode_rgb555_be (64, 64)": {
-    "time_us": 6.51
-  },
-  "encode_rgb555_be (256, 256)": {
-    "time_us": 103.4
-  },
-  "encode_rgb555_be (512, 512)": {
-    "time_us": 416.1
-  },
-  "encode_rgb565 (64, 64)": {
-    "time_us": 6.53
-  },
-  "encode_rgb565 (256, 256)": {
-    "time_us": 103.2
-  },
-  "encode_rgb565 (512, 512)": {
-    "time_us": 416.0
-  },
-  "encode_rgb565_be (64, 64)": {
-    "time_us": 6.51
-  },
-  "encode_rgb565_be (256, 256)": {
-    "time_us": 103.9
-  },
-  "encode_rgb565_be (512, 512)": {
-    "time_us": 416.7
-  },
-  "encode_uyvy (64, 64)": {
-    "time_us": 14.7
-  },
-  "encode_uyvy (256, 256)": {
-    "time_us": 234.0
-  },
-  "encode_uyvy (512, 512)": {
-    "time_us": 940.0
-  },
-  "encode_uyvy_be (64, 64)": {
-    "time_us": 14.68
-  },
-  "encode_uyvy_be (256, 256)": {
-    "time_us": 234.4
-  },
-  "encode_uyvy_be (512, 512)": {
-    "time_us": 940.5
-  },
-  "encode_ycbcr420 (64, 64)": {
-    "time_us": 17.73
-  },
-  "encode_ycbcr420 (256, 256)": {
-    "time_us": 281.9
-  },
-  "encode_ycbcr420 (512, 512)": {
-    "time_us": 1139.0
-  },
-  "build_ithmb_file_256": {
-    "time_us": 405.0
-  },
-  "decode_ithmb_256": {
-    "time_us": 32.19
-  },
-  "decode_ithmb_512": {
-    "time_us": 134.0
-  },
-  "open_ithmb_photodb": {
-    "time_us": 27.66
-  }
-}
+    Finished `bench` profile [optimized] target(s) in 0.04s
+     Running unittests src/lib.rs (target/release/deps/ithmb_core-fd0b43f7548819e9)
+
+running 341 tests
+test cl::tests::black_with_neutral_chroma ... ignored
+test cl::tests::buffer_too_short_returns_error ... ignored
+test cl::tests::chroma_nibble_high_is_cr_low_is_cb ... ignored
+test cl::tests::chroma_nibble_low_is_cb_high_is_cr ... ignored
+test cl::tests::chroma_nibbles_at_extremes ... ignored
+test cl::tests::different_y_and_chroma_planes ... ignored
+test cl::tests::gray_pixel_neutral_chroma ... ignored
+test cl::tests::negative_width_returns_invalid_format ... ignored
+test cl::tests::odd_width_3x3_decode_correct ... ignored
+test cl::tests::odd_width_7x3_decode_correct ... ignored
+test cl::tests::two_by_two_grid ... ignored
+test cl::tests::two_pixels_planar_layout ... ignored
+test cl::tests::white_with_neutral_chroma ... ignored
+test cl::tests::zero_height_returns_invalid_format ... ignored
+test cl::tests::zero_width_returns_invalid_format ... ignored
+test clcl::tests::black_with_neutral_chroma ... ignored
+test clcl::tests::buffer_too_short_odd_bytes ... ignored
+test clcl::tests::buffer_too_short_returns_error ... ignored
+test clcl::tests::cb_and_cr_planes_are_separate ... ignored
+test clcl::tests::chroma_nibbles_at_extremes ... ignored
+test clcl::tests::chroma_nibbles_at_minimum ... ignored
+test clcl::tests::gray_pixel_neutral_chroma ... ignored
+test clcl::tests::high_nibble_is_second_pixel_chroma ... ignored
+test clcl::tests::low_nibble_is_first_pixel_cb ... ignored
+test clcl::tests::negative_width_returns_invalid_format ... ignored
+test clcl::tests::pixel_pair_shares_chroma ... ignored
+test clcl::tests::two_by_two_grid_all_gray ... ignored
+test clcl::tests::two_by_two_image_decode ... ignored
+test clcl::tests::two_by_two_with_varying_y ... ignored
+test clcl::tests::white_with_neutral_chroma ... ignored
+test clcl::tests::zero_height_returns_invalid_format ... ignored
+test clcl::tests::zero_width_returns_invalid_format ... ignored
+test device_profiles::tests::all_device_profiles_is_stable ... ignored
+test device_profiles::tests::every_device_has_formats ... ignored
+test device_profiles::tests::every_format_has_description ... ignored
+test device_profiles::tests::find_1019_across_devices ... ignored
+test device_profiles::tests::find_3001_in_four_devices ... ignored
+test device_profiles::tests::find_case_insensitive ... ignored
+test device_profiles::tests::find_classic_5g_by_name ... ignored
+test device_profiles::tests::has_18_device_profiles ... ignored
+test device_profiles::tests::iphone_3g_reuses_iphone_array ... ignored
+test device_profiles::tests::nano_4g_has_most_formats ... ignored
+test device_profiles::tests::nano_7g_has_two_formats ... ignored
+test device_profiles::tests::nonexistent_device_returns_none ... ignored
+test device_profiles::tests::nonexistent_format_returns_empty ... ignored
+test device_profiles::tests::rokr_e1_has_two_formats ... ignored
+test device_profiles::tests::touch_3g_reuses_touch_array ... ignored
+test device_profiles::tests::video_5g_reuses_classic_5g_array ... ignored
+test enc::helpers::tests::bt601_cb_black ... ignored
+test enc::helpers::tests::bt601_cb_blue ... ignored
+test enc::helpers::tests::bt601_cb_mid_gray ... ignored
+test enc::helpers::tests::bt601_cb_red ... ignored
+test enc::helpers::tests::bt601_cb_white ... ignored
+test enc::helpers::tests::bt601_cr_black ... ignored
+test enc::helpers::tests::bt601_cr_blue ... ignored
+test enc::helpers::tests::bt601_cr_mid_gray ... ignored
+test enc::helpers::tests::bt601_cr_red ... ignored
+test enc::helpers::tests::bt601_cr_white ... ignored
+test enc::helpers::tests::bt601_y_black ... ignored
+test enc::helpers::tests::bt601_y_blue ... ignored
+test enc::helpers::tests::bt601_y_green ... ignored
+test enc::helpers::tests::bt601_y_mid_gray ... ignored
+test enc::helpers::tests::bt601_y_red ... ignored
+test enc::helpers::tests::bt601_y_white ... ignored
+test enc::helpers::tests::interlace_2bpp_4x4 ... ignored
+test enc::helpers::tests::interlace_2bpp_odd_height ... ignored
+test enc::helpers::tests::interlace_2bpp_single_column ... ignored
+test enc::helpers::tests::interlace_2bpp_single_row ... ignored
+test enc::helpers::tests::interlace_ycbcr420_4x4 ... ignored
+test enc::helpers::tests::interlace_ycbcr420_odd_dimensions ... ignored
+test enc::helpers::tests::interlace_ycbcr420_single_row ... ignored
+test enc::helpers::tests::neutral_chroma_always_128 ... ignored
+test enc::tests::build_ithmb_file_padded ... ignored
+test enc::tests::build_ithmb_file_rgb565 ... ignored
+test enc::tests::cl_2x1 ... ignored
+test enc::tests::cl_black_1x1 ... ignored
+test enc::tests::cl_white_1x1 ... ignored
+test enc::tests::clamp_test ... ignored
+test enc::tests::clcl_2x2 ... ignored
+test enc::tests::clcl_black_2x1 ... ignored
+test enc::tests::clcl_white_2x1 ... ignored
+test enc::tests::encode_bgra_cl ... ignored
+test enc::tests::encode_bgra_clcl ... ignored
+test enc::tests::encode_bgra_interlace ... ignored
+test enc::tests::encode_bgra_padding ... ignored
+test enc::tests::encode_bgra_rgb565_le ... ignored
+test enc::tests::encode_bgra_ycbcr420 ... ignored
+test enc::tests::reordered_rgb555_red_1x1 ... ignored
+test enc::tests::reordered_rgb555_white_1x1 ... ignored
+test enc::tests::rgb555_black_1x1 ... ignored
+test enc::tests::rgb555_blue_1x1 ... ignored
+test enc::tests::rgb555_green_1x1 ... ignored
+test enc::tests::rgb555_red_1x1 ... ignored
+test enc::tests::rgb555_roundtrip ... ignored
+test enc::tests::rgb555_swap_rgb_bgr15 ... ignored
+test enc::tests::rgb555_white_1x1 ... ignored
+test enc::tests::rgb555_white_1x1_le ... ignored
+test enc::tests::rgb565_2x1 ... ignored
+test enc::tests::rgb565_2x2 ... ignored
+test enc::tests::rgb565_black_1x1 ... ignored
+test enc::tests::rgb565_blue_1x1 ... ignored
+test enc::tests::rgb565_green_1x1 ... ignored
+test enc::tests::rgb565_red_1x1 ... ignored
+test enc::tests::rgb565_red_1x1_be ... ignored
+test enc::tests::rgb565_roundtrip ... ignored
+test enc::tests::rgb565_white_1x1_be ... ignored
+test enc::tests::rgb565_white_1x1_le ... ignored
+test enc::tests::rotate_180_2x2 ... ignored
+test enc::tests::rotate_90_2x1 ... ignored
+test enc::tests::uyvy_black_2x1 ... ignored
+test enc::tests::uyvy_red_blue_2x1 ... ignored
+test enc::tests::uyvy_roundtrip_2x2 ... ignored
+test enc::tests::uyvy_white_2x1 ... ignored
+test enc::tests::ycbcr420_2x2_red_green_blue_gray ... ignored
+test enc::tests::ycbcr420_black_2x2 ... ignored
+test enc::tests::ycbcr420_swap_chroma ... ignored
+test enc::tests::ycbcr420_white_2x2 ... ignored
+test jpeg::tests::decode_bgra_output_format ... ignored
+test jpeg::tests::decode_invalid_jpeg_returns_jpeg_error ... ignored
+test jpeg::tests::decode_non_jpeg_returns_invalid_format ... ignored
+test jpeg::tests::decode_short_input_returns_buffer_too_short ... ignored
+test jpeg::tests::decode_valid_jpeg ... ignored
+test jpeg::tests::decode_with_exif_rotation ... ignored
+test jpeg::tests::exif_rotation_180 ... ignored
+test jpeg::tests::exif_rotation_270cw ... ignored
+test jpeg::tests::exif_rotation_90cw ... ignored
+test jpeg::tests::extract_exif_orientation_found ... ignored
+test jpeg::tests::extract_exif_orientation_normal_when_no_exif ... ignored
+test jpeg::tests::extract_exif_orientation_short_input ... ignored
+test jpeg::tests::is_jpeg_detects_soi ... ignored
+test jpeg::tests::is_jpeg_rejects_non_jpeg ... ignored
+test jpeg::tests::is_jpeg_rejects_short_input ... ignored
+test jpeg::tests::rotate_bgra_noop_for_normal_orientation ... ignored
+test photodb::builder::tests::build_then_integrity_check_roundtrip ... ignored
+test photodb::builder::tests::builder_custom_mhni_sizes ... ignored
+test photodb::builder::tests::builder_data_length_mismatch_fails ... ignored
+test photodb::builder::tests::builder_empty_entries_fails ... ignored
+test photodb::builder::tests::builder_multiple_entries_succeeds ... ignored
+test photodb::builder::tests::builder_single_entry_succeeds ... ignored
+test photodb::builder::tests::builder_unknown_format_id_fails ... ignored
+test photodb::builder::tests::integrity_bad_magic ... ignored
+test photodb::builder::tests::integrity_empty_data ... ignored
+test photodb::builder::tests::integrity_overlapping_offsets ... ignored
+test photodb::builder::tests::integrity_too_short ... ignored
+test photodb::builder::tests::integrity_trailing_garbage ... ignored
+test photodb::builder::tests::integrity_unknown_format_id ... ignored
+test photodb::builder::tests::integrity_valid_built_file ... ignored
+test photodb::builder::tests::integrity_valid_two_entries ... ignored
+test photodb::parser::tests::can_open_photodb_be ... ignored
+test photodb::parser::tests::can_open_photodb_invalid ... ignored
+test photodb::parser::tests::can_open_photodb_le ... ignored
+test photodb::parser::tests::detect_endianness_be ... ignored
+test photodb::parser::tests::detect_endianness_invalid ... ignored
+test photodb::parser::tests::detect_endianness_le ... ignored
+test photodb::parser::tests::detect_endianness_too_short ... ignored
+test photodb::parser::tests::get_format_id_name_known ... ignored
+test photodb::parser::tests::get_format_id_name_unknown ... ignored
+test photodb::parser::tests::has_child_chunks_outside_end_range ... ignored
+test photodb::parser::tests::has_child_chunks_recognises_mhsd ... ignored
+test photodb::parser::tests::has_child_chunks_rejects_short_buffer ... ignored
+test photodb::parser::tests::has_child_chunks_rejects_tiny_header_size ... ignored
+test photodb::parser::tests::has_child_chunks_rejects_unknown_magic ... ignored
+test photodb::parser::tests::trim_jpeg_finds_eoi ... ignored
+test photodb::parser::tests::trim_jpeg_no_eoi ... ignored
+test photodb::parser::tests::trim_jpeg_short_buffer ... ignored
+test photodb::parser::tests::try_parse_photodb_empty ... ignored
+test photodb::parser::tests::try_parse_photodb_extracts_inline_mhni ... ignored
+test photodb::parser::tests::try_parse_photodb_invalid_magic ... ignored
+test photodb::parser::tests::try_parse_photodb_trims_jpeg_for_unknown_profile ... ignored
+test photodb::parser::tests::walk_entries_depth_limit_returns_early ... ignored
+test photodb::parser::tests::walk_entries_empty_range ... ignored
+test photodb::types::tests::test_is_known_magic ... ignored
+test photodb::types::tests::test_mh_common_parse_le ... ignored
+test photodb::types::tests::test_mhfd_buffer_too_short ... ignored
+test photodb::types::tests::test_mhfd_parse_be ... ignored
+test photodb::types::tests::test_mhfd_parse_le ... ignored
+test photodb::types::tests::test_mhii_parse_le ... ignored
+test photodb::types::tests::test_mhl_parse_le ... ignored
+test photodb::types::tests::test_mhni_parse_external_le ... ignored
+test photodb::types::tests::test_mhni_parse_inline_le ... ignored
+test photodb::types::tests::test_mhod_parse_le ... ignored
+test photodb::types::tests::test_mhod_string ... ignored
+test photodb::types::tests::test_mhsd_parse_le ... ignored
+test photodb::types::tests::test_parse_magic_equivalence ... ignored
+test photodb::types::tests::test_read_i32 ... ignored
+test photodb::types::tests::test_read_u16_be ... ignored
+test photodb::types::tests::test_read_u16_le ... ignored
+test photodb::types::tests::test_read_u32_be ... ignored
+test photodb::types::tests::test_read_u32_convenience_equivalence ... ignored
+test photodb::types::tests::test_read_u32_le ... ignored
+test pipeline::tests::test_apply_crop_noop_when_not_needed ... ignored
+test pipeline::tests::test_apply_rotation_noop_when_zero ... ignored
+test pipeline::tests::test_cl_dispatch ... ignored
+test pipeline::tests::test_clcl_dispatch ... ignored
+test pipeline::tests::test_crop_2x2_to_1x1 ... ignored
+test pipeline::tests::test_crop_full_dimensions_when_zero ... ignored
+test pipeline::tests::test_crop_outside_bounds_clamps ... ignored
+test pipeline::tests::test_crop_then_rotation ... ignored
+test pipeline::tests::test_crop_with_offset ... ignored
+test pipeline::tests::test_decode_ithmb_prefix_1007_dispatch ... ignored
+test pipeline::tests::test_decode_ithmb_prefix_1019_interlaced_uyvy ... ignored
+test pipeline::tests::test_decode_ithmb_prefix_2002_big_endian_rgb565 ... ignored
+test pipeline::tests::test_decode_with_profile_too_short_for_prefix ... ignored
+test pipeline::tests::test_empty_input_returns_buffer_too_short ... ignored
+test pipeline::tests::test_jpeg_dispatch_with_decode_with_profile ... ignored
+test pipeline::tests::test_jpeg_fallback_profile_is_used ... ignored
+test pipeline::tests::test_no_crop_when_all_zero ... ignored
+test pipeline::tests::test_reordered_rgb555_dispatch ... ignored
+test pipeline::tests::test_rgb555_dispatch ... ignored
+test pipeline::tests::test_rgb565_dispatch ... ignored
+test pipeline::tests::test_rotation_180_on_2x2 ... ignored
+test pipeline::tests::test_rotation_180_twice_is_identity ... ignored
+test pipeline::tests::test_rotation_270_cw_on_2x3 ... ignored
+test pipeline::tests::test_rotation_90_cw_identity ... ignored
+test pipeline::tests::test_rotation_90_cw_on_2x3 ... ignored
+test pipeline::tests::test_rotation_noop_for_unknown_angle ... ignored
+test pipeline::tests::test_short_input_returns_buffer_too_short ... ignored
+test pipeline::tests::test_swaps_dimensions_metadata_only ... ignored
+test pipeline::tests::test_swaps_dimensions_with_crop ... ignored
+test pipeline::tests::test_unknown_prefix_returns_unsupported ... ignored
+test pipeline::tests::test_uyvy_dispatch ... ignored
+test pipeline::tests::test_ycbcr420_dispatch ... ignored
+test profile_db::tests::all_returns_full_map ... ignored
+test profile_db::tests::get_1007_returns_correct_profile ... ignored
+test profile_db::tests::get_1061_has_use_mhni_dimensions ... ignored
+test profile_db::tests::get_3004_has_padded_slot ... ignored
+test profile_db::tests::get_9999_returns_none ... ignored
+test profile_db::tests::load_builtin_has_54_profiles ... ignored
+test profile_parser::tests::parse_all_54_profiles ... ignored
+test profile_parser::tests::parse_error_on_bad_json ... ignored
+test profile_parser::tests::parse_full_profiles_json ... ignored
+test profile_parser::tests::parse_with_fallback_encodings ... ignored
+test reordered_rgb555::tests::buffer_too_short_reports_exact_counts ... ignored
+test reordered_rgb555::tests::decode_4x4_morton_order_quadrants ... ignored
+test reordered_rgb555::tests::decode_swap_rgb_channels ... ignored
+test reordered_rgb555::tests::dst_allocation_matches_geometry ... ignored
+test reordered_rgb555::tests::msb_replicate_clamping ... ignored
+test reordered_rgb555::tests::negative_dimension_returns_err ... ignored
+test reordered_rgb555::tests::output_has_correct_alpha ... ignored
+test reordered_rgb555::tests::solid_black_pixel ... ignored
+test reordered_rgb555::tests::solid_blue_pixel ... ignored
+test reordered_rgb555::tests::solid_green_pixel ... ignored
+test reordered_rgb555::tests::solid_red_pixel ... ignored
+test reordered_rgb555::tests::solid_white_pixel ... ignored
+test reordered_rgb555::tests::swap_mode_red_stays_low ... ignored
+test reordered_rgb555::tests::too_short_returns_buffer_too_short ... ignored
+test reordered_rgb555::tests::two_pixel_decode ... ignored
+test reordered_rgb555::tests::two_pixel_different_colors ... ignored
+test reordered_rgb555::tests::zero_dimensions_returns_err ... ignored
+test rgb555::tests::buffer_too_short_reports_exact_counts ... ignored
+test rgb555::tests::decode_big_endian ... ignored
+test rgb555::tests::decode_swap_rgb_channels ... ignored
+test rgb555::tests::dst_allocation_matches_geometry ... ignored
+test rgb555::tests::matches_golden_gradient_first_pixel ... ignored
+test rgb555::tests::msb_replicate_clamping ... ignored
+test rgb555::tests::multi_pixel_decode ... ignored
+test rgb555::tests::negative_dimension_returns_err ... ignored
+test rgb555::tests::output_has_correct_alpha ... ignored
+test rgb555::tests::row_stride_is_data_driven ... ignored
+test rgb555::tests::solid_black_pixel ... ignored
+test rgb555::tests::solid_blue_pixel ... ignored
+test rgb555::tests::solid_green_pixel ... ignored
+test rgb555::tests::solid_red_pixel ... ignored
+test rgb555::tests::solid_white_pixel ... ignored
+test rgb555::tests::swap_mode_red_stays_low ... ignored
+test rgb555::tests::too_short_returns_buffer_too_short ... ignored
+test rgb555::tests::two_pixel_different_colors ... ignored
+test rgb555::tests::zero_dimensions_returns_err ... ignored
+test rgb565::tests::decode_big_endian ... ignored
+test rgb565::tests::decode_black_pixel ... ignored
+test rgb565::tests::decode_blue_pixel ... ignored
+test rgb565::tests::decode_red_pixel ... ignored
+test rgb565::tests::decode_swap_rgb_channels ... ignored
+test rgb565::tests::decode_white_pixel ... ignored
+test rgb565::tests::multi_pixel_decode ... ignored
+test rgb565::tests::negative_dimensions_returns_invalid_format ... ignored
+test rgb565::tests::row_stride_is_data_driven ... ignored
+test rgb565::tests::too_short_returns_buffer_too_short ... ignored
+test rgb565::tests::zero_dimensions_returns_invalid_format ... ignored
+test simd::tests::cl_quad_avx2_exhaustive_nibble_pair ... ignored
+test simd::tests::cl_quad_matches_scalar_all_nibble_combos ... ignored
+test simd::tests::cl_quad_matches_scalar_varying_chroma ... ignored
+test simd::tests::cl_quad_ssse3_exhaustive_nibble_pair ... ignored
+test simd::tests::cl_row_matches_scalar_at_various_widths ... ignored
+test simd::tests::fill_gray_row_matches_scalar_1000_random ... ignored
+test simd::tests::fill_yuv_row_matches_scalar_1000_random ... ignored
+test simd::tests::rgb555_pack_1000_random_cross_check ... ignored
+test simd::tests::rgb555_pack_10k_random_avx2 ... ignored
+test simd::tests::rgb555_pack_10k_random_ssse3 ... ignored
+test simd::tests::rgb555_pack_different_pixels ... ignored
+test simd::tests::rgb555_pack_known_values ... ignored
+test simd::tests::rgb555_pack_swap_mode ... ignored
+test simd::tests::rgb555_quad_edge_cases ... ignored
+test simd::tests::rgb555_row_matches_scalar_10k ... ignored
+test simd::tests::rgb555_row_remainder_handling ... ignored
+test simd::tests::rgb555_row_single_pixel ... ignored
+test simd::tests::rgb565_quad_edge_cases ... ignored
+test simd::tests::rgb565_row_matches_scalar_10k ... ignored
+test simd::tests::rgb565_row_remainder_handling ... ignored
+test simd::tests::rgb565_row_single_pixel ... ignored
+test simd::tests::uyvy_double_quad_matches_scalar ... ignored
+test simd::tests::uyvy_quad_matches_scalar ... ignored
+test simd::tests::uyvy_quad_matches_scalar_10k_random ... ignored
+test simd::tests::uyvy_quad_neutral_chroma ... ignored
+test simd::tests::yuv420_quad_matches_scalar_10k_random ... ignored
+test simd::tests::yuv420_quad_matches_scalar_exhaustive ... ignored
+test simd::tests::yuv420_quad_neutral_chroma_gray ... ignored
+test uyvy::tests::bgra_output_alpha_is_always_255 ... ignored
+test uyvy::tests::black_pair_2x1 ... ignored
+test uyvy::tests::buffer_too_short ... ignored
+test uyvy::tests::four_by_four_pattern ... ignored
+test uyvy::tests::gray_pair_2x1 ... ignored
+test uyvy::tests::interlaced_4x2 ... ignored
+test uyvy::tests::interlaced_matches_manual_weave ... ignored
+test uyvy::tests::interlaced_odd_height ... ignored
+test uyvy::tests::white_pair_2x1 ... ignored
+test uyvy::tests::zero_height ... ignored
+test uyvy::tests::zero_width ... ignored
+test ycbcr420::tests::alpha_is_always_255 ... ignored
+test ycbcr420::tests::buffer_too_short ... ignored
+test ycbcr420::tests::chroma_upsampling_2x2 ... ignored
+test ycbcr420::tests::four_by_four_default_order ... ignored
+test ycbcr420::tests::four_by_four_swap_chroma_planes ... ignored
+test ycbcr420::tests::gray_2x2 ... ignored
+test ycbcr420::tests::odd_height ... ignored
+test ycbcr420::tests::odd_width ... ignored
+test ycbcr420::tests::simd_matches_scalar_1000_random ... ignored
+test ycbcr420::tests::zero_height ... ignored
+test ycbcr420::tests::zero_width ... ignored
+test yuv::tests::bgra_output_alpha_is_always_255 ... ignored
+test yuv::tests::black_full ... ignored
+test yuv::tests::broadcast_white ... ignored
+test yuv::tests::clamp_negative_yields_zero ... ignored
+test yuv::tests::clamp_single_values ... ignored
+test yuv::tests::every_gray_value_roundtrips ... ignored
+test yuv::tests::gray_mid ... ignored
+test yuv::tests::max_chroma_does_not_overflow_green ... ignored
+test yuv::tests::neutral_chroma_various_luma ... ignored
+test yuv::tests::saturated_blue_positive ... ignored
+test yuv::tests::saturated_red_positive ... ignored
+test yuv::tests::white_full ... ignored
+
+test result: ok. 0 passed; 0 failed; 341 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches/decoders.rs (target/release/deps/decoders-75cfef1376ce2350)
+Timer precision: 30 ns
+decoders                    fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ decode_cl                              │               │               │               │         │
+│  ├─ (64, 64)              2.744 µs      │ 5.76 µs       │ 2.765 µs      │ 2.837 µs      │ 100     │ 100
+│  │                        5.969 GB/s    │ 2.844 GB/s    │ 5.925 GB/s    │ 5.773 GB/s    │         │
+│  ├─ (256, 256)            42.98 µs      │ 88.18 µs      │ 43.1 µs       │ 43.78 µs      │ 100     │ 100
+│  │                        6.099 GB/s    │ 2.972 GB/s    │ 6.082 GB/s    │ 5.987 GB/s    │         │
+│  ├─ (512, 512)            179.5 µs      │ 358.4 µs      │ 180.1 µs      │ 185.1 µs      │ 100     │ 100
+│  │                        5.839 GB/s    │ 2.924 GB/s    │ 5.821 GB/s    │ 5.664 GB/s    │         │
+│  ╰─ (720, 480)            236.8 µs      │ 474.7 µs      │ 238.8 µs      │ 242.1 µs      │ 100     │ 100
+│                           5.836 GB/s    │ 2.912 GB/s    │ 5.787 GB/s    │ 5.708 GB/s    │         │
+├─ decode_clcl                            │               │               │               │         │
+│  ├─ (64, 64)              2.965 µs      │ 10.09 µs      │ 3.02 µs       │ 3.107 µs      │ 100     │ 100
+│  │                        5.524 GB/s    │ 1.622 GB/s    │ 5.425 GB/s    │ 5.272 GB/s    │         │
+│  ├─ (256, 256)            45.98 µs      │ 50.1 µs       │ 46.88 µs      │ 46.82 µs      │ 100     │ 100
+│  │                        5.7 GB/s      │ 5.232 GB/s    │ 5.59 GB/s     │ 5.598 GB/s    │         │
+│  ├─ (512, 512)            190.5 µs      │ 214.6 µs      │ 193 µs        │ 194 µs        │ 100     │ 100
+│  │                        5.502 GB/s    │ 4.884 GB/s    │ 5.432 GB/s    │ 5.404 GB/s    │         │
+│  ╰─ (720, 480)            117.1 µs      │ 268.6 µs      │ 121.7 µs      │ 178.2 µs      │ 100     │ 100
+│                           11.79 GB/s    │ 5.145 GB/s    │ 11.35 GB/s    │ 7.755 GB/s    │         │
+├─ decode_jpeg              31.04 µs      │ 1.044 ms      │ 47.28 µs      │ 66.62 µs      │ 100     │ 100
+│                           527.7 MB/s    │ 15.69 MB/s    │ 346.4 MB/s    │ 245.9 MB/s    │         │
+├─ decode_reordered_rgb555                │               │               │               │         │
+│  ├─ (64, 64)              7.212 µs      │ 33.26 µs      │ 10.74 µs      │ 15.74 µs      │ 100     │ 100
+│  │                        2.271 GB/s    │ 492.5 MB/s    │ 1.524 GB/s    │ 1.04 GB/s     │         │
+│  ├─ (256, 256)            120.1 µs      │ 371.6 µs      │ 121 µs        │ 130.5 µs      │ 100     │ 100
+│  │                        2.182 GB/s    │ 705.2 MB/s    │ 2.166 GB/s    │ 2.008 GB/s    │         │
+│  ├─ (512, 512)            499 µs        │ 666 µs        │ 505.3 µs      │ 511.5 µs      │ 100     │ 100
+│  │                        2.101 GB/s    │ 1.574 GB/s    │ 2.074 GB/s    │ 2.049 GB/s    │         │
+│  ╰─ (720, 480)            650.1 µs      │ 1.625 ms      │ 785.6 µs      │ 971.8 µs      │ 100     │ 100
+│                           2.126 GB/s    │ 850.3 MB/s    │ 1.759 GB/s    │ 1.422 GB/s    │         │
+├─ decode_rgb555                          │               │               │               │         │
+│  ├─ (64, 64)              645.8 ns      │ 1.247 µs      │ 729.8 ns      │ 730.5 ns      │ 100     │ 400
+│  │                        25.36 GB/s    │ 13.13 GB/s    │ 22.44 GB/s    │ 22.42 GB/s    │         │
+│  ├─ (256, 256)            8.134 µs      │ 10.87 µs      │ 8.194 µs      │ 8.46 µs       │ 100     │ 100
+│  │                        32.22 GB/s    │ 24.09 GB/s    │ 31.98 GB/s    │ 30.98 GB/s    │         │
+│  ├─ (512, 512)            34.18 µs      │ 47.18 µs      │ 34.62 µs      │ 35.03 µs      │ 100     │ 100
+│  │                        30.67 GB/s    │ 22.22 GB/s    │ 30.28 GB/s    │ 29.93 GB/s    │         │
+│  ╰─ (720, 480)            46.28 µs      │ 67.21 µs      │ 47.22 µs      │ 50.58 µs      │ 100     │ 100
+│                           29.86 GB/s    │ 20.56 GB/s    │ 29.27 GB/s    │ 27.32 GB/s    │         │
+├─ decode_rgb565                          │               │               │               │         │
+│  ├─ (64, 64)              507.9 ns      │ 1.126 µs      │ 511.8 ns      │ 521.5 ns      │ 100     │ 800
+│  │                        32.25 GB/s    │ 14.54 GB/s    │ 32.01 GB/s    │ 31.41 GB/s    │         │
+│  ├─ (256, 256)            7.473 µs      │ 9.707 µs      │ 7.523 µs      │ 7.597 µs      │ 100     │ 100
+│  │                        35.07 GB/s    │ 27 GB/s       │ 34.84 GB/s    │ 34.5 GB/s     │         │
+│  ├─ (512, 512)            32.63 µs      │ 44.86 µs      │ 33.02 µs      │ 33.48 µs      │ 100     │ 100
+│  │                        32.13 GB/s    │ 23.37 GB/s    │ 31.75 GB/s    │ 31.31 GB/s    │         │
+│  ╰─ (720, 480)            44.57 µs      │ 67.39 µs      │ 45.55 µs      │ 47.47 µs      │ 100     │ 100
+│                           31.01 GB/s    │ 20.51 GB/s    │ 30.34 GB/s    │ 29.11 GB/s    │         │
+├─ decode_uyvy                            │               │               │               │         │
+│  ├─ (64, 64)              943.8 ns      │ 991.3 ns      │ 951.3 ns      │ 951.5 ns      │ 100     │ 400
+│  │                        17.35 GB/s    │ 16.52 GB/s    │ 17.22 GB/s    │ 17.21 GB/s    │         │
+│  ├─ (256, 256)            14.45 µs      │ 17.62 µs      │ 14.53 µs      │ 14.59 µs      │ 100     │ 100
+│  │                        18.13 GB/s    │ 14.87 GB/s    │ 18.03 GB/s    │ 17.95 GB/s    │         │
+│  ├─ (512, 512)            60.37 µs      │ 79.83 µs      │ 60.79 µs      │ 62.71 µs      │ 100     │ 100
+│  │                        17.36 GB/s    │ 13.13 GB/s    │ 17.24 GB/s    │ 16.72 GB/s    │         │
+│  ╰─ (720, 480)            82.02 µs      │ 90.38 µs      │ 82.47 µs      │ 82.9 µs       │ 100     │ 100
+│                           16.85 GB/s    │ 15.29 GB/s    │ 16.76 GB/s    │ 16.67 GB/s    │         │
+├─ decode_uyvy_interlaced                 │               │               │               │         │
+│  ├─ (64, 64)              941.3 ns      │ 1.424 µs      │ 946.3 ns      │ 951.8 ns      │ 100     │ 400
+│  │                        17.4 GB/s     │ 11.49 GB/s    │ 17.31 GB/s    │ 17.21 GB/s    │         │
+│  ├─ (256, 256)            14.38 µs      │ 34.89 µs      │ 15.84 µs      │ 15.76 µs      │ 100     │ 100
+│  │                        18.22 GB/s    │ 7.512 GB/s    │ 16.53 GB/s    │ 16.62 GB/s    │         │
+│  ├─ (512, 512)            60.12 µs      │ 68.91 µs      │ 60.38 µs      │ 60.7 µs       │ 100     │ 100
+│  │                        17.44 GB/s    │ 15.21 GB/s    │ 17.36 GB/s    │ 17.27 GB/s    │         │
+│  ╰─ (720, 480)            80.53 µs      │ 85.75 µs      │ 81.54 µs      │ 81.75 µs      │ 100     │ 100
+│                           17.16 GB/s    │ 16.12 GB/s    │ 16.95 GB/s    │ 16.9 GB/s     │         │
+├─ decode_ycbcr420                        │               │               │               │         │
+│  ├─ (64, 64)              2.273 µs      │ 4.126 µs      │ 2.303 µs      │ 2.334 µs      │ 100     │ 100
+│  │                        7.206 GB/s    │ 3.97 GB/s     │ 7.112 GB/s    │ 7.018 GB/s    │         │
+│  ├─ (256, 256)            36.47 µs      │ 39.72 µs      │ 36.57 µs      │ 36.69 µs      │ 100     │ 100
+│  │                        7.186 GB/s    │ 6.599 GB/s    │ 7.167 GB/s    │ 7.143 GB/s    │         │
+│  ├─ (512, 512)            147.5 µs      │ 224 µs        │ 150 µs        │ 166.3 µs      │ 100     │ 100
+│  │                        7.104 GB/s    │ 4.679 GB/s    │ 6.987 GB/s    │ 6.303 GB/s    │         │
+│  ╰─ (720, 480)            196.4 µs      │ 2.193 ms      │ 199 µs        │ 234.5 µs      │ 100     │ 100
+│                           7.035 GB/s    │ 630.1 MB/s    │ 6.944 GB/s    │ 5.893 GB/s    │         │
+├─ simd_rgb555_row_to_bgra  7.593 µs      │ 9.697 µs      │ 7.884 µs      │ 7.904 µs      │ 100     │ 100
+│                           34.52 GB/s    │ 27.03 GB/s    │ 33.24 GB/s    │ 33.16 GB/s    │         │
+╰─ simd_rgb565_row_to_bgra  7.333 µs      │ 8.705 µs      │ 7.403 µs      │ 7.456 µs      │ 100     │ 100
+                            35.74 GB/s    │ 30.11 GB/s    │ 35.4 GB/s     │ 35.15 GB/s    │         │
+
+     Running benches/encoders.rs (target/release/deps/encoders-92bab0b700c04b83)
+Timer precision: 30 ns
+encoders                       fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ encode_cl                                 │               │               │               │         │
+│  ├─ (64, 64)                 13.72 µs      │ 18.62 µs      │ 13.78 µs      │ 13.96 µs      │ 100     │ 100
+│  │                           596.8 MB/s    │ 439.8 MB/s    │ 594.2 MB/s    │ 586.6 MB/s    │         │
+│  ├─ (256, 256)               219.3 µs      │ 268.7 µs      │ 219.6 µs      │ 222.1 µs      │ 100     │ 100
+│  │                           597.5 MB/s    │ 487.7 MB/s    │ 596.7 MB/s    │ 590 MB/s      │         │
+│  ╰─ (512, 512)               403.9 µs      │ 1.149 ms      │ 410.6 µs      │ 547.2 µs      │ 100     │ 100
+│                              1.297 GB/s    │ 456.2 MB/s    │ 1.276 GB/s    │ 958 MB/s      │         │
+├─ encode_cl_be                              │               │               │               │         │
+│  ├─ (64, 64)                 6.381 µs      │ 9.567 µs      │ 6.411 µs      │ 6.445 µs      │ 100     │ 100
+│  │                           1.283 GB/s    │ 856.2 MB/s    │ 1.277 GB/s    │ 1.27 GB/s     │         │
+│  ├─ (256, 256)               101.9 µs      │ 132.3 µs      │ 102.1 µs      │ 102.7 µs      │ 100     │ 100
+│  │                           1.285 GB/s    │ 990.2 MB/s    │ 1.283 GB/s    │ 1.275 GB/s    │         │
+│  ╰─ (512, 512)               410.4 µs      │ 490.4 µs      │ 411.8 µs      │ 413.4 µs      │ 100     │ 100
+│                              1.277 GB/s    │ 1.069 GB/s    │ 1.272 GB/s    │ 1.268 GB/s    │         │
+├─ encode_clcl                               │               │               │               │         │
+│  ├─ (64, 64)                 8.174 µs      │ 11.62 µs      │ 8.214 µs      │ 8.258 µs      │ 100     │ 100
+│  │                           1.002 GB/s    │ 704.9 MB/s    │ 997.2 MB/s    │ 991.9 MB/s    │         │
+│  ├─ (256, 256)               130.9 µs      │ 144.3 µs      │ 132.3 µs      │ 132.9 µs      │ 100     │ 100
+│  │                           1 GB/s        │ 908.2 MB/s    │ 990.5 MB/s    │ 985.7 MB/s    │         │
+│  ╰─ (512, 512)               530.2 µs      │ 633.4 µs      │ 533.2 µs      │ 535.3 µs      │ 100     │ 100
+│                              988.7 MB/s    │ 827.7 MB/s    │ 983.2 MB/s    │ 979.2 MB/s    │         │
+├─ encode_clcl_be                            │               │               │               │         │
+│  ├─ (64, 64)                 8.274 µs      │ 11.75 µs      │ 8.294 µs      │ 8.337 µs      │ 100     │ 100
+│  │                           990 MB/s      │ 697 MB/s      │ 987.6 MB/s    │ 982.5 MB/s    │         │
+│  ├─ (256, 256)               131.7 µs      │ 152.1 µs      │ 132.3 µs      │ 133.1 µs      │ 100     │ 100
+│  │                           994.9 MB/s    │ 861.4 MB/s    │ 990.1 MB/s    │ 984.2 MB/s    │         │
+│  ╰─ (512, 512)               530.9 µs      │ 669.8 µs      │ 533.6 µs      │ 536.6 µs      │ 100     │ 100
+│                              987.4 MB/s    │ 782.6 MB/s    │ 982.3 MB/s    │ 977 MB/s      │         │
+├─ encode_reordered_rgb555                   │               │               │               │         │
+│  ├─ (64, 64)                 21.72 µs      │ 31.71 µs      │ 21.76 µs      │ 21.97 µs      │ 100     │ 100
+│  │                           377.1 MB/s    │ 258.2 MB/s    │ 376.4 MB/s    │ 372.8 MB/s    │         │
+│  ├─ (256, 256)               419.4 µs      │ 456.9 µs      │ 423.4 µs      │ 424.4 µs      │ 100     │ 100
+│  │                           312.4 MB/s    │ 286.8 MB/s    │ 309.5 MB/s    │ 308.8 MB/s    │         │
+│  ╰─ (512, 512)               1.816 ms      │ 1.965 ms      │ 1.822 ms      │ 1.825 ms      │ 100     │ 100
+│                              288.6 MB/s    │ 266.7 MB/s    │ 287.6 MB/s    │ 287.2 MB/s    │         │
+├─ encode_reordered_rgb555_be                │               │               │               │         │
+│  ├─ (64, 64)                 21.58 µs      │ 24.09 µs      │ 21.63 µs      │ 21.7 µs       │ 100     │ 100
+│  │                           379.4 MB/s    │ 339.9 MB/s    │ 378.7 MB/s    │ 377.3 MB/s    │         │
+│  ├─ (256, 256)               419.2 µs      │ 446.8 µs      │ 421.2 µs      │ 421.8 µs      │ 100     │ 100
+│  │                           312.6 MB/s    │ 293.3 MB/s    │ 311.1 MB/s    │ 310.7 MB/s    │         │
+│  ╰─ (512, 512)               1.903 ms      │ 1.962 ms      │ 1.912 ms      │ 1.915 ms      │ 100     │ 100
+│                              275.4 MB/s    │ 267.1 MB/s    │ 274.1 MB/s    │ 273.6 MB/s    │         │
+├─ encode_rgb555                             │               │               │               │         │
+│  ├─ (64, 64)                 3.676 µs      │ 3.996 µs      │ 3.701 µs      │ 3.705 µs      │ 100     │ 100
+│  │                           2.228 GB/s    │ 2.049 GB/s    │ 2.213 GB/s    │ 2.21 GB/s     │         │
+│  ├─ (256, 256)               58.9 µs       │ 62.65 µs      │ 59.37 µs      │ 59.5 µs       │ 100     │ 100
+│  │                           2.224 GB/s    │ 2.091 GB/s    │ 2.207 GB/s    │ 2.202 GB/s    │         │
+│  ╰─ (512, 512)               237.9 µs      │ 308.1 µs      │ 239.4 µs      │ 240.9 µs      │ 100     │ 100
+│                              2.203 GB/s    │ 1.701 GB/s    │ 2.189 GB/s    │ 2.176 GB/s    │         │
+├─ encode_rgb555_be                          │               │               │               │         │
+│  ├─ (64, 64)                 3.726 µs      │ 8.225 µs      │ 3.746 µs      │ 3.794 µs      │ 100     │ 100
+│  │                           2.198 GB/s    │ 995.9 MB/s    │ 2.186 GB/s    │ 2.159 GB/s    │         │
+│  ├─ (256, 256)               59.29 µs      │ 71.4 µs       │ 59.43 µs      │ 59.75 µs      │ 100     │ 100
+│  │                           2.21 GB/s     │ 1.835 GB/s    │ 2.205 GB/s    │ 2.193 GB/s    │         │
+│  ╰─ (512, 512)               240.1 µs      │ 308.8 µs      │ 240.7 µs      │ 242.1 µs      │ 100     │ 100
+│                              2.183 GB/s    │ 1.697 GB/s    │ 2.177 GB/s    │ 2.165 GB/s    │         │
+├─ encode_rgb565                             │               │               │               │         │
+│  ├─ (64, 64)                 3.576 µs      │ 4.107 µs      │ 3.595 µs      │ 3.6 µs        │ 100     │ 100
+│  │                           2.29 GB/s     │ 1.994 GB/s    │ 2.278 GB/s    │ 2.275 GB/s    │         │
+│  ├─ (256, 256)               56.94 µs      │ 70.13 µs      │ 57.12 µs      │ 57.48 µs      │ 100     │ 100
+│  │                           2.301 GB/s    │ 1.868 GB/s    │ 2.294 GB/s    │ 2.28 GB/s     │         │
+│  ╰─ (512, 512)               227.5 µs      │ 338.9 µs      │ 228.8 µs      │ 231.5 µs      │ 100     │ 100
+│                              2.304 GB/s    │ 1.546 GB/s    │ 2.29 GB/s     │ 2.264 GB/s    │         │
+├─ encode_rgb565_be                          │               │               │               │         │
+│  ├─ (64, 64)                 3.575 µs      │ 6.331 µs      │ 3.586 µs      │ 3.623 µs      │ 100     │ 100
+│  │                           2.291 GB/s    │ 1.293 GB/s    │ 2.284 GB/s    │ 2.26 GB/s     │         │
+│  ├─ (256, 256)               56.81 µs      │ 70.37 µs      │ 56.92 µs      │ 57.19 µs      │ 100     │ 100
+│  │                           2.306 GB/s    │ 1.862 GB/s    │ 2.302 GB/s    │ 2.291 GB/s    │         │
+│  ╰─ (512, 512)               230.3 µs      │ 288.9 µs      │ 231.2 µs      │ 232.3 µs      │ 100     │ 100
+│                              2.276 GB/s    │ 1.814 GB/s    │ 2.267 GB/s    │ 2.256 GB/s    │         │
+├─ encode_uyvy                               │               │               │               │         │
+│  ├─ (64, 64)                 6.501 µs      │ 9.687 µs      │ 6.522 µs      │ 6.571 µs      │ 100     │ 100
+│  │                           1.26 GB/s     │ 845.6 MB/s    │ 1.255 GB/s    │ 1.246 GB/s    │         │
+│  ├─ (256, 256)               102.3 µs      │ 121.4 µs      │ 105.1 µs      │ 105.3 µs      │ 100     │ 100
+│  │                           1.28 GB/s     │ 1.078 GB/s    │ 1.246 GB/s    │ 1.244 GB/s    │         │
+│  ╰─ (512, 512)               411.9 µs      │ 614.2 µs      │ 421.4 µs      │ 426.9 µs      │ 100     │ 100
+│                              1.272 GB/s    │ 853.5 MB/s    │ 1.243 GB/s    │ 1.227 GB/s    │         │
+├─ encode_uyvy_be                            │               │               │               │         │
+│  ├─ (64, 64)                 6.451 µs      │ 6.802 µs      │ 6.482 µs      │ 6.489 µs      │ 100     │ 100
+│  │                           1.269 GB/s    │ 1.204 GB/s    │ 1.263 GB/s    │ 1.262 GB/s    │         │
+│  ├─ (256, 256)               102.4 µs      │ 118.6 µs      │ 104.8 µs      │ 104.9 µs      │ 100     │ 100
+│  │                           1.279 GB/s    │ 1.104 GB/s    │ 1.25 GB/s     │ 1.248 GB/s    │         │
+│  ╰─ (512, 512)               413.1 µs      │ 490.1 µs      │ 422.6 µs      │ 422.9 µs      │ 100     │ 100
+│                              1.268 GB/s    │ 1.069 GB/s    │ 1.24 GB/s     │ 1.239 GB/s    │         │
+├─ encode_ycbcr420                           │               │               │               │         │
+│  ├─ (64, 64)                 8.965 µs      │ 10.84 µs      │ 9.006 µs      │ 9.029 µs      │ 100     │ 100
+│  │                           685.2 MB/s    │ 566.2 MB/s    │ 682.1 MB/s    │ 680.4 MB/s    │         │
+│  ├─ (256, 256)               145.4 µs      │ 216 µs        │ 145.8 µs      │ 148.1 µs      │ 100     │ 100
+│  │                           675.7 MB/s    │ 454.9 MB/s    │ 673.8 MB/s    │ 663.4 MB/s    │         │
+│  ╰─ (512, 512)               580.5 µs      │ 1.266 ms      │ 586.7 µs      │ 744.2 µs      │ 100     │ 100
+│                              677.3 MB/s    │ 310.5 MB/s    │ 670.1 MB/s    │ 528.3 MB/s    │         │
+╰─ encode_ycbcr420_be                        │               │               │               │         │
+   ├─ (64, 64)                 19.2 µs       │ 22.85 µs      │ 19.31 µs      │ 19.37 µs      │ 100     │ 100
+   │                           319.9 MB/s    │ 268.8 MB/s    │ 318 MB/s      │ 317 MB/s      │         │
+   ├─ (256, 256)               142.9 µs      │ 455.2 µs      │ 310.2 µs      │ 260.4 µs      │ 100     │ 100
+   │                           687.5 MB/s    │ 215.9 MB/s    │ 316.9 MB/s    │ 377.4 MB/s    │         │
+   ╰─ (512, 512)               579.4 µs      │ 1.285 ms      │ 585 µs        │ 627.2 µs      │ 100     │ 100
+                               678.5 MB/s    │ 305.9 MB/s    │ 672.1 MB/s    │ 626.9 MB/s    │         │
+
+     Running benches/memory.rs (target/release/deps/memory-8f8090d59b4b3ee1)
+
+=== Memory Allocation per Decode (512×512) ===
+Format                           Allocs    Total Bytes      Peak Heap       Bytes/px
+----------------------------------------------------------------------------------
+RGB565                                1        1048576        1048576          4.00
+RGB555                                1        1048576        1048576          4.00
+Reordered RGB555                      1        1048576        1048576          4.00
+UYVY 4:2:2                            1        1048576        1048576          4.00
+YCbCr 4:2:0                           1        1048576        1048576          4.00
+CLCL                                  1        1048576        1048576          4.00
+CL                                    1        1048576        1048576          4.00
+JPEG                               2329        5167064        1902844         19.71
+----------------------------------------------------------------------------------
+All sizes are 512×512                                                               
+
+Timer precision: 30 ns
+memory                      fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ decode_cl                83.2 µs       │ 280.8 µs      │ 179.2 µs      │ 148.6 µs      │ 100     │ 100
+│                           12.6 GB/s     │ 3.733 GB/s    │ 5.849 GB/s    │ 7.052 GB/s    │         │
+├─ decode_clcl              88.61 µs      │ 271.7 µs      │ 90.88 µs      │ 101.5 µs      │ 100     │ 100
+│                           11.83 GB/s    │ 3.858 GB/s    │ 11.53 GB/s    │ 10.32 GB/s    │         │
+├─ decode_jpeg              1.277 ms      │ 2.553 ms      │ 1.33 ms       │ 1.448 ms      │ 100     │ 100
+│                           820.5 MB/s    │ 410.6 MB/s    │ 788.3 MB/s    │ 723.6 MB/s    │         │
+├─ decode_reordered_rgb555  503.3 µs      │ 565.6 µs      │ 506.2 µs      │ 509.5 µs      │ 100     │ 100
+│                           2.083 GB/s    │ 1.853 GB/s    │ 2.071 GB/s    │ 2.057 GB/s    │         │
+├─ decode_rgb555            35.69 µs      │ 40.19 µs      │ 35.87 µs      │ 36.03 µs      │ 100     │ 100
+│                           29.37 GB/s    │ 26.08 GB/s    │ 29.22 GB/s    │ 29.1 GB/s     │         │
+├─ decode_rgb565            33.96 µs      │ 36.78 µs      │ 34.18 µs      │ 34.3 µs       │ 100     │ 100
+│                           30.87 GB/s    │ 28.5 GB/s     │ 30.67 GB/s    │ 30.56 GB/s    │         │
+├─ decode_uyvy              61.62 µs      │ 85.2 µs       │ 61.95 µs      │ 62.48 µs      │ 100     │ 100
+│                           17.01 GB/s    │ 12.3 GB/s     │ 16.92 GB/s    │ 16.78 GB/s    │         │
+╰─ decode_ycbcr420          147.4 µs      │ 157.8 µs      │ 148.2 µs      │ 148.7 µs      │ 100     │ 100
+                            7.111 GB/s    │ 6.643 GB/s    │ 7.071 GB/s    │ 7.048 GB/s    │         │
+
+     Running benches/pipeline.rs (target/release/deps/pipeline-99ac008a747ae8d1)
+Timer precision: 30 ns
+pipeline                 fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ build_ithmb_file_256  97.24 µs      │ 340.2 µs      │ 104.2 µs      │ 158.4 µs      │ 100     │ 100
+│                        2.695 GB/s    │ 770.4 MB/s    │ 2.514 GB/s    │ 1.654 GB/s    │         │
+├─ decode_ithmb_256      7.372 µs      │ 10.56 µs      │ 7.393 µs      │ 7.438 µs      │ 100     │ 100
+│                        35.55 GB/s    │ 24.8 GB/s     │ 35.45 GB/s    │ 35.24 GB/s    │         │
+├─ decode_ithmb_512      32.39 µs      │ 113.2 µs      │ 32.69 µs      │ 33.63 µs      │ 100     │ 100
+│                        32.37 GB/s    │ 9.258 GB/s    │ 32.07 GB/s    │ 31.17 GB/s    │         │
+╰─ open_ithmb_photodb    13.46 µs      │ 31.21 µs      │ 13.64 µs      │ 13.84 µs      │ 100     │ 100
+                         304.2 MB/s    │ 131.2 MB/s    │ 300.2 MB/s    │ 295.9 MB/s    │         │
+
+     Running benches/profiles.rs (target/release/deps/profiles-ce2c86c428c44765)
+Timer precision: 10 ns
+profiles                             fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ decode_reordered_rgb555_profiles                │               │               │               │         │
+│  ├─ p3001_ReorderedRGB555_256x256  121.3 µs      │ 150.5 µs      │ 121.6 µs      │ 122.5 µs      │ 100     │ 100
+│  │                                 2.16 GB/s     │ 1.741 GB/s    │ 2.154 GB/s    │ 2.139 GB/s    │         │
+│  ├─ p3002_ReorderedRGB555_128x128  29.9 µs       │ 36.03 µs      │ 30.03 µs      │ 30.17 µs      │ 100     │ 100
+│  │                                 2.191 GB/s    │ 1.818 GB/s    │ 2.181 GB/s    │ 2.171 GB/s    │         │
+│  ╰─ p3003_ReorderedRGB555_64x64    7.252 µs      │ 9.917 µs      │ 7.283 µs      │ 7.331 µs      │ 100     │ 100
+│                                    2.258 GB/s    │ 1.651 GB/s    │ 2.249 GB/s    │ 2.234 GB/s    │         │
+├─ decode_rgb555_profiles                          │               │               │               │         │
+│  ├─ p3004_RGB555_56x55             971.7 ns      │ 2.844 µs      │ 981.7 ns      │ 1.004 µs      │ 100     │ 100
+│  │                                 12.67 GB/s    │ 4.33 GB/s     │ 12.54 GB/s    │ 12.26 GB/s    │         │
+│  ├─ p3005_RGB555_320x320           12.25 µs      │ 29.73 µs      │ 12.28 µs      │ 12.48 µs      │ 100     │ 100
+│  │                                 33.42 GB/s    │ 13.77 GB/s    │ 33.34 GB/s    │ 32.79 GB/s    │         │
+│  ├─ p3006_RGB555_56x56             991.7 ns      │ 1.332 µs      │ 1.001 µs      │ 1.007 µs      │ 100     │ 100
+│  │                                 12.64 GB/s    │ 9.411 GB/s    │ 12.52 GB/s    │ 12.44 GB/s    │         │
+│  ├─ p3007_RGB555_88x88             1.792 µs      │ 2.584 µs      │ 1.812 µs      │ 1.817 µs      │ 100     │ 100
+│  │                                 17.27 GB/s    │ 11.98 GB/s    │ 17.08 GB/s    │ 17.04 GB/s    │         │
+│  ├─ p3008_RGB555_640x480           40.5 µs       │ 63.05 µs      │ 40.8 µs       │ 41.34 µs      │ 100     │ 100
+│  │                                 30.33 GB/s    │ 19.48 GB/s    │ 30.11 GB/s    │ 29.72 GB/s    │         │
+│  ├─ p3009_RGB555_120x160           3.816 µs      │ 5.719 µs      │ 3.846 µs      │ 3.866 µs      │ 100     │ 100
+│  │                                 20.12 GB/s    │ 13.42 GB/s    │ 19.96 GB/s    │ 19.86 GB/s    │         │
+│  ╰─ p3011_RGB555_80x79             810.7 ns      │ 1.732 µs      │ 811.7 ns      │ 825.5 ns      │ 100     │ 100
+│                                    31.17 GB/s    │ 14.58 GB/s    │ 31.14 GB/s    │ 30.62 GB/s    │         │
+├─ decode_rgb565_profiles                          │               │               │               │         │
+│  ├─ p1005_RGB565_80x80             780.7 ns      │ 3.346 µs      │ 790.7 ns      │ 831.7 ns      │ 100     │ 100
+│  │                                 32.78 GB/s    │ 7.649 GB/s    │ 32.37 GB/s    │ 30.78 GB/s    │         │
+│  ├─ p1007_RGB565_480x864           53.76 µs      │ 82.56 µs      │ 54.26 µs      │ 54.7 µs       │ 100     │ 100
+│  │                                 30.85 GB/s    │ 20.09 GB/s    │ 30.56 GB/s    │ 30.32 GB/s    │         │
+│  ├─ p1009_RGB565_42x30             560.7 ns      │ 1.342 µs      │ 570.7 ns      │ 609.5 ns      │ 100     │ 100
+│  │                                 8.987 GB/s    │ 3.753 GB/s    │ 8.829 GB/s    │ 8.268 GB/s    │         │
+│  ├─ p1010_RGB565_240x240           6.572 µs      │ 12.65 µs      │ 6.812 µs      │ 6.918 µs      │ 100     │ 100
+│  │                                 35.05 GB/s    │ 18.2 GB/s     │ 33.82 GB/s    │ 33.3 GB/s     │         │
+│  ├─ p1013_RGB565_220x176           30.04 µs      │ 47.27 µs      │ 42.27 µs      │ 39.77 µs      │ 100     │ 100
+│  │                                 5.154 GB/s    │ 3.275 GB/s    │ 3.663 GB/s    │ 3.894 GB/s    │         │
+│  ├─ p1015_RGB565_130x88            1.491 µs      │ 3.406 µs      │ 1.521 µs      │ 1.542 µs      │ 100     │ 100
+│  │                                 30.67 GB/s    │ 13.43 GB/s    │ 30.06 GB/s    │ 29.66 GB/s    │         │
+│  ├─ p1016_RGB565_140x140           4.227 µs      │ 5.94 µs       │ 4.247 µs      │ 4.27 µs       │ 100     │ 100
+│  │                                 18.54 GB/s    │ 13.19 GB/s    │ 18.45 GB/s    │ 18.36 GB/s    │         │
+│  ├─ p1017_RGB565_56x56             941.7 ns      │ 1.612 µs      │ 951.7 ns      │ 962.7 ns      │ 100     │ 100
+│  │                                 13.31 GB/s    │ 7.777 GB/s    │ 13.17 GB/s    │ 13.02 GB/s    │         │
+│  ├─ p1020_RGB565_176x220           12.83 µs      │ 15.19 µs      │ 12.88 µs      │ 13.11 µs      │ 100     │ 100
+│  │                                 12.06 GB/s    │ 10.19 GB/s    │ 12.01 GB/s    │ 11.8 GB/s     │         │
+│  ├─ p1023_RGB565_176x132           7.704 µs      │ 10.19 µs      │ 7.869 µs      │ 7.9 µs        │ 100     │ 100
+│  │                                 12.06 GB/s    │ 9.111 GB/s    │ 11.8 GB/s     │ 11.76 GB/s    │         │
+│  ├─ p1024_RGB565_320x240           9.136 µs      │ 18.59 µs      │ 9.166 µs      │ 9.509 µs      │ 100     │ 100
+│  │                                 33.62 GB/s    │ 16.52 GB/s    │ 33.51 GB/s    │ 32.3 GB/s     │         │
+│  ├─ p1027_RGB565_100x100           2.564 µs      │ 5.239 µs      │ 2.644 µs      │ 2.663 µs      │ 100     │ 100
+│  │                                 15.59 GB/s    │ 7.633 GB/s    │ 15.12 GB/s    │ 15.01 GB/s    │         │
+│  ├─ p1028_RGB565_100x100           2.564 µs      │ 3.576 µs      │ 2.644 µs      │ 2.646 µs      │ 100     │ 100
+│  │                                 15.59 GB/s    │ 11.18 GB/s    │ 15.12 GB/s    │ 15.11 GB/s    │         │
+│  ├─ p1029_RGB565_200x200           6.521 µs      │ 13.43 µs      │ 6.551 µs      │ 6.745 µs      │ 100     │ 100
+│  │                                 24.53 GB/s    │ 11.9 GB/s     │ 24.42 GB/s    │ 23.72 GB/s    │         │
+│  ├─ p1031_RGB565_42x42             760.7 ns      │ 1.332 µs      │ 771.7 ns      │ 780.9 ns      │ 100     │ 100
+│  │                                 9.274 GB/s    │ 5.294 GB/s    │ 9.142 GB/s    │ 9.034 GB/s    │         │
+│  ├─ p1032_RGB565_42x37             676.2 ns      │ 716.2 ns      │ 681.2 ns      │ 682.9 ns      │ 100     │ 200
+│  │                                 9.191 GB/s    │ 8.677 GB/s    │ 9.123 GB/s    │ 9.102 GB/s    │         │
+│  ├─ p1036_RGB565_50x41             353 ns        │ 370.5 ns      │ 355.5 ns      │ 356.7 ns      │ 100     │ 400
+│  │                                 23.22 GB/s    │ 22.12 GB/s    │ 23.06 GB/s    │ 22.98 GB/s    │         │
+│  ├─ p1042_RGB565_320x240           9.116 µs      │ 13.76 µs      │ 9.146 µs      │ 9.237 µs      │ 100     │ 100
+│  │                                 33.69 GB/s    │ 22.31 GB/s    │ 33.58 GB/s    │ 33.25 GB/s    │         │
+│  ├─ p1043_RGB565_130x88            1.482 µs      │ 3.205 µs      │ 1.502 µs      │ 1.526 µs      │ 100     │ 100
+│  │                                 30.86 GB/s    │ 14.27 GB/s    │ 30.44 GB/s    │ 29.98 GB/s    │         │
+│  ├─ p1044_RGB565_128x128           2.002 µs      │ 3.846 µs      │ 2.023 µs      │ 2.061 µs      │ 100     │ 100
+│  │                                 32.72 GB/s    │ 17.03 GB/s    │ 32.38 GB/s    │ 31.78 GB/s    │         │
+│  ├─ p1055_RGB565_128x128           2.002 µs      │ 3.255 µs      │ 2.023 µs      │ 2.033 µs      │ 100     │ 100
+│  │                                 32.72 GB/s    │ 20.12 GB/s    │ 32.38 GB/s    │ 32.23 GB/s    │         │
+│  ├─ p1056_RGB565_128x128           1.992 µs      │ 3.796 µs      │ 2.013 µs      │ 2.029 µs      │ 100     │ 100
+│  │                                 32.88 GB/s    │ 17.26 GB/s    │ 32.54 GB/s    │ 32.28 GB/s    │         │
+│  ├─ p1060_RGB565_320x320           11.71 µs      │ 21.58 µs      │ 11.75 µs      │ 11.99 µs      │ 100     │ 100
+│  │                                 34.97 GB/s    │ 18.97 GB/s    │ 34.85 GB/s    │ 34.14 GB/s    │         │
+│  ├─ p1061_RGB565_55x55             861.7 ns      │ 1.592 µs      │ 871.7 ns      │ 881.2 ns      │ 100     │ 100
+│  │                                 14.04 GB/s    │ 7.596 GB/s    │ 13.87 GB/s    │ 13.72 GB/s    │         │
+│  ├─ p1062_RGB565_56x56             940.7 ns      │ 2.744 µs      │ 951.7 ns      │ 975.9 ns      │ 100     │ 100
+│  │                                 13.33 GB/s    │ 4.57 GB/s     │ 13.17 GB/s    │ 12.85 GB/s    │         │
+│  ├─ p1066_RGB565_64x64             519.7 ns      │ 1.793 µs      │ 530.7 ns      │ 541.7 ns      │ 100     │ 100
+│  │                                 31.52 GB/s    │ 9.133 GB/s    │ 30.86 GB/s    │ 30.24 GB/s    │         │
+│  ├─ p1068_RGB565_128x128           1.962 µs      │ 3.937 µs      │ 1.973 µs      │ 2.014 µs      │ 100     │ 100
+│  │                                 33.38 GB/s    │ 16.64 GB/s    │ 33.2 GB/s     │ 32.53 GB/s    │         │
+│  ├─ p1071_RGB565_240x240           6.822 µs      │ 9.727 µs      │ 6.862 µs      │ 6.914 µs      │ 100     │ 100
+│  │                                 33.76 GB/s    │ 23.68 GB/s    │ 33.57 GB/s    │ 33.32 GB/s    │         │
+│  ├─ p1073_RGB565_240x240           6.842 µs      │ 11.81 µs      │ 6.862 µs      │ 6.915 µs      │ 100     │ 100
+│  │                                 33.67 GB/s    │ 19.5 GB/s     │ 33.57 GB/s    │ 33.31 GB/s    │         │
+│  ├─ p1074_RGB565_50x50             423 ns        │ 438.2 ns      │ 425.5 ns      │ 426.6 ns      │ 100     │ 400
+│  │                                 23.63 GB/s    │ 22.81 GB/s    │ 23.49 GB/s    │ 23.43 GB/s    │         │
+│  ├─ p1078_RGB565_80x80             780.7 ns      │ 1.943 µs      │ 791.7 ns      │ 806.7 ns      │ 100     │ 100
+│  │                                 32.78 GB/s    │ 13.17 GB/s    │ 32.33 GB/s    │ 31.73 GB/s    │         │
+│  ├─ p1079_RGB565_80x80             780.7 ns      │ 2.404 µs      │ 791.2 ns      │ 815.3 ns      │ 100     │ 100
+│  │                                 32.78 GB/s    │ 10.64 GB/s    │ 32.35 GB/s    │ 31.39 GB/s    │         │
+│  ├─ p1081_RGB565_640x480           39.08 µs      │ 59.82 µs      │ 39.44 µs      │ 40.1 µs       │ 100     │ 100
+│  │                                 31.44 GB/s    │ 20.54 GB/s    │ 31.14 GB/s    │ 30.63 GB/s    │         │
+│  ├─ p1083_RGB565_240x320           9.066 µs      │ 12.85 µs      │ 9.096 µs      │ 9.189 µs      │ 100     │ 100
+│  │                                 33.88 GB/s    │ 23.89 GB/s    │ 33.77 GB/s    │ 33.42 GB/s    │         │
+│  ├─ p1084_RGB565_240x240           6.792 µs      │ 8.855 µs      │ 6.822 µs      │ 6.862 µs      │ 100     │ 100
+│  │                                 33.91 GB/s    │ 26.01 GB/s    │ 33.76 GB/s    │ 33.57 GB/s    │         │
+│  ├─ p1085_RGB565_88x88             1.702 µs      │ 2.653 µs      │ 1.722 µs      │ 1.733 µs      │ 100     │ 100
+│  │                                 18.19 GB/s    │ 11.67 GB/s    │ 17.98 GB/s    │ 17.86 GB/s    │         │
+│  ├─ p1087_RGB565_384x384           16.9 µs       │ 23.14 µs      │ 16.95 µs      │ 17.16 µs      │ 100     │ 100
+│  │                                 34.89 GB/s    │ 25.48 GB/s    │ 34.79 GB/s    │ 34.35 GB/s    │         │
+│  ├─ p1089_RGB565_58x58             1.111 µs      │ 1.692 µs      │ 1.121 µs      │ 1.183 µs      │ 100     │ 100
+│  │                                 12.1 GB/s     │ 7.948 GB/s    │ 11.99 GB/s    │ 11.36 GB/s    │         │
+│  ├─ p1092_RGB565_80x80             780.7 ns      │ 1.642 µs      │ 791.7 ns      │ 851.2 ns      │ 100     │ 100
+│  │                                 32.78 GB/s    │ 15.58 GB/s    │ 32.33 GB/s    │ 30.07 GB/s    │         │
+│  ├─ p1093_RGB565_512x512           36.89 µs      │ 136.5 µs      │ 70.02 µs      │ 70.78 µs      │ 100     │ 100
+│  │                                 28.41 GB/s    │ 7.679 GB/s    │ 14.97 GB/s    │ 14.81 GB/s    │         │
+│  ├─ p2002_RGB565_50x50             1.772 µs      │ 3.175 µs      │ 1.833 µs      │ 1.845 µs      │ 100     │ 100
+│  │                                 5.64 GB/s     │ 3.148 GB/s    │ 5.453 GB/s    │ 5.418 GB/s    │         │
+│  ╰─ p2003_RGB565_150x150           15.43 µs      │ 19.33 µs      │ 16 µs         │ 15.82 µs      │ 100     │ 100
+│                                    5.829 GB/s    │ 4.654 GB/s    │ 5.623 GB/s    │ 5.686 GB/s    │         │
+├─ decode_uyvy_profiles                            │               │               │               │         │
+│  ╰─ p1019_UYVY_720x480             79.62 µs      │ 246.2 µs      │ 172.9 µs      │ 141.4 µs      │ 100     │ 100
+│                                    17.36 GB/s    │ 5.614 GB/s    │ 7.991 GB/s    │ 9.775 GB/s    │         │
+╰─ decode_ycbcr420_profiles                        │               │               │               │         │
+   ╰─ p1067_YCbCr420_720x480         195.1 µs      │ 319.4 µs      │ 196.6 µs      │ 204.2 µs      │ 100     │ 100
+                                     7.083 GB/s    │ 4.327 GB/s    │ 7.031 GB/s    │ 6.766 GB/s    │         │
+
+     Running benches/simd_compare.rs (target/release/deps/simd_compare-4979a24e45e1f5d4)
+Timer precision: 50 ns
+simd_compare               fastest       │ slowest       │ median        │ mean          │ samples │ iters
+├─ decode_cl_scalar        56.22 µs      │ 95.56 µs      │ 56.41 µs      │ 57.13 µs      │ 100     │ 100
+│                          4.662 GB/s    │ 2.742 GB/s    │ 4.646 GB/s    │ 4.587 GB/s    │         │
+├─ decode_cl_simd          191 µs        │ 230 µs        │ 192.1 µs      │ 192.8 µs      │ 100     │ 100
+│                          1.372 GB/s    │ 1.139 GB/s    │ 1.364 GB/s    │ 1.359 GB/s    │         │
+├─ decode_clcl_scalar      188.2 µs      │ 227 µs        │ 189 µs        │ 189.7 µs      │ 100     │ 100
+│                          1.392 GB/s    │ 1.154 GB/s    │ 1.386 GB/s    │ 1.381 GB/s    │         │
+├─ decode_clcl_simd        21.46 µs      │ 47.12 µs      │ 21.58 µs      │ 22.03 µs      │ 100     │ 100
+│                          12.21 GB/s    │ 5.562 GB/s    │ 12.14 GB/s    │ 11.89 GB/s    │         │
+├─ decode_gray_scalar      6.364 ns      │ 8.742 ns      │ 6.375 ns      │ 6.407 ns      │ 100     │ 102400
+│                          41.19 TB/s    │ 29.98 TB/s    │ 41.12 TB/s    │ 40.91 TB/s    │         │
+├─ decode_gray_simd        1.392 ns      │ 2.394 ns      │ 1.399 ns      │ 1.409 ns      │ 100     │ 409600
+│                          188.3 TB/s    │ 109.5 TB/s    │ 187.3 TB/s    │ 186 TB/s      │         │
+├─ decode_rgb555_scalar    97.54 µs      │ 121.4 µs      │ 97.92 µs      │ 98.38 µs      │ 100     │ 100
+│                          2.687 GB/s    │ 2.158 GB/s    │ 2.677 GB/s    │ 2.664 GB/s    │         │
+├─ decode_rgb555_simd      7.583 µs      │ 37.54 µs      │ 7.829 µs      │ 8.104 µs      │ 100     │ 100
+│                          34.56 GB/s    │ 6.982 GB/s    │ 33.48 GB/s    │ 32.34 GB/s    │         │
+├─ decode_rgb565_scalar    85.05 µs      │ 108 µs        │ 85.53 µs      │ 86.24 µs      │ 100     │ 100
+│                          3.081 GB/s    │ 2.425 GB/s    │ 3.064 GB/s    │ 3.039 GB/s    │         │
+├─ decode_rgb565_simd      7.392 µs      │ 30.54 µs      │ 7.423 µs      │ 7.678 µs      │ 100     │ 100
+│                          35.45 GB/s    │ 8.581 GB/s    │ 35.31 GB/s    │ 34.13 GB/s    │         │
+├─ decode_uyvy_scalar      106.4 µs      │ 110.5 µs      │ 106.7 µs      │ 106.9 µs      │ 100     │ 100
+│                          2.463 GB/s    │ 2.372 GB/s    │ 2.456 GB/s    │ 2.451 GB/s    │         │
+├─ decode_uyvy_simd        13.46 µs      │ 16.54 µs      │ 13.53 µs      │ 13.59 µs      │ 100     │ 100
+│                          19.46 GB/s    │ 15.84 GB/s    │ 19.36 GB/s    │ 19.28 GB/s    │         │
+├─ decode_ycbcr420_scalar  182.2 µs      │ 187.8 µs      │ 182.8 µs      │ 183.2 µs      │ 100     │ 100
+│                          1.438 GB/s    │ 1.395 GB/s    │ 1.433 GB/s    │ 1.43 GB/s     │         │
+╰─ decode_ycbcr420_simd    34.76 µs      │ 40.55 µs      │ 34.86 µs      │ 35.06 µs      │ 100     │ 100
+                           7.54 GB/s     │ 6.463 GB/s    │ 7.518 GB/s    │ 7.475 GB/s    │         │
+

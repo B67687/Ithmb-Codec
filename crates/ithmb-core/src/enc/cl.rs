@@ -17,12 +17,6 @@ pub fn encode_cl(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let n = wu * hu;
     let mut out = vec![0u8; n * 2];
 
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    {
-        crate::simd::enc::bgra_to_cl(bgra, &mut out);
-        return out;
-    }
-
     for i in 0..n {
         let px = i * 4;
         let r = i32::from(bgra[px + 2]);
