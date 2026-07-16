@@ -15,7 +15,7 @@ categories = ["multimedia::images"]
 workspace = true
 
 [lib]
-crate-type = ["lib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 jpeg-decoder = "0.3"
