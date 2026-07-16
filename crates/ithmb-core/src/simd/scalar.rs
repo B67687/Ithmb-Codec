@@ -7,6 +7,7 @@ use crate::yuv;
 #[inline]
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
+#[allow(dead_code)]
 pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
     let u = quad[0];
     let y0 = quad[1];
@@ -20,6 +21,7 @@ pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 #[inline]
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
+#[allow(dead_code)]
 pub(crate) fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
     let left = uyvy_quad_to_bgra(&[quads[0], quads[1], quads[2], quads[3]]);
     let right = uyvy_quad_to_bgra(&[quads[4], quads[5], quads[6], quads[7]]);

@@ -5,7 +5,7 @@
 //! on all architectures.
 //!
 //! SIMD targets are selected at compile time with appropriate runtime dispatch.
-#![allow(unsafe_code)]
+#![allow(unsafe_code, unreachable_code, dead_code)]
 #![allow(clippy::cast_ptr_alignment, clippy::cast_possible_truncation, clippy::similar_names)]
 
 // ---------------------------------------------------------------------------
@@ -21,7 +21,10 @@ mod yuv;
 
 // Scalar fallbacks — always available (used when SIMD is off or for
 // remainder handling in NEON routines).
-#[cfg_attr(any(target_arch = "x86_64", target_arch = "x86"), allow(dead_code))]
+#[cfg_attr(
+    any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"),
+    allow(dead_code)
+)]
 mod scalar;
 
 #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
@@ -339,6 +342,7 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
     }
 
     #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    #[allow(unreachable_code)]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::yuv420_row_pair_to_bgra_neon(y_row, cb_row, cr_row, dst, w, cb_w);
@@ -389,6 +393,7 @@ pub(crate) fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    #[allow(unreachable_code)]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::rgb565_row_to_bgra_neon(src, dst);
@@ -441,6 +446,7 @@ pub(crate) fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    #[allow(unreachable_code)]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::rgb555_row_to_bgra_neon(src, dst);

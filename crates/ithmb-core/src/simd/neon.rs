@@ -434,8 +434,8 @@ pub(crate) unsafe fn clcl_row_to_bgra_neon(y: &[u8], cb: &[u8], cr: &[u8], width
         let cr_zip = vzip_u8(cr_lo, cr_hi);
 
         // Expand nibbles to 8-bit: nibble << 4
-        let cb8 = vshl_n_u8(cb_zip.val[0], 4);
-        let cr8 = vshl_n_u8(cr_zip.val[0], 4);
+        let cb8 = vshl_n_u8(cb_zip.0, 4);
+        let cr8 = vshl_n_u8(cr_zip.0, 4);
 
         // ---- Widen Y, Cb, Cr to u16 then split for BT.601 ----
         let y16 = vmovl_u8(y8);

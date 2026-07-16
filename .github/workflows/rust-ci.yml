@@ -178,3 +178,4 @@ jobs:
           cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+
