@@ -97,7 +97,7 @@ maturin develop --release -m pymod/Cargo.toml  # Python bindings
 
 ## Key Decisions
 
-# - **SIMD compiled unconditionally** — not default. SSE2/AVX2 for x64, NEON for ARM64 (macOS ARM uses scalar fallback per STANDARDS.md)
+# - **SIMD compiled unconditionally** — not default. SSE2/AVX2 for x64, NEON for ARM64 (macOS ARM NEON fixed in v1.9.3 — full acceleration on Apple Silicon)
 
 - **C ABI plugin in separate repo** — [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin)
 - **54 built-in profiles** — embedded in binary, optionally overridable via external `profiles.json`

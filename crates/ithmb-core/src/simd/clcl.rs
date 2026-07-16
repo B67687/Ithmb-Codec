@@ -299,7 +299,7 @@ pub fn clcl_row_to_bgra(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut 
         return;
     }
 
-    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    #[cfg(target_arch = "aarch64")]
     {
         // SAFETY: aarch64 guarantees NEON.
         unsafe {

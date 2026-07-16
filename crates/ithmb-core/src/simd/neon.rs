@@ -201,16 +201,16 @@ pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
     let a16 = vdup_n_s16(255);
 
     // vzip interleaves two int16x4_t into (even, odd) halves.
-    // bg.0 = [B0, G0, B1, G1],  bg.1 = [B2, G2, B3, G3]
-    // ra.0 = [R0, 255, R1, 255], ra.1 = [R2, 255, R3, 255]
-    let bg = vzip_s16(b16, g16);
-    let ra = vzip_s16(r16, a16);
+    // br.0 = [B0, R0, B1, R1],  br.1 = [B2, R2, B3, R3]
+    // ga.0 = [G0, 255, G1, 255], ga.1 = [G2, 255, G3, 255]
+    let br = vzip_s16(b16, r16);
+    let ga = vzip_s16(g16, a16);
 
     // Second zip produces per-pixel BGRA quads:
     // lo.0 = [B0, G0, R0, 255], lo.1 = [B1, G1, R1, 255]
     // hi.0 = [B2, G2, R2, 255], hi.1 = [B3, G3, R3, 255]
-    let lo = vzip_s16(bg.0, ra.0);
-    let hi = vzip_s16(bg.1, ra.1);
+    let lo = vzip_s16(br.0, ga.0);
+    let hi = vzip_s16(br.1, ga.1);
 
     // Combine into 128-bit vectors and saturate-narrow to u8.
     let combined_lo = vcombine_s16(lo.0, lo.1);
@@ -328,11 +328,11 @@ pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] 
     let b16 = vqmovn_s32(b);
     let a16 = vdup_n_s16(255);
 
-    let bg = vzip_s16(b16, g16);
-    let ra = vzip_s16(r16, a16);
+    let br = vzip_s16(b16, r16);
+    let ga = vzip_s16(g16, a16);
 
-    let lo = vzip_s16(bg.0, ra.0);
-    let hi = vzip_s16(bg.1, ra.1);
+    let lo = vzip_s16(br.0, ga.0);
+    let hi = vzip_s16(br.1, ga.1);
 
     let combined_lo = vcombine_s16(lo.0, lo.1);
     let combined_hi = vcombine_s16(hi.0, hi.1);
@@ -466,10 +466,10 @@ pub(crate) unsafe fn clcl_row_to_bgra_neon(y: &[u8], cb: &[u8], cr: &[u8], width
         let b16_0 = vqmovn_s32(b0);
         let a16 = vdup_n_s16(255);
 
-        let bg0 = vzip_s16(b16_0, g16_0);
-        let ra0 = vzip_s16(r16_0, a16);
-        let lo0 = vzip_s16(bg0.0, ra0.0);
-        let hi0 = vzip_s16(bg0.1, ra0.1);
+        let br0 = vzip_s16(b16_0, r16_0);
+        let ga0 = vzip_s16(g16_0, a16);
+        let lo0 = vzip_s16(br0.0, ga0.0);
+        let hi0 = vzip_s16(br0.1, ga0.1);
 
         let combined_lo0 = vcombine_s16(lo0.0, lo0.1);
         let combined_hi0 = vcombine_s16(hi0.0, hi0.1);
@@ -504,10 +504,10 @@ pub(crate) unsafe fn clcl_row_to_bgra_neon(y: &[u8], cb: &[u8], cr: &[u8], width
         let g16_1 = vqmovn_s32(g1);
         let b16_1 = vqmovn_s32(b1);
 
-        let bg1 = vzip_s16(b16_1, g16_1);
-        let ra1 = vzip_s16(r16_1, a16);
-        let lo1 = vzip_s16(bg1.0, ra1.0);
-        let hi1 = vzip_s16(bg1.1, ra1.1);
+        let br1 = vzip_s16(b16_1, r16_1);
+        let ga1 = vzip_s16(g16_1, a16);
+        let lo1 = vzip_s16(br1.0, ga1.0);
+        let hi1 = vzip_s16(br1.1, ga1.1);
 
         let combined_lo1 = vcombine_s16(lo1.0, lo1.1);
         let combined_hi1 = vcombine_s16(hi1.0, hi1.1);

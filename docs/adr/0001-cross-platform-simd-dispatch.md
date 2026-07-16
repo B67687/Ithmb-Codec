@@ -4,7 +4,7 @@
 
 **Context**: The .ithmb codec spends most of its CPU time in YUV→BGRA color conversion for four decoders (UYVY, YCbCr 4:2:0, CLCL nibble-chroma, and CL per-pixel chroma). These conversions apply BT.601 matrix arithmetic per pixel — an ALU-bound workload that benefits from SIMD throughput of 4–8 pixels per iteration. The codec must run on x86_64 (Linux, macOS Intel, Windows), aarch64 (Linux ARM, macOS ARM), and 32-bit x86, with a scalar reference path as the correctness baseline.
 
-The C# prototype used a cascading dispatch ladder (`Avx512BW.IsSupported → Sse2.IsSupported → AdvSimd.IsSupported → scalar`) resolved at ``JIT`` compile time via `IsSupported` constants. Rust has no JIT; dispatch must happen either at compile time (cargo feature gates + `#[cfg]`) or at runtime (`is_x86_feature_detected!`).
+The C# prototype used a cascading dispatch ladder (`Avx512BW.IsSupported → Sse2.IsSupported → AdvSimd.IsSupported → scalar`) resolved at `JIT` compile time via `IsSupported` constants. Rust has no JIT; dispatch must happen either at compile time (cargo feature gates + `#[cfg]`) or at runtime (`is_x86_feature_detected!`).
 
 Additionally, benchmarks revealed that hand-written SSE2/AVX2 for simple pixel-unpack formats (RGB565, RGB555) was **34× slower** than LLVM's auto-vectorized scalar loop on Intel CPUs due to AVX frequency downclock and port-5 serialization. SIMD would only benefit the YUV-heavy decoders — pixel-unpack formats should use auto-vectorized scalar.
 
@@ -53,17 +53,17 @@ Portable implementations used when either the `simd` feature is disabled or the 
 
 ### Platform coverage
 
-| Platform | Default SIMD | Our Dispatch |
-|----------|-------------|--------------|
+| Platform                             | Default SIMD    | Our Dispatch                                     |
+| ------------------------------------ | --------------- | ------------------------------------------------ |
 | x86_64 (Linux, macOS Intel, Windows) | SSE2 guaranteed | SSE2 → scalar (AVX2 compiled but not dispatched) |
-| aarch64 (Linux ARM) | NEON guaranteed | NEON → scalar |
-| aarch64 (macOS ARM) | NEON guaranteed | Scalar (NEON gated — see below) |
-| x86 (32-bit) | SSE2 | SSE2 → scalar |
-| Other (RISC-V, etc.) | None | Scalar only |
+| aarch64 (Linux ARM)                  | NEON guaranteed | NEON → scalar                                    |
+| aarch64 (macOS ARM)                  | NEON guaranteed | NEON → scalar                                    |
+| x86 (32-bit)                         | SSE2            | SSE2 → scalar                                    |
+| Other (RISC-V, etc.)                 | None            | Scalar only                                      |
 
-### macOS ARM NEON gating
+### macOS ARM NEON (resolved)
 
-NEON dispatch on macOS aarch64 is gated behind `#[cfg(not(target_os = "macos"))]` because a known CI runner edge case causes the NEON path to fail on macOS+simd CI. The root cause may be a QEMU quirk or GitHub Actions runner issue rather than a codec bug (tracked in iOpenPod#140). macOS ARM users still get correct output via the scalar fallback — correctness is unaffected, only throughput.
+NEON dispatch on macOS aarch64 was previously gated behind `#[cfg(not(target_os = "macos"))]` due to a BRGA vs BGRA channel-ordering bug in the `vzip_s16` interleave (green and red channels swapped). Fixed in v1.9.3 — confirmed by ARM64 CI run on ubuntu-24.04-arm with all 581 tests passing. macOS ARM now uses NEON acceleration like Linux ARM.
 
 ### RGB565/RGB555: No hand-written SIMD
 
@@ -90,13 +90,13 @@ Benchmarking showed hand-written SSE2/AVX2 RGB565→BGRA was 34× slower than LL
 
 ## Alternatives Considered
 
-| Approach | Why rejected |
-|----------|-------------|
-| **Runtime CPUID dispatch only** (no feature gate) | Requires all SIMD code to be compiled on all platforms, increasing binary size and forcing `#[cfg]` on every platform-specific import. Feature gate lets non-SIMD users opt out entirely. |
-| **Pure runtime dispatch via `core::arch`** without feature gates | Would compile NEON on x86 and SSE2 on ARM, producing dead code that `rustc` cannot always eliminate. Feature gates prevent compilation entirely on irrelevant targets. |
-| **Auto-vectorization for all decoders** | LLVM auto-vectorizes simple pixel unpack (RGB565) well but struggles with YUV BT.601 arithmetic (interleaved multiply-add-shuffle). Hand-written SIMD is 4–8× faster for YUV. |
-| **C# style per-file ISA splitting** | Each decoder file would need its own SIMD+scalar variants. Consolidating all SIMD in `simd/` makes audits simpler and ISA-specific logic easier to maintain. |
-| **`cfg!(target_feature)` at compile time** | LTO or cross-compilation may not resolve correctly. Runtime `is_x86_feature_detected!` is the documented approach for portable SIMD dispatch. |
+| Approach                                                         | Why rejected                                                                                                                                                                              |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Runtime CPUID dispatch only** (no feature gate)                | Requires all SIMD code to be compiled on all platforms, increasing binary size and forcing `#[cfg]` on every platform-specific import. Feature gate lets non-SIMD users opt out entirely. |
+| **Pure runtime dispatch via `core::arch`** without feature gates | Would compile NEON on x86 and SSE2 on ARM, producing dead code that `rustc` cannot always eliminate. Feature gates prevent compilation entirely on irrelevant targets.                    |
+| **Auto-vectorization for all decoders**                          | LLVM auto-vectorizes simple pixel unpack (RGB565) well but struggles with YUV BT.601 arithmetic (interleaved multiply-add-shuffle). Hand-written SIMD is 4–8× faster for YUV.             |
+| **C# style per-file ISA splitting**                              | Each decoder file would need its own SIMD+scalar variants. Consolidating all SIMD in `simd/` makes audits simpler and ISA-specific logic easier to maintain.                              |
+| **`cfg!(target_feature)` at compile time**                       | LTO or cross-compilation may not resolve correctly. Runtime `is_x86_feature_detected!` is the documented approach for portable SIMD dispatch.                                             |
 
 ## References
 
