@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.9.4] - 2026-07-16
+
+### Fixed
+
+- **NEON BRGA interleave bug**: `vzip_s16` produced wrong channel order (red/green swapped) in `yuv420_quad_to_bgra_neon`, `uyvy_double_quad_to_bgra_neon`, and `clcl_row_to_bgra_neon`. Fixed pairing to `vzip_s16(b, r)` + `vzip_s16(g, a)`.
+- **macOS ARM NEON enabled**: The `not(target_os = "macos")` gate removed from all 19 dispatch points after ARM64 CI confirmed all 581 tests pass. Apple Silicon now gets full NEON acceleration.
+- **ADR-0001 updated**: macOS ARM NEON gating section re-written to reflect the fix.
+
 ## [1.10.0-enterprise] — 2026-07-13
 
 ### Added
@@ -488,8 +496,8 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.3...HEAD
-[1.9.3]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.0...v1.9.3
+[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.4...HEAD
+[1.9.4]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.3...v1.9.4
 [1.9.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.6.0...v1.9.0
 [1.6.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.4.0...v1.5.0
