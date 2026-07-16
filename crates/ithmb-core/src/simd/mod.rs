@@ -5,7 +5,7 @@
 //! on all architectures.
 //!
 //! SIMD targets are selected at compile time with appropriate runtime dispatch.
-#![allow(unsafe_code)]
+#![allow(unsafe_code, unreachable_code, dead_code)]
 #![allow(clippy::cast_ptr_alignment, clippy::cast_possible_truncation, clippy::similar_names)]
 
 // ---------------------------------------------------------------------------
@@ -21,7 +21,10 @@ mod yuv;
 
 // Scalar fallbacks — always available (used when SIMD is off or for
 // remainder handling in NEON routines).
-#[cfg_attr(any(target_arch = "x86_64", target_arch = "x86"), allow(dead_code))]
+#[cfg_attr(
+    any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"),
+    allow(dead_code)
+)]
 mod scalar;
 
 #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
