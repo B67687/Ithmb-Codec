@@ -8,10 +8,10 @@
 
 pub mod rng;
 
+use ithmb_core::DecodedImage;
 use ithmb_core::enc::encode_bgra;
 use ithmb_core::pipeline::decode_with_profile;
 use ithmb_core::profile::{Encoding, Profile};
-use ithmb_core::DecodedImage;
 use std::sync::atomic::AtomicBool;
 
 // ---------------------------------------------------------------------------

@@ -20,13 +20,13 @@
 
 use std::sync::atomic::AtomicBool;
 
+use ithmb_core::DecodedImage;
 use ithmb_core::enc::encode_bgra;
-use ithmb_core::photodb::builder::{try_build_photodb, BuildEntry};
-use ithmb_core::photodb::parser::{try_parse_photodb, PhotoDbEntry, PhotoDbEntryKind};
+use ithmb_core::photodb::builder::{BuildEntry, try_build_photodb};
+use ithmb_core::photodb::parser::{PhotoDbEntry, PhotoDbEntryKind, try_parse_photodb};
 use ithmb_core::pipeline::{decode_with_profile, open_ithmb};
 use ithmb_core::profile::Profile;
 use ithmb_core::profile_db::ProfileDb;
-use ithmb_core::DecodedImage;
 
 // ---------------------------------------------------------------------------
 // Helpers

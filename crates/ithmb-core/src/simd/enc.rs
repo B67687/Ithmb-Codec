@@ -154,8 +154,8 @@ unsafe fn encode_rgb565_4px_ssse3(bgra_quad: &[u8; 16]) -> [u8; 8] {
 #[allow(unsafe_op_in_unsafe_fn)]
 unsafe fn encode_rgb565_8px_avx2(bgra_oct: &[u8; 32]) -> [u8; 16] {
     use core::arch::x86_64::{
-        _mm256_extracti128_si256, _mm256_loadu_si256, _mm_or_si128, _mm_set_epi8, _mm_setzero_si128, _mm_shuffle_epi8,
-        _mm_slli_epi16, _mm_srli_epi16, _mm_storeu_si128, _mm_unpacklo_epi8,
+        _mm_or_si128, _mm_set_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_slli_epi16, _mm_srli_epi16,
+        _mm_storeu_si128, _mm_unpacklo_epi8, _mm256_extracti128_si256, _mm256_loadu_si256,
     };
 
     let v = _mm256_loadu_si256(bgra_oct.as_ptr().cast::<__m256i>());
@@ -305,8 +305,8 @@ unsafe fn encode_rgb555_4px_ssse3(bgra_quad: &[u8; 16], swap_rgb: bool) -> [u8; 
 #[allow(unsafe_op_in_unsafe_fn)]
 unsafe fn encode_rgb555_8px_avx2(bgra_oct: &[u8; 32], swap_rgb: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        _mm256_extracti128_si256, _mm256_loadu_si256, _mm_or_si128, _mm_set_epi8, _mm_setzero_si128, _mm_shuffle_epi8,
-        _mm_slli_epi16, _mm_srli_epi16, _mm_storeu_si128, _mm_unpacklo_epi8,
+        _mm_or_si128, _mm_set_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_slli_epi16, _mm_srli_epi16,
+        _mm_storeu_si128, _mm_unpacklo_epi8, _mm256_extracti128_si256, _mm256_loadu_si256,
     };
 
     let v = _mm256_loadu_si256(bgra_oct.as_ptr().cast::<__m256i>());

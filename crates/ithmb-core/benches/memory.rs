@@ -341,18 +341,8 @@ bench_decoder!(
     |len| make_profile(Encoding::Ycbcr420, len),
     ycbcr420::decode
 );
-bench_decoder!(
-    decode_clcl,
-    enc::encode_clcl,
-    make_profile_clcl,
-    clcl::decode
-);
-bench_decoder!(
-    decode_cl,
-    enc::encode_cl,
-    make_profile_cl,
-    cl::decode
-);
+bench_decoder!(decode_clcl, enc::encode_clcl, make_profile_clcl, clcl::decode);
+bench_decoder!(decode_cl, enc::encode_cl, make_profile_cl, cl::decode);
 
 // JPEG uses a different fixture path (no encoder, synthetic JPEG via `image` crate).
 #[divan::bench]
