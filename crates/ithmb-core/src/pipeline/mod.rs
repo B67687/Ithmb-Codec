@@ -84,10 +84,21 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
 
     let profile = if is_jpeg_stream {
         db.get(prefix).cloned().unwrap_or_else(fallback_jpeg_profile)
+    } else if let Some(p) = db.get(prefix) {
+        p.clone()
     } else {
-        db.get(prefix)
-            .ok_or_else(|| DecodeError::Unsupported(format!("unknown format prefix {prefix}")))?
-            .clone()
+        // Fallback: scan for embedded JPEG within the buffer.
+        // Many real-world .ithmb files have unknown format prefixes but contain
+        // a full JPEG stream embedded in the pixel data area.
+        match scan_for_embedded_jpeg(src) {
+            Some(jpeg_data) => {
+                let jp = fallback_jpeg_profile();
+                return decode_with_profile(jpeg_data, &jp, canceled);
+            }
+            None => {
+                return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
+            }
+        }
     };
 
     decode_with_profile(src, &profile, canceled)
@@ -295,6 +306,17 @@ fn rotate_270_cw(img: DecodedImage) -> DecodedImage {
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
+
+/// Scan the buffer for an embedded JPEG stream (SOI to EOI).
+///
+/// Returns the JPEG data slice if found. Some .ithmb files have unregistered
+/// format prefixes but contain a complete JPEG stream within the pixel data.
+fn scan_for_embedded_jpeg(src: &[u8]) -> Option<&[u8]> {
+    let soi = src.windows(2).position(|w| w == b"\xff\xd8")?;
+    let after_soi = &src[soi + 2..];
+    let eoi = after_soi.windows(2).position(|w| w == b"\xff\xd9")?;
+    Some(&src[soi..=soi + 2 + eoi + 1])
+}
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
