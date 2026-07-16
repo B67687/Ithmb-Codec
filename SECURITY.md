@@ -23,7 +23,7 @@ If you discover a security issue in any of our projects — especially the Rust 
 
 ### Rust codec
 
-- Memory-safe by Rust's guarantees. The only unsafe code is in SIMD intrinsics (audited, tested).
+    - Memory-safe by Rust's guarantees. The only unsafe code is in SIMD intrinsics and C FFI bindings in c_api.rs (audited, tested).
 
 ## Acknowledgments
 

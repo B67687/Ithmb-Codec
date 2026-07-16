@@ -9,13 +9,13 @@ homepage = "https://github.com/B67687/Ithmb-Codec"
 documentation = "https://docs.rs/ithmb-core"
 readme = "README.md"
 keywords = ["ithmb", "thumbnail", "apple", "imageglass", "image"]
-categories = ["multimedia::images", "multimedia::video"]
+categories = ["multimedia::images"]
 
 [lints]
 workspace = true
 
 [lib]
-crate-type = ["lib", "cdylib"]
+crate-type = ["lib"]
 
 [dependencies]
 jpeg-decoder = "0.3"

@@ -37,12 +37,18 @@ impl Encoding {
     }
 }
 
+impl std::fmt::Display for Encoding {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.to_display_string())
+    }
+}
+
 /// Decoding profile for a raw .ithmb frame format.
 ///
 /// Maps to `IthmbVariantProfile` in the C# implementation. Each field that
 /// defaults to `false`/`0`/`None` can be omitted — the decoder uses the
 /// standard behaviour unless overridden.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Profile {
     /// Big-endian 4-byte prefix identifying this format.

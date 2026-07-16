@@ -26,7 +26,6 @@ jobs:
             exit 1
           fi
       - name: cargo publish --dry-run -p ithmb-core
-        continue-on-error: true
         run: cargo publish --dry-run -p ithmb-core
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

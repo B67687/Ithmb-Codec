@@ -13,7 +13,7 @@ Ithmb-Codec/
 ├── crates/
 │   ├── ithmb-core/       # Core library (lib) — published to crates.io
 │   │   └── src/
-│   │       ├── pipeline/      # Decode entry points (open_ithmb, decode_bytes)
+│   │       ├── pipeline/      # Decode entry points (open_ithmb, decode_ithmb, decode_with_profile)
 │   │       ├── profile.rs     # Profile type + lookup
 │   │       ├── profile_db.rs  # Static profile database (54 profiles)
 │   │       ├── photodb/       # PhotoDB/ArtworkDB chunk parser
@@ -59,6 +59,7 @@ Ithmb-Codec/
 ## Test Patterns
 
 Run in this order:
+
 ```bash
 cargo check                     # Catches 90% of errors (~5s)
 cargo clippy --fix --allow-dirty  # Auto-fix mechanical lints
@@ -68,6 +69,7 @@ cargo test --workspace          # Full suite (~40-60s)
 Test files use `#![allow(clippy::pedantic, clippy::unwrap_used)]` (test files are exempt from production strictness).
 
 Key test categories (see STATS.md for live counts):
+
 - **Golden vectors**: Reference `.ithmb` → expected `.bin` byte-for-byte comparison
 - **Exhaustive roundtrip**: All 65,536 RGB565 values, all 32,768 RGB555 values
 - **SIMD tail**: 42 boundary widths (1..65) verifying SIMD matches scalar
@@ -96,6 +98,7 @@ maturin develop --release -m pymod/Cargo.toml  # Python bindings
 ## Key Decisions
 
 # - **SIMD compiled unconditionally** — not default. SSE2/AVX2 for x64, NEON for ARM64 (macOS ARM uses scalar fallback per STANDARDS.md)
+
 - **C ABI plugin in separate repo** — [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin)
 - **54 built-in profiles** — embedded in binary, optionally overridable via external `profiles.json`
 - **File size guard**: 8 MB max (ADR-0005), covers all known real-world files with 10× margin

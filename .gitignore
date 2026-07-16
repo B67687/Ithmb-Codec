@@ -40,5 +40,4 @@ target/
 mcp/
 .ruff_cache/
 *.bak
-pymod/.pytest_cache/
 *.ithmb

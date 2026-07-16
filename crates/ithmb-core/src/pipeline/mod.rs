@@ -180,7 +180,7 @@ pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool)
 /// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig).
 ///
 /// Like [`decode_with_profile`] but accepts a [`DecodeConfig`](crate::config::DecodeConfig) for runtime
-///
+/// configuration of parameters such as trailing padding tolerance and file-size limits.
 /// # Errors
 ///
 /// Same as ``decode_with_profile``.
@@ -323,7 +323,8 @@ fn apply_crop(img: DecodedImage, profile: &Profile) -> DecodedImage {
         return img;
     }
 
-    let mut cropped = Vec::with_capacity(cw * ch * 4);
+    let cap = cw.checked_mul(ch).and_then(|v| v.checked_mul(4)).unwrap_or(0);
+    let mut cropped = Vec::with_capacity(cap);
     for y in cy..cy + ch {
         let row_start = (y * iw + cx) * 4;
         cropped.extend_from_slice(&img.data[row_start..row_start + cw * 4]);
@@ -354,7 +355,8 @@ fn apply_rotation(img: DecodedImage, profile: &Profile) -> DecodedImage {
 fn rotate_90_cw(img: DecodedImage) -> DecodedImage {
     let w = img.width as usize;
     let h = img.height as usize;
-    let mut rotated = Vec::with_capacity(w * h * 4);
+    let cap = w.checked_mul(h).and_then(|v| v.checked_mul(4)).unwrap_or(0);
+    let mut rotated = Vec::with_capacity(cap);
 
     for x in 0..w {
         for y in (0..h).rev() {
@@ -392,7 +394,7 @@ fn rotate_180(img: DecodedImage) -> DecodedImage {
 fn rotate_270_cw(img: DecodedImage) -> DecodedImage {
     let w = img.width as usize;
     let h = img.height as usize;
-    let total = w * h * 4;
+    let total = w.checked_mul(h).and_then(|v| v.checked_mul(4)).unwrap_or(0);
     let mut rotated = vec![0u8; total];
 
     for y in 0..h {

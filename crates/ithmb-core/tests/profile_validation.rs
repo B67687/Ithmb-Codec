@@ -186,3 +186,17 @@ fn validate_all_builtin_profiles() {
         errors.join("\n  "),
     );
 }
+
+#[test]
+fn re_exports_are_accessible() {
+    // Verify that root-level re-exports from lib.rs compile and work.
+    let profiles = ithmb_core::built_in_profiles();
+    assert!(!profiles.is_empty(), "built_in_profiles() should return profiles");
+    // Verify built_in_profiles returns profiles with expected structure.
+    let first = &profiles[0];
+    let _prefix = first.prefix;
+    // PhotoDbEntry type is accessible at the crate root.
+    let _type_check: ithmb_core::PhotoDbEntry;
+    // PhotoDbMetadata type is accessible at the crate root.
+    let _meta_check: ithmb_core::PhotoDbMetadata;
+}

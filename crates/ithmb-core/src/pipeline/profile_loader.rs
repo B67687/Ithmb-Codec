@@ -17,7 +17,7 @@ static PROFILE_DB: OnceLock<ProfileDb> = OnceLock::new();
 /// Returns a reference to the global profile database, loading it on first call.
 pub(crate) fn get_db() -> &'static ProfileDb {
     PROFILE_DB.get_or_init(|| {
-        let db = ProfileDb::load_builtin().expect("built-in profile DB is valid");
+        let db = ProfileDb::load_builtin().expect("built-in profiles.json is corrupt — this is a bug in the ithmb-core binary, please file an issue at https://github.com/B67687/Ithmb-Codec/issues");
         #[cfg(feature = "logging")]
         info!("profile DB loaded: {} profiles", db.all().len());
         db

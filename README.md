@@ -73,7 +73,7 @@ cargo build --release
 ./target/release/ithmb --open PhotoDB
 
 # Or use from Python
-pip install ithmb-python  # (not yet published — build from pymod/ instead)
+pip install ithmb-python  # requires Rust toolchain — or download wheel from GitHub Releases
 ```
 
 For detailed build instructions see [Build from source](#build-from-source).
@@ -178,12 +178,12 @@ cargo build --release
 
 The workspace produces four artifacts:
 
-| Crate          | Artifact                              | Install                                            |
-| -------------- | ------------------------------------- | -------------------------------------------------- |
-| `ithmb-core`   | `libithmb_core.rlib` (static library) | `cargo add ithmb-core` (crates.io)                 |
-| `ithmb-cli`    | `ithmb` CLI binary                    | `cargo install ithmb-cli` (crates.io)              |
-| `ithmb-python` | `libithmb_python.{so,dylib,pyd}`      | `pip install pymod/` (or crates.io when published) |
-| `ithmb-gen`    | `ithmb-gen` sample generator binary   | `cargo install --path crates/ithmb-gen`            |
+| Crate          | Artifact                              | Install                                       |
+| -------------- | ------------------------------------- | --------------------------------------------- |
+| `ithmb-core`   | `libithmb_core.rlib` (static library) | `cargo add ithmb-core` (crates.io)            |
+| `ithmb-cli`    | `ithmb` CLI binary                    | `cargo install ithmb-cli` (crates.io)         |
+| `ithmb-python` | `libithmb_python.{so,dylib,pyd}`      | `pip install ithmb-python` (PyPI via maturin) |
+| `ithmb-gen`    | `ithmb-gen` sample generator binary   | `cargo install --path crates/ithmb-gen`       |
 
 A separate C ABI shared library for ImageGlass integration is maintained at [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
 
@@ -367,7 +367,7 @@ Measured on AMD Ryzen AI 9 HX 370 . Same order across both Rust and C#.
 | Reordered RGB555  | —       | 632 µs (512×512) |
 
 See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full results (all 4 sizes, encoder throughput, methodology).
-With ``, Rust is faster than the C# original on 5 of 8 decoders (see BENCHMARKS.md for full comparison).
+With SIMD, Rust is faster than the C# original on 5 of 8 decoders (see BENCHMARKS.md for full comparison).
 
 ### Performance Limits
 
