@@ -8,12 +8,12 @@
 )]
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
 pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi32, _mm_cvtsi32_si128, _mm_set_epi32, _mm_setzero_si128, _mm_storeu_si128, _mm_sub_epi32,
-        _mm_unpacklo_epi8, _mm_unpacklo_epi16,
+        _mm_unpacklo_epi16, _mm_unpacklo_epi8,
     };
 
     let mut rc_arr = [0i32; 4];
@@ -61,7 +61,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
 }
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
@@ -127,15 +127,15 @@ pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     }
 }
 
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse4.1")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
 pub(crate) unsafe fn cl_quad_to_bgra_sse41(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi32, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_max_epi32, _mm_min_epi32, _mm_packus_epi16,
-        _mm_packus_epi32, _mm_set_epi32, _mm_set1_epi16, _mm_set1_epi32, _mm_setzero_si128, _mm_storeu_si128,
-        _mm_sub_epi32, _mm_unpacklo_epi8, _mm_unpacklo_epi16,
+        _mm_packus_epi32, _mm_set1_epi16, _mm_set1_epi32, _mm_set_epi32, _mm_setzero_si128, _mm_storeu_si128,
+        _mm_sub_epi32, _mm_unpacklo_epi16, _mm_unpacklo_epi8,
     };
 
     // ---- Precompute per-pixel chroma contributions ----
@@ -195,16 +195,16 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse41(quad: &[u8; 8]) -> [u8; 16] {
 }
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE4.1+SSSE3 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "sse4.1,ssse3")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]
 pub(crate) unsafe fn cl_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi32, _mm_and_si128, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_max_epi32,
-        _mm_min_epi32, _mm_mullo_epi32, _mm_packus_epi16, _mm_packus_epi32, _mm_set1_epi8, _mm_set1_epi16,
-        _mm_set1_epi32, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srai_epi32, _mm_srli_epi16,
-        _mm_storeu_si128, _mm_sub_epi32, _mm_unpacklo_epi8, _mm_unpacklo_epi16,
+        _mm_min_epi32, _mm_mullo_epi32, _mm_packus_epi16, _mm_packus_epi32, _mm_set1_epi16, _mm_set1_epi32,
+        _mm_set1_epi8, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srai_epi32, _mm_srli_epi16,
+        _mm_storeu_si128, _mm_sub_epi32, _mm_unpacklo_epi16, _mm_unpacklo_epi8,
     };
 
     let n_pixels = src.len() / 2;
@@ -452,7 +452,7 @@ pub(crate) unsafe fn cl_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
 /// # Safety
 ///
 /// Must only be called on `x86`/`x86_64` where SSSE3 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn)]
@@ -492,15 +492,15 @@ pub(crate) unsafe fn cl_quad_to_bgra_ssse3(quad: &[u8; 8]) -> [u8; 16] {
 }
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
 pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_storeu_si128, _mm256_add_epi32, _mm256_and_si256,
-        _mm256_broadcastsi128_si256, _mm256_cvtepu8_epi32, _mm256_extracti128_si256, _mm256_set1_epi8,
-        _mm256_setr_epi32, _mm256_shuffle_epi8, _mm256_srli_epi16, _mm256_sub_epi32,
+        __m128i, _mm256_add_epi32, _mm256_and_si256, _mm256_broadcastsi128_si256, _mm256_cvtepu8_epi32,
+        _mm256_extracti128_si256, _mm256_set1_epi8, _mm256_setr_epi32, _mm256_shuffle_epi8, _mm256_srli_epi16,
+        _mm256_sub_epi32, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_storeu_si128,
     };
 
     // ---- pshufb nibble expansion (*17) ----
@@ -586,20 +586,20 @@ pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
 // ---------------------------------------------------------------------------
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]
 pub(crate) unsafe fn cl_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
-        __m128i, __m256i, _mm_add_epi32, _mm_and_si128, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_loadl_epi64,
-        _mm_max_epi32, _mm_min_epi32, _mm_mullo_epi32, _mm_packus_epi16, _mm_packus_epi32, _mm_set1_epi8,
-        _mm_set1_epi16, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srai_epi32, _mm_srli_epi16,
-        _mm_srli_si128, _mm_storeu_si128, _mm_sub_epi32, _mm_unpacklo_epi8, _mm_unpacklo_epi16, _mm256_add_epi32,
-        _mm256_castsi256_si128, _mm256_cvtepu8_epi32, _mm256_extracti128_si256, _mm256_max_epi32, _mm256_min_epi32,
-        _mm256_mullo_epi32, _mm256_packus_epi16, _mm256_packus_epi32, _mm256_set_m128i, _mm256_set1_epi16,
-        _mm256_set1_epi32, _mm256_setzero_si256, _mm256_srai_epi32, _mm256_storeu_si256, _mm256_sub_epi32,
-        _mm256_unpacklo_epi16,
+        __m128i, __m256i, _mm256_add_epi32, _mm256_castsi256_si128, _mm256_cvtepu8_epi32, _mm256_extracti128_si256,
+        _mm256_max_epi32, _mm256_min_epi32, _mm256_mullo_epi32, _mm256_packus_epi16, _mm256_packus_epi32,
+        _mm256_set1_epi16, _mm256_set1_epi32, _mm256_set_m128i, _mm256_setzero_si256, _mm256_srai_epi32,
+        _mm256_storeu_si256, _mm256_sub_epi32, _mm256_unpacklo_epi16, _mm_add_epi32, _mm_and_si128, _mm_cvtepu8_epi32,
+        _mm_cvtsi32_si128, _mm_loadl_epi64, _mm_max_epi32, _mm_min_epi32, _mm_mullo_epi32, _mm_packus_epi16,
+        _mm_packus_epi32, _mm_set1_epi16, _mm_set1_epi8, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8,
+        _mm_srai_epi32, _mm_srli_epi16, _mm_srli_si128, _mm_storeu_si128, _mm_sub_epi32, _mm_unpacklo_epi16,
+        _mm_unpacklo_epi8,
     };
 
     let n_pixels = src.len() / 2;

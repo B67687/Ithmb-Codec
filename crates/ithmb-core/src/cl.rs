@@ -47,7 +47,8 @@ use std::sync::atomic::AtomicBool;
 ///
 /// Never panics.
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "CL dimensions must be positive", 2)?;
+    let (data, w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "CL dimensions must be positive", 2)?;
+    let src = &*data;
     let pixel_count = w * h;
     let expected = pixel_count * 2;
     let mut dst = vec![0u8; pixel_count * 4];
@@ -118,13 +119,13 @@ mod tests {
 
     #[test]
     fn buffer_too_short_returns_error() {
-        let profile = make_profile(10, 10);
-        // 10*10*2 = 200 bytes needed, only 10 provided
+        let profile = make_profile(14, 10);
+        // 14*10*2 = 280 bytes needed, deficit=270 > 256 → still BufferTooShort
         let result = decode(&[0u8; 10], &profile, &AtomicBool::new(false));
         assert!(matches!(
             result,
             Err(DecodeError::BufferTooShort {
-                expected: 200,
+                expected: 280,
                 actual: 10
             })
         ));

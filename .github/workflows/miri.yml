@@ -2,7 +2,7 @@
 name: miri
 on:
   schedule:
-    - cron: "0 6 * * 1"  # weekly Monday 06:00 UTC
+    - cron: "0 6 * * 1" # weekly Monday 06:00 UTC
   workflow_dispatch:
 
 permissions: { contents: read }
@@ -21,8 +21,7 @@ jobs:
           cache-key: "miri-${{ hashFiles('rust-toolchain.toml') }}"
       - name: cargo miri test (strict provenance + tree borrows)
         run: |
-          cargo miri test --workspace --features simd,c --all-targets
-          # 2>&1 | tail -20
+          cargo miri test --workspace --all-features --all-targets
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-permissive-provenance"
           RUST_BACKTRACE: 1

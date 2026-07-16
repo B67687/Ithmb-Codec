@@ -24,7 +24,7 @@
 
 use crate::error::DecodeError;
 use crate::photodb::types::{
-    MHBA, MHFD, MHIA, MHIF, MHII, MHL, MHNI, MHOD, MHSD, is_known_magic, read_i32, read_u32, read_u32_be, read_u32_le,
+    is_known_magic, read_i32, read_u32, read_u32_be, read_u32_le, MHBA, MHFD, MHIA, MHIF, MHII, MHL, MHNI, MHOD, MHSD,
 };
 use crate::profile::Profile;
 use crate::profile_db::ProfileDb;
@@ -234,7 +234,15 @@ fn integrity_walk_tree(
                     integrity_walk_tree(data, children_start, children_end, depth + 1, little_endian, state);
                 }
             }
-            MHII | MHIF | MHOD => {
+            MHII => {
+                // Descend into MHII children at +12 (past the 12-byte header).
+                let children_start = pos + 12;
+                let children_end = chunk_end.min(end);
+                if children_start < children_end {
+                    integrity_walk_tree(data, children_start, children_end, depth + 1, little_endian, state);
+                }
+            }
+            MHIF | MHOD => {
                 // Leaf node — total_len at +8 already used for chunk_end, or skip.
             }
             MHBA | MHIA => {
@@ -290,6 +298,7 @@ fn write_u32_le(buf: &mut [u8], offset: usize, value: u32) {
     buf[offset + 3] = ((value >> 24) & 0xff) as u8;
 }
 
+#[cfg(test)]
 fn write_i32_le(buf: &mut [u8], offset: usize, value: i32) {
     write_u32_le(buf, offset, value as u32);
 }
@@ -297,6 +306,38 @@ fn write_i32_le(buf: &mut [u8], offset: usize, value: i32) {
 fn write_u16_le(buf: &mut [u8], offset: usize, value: u16) {
     buf[offset] = (value & 0xff) as u8;
     buf[offset + 1] = ((value >> 8) & 0xff) as u8;
+}
+
+// ---------------------------------------------------------------------------
+// Endian-aware writers (dispatch LE/BE)
+// ---------------------------------------------------------------------------
+
+fn write_u32(buf: &mut [u8], offset: usize, value: u32, big_endian: bool) {
+    if big_endian {
+        write_u32_be(buf, offset, value);
+    } else {
+        write_u32_le(buf, offset, value);
+    }
+}
+
+fn write_u32_be(buf: &mut [u8], offset: usize, value: u32) {
+    buf[offset] = ((value >> 24) & 0xff) as u8;
+    buf[offset + 1] = ((value >> 16) & 0xff) as u8;
+    buf[offset + 2] = ((value >> 8) & 0xff) as u8;
+    buf[offset + 3] = (value & 0xff) as u8;
+}
+
+fn write_i32(buf: &mut [u8], offset: usize, value: i32, big_endian: bool) {
+    write_u32(buf, offset, value as u32, big_endian);
+}
+
+fn write_u16(buf: &mut [u8], offset: usize, value: u16, big_endian: bool) {
+    if big_endian {
+        buf[offset] = ((value >> 8) & 0xff) as u8;
+        buf[offset + 1] = (value & 0xff) as u8;
+    } else {
+        write_u16_le(buf, offset, value);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -464,7 +505,7 @@ pub fn integrity_check_photodb(data: &[u8]) -> Vec<String> {
 /// The resulting binary has the layout:
 ///
 /// ```text
-/// [MHFD 12] [MHSD 16] [MHNI(0) .. MHNI(N-1)] [pixels(0) .. pixels(N-1)]
+/// [MHFD 12] [MHSD 16] [MHL 12] [MHII(0)+MHNI(0) .. MHII(N-1)+MHNI(N-1)] [pixels(0) .. pixels(N-1)]
 /// ```
 ///
 /// # Errors
@@ -483,6 +524,7 @@ pub fn try_build_photodb(
     entries: &[BuildEntry],
     mhni_header_size: i32,
     mhni_padding_size: i32,
+    big_endian: bool,
 ) -> Result<Vec<u8>, DecodeError> {
     // 1. Validate inputs.
     if entries.is_empty() {
@@ -495,6 +537,8 @@ pub fn try_build_photodb(
 
     let mhni_total_len = mhni_header_size + mhni_padding_size;
     let mhni_total_len_usize = mhni_total_len as usize;
+    let mhii_total_len = 12 + mhni_total_len;
+    let mhii_total_len_usize = mhii_total_len as usize;
 
     // Resolve profiles and validate data lengths.
     let mut profiles: Vec<&Profile> = Vec::with_capacity(entries.len());
@@ -515,8 +559,12 @@ pub fn try_build_photodb(
     }
 
     // 2. Calculate layout.
+    //     MHL_total = 12 + N * (12 + mhni_total_len)
+    //     MHSD_header_size = 16 + MHL_total + total_pixel_data
+    //     total_size = 12 (MHFD) + MHSD_header_size
     let n = entries.len();
-    let mhsd_header_size = 16 + (n * mhni_total_len_usize) + entries.iter().map(|e| e.data.len()).sum::<usize>();
+    let mhl_total = 12 + n * mhii_total_len as usize;
+    let mhsd_header_size = 16 + mhl_total + entries.iter().map(|e| e.data.len()).sum::<usize>();
     let total_size = 12 + mhsd_header_size;
 
     let mut buf = vec![0u8; total_size];
@@ -524,55 +572,56 @@ pub fn try_build_photodb(
     // 3. Write MHFD header (12 bytes).
     //    magic = "mhfd", header_size = 12, entry_count = 1
     buf[0..4].copy_from_slice(b"mhfd");
-    write_u32_le(&mut buf, 4, 12);
-    write_u32_le(&mut buf, 8, 1); // one MHSD section
+    write_u32(&mut buf, 4, 12, big_endian);
+    write_u32(&mut buf, 8, 1, big_endian); // one MHSD section
 
     // 4. Write MHSD header (16 bytes).
-    //    magic = "mhsd", header_size = 16 + N*mhniTotalLen + totalPixelData,
+    //    magic = "mhsd", header_size = 16 + MHL_total + totalPixelData,
     //    index = 0, recordType = 4 (thumbnails), entryCount = N
     let mhsd_offset = 12;
     buf[mhsd_offset..mhsd_offset + 4].copy_from_slice(b"mhsd");
-    write_u32_le(&mut buf, mhsd_offset + 4, mhsd_header_size as u32);
-    write_u16_le(&mut buf, mhsd_offset + 8, 0); // index
-    write_u16_le(&mut buf, mhsd_offset + 10, 4); // recordType = 4 (thumbnails)
-    write_u32_le(&mut buf, mhsd_offset + 12, n as u32); // entryCount
+    write_u32(&mut buf, mhsd_offset + 4, mhsd_header_size as u32, big_endian);
+    write_u16(&mut buf, mhsd_offset + 8, 0, big_endian); // index
+    write_u16(&mut buf, mhsd_offset + 10, 4, big_endian); // recordType = 4 (thumbnails)
+    write_u32(&mut buf, mhsd_offset + 12, n as u32, big_endian); // entryCount
 
-    // 5. Write MHNI entries.
-    let mhni_start = mhsd_offset + 16; // past MHSD header
-    let pixel_data_start = mhni_start + n * mhni_total_len_usize;
+    // 5. Write MHL header (12 bytes).
+    //    magic = "mhli", header_size = MHL_total, entryCount = N
+    let mhl_offset = mhsd_offset + 16;
+    buf[mhl_offset..mhl_offset + 4].copy_from_slice(b"mhli");
+    write_u32(&mut buf, mhl_offset + 4, mhl_total as u32, big_endian);
+    write_u32(&mut buf, mhl_offset + 8, n as u32, big_endian);
+
+    // 6. Write MHII + MHNI entries.
+    //    Each entry: MHII(12) + MHNI(mhni_total_len)
+    let mhii_start = mhl_offset + 12; // past MHL header
+    let pixel_data_start = mhii_start + n * mhii_total_len_usize;
 
     // Calculate running pixel data offset for each entry.
     let mut current_pixel_offset = pixel_data_start;
 
     for (i, (entry, profile)) in entries.iter().zip(profiles.iter()).enumerate() {
-        let mhni_pos = mhni_start + i * mhni_total_len_usize;
+        let mhii_pos = mhii_start + i * mhii_total_len_usize;
+        let mhni_pos = mhii_pos + 12;
 
-        // magic = "mhni"
+        // MHII header
+        buf[mhii_pos..mhii_pos + 4].copy_from_slice(b"mhii");
+        write_u32(&mut buf, mhii_pos + 4, 12, big_endian); // header_size = 12 (just the header)
+        write_u32(&mut buf, mhii_pos + 8, mhii_total_len as u32, big_endian); // total_len (MHII + MHNI)
+
+        // MHNI header
         buf[mhni_pos..mhni_pos + 4].copy_from_slice(b"mhni");
-        // headerSize
-        write_u32_le(&mut buf, mhni_pos + 4, mhni_header_size as u32);
-        // totalLen
-        write_u32_le(&mut buf, mhni_pos + 8, mhni_total_len as u32);
-        // entryIndex = 1
-        write_u32_le(&mut buf, mhni_pos + 12, 1);
-        // formatId
-        write_i32_le(&mut buf, mhni_pos + 16, entry.format_id);
-        // ithmbOffset — points to this entry's pixel data
-        write_i32_le(&mut buf, mhni_pos + 20, current_pixel_offset as i32);
-        // imageSize
-        let image_size = entry.data.len() as i32;
-        write_i32_le(&mut buf, mhni_pos + 24, image_size);
-        // padding u32 = 0
-        write_u32_le(&mut buf, mhni_pos + 28, 0);
-        // height (i16) — from profile
-        let height = profile.height as u16;
-        write_u16_le(&mut buf, mhni_pos + 32, height);
-        // width (i16) — from profile
-        let width = profile.width as u16;
-        write_u16_le(&mut buf, mhni_pos + 34, width);
-        // padding zeros (mhni_padding_size bytes)
-        // buf is already zero-filled, so this is already covered.
-        // But ensure the range is explicitly zeroed for clarity.
+        write_u32(&mut buf, mhni_pos + 4, mhni_header_size as u32, big_endian);
+        write_u32(&mut buf, mhni_pos + 8, mhni_total_len as u32, big_endian);
+        write_u32(&mut buf, mhni_pos + 12, 1, big_endian); // entryIndex
+        write_i32(&mut buf, mhni_pos + 16, entry.format_id, big_endian);
+        write_i32(&mut buf, mhni_pos + 20, current_pixel_offset as i32, big_endian);
+        write_i32(&mut buf, mhni_pos + 24, entry.data.len() as i32, big_endian);
+        write_u32(&mut buf, mhni_pos + 28, 0, big_endian); // padding
+        write_u16(&mut buf, mhni_pos + 32, profile.height as u16, big_endian);
+        write_u16(&mut buf, mhni_pos + 34, profile.width as u16, big_endian);
+
+        // padding zeros (buf is already zero-filled, but zero explicitly for clarity)
         let pad_start = mhni_pos + 36;
         let pad_end = mhni_pos + mhni_total_len_usize;
         for b in &mut buf[pad_start..pad_end] {
@@ -583,7 +632,7 @@ pub fn try_build_photodb(
         current_pixel_offset += entry.data.len();
     }
 
-    // 6. Write pixel data blocks.
+    // 7. Write pixel data blocks.
     let mut pixel_write_pos = pixel_data_start;
     for entry in entries {
         let data_len = entry.data.len();
@@ -610,7 +659,7 @@ mod tests {
 
     /// Helper: build and roundtrip-check a minimal PhotoDB.
     fn build_minimal_photodb(entries: &[BuildEntry], mhni_header_size: i32, mhni_padding_size: i32) -> Vec<u8> {
-        try_build_photodb(entries, mhni_header_size, mhni_padding_size).expect("build should succeed")
+        try_build_photodb(entries, mhni_header_size, mhni_padding_size, false).expect("build should succeed")
     }
 
     // -----------------------------------------------------------------------
@@ -619,7 +668,7 @@ mod tests {
 
     #[test]
     fn builder_empty_entries_fails() {
-        let result = try_build_photodb(&[], 36, 40);
+        let result = try_build_photodb(&[], 36, 40, false);
         assert!(result.is_err());
     }
 
@@ -629,7 +678,7 @@ mod tests {
             format_id: 9999,
             data: vec![0u8; 100],
         };
-        let result = try_build_photodb(&[entry], 36, 40);
+        let result = try_build_photodb(&[entry], 36, 40, false);
         assert!(result.is_err());
     }
 
@@ -640,7 +689,7 @@ mod tests {
             format_id: 1016,
             data: vec![0u8; 100], // wrong size
         };
-        let result = try_build_photodb(&[entry], 36, 40);
+        let result = try_build_photodb(&[entry], 36, 40, false);
         assert!(result.is_err());
     }
 
@@ -651,10 +700,16 @@ mod tests {
             format_id: 1016,
             data: make_pixel_data(39200),
         };
-        let result = try_build_photodb(&[entry], 36, 40).unwrap();
+        let result = try_build_photodb(&[entry], 36, 40, false).unwrap();
+
+        // New layout: MHFD(12) + MHSD(16) + MHL(12) + MHII(12) + MHNI(76) + pixels
+        // mhii_total_len = 12 + 76 = 88, mhl_total = 12 + 1*88 = 100
+        // pixel_data_start = 12 + 16 + 12 + 1*88 = 128
+        let mhii_total_len: usize = 12 + 76; // 88
+        let pixel_data_start: usize = 12 + 16 + 12 + mhii_total_len; // 128
 
         // Verify size
-        let expected_size = 12 + 16 + 76 + 39200;
+        let expected_size = pixel_data_start + 39200;
         assert_eq!(result.len(), expected_size);
 
         // Verify MHFD magic
@@ -668,18 +723,30 @@ mod tests {
         assert_eq!(read_u16_le(&result, 12 + 8), 0); // index
         assert_eq!(read_u16_le(&result, 12 + 10), 4); // recordType
 
-        // Verify MHNI entry
-        assert_eq!(&result[28..32], b"mhni");
-        assert_eq!(read_u32_le(&result, 28 + 4), 36); // headerSize
-        assert_eq!(read_u32_le(&result, 28 + 8), 76); // totalLen
-        assert_eq!(read_u32_le(&result, 28 + 12), 1); // entryIndex
-        assert_eq!(read_i32_le(&result, 28 + 16), 1016); // formatId
-        assert_eq!(read_i32_le(&result, 28 + 20), 28 + 76); // ithmbOffset
-        assert_eq!(read_i32_le(&result, 28 + 24), 39200); // imageSize
+        // Verify MHL header at offset 28
+        assert_eq!(&result[28..32], b"mhli");
+        assert_eq!(read_u32_le(&result, 28 + 4), 100); // header_size = MHL_total
+        assert_eq!(read_u32_le(&result, 28 + 8), 1); // entryCount
+
+        // Verify MHII header at offset 40
+        assert_eq!(&result[40..44], b"mhii");
+        assert_eq!(read_u32_le(&result, 40 + 4), 12); // header_size = 12
+        assert_eq!(read_u32_le(&result, 40 + 8), 88); // total_len (MHII + MHNI)
+
+        // Verify MHNI entry at offset 52
+        assert_eq!(&result[52..56], b"mhni");
+        assert_eq!(read_u32_le(&result, 52 + 4), 36); // headerSize
+        assert_eq!(read_u32_le(&result, 52 + 8), 76); // totalLen
+        assert_eq!(read_u32_le(&result, 52 + 12), 1); // entryIndex
+        assert_eq!(read_i32_le(&result, 52 + 16), 1016); // formatId
+        assert_eq!(read_i32_le(&result, 52 + 20), pixel_data_start as i32); // ithmbOffset
+        assert_eq!(read_i32_le(&result, 52 + 24), 39200); // imageSize
 
         // Verify pixel data
-        let pixel_start = 28 + 76;
-        assert_eq!(&result[pixel_start..pixel_start + 39200], &make_pixel_data(39200));
+        assert_eq!(
+            &result[pixel_data_start..pixel_data_start + 39200],
+            &make_pixel_data(39200)
+        );
     }
 
     #[test]
@@ -694,18 +761,23 @@ mod tests {
                 data: make_pixel_data(6160),
             },
         ];
-        let result = try_build_photodb(&entries, 36, 40).unwrap();
+        let result = try_build_photodb(&entries, 36, 40, false).unwrap();
 
-        let expected_size = 12 + 16 + 2 * 76 + 39200 + 6160;
+        // New layout with MHL→MHII→MHNI hierarchy
+        // mhii_total_len = 12 + 76 = 88, mhl_total = 12 + 2*88 = 188
+        // mhii_start = 12 + 16 + 12 = 40, pixel_data_start = 40 + 2*88 = 216
+        let mhii_total_len: usize = 12 + 76;
+        let pixel_data_start: usize = 12 + 16 + 12 + 2 * mhii_total_len; // 216
+
+        let expected_size = pixel_data_start + 39200 + 6160;
         assert_eq!(result.len(), expected_size);
 
-        // First entry ithmb_offset
-        let pixel_data_start = 12 + 16 + 2 * 76;
-        assert_eq!(read_i32_le(&result, 28 + 20), pixel_data_start as i32);
-        assert_eq!(read_i32_le(&result, 28 + 24), 39200);
+        // First entry: MHII at 40, MHNI at 52
+        assert_eq!(read_i32_le(&result, 52 + 20), pixel_data_start as i32);
+        assert_eq!(read_i32_le(&result, 52 + 24), 39200);
 
-        // Second entry ithmb_offset
-        let second_mhni = 28 + 76;
+        // Second entry: MHII at 40+88=128, MHNI at 140
+        let second_mhni = 40 + mhii_total_len + 12; // = 140
         assert_eq!(
             read_i32_le(&result, second_mhni + 20) as usize,
             pixel_data_start + 39200
@@ -728,14 +800,17 @@ mod tests {
             format_id: 1016,
             data: make_pixel_data(39200),
         };
-        let result = try_build_photodb(&[entry], 40, 50).unwrap();
+        let result = try_build_photodb(&[entry], 40, 50, false).unwrap();
 
+        // mhni_total_len = 90, mhii_total_len = 12 + 90 = 102, mhl_total = 12 + 102 = 114
+        // mhii_start = 40, pixel_data_start = 40 + 102 = 142
         let _ = 40 + 50;
-        assert_eq!(read_u32_le(&result, 28 + 4), 40); // headerSize
-        assert_eq!(read_u32_le(&result, 28 + 8), 90); // totalLen
-        // ithmbOffset should use the custom totalLen
-        let expected_off = 12 + 16 + 90; // MHFD + MHSD + one MHNI
-        assert_eq!(read_i32_le(&result, 28 + 20), expected_off);
+        // MHNI is at offset 52 inside the MHII at offset 40
+        assert_eq!(read_u32_le(&result, 52 + 4), 40); // headerSize
+        assert_eq!(read_u32_le(&result, 52 + 8), 90); // totalLen
+                                                      // ithmbOffset should use the custom totalLen
+        let expected_off = 12 + 16 + 12 + 102; // MHFD + MHSD + MHL + one MHII+MHNI
+        assert_eq!(read_i32_le(&result, 52 + 20), expected_off);
     }
 
     // -----------------------------------------------------------------------
@@ -801,8 +876,8 @@ mod tests {
             data: make_pixel_data(39200),
         };
         let mut data = build_minimal_photodb(&[entry], 36, 40);
-        // Overwrite format_id at offset 28+16=44 with an unknown value
-        write_i32_le(&mut data, 44, 9999);
+        // Overwrite format_id at offset 52+16=68 with an unknown value
+        write_i32_le(&mut data, 68, 9999);
         let issues = integrity_check_photodb(&data);
         let has_unknown = issues.iter().any(|i| i.contains("unknown format ID"));
         assert!(has_unknown, "Expected unknown format ID issue, got: {issues:?}");
@@ -837,10 +912,9 @@ mod tests {
             },
         ];
         let mut data = build_minimal_photodb(&entries, 36, 40);
-        // Second MHNI is at 28+76=104. Its ithmbOffset at +20=124.
-        // Tamper it to point into the first entry's data.
-        let first_entry_off = read_i32_le(&data, 28 + 20);
-        write_i32_le(&mut data, 104 + 20, first_entry_off + 100);
+        // First MHNI ithmbOffset is at 52+20=72, second MHNI at 140+20=160
+        let first_entry_off = read_i32_le(&data, 52 + 20);
+        write_i32_le(&mut data, 140 + 20, first_entry_off + 100);
         let issues = integrity_check_photodb(&data);
         let has_overlap = issues.iter().any(|i| i.contains("overlapping"));
         assert!(has_overlap, "Expected overlap issue, got: {issues:?}");

@@ -527,7 +527,7 @@ mod tests {
         assert_eq!(result.len(), planar.len());
 
         let half = h.div_ceil(2); // 2
-        // Expected order: row0 (even→0), row2 (even→4), row1 (odd→8)
+                                  // Expected order: row0 (even→0), row2 (even→4), row1 (odd→8)
         for y in 0..h {
             let src_off = y * row_stride;
             let expected_dst = if y % 2 == 0 {

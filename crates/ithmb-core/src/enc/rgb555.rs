@@ -8,11 +8,18 @@
 ///
 /// `big_endian` controls per-pixel byte order.
 #[must_use]
+#[allow(unreachable_code)]
 pub fn encode_rgb555(bgra: &[u8], w: i32, h: i32, big_endian: bool, swap_rgb: bool) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;
     let n = wu * hu;
     let mut out = vec![0u8; n * 2];
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    {
+        crate::simd::enc::bgra_to_rgb555(bgra, &mut out, big_endian, swap_rgb);
+        return out;
+    }
 
     for i in 0..n {
         let px = i * 4;
@@ -42,5 +49,6 @@ pub fn encode_rgb555(bgra: &[u8], w: i32, h: i32, big_endian: bool, swap_rgb: bo
         out[o] = bytes[0];
         out[o + 1] = bytes[1];
     }
+
     out
 }

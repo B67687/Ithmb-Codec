@@ -45,7 +45,7 @@ This project follows the standards documented in `docs/standards/STANDARDS.md` a
 - [ ] Clippy clean: `cargo clippy --workspace -- -D warnings`
 - [ ] File sizes within 250 SLOC: `bash scripts/check-file-sizes.sh`
 - [ ] Commit signed
-- [ ] (Nightly) Miri: `cargo +nightly miri test --features simd -p ithmb-core`
+- [ ] (Nightly) Miri: `cargo +nightly miri test -p ithmb-core --all-features`
 
 ## CI Workflows
 

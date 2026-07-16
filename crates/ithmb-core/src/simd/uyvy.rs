@@ -8,7 +8,7 @@
 )]
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
 pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
@@ -45,7 +45,7 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
 }
 
 /// SAFETY: see [`uyvy_quad_to_bgra_sse2`].
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
 pub(crate) unsafe fn uyvy_double_quad_to_bgra_sse2(quads: &[u8; 8]) -> [u8; 16] {
@@ -57,19 +57,19 @@ pub(crate) unsafe fn uyvy_double_quad_to_bgra_sse2(quads: &[u8; 8]) -> [u8; 16] 
     out
 }
 
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 // ---- UYVY row -> BGRA (SSE4.1) ----
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE4.1 / SSSE3 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "ssse3")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_possible_truncation, clippy::similar_names)]
 pub(crate) unsafe fn uyvy_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi16, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_madd_epi16, _mm_max_epi16, _mm_min_epi16,
-        _mm_packs_epi32, _mm_packus_epi16, _mm_set_epi8, _mm_set1_epi16, _mm_setzero_si128, _mm_shuffle_epi8,
-        _mm_srai_epi32, _mm_storeu_si128, _mm_sub_epi16, _mm_unpackhi_epi8, _mm_unpackhi_epi32, _mm_unpacklo_epi8,
-        _mm_unpacklo_epi32,
+        _mm_packs_epi32, _mm_packus_epi16, _mm_set1_epi16, _mm_set_epi8, _mm_setzero_si128, _mm_shuffle_epi8,
+        _mm_srai_epi32, _mm_storeu_si128, _mm_sub_epi16, _mm_unpackhi_epi32, _mm_unpackhi_epi8, _mm_unpacklo_epi32,
+        _mm_unpacklo_epi8,
     };
     let n = src.len();
     let full_end = (n / 16) * 16;
@@ -177,7 +177,7 @@ pub(crate) unsafe fn uyvy_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
 
 // ---- UYVY row -> BGRA (AVX2, 16 px/iter) ----
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(
     unsafe_op_in_unsafe_fn,
@@ -187,10 +187,11 @@ pub(crate) unsafe fn uyvy_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
 )]
 pub(crate) unsafe fn uyvy_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
-        __m128i, __m256i, _mm_set1_epi8, _mm_storeu_si128, _mm_unpackhi_epi8, _mm_unpacklo_epi8, _mm256_add_epi16,
-        _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_madd_epi16, _mm256_max_epi16, _mm256_min_epi16,
-        _mm256_packs_epi32, _mm256_packus_epi16, _mm256_set_epi8, _mm256_set1_epi16, _mm256_setzero_si256,
-        _mm256_shuffle_epi8, _mm256_srai_epi32, _mm256_sub_epi16, _mm256_unpackhi_epi32, _mm256_unpacklo_epi32,
+        __m128i, __m256i, _mm256_add_epi16, _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_madd_epi16,
+        _mm256_max_epi16, _mm256_min_epi16, _mm256_packs_epi32, _mm256_packus_epi16, _mm256_set1_epi16,
+        _mm256_set_epi8, _mm256_setzero_si256, _mm256_shuffle_epi8, _mm256_srai_epi32, _mm256_sub_epi16,
+        _mm256_unpackhi_epi32, _mm256_unpacklo_epi32, _mm_set1_epi8, _mm_storeu_si128, _mm_unpackhi_epi8,
+        _mm_unpacklo_epi8,
     };
     let n = src.len();
     let full_end = (n / 32) * 32;

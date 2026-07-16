@@ -2,8 +2,7 @@
 //!
 //! Each test generates a small BGRA image (width ∈ {2, 3, 7, 15, 16, 17}, height = 4),
 //! encodes it to the format's native byte layout, then decodes it through the
-//! per-format decoder — which dispatches to SIMD when `features = "simd"` and the
-//! target architecture supports it.
+//! per-format decoder — which dispatches to SIMD when the target architecture supports it.
 //!
 //! The chosen widths exercise SIMD batch-loop boundaries:
 //!
@@ -33,6 +32,7 @@ use ithmb_core::profile::{Encoding, Profile};
 use jpeg_decoder as _;
 #[cfg(feature = "cache")]
 use lru as _;
+use proptest as _;
 use std::sync::atomic::AtomicBool;
 use thiserror as _;
 

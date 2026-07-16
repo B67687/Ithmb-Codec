@@ -29,7 +29,9 @@ use std::sync::atomic::AtomicBool;
 /// |---|---|
 /// | `InvalidFormat` | Non-positive width or height, or odd height with interlacing |
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let (data, w, h) =
+        crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let src = &*data;
 
     let mut dst = vec![0u8; w * h * 4];
 
@@ -105,26 +107,8 @@ fn decode_interlaced(src: &[u8], w: usize, h: usize, dst: &mut [u8], canceled: &
 fn decode_row(row_src: &[u8], w: usize, row_dst: &mut [u8]) {
     let groups = w / 2;
 
-    #[cfg(feature = "simd")]
-    {
-        let row_bytes = groups * 4;
-        crate::simd::uyvy_row_to_bgra(&row_src[..row_bytes], &mut row_dst[..groups * 8]);
-    }
-    #[cfg(not(feature = "simd"))]
-    {
-        for g in 0..groups {
-            let src_idx = g * 4;
-            let px: [u8; 4] = [
-                row_src[src_idx],
-                row_src[src_idx + 1],
-                row_src[src_idx + 2],
-                row_src[src_idx + 3],
-            ];
-            let out = crate::simd::uyvy_quad_to_bgra(&px);
-            let d0 = g * 8;
-            row_dst[d0..d0 + 8].copy_from_slice(&out);
-        }
-    }
+    let row_bytes = groups * 4;
+    crate::simd::uyvy_row_to_bgra(&row_src[..row_bytes], &mut row_dst[..groups * 8]);
 
     // Odd width: the incomplete trailing pair provides [U, Y] but no V.
     if w % 2 != 0 {
@@ -182,10 +166,11 @@ mod tests {
 
     #[test]
     fn buffer_too_short() {
-        let p = make_profile(4, 4, false);
+        let p = make_profile(14, 10, false);
+        // 14*10*2 = 280 needed, deficit=276 > 256 → still BufferTooShort
         match decode(&[0u8; 4], &p, &AtomicBool::new(false)) {
             Err(DecodeError::BufferTooShort { expected, actual }) => {
-                assert_eq!(expected, 4 * 4 * 2);
+                assert_eq!(expected, 14 * 10 * 2);
                 assert_eq!(actual, 4);
             }
             other => panic!("expected BufferTooShort, got {other:?}"),

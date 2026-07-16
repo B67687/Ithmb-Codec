@@ -6,11 +6,18 @@
 /// Each pixel packs R(5) | G(6) | B(5) into a 16-bit word.
 /// `big_endian` controls byte order within each 16-bit word.
 #[must_use]
+#[allow(unreachable_code)]
 pub fn encode_rgb565(bgra: &[u8], w: i32, h: i32, big_endian: bool) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;
     let n = wu * hu;
     let mut out = vec![0u8; n * 2];
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    {
+        crate::simd::enc::bgra_to_rgb565(bgra, &mut out, big_endian);
+        return out;
+    }
 
     for i in 0..n {
         let px = i * 4;
@@ -29,5 +36,6 @@ pub fn encode_rgb565(bgra: &[u8], w: i32, h: i32, big_endian: bool) -> Vec<u8> {
         out[o] = bytes[0];
         out[o + 1] = bytes[1];
     }
+
     out
 }

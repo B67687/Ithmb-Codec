@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Encoder: CLCL — separate Cb/Cr nibble planes, 2 bytes per pixel
 
+#[allow(unused_imports)]
 use crate::enc::helpers::{bt601_cb, bt601_cr, bt601_y};
 use crate::pixel_utils::clamp_u8;
 
@@ -13,6 +14,7 @@ use crate::pixel_utils::clamp_u8;
 ///
 /// Each chroma nibble is `(value >> 4)` — the top 4 bits.
 #[must_use]
+#[allow(unreachable_code)]
 pub fn encode_clcl(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;
@@ -27,6 +29,8 @@ pub fn encode_clcl(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
         let b = i32::from(chunk[0]);
         out[i] = clamp_u8(bt601_y(r, g, b));
     }
+
+    // Cb plane (packed nibbles: odd pixel in high nibble, even in low)
 
     // Cb plane (packed nibbles: odd pixel in high nibble, even in low)
     let cb_off = n;

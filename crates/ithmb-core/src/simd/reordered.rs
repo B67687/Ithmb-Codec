@@ -10,12 +10,12 @@
 // ---- RGB555 pack to BGRA (SSE2, 4 px) ----
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi8, _mm_set1_epi16,
+        __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi16, _mm_set1_epi8,
         _mm_setzero_si128, _mm_slli_epi16, _mm_srli_epi16, _mm_storeu_si128, _mm_unpacklo_epi8, _mm_xor_si128,
     };
 
@@ -72,14 +72,14 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool)
 /// # SAFETY
 ///
 /// Caller must ensure SSSE3 is available (`is_x86_feature_detected!("ssse3")`).
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8,
-        _mm_set1_epi16, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srli_epi16, _mm_storeu_si128,
+        __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi16,
+        _mm_set1_epi8, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srli_epi16, _mm_storeu_si128,
         _mm_unpacklo_epi8, _mm_xor_si128,
     };
     // Load 8 bytes (4 u16 LE pixels) into lower 64 bits.
@@ -147,17 +147,16 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool
 // ---- RGB555 pack to BGRA (AVX2) ----
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
-#[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8,
-        _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_storeu_si128, _mm_unpacklo_epi8, _mm256_and_si256,
-        _mm256_cvtepu16_epi32, _mm256_extracti128_si256, _mm256_packus_epi32, _mm256_set1_epi32, _mm256_setzero_si256,
-        _mm256_srli_epi32, _mm256_xor_si256,
+        __m128i, _mm256_and_si256, _mm256_cvtepu16_epi32, _mm256_extracti128_si256, _mm256_packus_epi32,
+        _mm256_set1_epi32, _mm256_setzero_si256, _mm256_srli_epi32, _mm256_xor_si256, _mm_add_epi8, _mm_and_si128,
+        _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8, _mm_setr_epi8, _mm_setzero_si128,
+        _mm_shuffle_epi8, _mm_storeu_si128, _mm_unpacklo_epi8,
     };
 
     // Load 8 bytes (4 u16 LE pixels) — native LE, no byte-swap needed.
@@ -231,13 +230,21 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool)
 
 #[must_use]
 pub fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] {
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            return rgb555_pack_to_bgra_avx2(&pixels, swap);
+        }
+    }
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         rgb555_pack_to_bgra_sse2(&pixels, swap)
     }
 
-    #[cfg(not(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86"))))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
     // Portable scalar
     super::scalar::rgb555_pack_to_bgra(pixels, swap)
 }

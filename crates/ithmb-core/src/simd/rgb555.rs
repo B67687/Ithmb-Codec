@@ -8,11 +8,11 @@
 )]
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
-        __m128i, _mm_and_si128, _mm_loadu_si128, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi8, _mm_set1_epi16,
+        __m128i, _mm_and_si128, _mm_loadu_si128, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi16, _mm_set1_epi8,
         _mm_setzero_si128, _mm_slli_epi16, _mm_srli_epi16, _mm_storeu_si128, _mm_unpackhi_epi8, _mm_unpacklo_epi8,
     };
 
@@ -66,14 +66,14 @@ pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed
 /// (caller must check `is_x86_feature_detected!("avx2")`).
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, clippy::similar_names)]
 pub(crate) unsafe fn rgb555_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
-        __m128i, __m256i, _mm_set1_epi8, _mm_storeu_si128, _mm_unpackhi_epi8, _mm_unpacklo_epi8, _mm256_and_si256,
-        _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_or_si256, _mm256_packus_epi16, _mm256_set1_epi16,
-        _mm256_setzero_si256, _mm256_slli_epi16, _mm256_srli_epi16,
+        __m128i, __m256i, _mm256_and_si256, _mm256_extracti128_si256, _mm256_loadu_si256, _mm256_or_si256,
+        _mm256_packus_epi16, _mm256_set1_epi16, _mm256_setzero_si256, _mm256_slli_epi16, _mm256_srli_epi16,
+        _mm_set1_epi8, _mm_storeu_si128, _mm_unpackhi_epi8, _mm_unpacklo_epi8,
     };
 
     let n = src.len();

@@ -25,7 +25,7 @@ use crate::profile::{Encoding, Profile};
 
 mod cl;
 mod clcl;
-mod helpers;
+pub(crate) mod helpers;
 mod reordered;
 mod rgb555;
 mod rgb565;
@@ -116,15 +116,17 @@ pub(crate) fn rotate_bgra(src: &[u8], w: i32, h: i32, rotation: i32) -> Vec<u8> 
 /// 4. Pad to `profile.frame_byte_length + 4` if `profile.is_padded`.
 #[must_use]
 pub fn build_ithmb_file(bgra: &[u8], w: i32, h: i32, profile: &Profile) -> Vec<u8> {
-    // 1. Rotate
-    let rotated = if profile.rotation != 0 {
-        rotate_bgra(bgra, w, h, profile.rotation)
+    // 1. Rotate (reverse direction for identity roundtrip: encode→decode)
+    let rev = (360 - profile.rotation) % 360;
+    let rotated = if rev != 0 {
+        rotate_bgra(bgra, w, h, rev)
     } else {
         bgra.to_vec()
     };
 
-    // 2. Encode
-    let encoded = encode_bgra(&rotated, w, h, profile);
+    // 2. Encode (swap dimensions for 90°/270° rotation)
+    let (ew, eh) = if profile.rotation % 180 == 90 { (h, w) } else { (w, h) };
+    let encoded = encode_bgra(&rotated, ew, eh, profile);
 
     // 3. Prepend the 4-byte prefix (big-endian i32)
     let prefix_bytes = (profile.prefix as u32).to_be_bytes();
@@ -504,7 +506,7 @@ mod tests {
         let bgra = vec![255u8; 4 * 4];
         let enc = encode_ycbcr420(&bgra, 2, 2, false);
         assert_eq!(enc.len(), 4 + 1 + 1); // Y=4, Cb=1, Cr=1 = 6
-        // Y all 255, Cb=128, Cr=128
+                                          // Y all 255, Cb=128, Cr=128
         assert_eq!(&enc[0..4], &[255, 255, 255, 255]);
         assert_eq!(enc[4], 128); // Cb
         assert_eq!(enc[5], 128); // Cr
@@ -560,9 +562,9 @@ mod tests {
         assert_eq!(enc.len(), 4);
         assert_eq!(enc[0], 255); // Y0
         assert_eq!(enc[1], 255); // Y1
-        // Chroma nibbles: white → Cb=128(Cb_nibble=8), Cr=128(Cr_nibble=8)
-        // Both pixels neutral → Cb byte = 0x88 (odd nibble 8, even nibble 8)
-        // Cr byte = 0x88
+                                 // Chroma nibbles: white → Cb=128(Cb_nibble=8), Cr=128(Cr_nibble=8)
+                                 // Both pixels neutral → Cb byte = 0x88 (odd nibble 8, even nibble 8)
+                                 // Cr byte = 0x88
         assert_eq!(enc[2], 0x88);
         assert_eq!(enc[3], 0x88);
     }
@@ -673,7 +675,7 @@ mod tests {
         // Actually rotation of 2x1 gives 1x2, not 2x1
         // Let me just verify it changes pixels around
         assert_eq!(rotated.len(), 8); // preserves total pixel count? no, rotation changes w/h
-        // Actually rotate_bgra keeps the same buffer size (w*h*4) so it's still 2*1*4 = 8 bytes
+                                      // Actually rotate_bgra keeps the same buffer size (w*h*4) so it's still 2*1*4 = 8 bytes
         assert_eq!(rotated.len(), 8);
     }
 

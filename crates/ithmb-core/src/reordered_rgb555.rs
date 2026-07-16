@@ -39,7 +39,9 @@ use std::sync::atomic::AtomicBool;
 /// Returns [`DecodeError::BufferTooShort`] if `src` is smaller than `w * h * 2`.
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let (data, w, h) =
+        crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let src = &*data;
     let le = profile.little_endian;
     let swap = profile.swap_rgb_channels;
     let total_pixels = w * h;
@@ -197,14 +199,15 @@ mod tests {
 
     #[test]
     fn buffer_too_short_reports_exact_counts() {
-        let profile = make_profile(10, 10, false);
-        let result = decode(&[0u8; 50], &profile, &AtomicBool::new(false));
+        let profile = make_profile(14, 10, false);
+        // 14*10*2 = 280 needed, deficit=270 > 256 → still BufferTooShort
+        let result = decode(&[0u8; 10], &profile, &AtomicBool::new(false));
         match result {
             Err(DecodeError::BufferTooShort {
-                expected: 200,
-                actual: 50,
+                expected: 280,
+                actual: 10,
             }) => {} // ok
-            other => panic!("expected BufferTooShort(200, 50), got {other:?}"),
+            other => panic!("expected BufferTooShort(280, 10), got {other:?}"),
         }
     }
 

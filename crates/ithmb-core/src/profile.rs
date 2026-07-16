@@ -155,13 +155,21 @@ impl Profile {
     /// The number of pixel columns in the frame.
     #[must_use]
     pub fn display_width(&self) -> i32 {
-        if self.swaps_dimensions { self.height } else { self.width }
+        if self.swaps_dimensions {
+            self.height
+        } else {
+            self.width
+        }
     }
 
     /// The number of pixel rows in the frame.
     #[must_use]
     pub fn display_height(&self) -> i32 {
-        if self.swaps_dimensions { self.width } else { self.height }
+        if self.swaps_dimensions {
+            self.width
+        } else {
+            self.height
+        }
     }
 }
 

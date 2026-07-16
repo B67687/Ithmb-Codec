@@ -10,11 +10,18 @@ use crate::pixel_utils::clamp_u8;
 ///   Y plane: `w × h` bytes (full 8-bit luma)
 ///   CbCr plane: `w × h` bytes (Cr in high nibble, Cb in low nibble)
 #[must_use]
+#[allow(unreachable_code)]
 pub fn encode_cl(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;
     let n = wu * hu;
     let mut out = vec![0u8; n * 2];
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    {
+        crate::simd::enc::bgra_to_cl(bgra, &mut out);
+        return out;
+    }
 
     for i in 0..n {
         let px = i * 4;

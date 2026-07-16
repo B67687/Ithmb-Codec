@@ -2,52 +2,33 @@
 //!
 //! Each public function has a platform-specific implementation (e.g. SSE2 on
 //! `x86_64`) **and** a portable scalar fallback so the code compiles
-//! without SIMD.
+//! on all architectures.
 //!
-//! Callers select the accelerated path with the `simd` Cargo feature.
+//! SIMD targets are selected at compile time with appropriate runtime dispatch.
 #![allow(unsafe_code)]
 #![allow(clippy::cast_ptr_alignment, clippy::cast_possible_truncation, clippy::similar_names)]
-
-//!
-//! # Feature gate
-//!
-//! ```toml
-//! [features]
-//! simd = []
-//! ```
-//!
-//! When disabled every function in this module reduces to the same scalar code
-//! used without the module — zero behaviour change.
 
 // ---------------------------------------------------------------------------
 // Sub-modules: per-format SIMD implementations
 // ---------------------------------------------------------------------------
-#[cfg(feature = "simd")]
 mod cl;
-#[cfg(feature = "simd")]
 mod clcl;
+pub(crate) mod enc;
 mod reordered;
 mod rgb555;
-#[cfg(feature = "simd")]
 mod rgb565;
-#[cfg(feature = "simd")]
 mod uyvy;
-#[cfg(feature = "simd")]
 mod yuv;
 
 // Scalar fallbacks — always available (used when SIMD is off or for
 // remainder handling in NEON routines).
-#[cfg_attr(
-    all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),
-    allow(dead_code)
-)]
+#[cfg_attr(any(target_arch = "x86_64", target_arch = "x86"), allow(dead_code))]
 mod scalar;
 
-#[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
+#[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
 mod neon;
 
 // Re-export dispatch functions that live in sub-modules.
-#[cfg(feature = "simd")]
 #[allow(unused_imports)]
 pub(crate) use clcl::clcl_row_to_bgra;
 pub(crate) use reordered::rgb555_pack_to_bgra;
@@ -103,12 +84,12 @@ pub(super) fn unpack_rgb555(pixel: u16) -> [u8; 4] {
 // ---- Fill gray row (SSE2) ----
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
     use core::arch::x86_64::{
         __m128i, _mm_loadl_epi64, _mm_or_si128, _mm_set1_epi32, _mm_setzero_si128, _mm_slli_epi32, _mm_storeu_si128,
-        _mm_unpackhi_epi16, _mm_unpacklo_epi8, _mm_unpacklo_epi16,
+        _mm_unpackhi_epi16, _mm_unpacklo_epi16, _mm_unpacklo_epi8,
     };
     let n = gray.len();
     let mut dst = vec![0u8; n * 4];
@@ -162,21 +143,21 @@ pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         uyvy::uyvy_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::uyvy_quad_to_bgra_neon(quad);
     }
 
     #[cfg(not(any(
-        all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),
-        all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")),
+        any(target_arch = "x86_64", target_arch = "x86"),
+        all(target_arch = "aarch64", not(target_os = "macos")),
     )))]
     scalar::uyvy_quad_to_bgra(quad)
 }
@@ -189,21 +170,21 @@ pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         uyvy::uyvy_double_quad_to_bgra_sse2(quads)
     }
 
-    #[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::uyvy_double_quad_to_bgra_neon(quads);
     }
 
     #[cfg(not(any(
-        all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),
-        all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")),
+        any(target_arch = "x86_64", target_arch = "x86"),
+        all(target_arch = "aarch64", not(target_os = "macos")),
     )))]
     scalar::uyvy_double_quad_to_bgra(quads)
 }
@@ -216,15 +197,14 @@ pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
 /// # Panics
 ///
 /// When `src` is not a multiple of 4 bytes, or when `dst` is not `src.len() * 2` bytes.
-#[cfg(feature = "simd")]
 #[inline]
 pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
         return unsafe { uyvy::uyvy_row_to_bgra_avx2(src, dst) };
     }
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("sse4.1") {
         return unsafe { uyvy::uyvy_row_to_bgra_sse41(src, dst) };
@@ -322,13 +302,13 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
     // SSE2 path (compile-time guaranteed on x86_64/x86)
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         yuv::yuv420_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(not(any(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),)))]
+    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"),)))]
     // Scalar fallback (used on all non-x86_64 platforms, including aarch64+simd)
     scalar::yuv420_quad_to_bgra(quad)
 }
@@ -346,18 +326,23 @@ pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
 /// * `dst` - Output buffer (`2 * w * 4` bytes)
 /// * `w` - Width in pixels
 /// * `cb_w` - Chroma width (`w / 2`)
-#[cfg(feature = "simd")]
 #[inline]
 pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: &mut [u8], w: usize, cb_w: usize) {
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
         return unsafe { yuv::yuv420_row_pair_to_bgra_avx2(y_row, cb_row, cr_row, dst, w, cb_w) };
     }
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("sse4.1") {
         return unsafe { yuv::yuv420_row_pair_to_bgra_sse41(y_row, cb_row, cr_row, dst, w, cb_w) };
+    }
+
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return neon::yuv420_row_pair_to_bgra_neon(y_row, cb_row, cr_row, dst, w, cb_w);
     }
     for cx in 0..cb_w {
         let quad = [
@@ -390,7 +375,7 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
 /// 3. Scalar fallback     — always available
 #[inline]
 pub(crate) fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
         unsafe {
@@ -398,12 +383,18 @@ pub(crate) fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         }
     }
 
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         rgb565::rgb565_row_to_bgra_sse2(src, dst);
     }
-    #[cfg(not(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86"))))]
+
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return neon::rgb565_row_to_bgra_neon(src, dst);
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
     scalar::rgb565_row_to_bgra_scalar(src, dst);
 }
 
@@ -436,7 +427,7 @@ pub fn rgb565_row_to_bgra(src: &[u8]) -> Vec<u8> {
 /// 3. Scalar fallback     — always available
 #[inline]
 pub(crate) fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
         unsafe {
@@ -444,13 +435,19 @@ pub(crate) fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         }
     }
 
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         rgb555::rgb555_row_to_bgra_sse2(src, dst);
     }
 
-    #[cfg(not(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86"))))]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return neon::rgb555_row_to_bgra_neon(src, dst);
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
     scalar::rgb555_row_to_bgra_scalar(src, dst);
 }
 
@@ -474,21 +471,21 @@ pub fn rgb555_row_to_bgra(src: &[u8]) -> Vec<u8> {
 /// Convert every byte in a gray buffer to BGRA: `gray[n] -> [gray[n], gray[n], gray[n], 255]`.
 #[must_use]
 pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         fill_gray_row_sse2(gray)
     }
 
-    #[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::fill_gray_row_neon(gray);
     }
 
     #[cfg(not(any(
-        all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")),
-        all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")),
+        any(target_arch = "x86_64", target_arch = "x86"),
+        all(target_arch = "aarch64", not(target_os = "macos")),
     )))]
     scalar::fill_gray_row(gray)
 }
@@ -530,7 +527,7 @@ pub fn fill_yuv_row(luma: &[u8], cb: u8, cr: u8) -> Vec<u8> {
 /// Input layout (8 bytes): `[Y0, Y1, Y2, Y3, CbCr0, CbCr1, CbCr2, CbCr3]`
 #[must_use]
 pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     unsafe {
         if is_x86_feature_detected!("sse4.1") {
@@ -539,18 +536,15 @@ pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
         cl::cl_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::cl_quad_to_bgra_neon(quad);
     }
-    #[cfg(not(all(
-        feature = "simd",
-        any(
-            target_arch = "x86_64",
-            target_arch = "x86",
-            all(target_arch = "aarch64", not(target_os = "macos"))
-        )
+    #[cfg(not(any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        all(target_arch = "aarch64", not(target_os = "macos"))
     )))]
     // Scalar fallback (not needed when SIMD covers all platforms)
     scalar::cl_quad_to_bgra(*quad)
@@ -572,7 +566,7 @@ pub(crate) fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     debug_assert_eq!(dst.len(), src.len() * 2);
 
     // AVX2 path (runtime-detected — fastest 256-bit arithmetic)
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
         unsafe {
@@ -581,7 +575,7 @@ pub(crate) fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     // SSE4.1 packed YUV path (runtime-detected — faster packed clamp + pack)
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("sse4.1") {
         unsafe {
@@ -590,26 +584,23 @@ pub(crate) fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     // SSE2 path (compile-time guaranteed on x86_64/x86)
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         cl::cl_row_to_bgra_sse2(src, dst);
     }
 
     // NEON path (compile-time guaranteed on aarch64, gated on macOS — known NEON edge case)
-    #[cfg(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::cl_row_to_bgra_neon(src, dst);
     }
 
-    #[cfg(not(all(
-        feature = "simd",
-        any(
-            target_arch = "x86_64",
-            target_arch = "x86",
-            all(target_arch = "aarch64", not(target_os = "macos"))
-        )
+    #[cfg(not(any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        all(target_arch = "aarch64", not(target_os = "macos"))
     )))]
     scalar::cl_row_to_bgra_scalar(src, dst);
 }
@@ -987,7 +978,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn cl_quad_ssse3_exhaustive_nibble_pair() {
         // Validate SSSE3 pshufb path against mathematical *17 expansion.
-        #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
         if is_x86_feature_detected!("ssse3") {
             for cb_n in 0..=15u8 {
                 for cr_n in 0..=15u8 {
@@ -1014,7 +1005,7 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn cl_quad_avx2_exhaustive_nibble_pair() {
         // Validate AVX2 vpshufb path against mathematical *17 expansion.
-        #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+        #[cfg(target_arch = "x86_64")]
         if is_x86_feature_detected!("avx2") {
             for cb_n in 0..=15u8 {
                 for cr_n in 0..=15u8 {
@@ -1206,7 +1197,7 @@ mod tests {
     // ---- SSSE3/AVX2 rgb555_pack random cross-checks ----
 
     #[test]
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     #[cfg_attr(miri, ignore)]
     fn rgb555_pack_10k_random_ssse3() {
         use super::scalar;
@@ -1239,7 +1230,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "simd", target_arch = "x86_64"))]
+    #[cfg(target_arch = "x86_64")]
     #[cfg_attr(miri, ignore)]
     fn rgb555_pack_10k_random_avx2() {
         use super::scalar;

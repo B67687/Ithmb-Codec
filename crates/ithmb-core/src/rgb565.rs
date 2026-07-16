@@ -38,7 +38,9 @@ use std::sync::atomic::AtomicBool;
 /// negative. Returns [`DecodeError::BufferTooShort`] if `src` is shorter than
 /// the expected pixel data (`width × height × 2` bytes).
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let (data, w, h) =
+        crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let src = &*data;
     let le = profile.little_endian;
     let swap = profile.swap_rgb_channels;
 
@@ -51,8 +53,8 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         let dst_start = y * w * 4;
         let row_dst = &mut dst[dst_start..dst_start + w * 4];
 
-        // SIMD fast path (LE + x86 with simd feature)
-        #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+        // SIMD fast path (LE + x86 with SSE2/AVX2 runtime dispatch)
+        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
         if le {
             crate::simd::rgb565_apply_row_to_bgra(&src[row_start..row_start + w * 2], row_dst);
             if swap {

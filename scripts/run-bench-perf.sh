@@ -5,7 +5,6 @@
 # Usage:
 #   ./scripts/run-bench-perf.sh                    # full bench + perf stats
 #   ./scripts/run-bench-perf.sh --quick            # skip perf (just benchmarks)
-#   ./scripts/run-bench-perf.sh --features simd    # with SIMD feature
 #
 # Output:
 #   target/bench/perf-{timestamp}.txt   — perf stat output
@@ -82,38 +81,13 @@ cp "$DIVAN_JSON" "$BASELINE"
 echo ""
 echo "=== Baseline updated ==="
 echo "  $BASELINE"
-
-# ---------------------------------------------------------------------------
-# Extract summary table
-# ---------------------------------------------------------------------------
-
 echo ""
-echo "=== Summary (throughput in GB/s) ==="
-python3 -c "
-import json
-with open('$DIVAN_JSON') as f:
-    data = json.load(f)
-benches = data.get('results', [])
-if isinstance(benches, dict):
-    benches = [benches]
-print(f\"{'Benchmark':30s} {'Size':10s} {'Throughput':>12s} {'Time':>10s}\")
-print('-' * 62)
-for b in benches:
-    name = b.get('name', '') or b.get('id', '')
-    # Divan JSON shape varies by version — try common keys
-    for k in ('args', 'parameters', 'params'):
-        if k in b:
-            args = b[k]
-            break
-    else:
-        args = ''
-    thrpt = b.get('throughput', b.get('gbps', b.get('mbps', '')))
-    time_ns = b.get('avg', b.get('mean', b.get('median', '')))
-    time_us = ''
-    if isinstance(time_ns, (int, float)):
-        time_us = f'{time_ns/1000:.1f} us'
-    thrpt_str = ''
-    if isinstance(thrpt, (int, float)):
-        thrpt_str = f'{thrpt:.2f} GB/s' if thrpt > 1 else f'{thrpt*1000:.1f} MB/s'
-    print(f'{name:30s} {str(args):10s} {thrpt_str:>12s} {time_us:>10s}')
-"
+echo "=== Latency Distribution Analysis ==="
+if command -v python3 &>/dev/null; then
+    python3 "$PROJECT_DIR/tools/analysis/perf-stats.py" "$DIVAN_JSON" 2>/dev/null || \
+    echo "  (perf-stats.py skipped — run manually: python3 tools/analysis/perf-stats.py $DIVAN_JSON)"
+else
+    echo "  (python3 not found — install to get p50/p95/p99 analysis)"
+fi
+echo ""
+echo "Full results: $DIVAN_JSON"

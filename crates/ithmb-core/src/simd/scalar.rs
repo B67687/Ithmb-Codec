@@ -2,13 +2,13 @@
 //! Always available — used when SIMD features are disabled or during
 //! remainder handling.
 
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
+#[cfg(any(test, not(target_arch = "aarch64")))]
 use crate::yuv;
 
 #[inline]
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
+#[cfg(any(test, not(target_arch = "aarch64")))]
 pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
     let u = quad[0];
     let y0 = quad[1];
@@ -22,7 +22,7 @@ pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 #[inline]
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
+#[cfg(any(test, not(target_arch = "aarch64")))]
 pub(crate) fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
     let left = uyvy_quad_to_bgra(&[quads[0], quads[1], quads[2], quads[3]]);
     let right = uyvy_quad_to_bgra(&[quads[4], quads[5], quads[6], quads[7]]);
@@ -105,7 +105,7 @@ pub(crate) fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] 
 }
 
 #[inline]
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
+#[cfg(any(test, not(target_arch = "aarch64")))]
 pub(crate) fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
     gray.iter().flat_map(|&g| [g, g, g, 255]).collect()
 }
@@ -113,7 +113,7 @@ pub(crate) fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
 #[inline]
 #[must_use]
 #[allow(clippy::cast_possible_truncation)]
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
+#[cfg(any(test, not(target_arch = "aarch64")))]
 pub(crate) fn cl_quad_to_bgra(quad: [u8; 8]) -> [u8; 16] {
     let y0 = u32::from(quad[0]);
     let y1 = u32::from(quad[1]);
@@ -146,7 +146,7 @@ pub(crate) fn cl_quad_to_bgra(quad: [u8; 8]) -> [u8; 16] {
 ///   `src[n_pixels..]` = `CbCr` bytes (Cr in high nibble, Cb in low nibble)
 /// Output `dst`: `n_pixels * 4` bytes BGRA.
 #[inline]
-#[cfg(any(test, not(all(feature = "simd", target_arch = "aarch64", not(target_os = "macos")))))]
+#[cfg(any(test, not(target_arch = "aarch64")))]
 pub(crate) fn cl_row_to_bgra_scalar(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
     let (y, chroma) = src.split_at(n_pixels);

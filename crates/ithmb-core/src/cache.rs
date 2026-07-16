@@ -33,8 +33,8 @@ use crate::profile::Profile;
 use lru::LruCache;
 use std::hash::Hasher;
 use std::num::NonZeroUsize;
-use std::sync::RwLock;
 use std::sync::atomic::AtomicBool;
+use std::sync::RwLock;
 
 /// Least-recently-used decode cache for raw `.ithmb` frame data.
 ///

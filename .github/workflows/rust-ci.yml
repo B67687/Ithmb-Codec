@@ -10,7 +10,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: ["", "simd"]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -19,25 +18,23 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
-          cache: ${{ !(matrix.os == 'macos-latest' && matrix.features == 'simd') }}
+          cache: true
           cache-key: "rust-${{ matrix.os }}-${{ hashFiles('rust-toolchain.toml') }}"
       - name: Build
         shell: bash
-        env:
-          RUSTFLAGS: ${{ matrix.features == 'simd' && '-C target-feature=+neon' || '' }}
+        env: {}
         run: |
           exclude=""
           if [ "${{ matrix.os }}" = "macos-latest" ]; then exclude='--exclude ithmb-python'; fi
-          cargo build --workspace ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }} $exclude
+          cargo build --workspace $exclude
       - name: Test
         shell: bash
         env:
           RUST_BACKTRACE: 1
-          RUSTFLAGS: ${{ matrix.features == 'simd' && '-C target-feature=+neon' || '' }}
         run: |
           exclude=""
           if [ "${{ matrix.os }}" = "macos-latest" ]; then exclude='--exclude ithmb-python'; fi
-          cargo test --workspace ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }} $exclude
+          cargo test --workspace $exclude
 
   verify_clippy:
     runs-on: ubuntu-latest
@@ -80,7 +77,6 @@ jobs:
   benchmark_regression:
     runs-on: ubuntu-latest
     needs: [build, verify_clippy, check_links, verify_deny]
-    continue-on-error: true
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -90,7 +86,22 @@ jobs:
           cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}"
       - name: Benchmark regression check
         env:
-          FAIL_THRESHOLD: 5.0
+          FAIL_THRESHOLD: 1.25
+      - name: Benchmark regression check (SIMD)
+        env:
+          FAIL_THRESHOLD: 1.25
+          BASELINE_PATH: .github/baseline-simd.json
+          CARGO_BENCH_ARGS: --features simd -p ithmb-core
+        shell: bash
+        run: |
+          tools/check-benchmark-regression.sh
+      - name: Upload CI benchmark data (SIMD)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-benchmark-data-simd
+          path: /tmp/ci-benchmark-output-simd.txt
+          retention-days: 7
         shell: bash
         run: |
           tools/check-benchmark-regression.sh
@@ -182,3 +193,67 @@ jobs:
           cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+
+  test_arm64:
+    runs-on: ubuntu-24.04-arm # GitHub ARM64 runner
+    needs: [build]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "arm64-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Run tests
+        run: cargo test --workspace
+      - name: Run SIMD tests
+        run: cargo test --features simd -p ithmb-core
+
+  coverage:
+    runs-on: ubuntu-latest
+    needs: [build]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "cov-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+      - name: Generate coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: false
+
+  formatting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+          cache: true
+          cache-key: "fmt-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Check formatting
+        run: cargo fmt --check --all
+
+  wasm_tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+          cache: true
+          cache-key: "wasm-test-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('crates/ithmb-wasm/Cargo.toml') }}"
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Build WASM
+        run: wasm-pack build crates/ithmb-wasm

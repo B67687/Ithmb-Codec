@@ -2,7 +2,7 @@
 //! Benchmarks for all 8 pixel decoders at multiple sizes with diverse input
 //! patterns.  Each benchmark encodes 4 variants (checkerboard / random /
 //! gradient / solid white) into the target format and measures aggregate
-//! decode throughput — encoding time is excluded from the measurement.
+//! decode throughput -- encoding time is excluded from the measurement.
 
 #![allow(
     clippy::pedantic,
@@ -26,7 +26,7 @@ use util::{CHECKERBOARD_JPEG_64, all_inputs, make_profile, never_canceled};
 const SIZES: &[(usize, usize)] = &[(64, 64), (256, 256), (512, 512), (720, 480)];
 
 // ---------------------------------------------------------------------------
-// JPEG — single-size only (embedded fixture is fixed at 64×64)
+// JPEG -- single-size only (embedded fixture is fixed at 64x64)
 // ---------------------------------------------------------------------------
 
 const JPEG_W: usize = 64;
@@ -42,7 +42,7 @@ fn decode_jpeg(bencher: divan::Bencher) {
         .counter(BytesCount::new(JPEG_OUTPUT_BYTES))
         .with_inputs(|| (src, &profile, &canceled))
         .bench_refs(|(src, profile, canceled)| {
-            let _ = divan::black_box(jpeg::decode(src, profile, canceled));
+            jpeg::decode(src, profile, canceled)
         });
 }
 
@@ -72,7 +72,7 @@ macro_rules! bench_decoder {
                 .bench_refs(|i| {
                     let (ref src, ref profile) = inputs[*i];
                     let canceled = AtomicBool::new(false);
-                    let _ = divan::black_box($decoder(src, profile, &canceled));
+                    $decoder(src, profile, &canceled)
                 });
         }
     };
@@ -144,8 +144,42 @@ bench_decoder!(
 );
 
 fn main() {
+    // Extract --output-json=<path> flag before Divan parses args
+    let args: Vec<String> = std::env::args().collect();
+    let output_json_path = std::env::args().find_map(|arg| {
+        arg.strip_prefix("--output-json=").map(|s| s.to_string())
+    });
+
+    if let Some(ref json_path) = output_json_path {
+        // Re-run self without the --output-json flag, capturing Divan output
+        let filtered_args: Vec<String> = args[1..]
+            .iter()
+            .filter(|a| !a.starts_with("--output-json"))
+            .cloned()
+            .collect();
+        let output = std::process::Command::new(&args[0])
+            .args(&filtered_args)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("failed to spawn benchmark subprocess")
+            .wait_with_output()
+            .expect("failed to wait for benchmark subprocess");
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        // Write JSON with the captured output for the Python tool to process
+        let json = format!(
+            "{{\"framework\":\"divan\",\"version\":\"0.1.21\",\"raw_output\":{raw:?}}}",
+            raw = stdout.trim()
+        );
+        std::fs::write(json_path, &json).expect("failed to write JSON output");
+        // Forward original output to terminal
+        print!("{stdout}");
+        eprint!("{}", String::from_utf8_lossy(&output.stderr));
+        std::process::exit(output.status.code().unwrap_or(0));
+    }
+
     // -----------------------------------------------------------------------
-    // SIMD row benches (single-size 256×256 — direct dispatch micro-bench)
+    // SIMD row benches (single-size 256x256 - direct dispatch micro-bench)
     // -----------------------------------------------------------------------
 
     #[divan::bench]
@@ -156,7 +190,7 @@ fn main() {
             .counter(BytesCount::new((256 * 256 * 4) as u64))
             .with_inputs(|| &encoded)
             .bench_refs(|src| {
-                let _ = divan::black_box(ithmb_core::simd::rgb565_row_to_bgra(src));
+                ithmb_core::simd::rgb565_row_to_bgra(src)
             });
     }
 
@@ -168,7 +202,7 @@ fn main() {
             .counter(BytesCount::new((256 * 256 * 4) as u64))
             .with_inputs(|| &encoded)
             .bench_refs(|src| {
-                let _ = divan::black_box(ithmb_core::simd::rgb555_row_to_bgra(src));
+                ithmb_core::simd::rgb555_row_to_bgra(src)
             });
     }
     divan::main();

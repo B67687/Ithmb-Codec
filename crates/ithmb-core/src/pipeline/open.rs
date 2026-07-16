@@ -6,17 +6,16 @@
 //! filtering, and decodes every entry. For bare files it delegates to
 //! [`decode_ithmb`].
 
+use crate::config;
 use crate::device_profiles;
 use crate::error::{DecodeError, DecodedImage};
 use crate::photodb::parser::{can_open_photodb, try_parse_photodb};
-use crate::pipeline::decode_ithmb;
-use crate::pipeline::decode_with_profile;
 use crate::pipeline::profile_loader::{fallback_jpeg_profile, get_db};
-use crate::profile::Encoding;
+use crate::pipeline::{decode_ithmb_with_config, decode_with_profile_with_config};
+use crate::profile::{Encoding, Profile};
+#[cfg(feature = "logging")]
+use log::{debug, info};
 use std::sync::atomic::AtomicBool;
-
-/// Files larger than this are rejected before decoding.
-pub(crate) const MAX_RAW_FILE_SIZE: usize = 8 * 1024 * 1024; // 8 MiB
 
 /// Open a `PhotoDB` container file and decode all contained thumbnails.
 ///
@@ -45,13 +44,35 @@ pub fn open_ithmb(
     canceled: &AtomicBool,
     device_name: Option<&str>,
 ) -> Result<Vec<DecodedImage>, DecodeError> {
-    if src.len() > MAX_RAW_FILE_SIZE {
+    open_ithmb_with_config(src, canceled, device_name, config::default_config())
+}
+
+/// Open a `PhotoDB` container file (or bare .ithmb) with a custom [`DecodeConfig`].
+///
+/// Like [`open_ithmb`] but accepts a [`DecodeConfig`] for runtime parameter
+/// customization (file size limit, etc.).
+///
+/// # Errors
+///
+/// Same as [`open_ithmb`].
+#[allow(clippy::cast_sign_loss)]
+pub fn open_ithmb_with_config(
+    src: &[u8],
+    canceled: &AtomicBool,
+    device_name: Option<&str>,
+    config: &config::DecodeConfig,
+) -> Result<Vec<DecodedImage>, DecodeError> {
+    if src.len() > config.max_raw_file_size() {
         return Err(DecodeError::FileTooLarge {
             size: src.len(),
-            limit: MAX_RAW_FILE_SIZE,
+            limit: config.max_raw_file_size(),
         });
     }
+    #[cfg(feature = "logging")]
+    debug!("open_ithmb: len={}", src.len());
     if can_open_photodb(src) {
+        #[cfg(feature = "logging")]
+        info!("open_ithmb: detected PhotoDB container");
         let mut entries = Vec::new();
         try_parse_photodb(src, &mut entries)?;
 
@@ -78,6 +99,22 @@ pub fn open_ithmb(
             }
 
             if let Some(profile) = db.get(entry.format_id) {
+                #[cfg(feature = "logging")]
+                debug!("open_ithmb: profile matched: prefix={:08X}", profile.prefix);
+                // Override dimensions from MHNI chunk metadata when the profile
+                // specifies use_mhni_dimensions.
+                let adjusted;
+                let profile = if profile.use_mhni_dimensions {
+                    adjusted = Profile {
+                        width: entry.width,
+                        height: entry.height,
+                        ..profile.clone()
+                    };
+                    &adjusted
+                } else {
+                    profile
+                };
+
                 // Known profile - construct the buffer with prefix if needed.
                 let prefixed = if profile.encoding == Encoding::Jpeg {
                     entry.data.clone()
@@ -89,7 +126,7 @@ pub fn open_ithmb(
                     with_prefix
                 };
 
-                let img = decode_with_profile(&prefixed, profile, canceled)?;
+                let img = decode_with_profile_with_config(&prefixed, profile, canceled, config)?;
                 results.push(img);
             } else if entry.data.len() >= 2 && entry.data[0] == 0xFF && entry.data[1] == 0xD8 {
                 // No profile but data is a JPEG stream - use a fallback profile.
@@ -97,7 +134,7 @@ pub fn open_ithmb(
                 profile.width = entry.width;
                 profile.height = entry.height;
 
-                let img = decode_with_profile(&entry.data, &profile, canceled)?;
+                let img = decode_with_profile_with_config(&entry.data, &profile, canceled, config)?;
                 results.push(img);
             }
             // No profile and not JPEG: skip entry
@@ -106,6 +143,6 @@ pub fn open_ithmb(
         Ok(results)
     } else {
         // Not a PhotoDB file - decode as bare .ithmb.
-        Ok(decode_ithmb(src, canceled).map(|img| vec![img])?)
+        Ok(decode_ithmb_with_config(src, canceled, config).map(|img| vec![img])?)
     }
 }

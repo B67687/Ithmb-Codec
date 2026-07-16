@@ -57,11 +57,13 @@ use std::sync::atomic::AtomicBool;
 /// Never panics.
 #[allow(clippy::similar_names)]
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "CLCL dimensions must be positive", 2)?;
+    let (data, w, h) =
+        crate::decoder_helpers::validate_dimensions(src, profile, "CLCL dimensions must be positive", 2)?;
+    let src = &*data;
     let pixel_count = w * h;
     let chroma_len = pixel_count.div_ceil(2);
     // CLCL layout needs: pixel_count (Y) + 2 * chroma_len (Cb + Cr).
-    // validate_dimensions only checked src.len() >= pixel_count * 2, which
+    // validate_dimensions checked src.len() >= pixel_count * 2 (with padding tolerance), which
     // under-counts by 1 when pixel_count is odd (e.g. 3x1 needs 7 bytes, not 6).
     if pixel_count % 2 != 0 {
         let total_needed = pixel_count + 2 * chroma_len;
@@ -81,27 +83,11 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
     for row in 0..h {
         let idx = row * w;
         crate::pixel_utils::check_canceled(canceled, "clcl decode canceled")?;
-        #[cfg(feature = "simd")]
-        {
-            let y_row = &src[idx..idx + w];
-            let cb_row = &src[cb_off + idx / 2..cb_off + idx / 2 + w.div_ceil(2)];
-            let cr_row = &src[cr_off + idx / 2..cr_off + idx / 2 + w.div_ceil(2)];
-            let dst_row = &mut dst[idx * 4..(idx + w) * 4];
-            crate::simd::clcl_row_to_bgra(y_row, cb_row, cr_row, w, dst_row);
-        }
-        #[cfg(not(feature = "simd"))]
-        {
-            for i in idx..idx + w {
-                let y = src[i];
-                let cbi = src[cb_off + i / 2];
-                let cri = src[cr_off + i / 2];
-                let n_cb = if i & 1 == 0 { cbi & 0x0F } else { cbi >> 4 };
-                let n_cr = if i & 1 == 0 { cri & 0x0F } else { cri >> 4 };
-                let pixel = yuv::yuv_to_bgra(y, n_cb << 4, n_cr << 4);
-                let dst_idx = i * 4;
-                dst[dst_idx..dst_idx + 4].copy_from_slice(&pixel);
-            }
-        }
+        let y_row = &src[idx..idx + w];
+        let cb_row = &src[cb_off + idx / 2..cb_off + idx / 2 + w.div_ceil(2)];
+        let cr_row = &src[cr_off + idx / 2..cr_off + idx / 2 + w.div_ceil(2)];
+        let dst_row = &mut dst[idx * 4..(idx + w) * 4];
+        crate::simd::clcl_row_to_bgra(y_row, cb_row, cr_row, w, dst_row);
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -163,13 +149,13 @@ mod tests {
 
     #[test]
     fn buffer_too_short_returns_error() {
-        let profile = make_profile(10, 10);
-        // 10*10*2 = 200 bytes needed, only 10 provided
+        let profile = make_profile(14, 10);
+        // 14*10*2 = 280 bytes needed, deficit=270 > 256 → still BufferTooShort
         let result = decode(&[0u8; 10], &profile, &AtomicBool::new(false));
         assert!(matches!(
             result,
             Err(DecodeError::BufferTooShort {
-                expected: 200,
+                expected: 280,
                 actual: 10
             })
         ));
@@ -177,13 +163,14 @@ mod tests {
 
     #[test]
     fn buffer_too_short_odd_bytes() {
-        // 2×2 = 4 pixels → expected = 4 + 2 + 2 = 8 bytes
-        // Provide only 7 bytes
-        let profile = make_profile(2, 2);
-        let result = decode(&[0u8; 7], &profile, &AtomicBool::new(false));
+        // 3×1 = 3 pixels → CLCL needs: 3 (Y) + 2 (Cb) + 2 (Cr) = 7 bytes
+        // validate_dimensions checks 3*2 = 6 (passes with 6 provided),
+        // but CLCL's own odd-pixel check catches the shortage
+        let profile = make_profile(3, 1);
+        let result = decode(&[0u8; 6], &profile, &AtomicBool::new(false));
         assert!(matches!(
             result,
-            Err(DecodeError::BufferTooShort { expected: 8, actual: 7 })
+            Err(DecodeError::BufferTooShort { expected: 7, actual: 6 })
         ));
     }
 
