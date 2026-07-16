@@ -1,6 +1,6 @@
 # rust-ci.yml — Build matrix (OS x features) + clippy verification.
 name: rust-ci
-"on":
+on:
   push: { branches: [main] }
   pull_request: { branches: [main] }
 permissions: { contents: read }
@@ -10,6 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        features: ["", "simd"]
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
@@ -18,15 +19,16 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
-          cache: true
+          cache: ${{ !(matrix.os == 'macos-latest' && matrix.features == 'simd') }}
           cache-key: "rust-${{ matrix.os }}-${{ hashFiles('rust-toolchain.toml') }}"
       - name: Build
         shell: bash
         env:
+          RUSTFLAGS: ${{ matrix.features == 'simd' && '-C target-feature=+neon' || '' }}
         run: |
           exclude=""
           if [ "${{ matrix.os }}" = "macos-latest" ]; then exclude='--exclude ithmb-python'; fi
-          cargo build --workspace $exclude
+          cargo build --workspace ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }} $exclude
       - name: Test
         shell: bash
         env:
@@ -35,7 +37,7 @@ jobs:
         run: |
           exclude=""
           if [ "${{ matrix.os }}" = "macos-latest" ]; then exclude='--exclude ithmb-python'; fi
-          cargo test --workspace $exclude
+          cargo test --workspace ${{ matrix.features != '' && format('--features {0}', matrix.features) || '' }} $exclude
 
   verify_clippy:
     runs-on: ubuntu-latest
@@ -48,7 +50,7 @@ jobs:
           cache: true
           cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}"
       - name: cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-features --all-targets -- -D warnings
 
   check_links:
     runs-on: ubuntu-latest
