@@ -27,7 +27,7 @@ mod yuv;
 )]
 mod scalar;
 
-#[cfg(target_arch = "aarch64")]
+#[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
 mod neon;
 
 // Re-export dispatch functions that live in sub-modules.
@@ -151,13 +151,16 @@ pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
         uyvy::uyvy_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::uyvy_quad_to_bgra_neon(quad);
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    #[cfg(not(any(
+        any(target_arch = "x86_64", target_arch = "x86"),
+        all(target_arch = "aarch64", not(target_os = "macos")),
+    )))]
     scalar::uyvy_quad_to_bgra(quad)
 }
 
@@ -175,13 +178,16 @@ pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
         uyvy::uyvy_double_quad_to_bgra_sse2(quads)
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::uyvy_double_quad_to_bgra_neon(quads);
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    #[cfg(not(any(
+        any(target_arch = "x86_64", target_arch = "x86"),
+        all(target_arch = "aarch64", not(target_os = "macos")),
+    )))]
     scalar::uyvy_double_quad_to_bgra(quads)
 }
 
@@ -222,7 +228,7 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
             dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
         }
 
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
         // SAFETY: aarch64 guarantees NEON.
         unsafe {
             let q0 = neon::uyvy_double_quad_to_bgra_neon(&src[i..i + 8].try_into().unwrap());
@@ -232,7 +238,11 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
             dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
         }
 
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+        #[cfg(not(any(
+            target_arch = "x86_64",
+            target_arch = "x86",
+            all(target_arch = "aarch64", not(target_os = "macos"))
+        )))]
         {
             let q0 = scalar::uyvy_double_quad_to_bgra(&src[i..i + 8].try_into().unwrap());
             let q1 = scalar::uyvy_double_quad_to_bgra(&src[i + 8..i + 16].try_into().unwrap());
@@ -254,7 +264,7 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
             dst[d_off..d_off + 8].copy_from_slice(&px);
         }
 
-        #[cfg(target_arch = "aarch64")]
+        #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
         // SAFETY: aarch64 guarantees NEON.
         unsafe {
             let px = neon::uyvy_quad_to_bgra_neon(&src[i..i + 4].try_into().unwrap());
@@ -262,7 +272,11 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) {
             dst[d_off..d_off + 8].copy_from_slice(&px);
         }
 
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+        #[cfg(not(any(
+            target_arch = "x86_64",
+            target_arch = "x86",
+            all(target_arch = "aarch64", not(target_os = "macos"))
+        )))]
         {
             let px = scalar::uyvy_quad_to_bgra(&src[i..i + 4].try_into().unwrap());
             let d_off = i * 2;
@@ -327,7 +341,7 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
         return unsafe { yuv::yuv420_row_pair_to_bgra_sse41(y_row, cb_row, cr_row, dst, w, cb_w) };
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     #[allow(unreachable_code)]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
@@ -378,7 +392,7 @@ pub(crate) fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         rgb565::rgb565_row_to_bgra_sse2(src, dst);
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     #[allow(unreachable_code)]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
@@ -431,7 +445,7 @@ pub(crate) fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         rgb555::rgb555_row_to_bgra_sse2(src, dst);
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     #[allow(unreachable_code)]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
@@ -468,13 +482,16 @@ pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
         fill_gray_row_sse2(gray)
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::fill_gray_row_neon(gray);
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    #[cfg(not(any(
+        any(target_arch = "x86_64", target_arch = "x86"),
+        all(target_arch = "aarch64", not(target_os = "macos")),
+    )))]
     scalar::fill_gray_row(gray)
 }
 
@@ -524,12 +541,16 @@ pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
         cl::cl_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::cl_quad_to_bgra_neon(quad);
     }
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    #[cfg(not(any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        all(target_arch = "aarch64", not(target_os = "macos"))
+    )))]
     // Scalar fallback (not needed when SIMD covers all platforms)
     scalar::cl_quad_to_bgra(*quad)
 }
@@ -575,13 +596,17 @@ pub(crate) fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     // NEON path (compile-time guaranteed on aarch64, gated on macOS — known NEON edge case)
-    #[cfg(target_arch = "aarch64")]
+    #[cfg(all(target_arch = "aarch64", not(target_os = "macos")))]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return neon::cl_row_to_bgra_neon(src, dst);
     }
 
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    #[cfg(not(any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        all(target_arch = "aarch64", not(target_os = "macos"))
+    )))]
     scalar::cl_row_to_bgra_scalar(src, dst);
 }
 
