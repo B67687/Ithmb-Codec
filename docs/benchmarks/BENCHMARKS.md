@@ -33,9 +33,6 @@ Use the convenience wrapper:
 # Full benchmark run with perf stat counters
 ./scripts/run-bench-perf.sh
 
-# With SIMD acceleration
-# (SIMD is always compiled, no feature flag needed)
-
 # Quick run without perf counters
 ./scripts/run-bench-perf.sh --quick
 ```
@@ -45,6 +42,19 @@ Output is written to `target/bench/`:
 - `divan-{timestamp}.json` — machine-readable benchmark results
 - `perf-{timestamp}.txt` — `perf stat` counters (when available)
 - `baseline.json` — latest baseline (overwritten each run)
+
+### Benchmark Targets
+
+All 6 targets are run by `run-bench-perf.sh`:
+
+| Target | Description |
+|--------|-------------|
+| `decoders` | Per-format decode throughput at 4 resolutions (64, 256, 512, 720×480) |
+| `encoders` | Per-format encode throughput at 3 resolutions (64, 256, 512) |
+| `pipeline` | End-to-end decode + encode pipeline timing |
+| `simd_compare` | SIMD vs scalar cross-validation at 512×512 |
+| `memory` | Heap allocation count and bytes per decode (8 formats at 512×512) |
+| `profiles` | Decode throughput for all 54 built-in profiles |
 
 ### Framework
 
@@ -169,14 +179,14 @@ Decoders listed in standard order used across both Rust and C# repos.
 
 | Decoder           | 64×64   | 256×256 | 512×512 | 720×480 |
 | ----------------- | ------- | ------- | ------- | ------- |
-| RGB565            | 0.52 µs | 7.5 µs  | 33.3 µs | 45.3 µs |
-| RGB555            | 0.55 µs | 7.9 µs  | 35.3 µs | 47.2 µs |
-| UYVY              | 0.97 µs | 14.5 µs | 61.1 µs | 82.0 µs |
-| UYVY (interlaced) | 2.05 µs | 30.8 µs | 60.8 µs | 81.6 µs |
-| YCbCr 4:2:0       | 3.6 µs  | 36.7 µs | 150 µs  | 199 µs  |
-| CL                | 1.3 µs  | 20 µs   | 84 µs   | 112 µs  |
-| CLCL              | 0.22 µs | 2.9 µs  | 12.9 µs | 19.4 µs |
-| Reordered RGB555  | —       | 108 µs  | 463 µs  | 632 µs  |
+| RGB565            | 0.55 µs | 7.5 µs  | 33.3 µs | 44.8 µs |
+| RGB555            | 0.55 µs | 7.8 µs  | 34.8 µs | 46.7 µs |
+| UYVY              | 0.94 µs | 14.0 µs | 60.0 µs | 80.4 µs |
+| UYVY (interlaced) | 2.17 µs | 30.8 µs | 60.7 µs | 81.6 µs |
+| YCbCr 4:2:0       | 3.5 µs  | 36.4 µs | 149 µs  | 198 µs  |
+| CL                | 1.3 µs  | 19.6 µs | 82.9 µs | 110 µs  |
+| CLCL              | 0.20 µs | 2.9 µs  | 12.6 µs | 18.8 µs |
+| Reordered RGB555  | —       | 108 µs  | 458 µs  | 619 µs  |
 
 > Reordered RGB555 is square-only (w == h). 720×480 uses 512×512 as the nearest equivalent.
 > For CI baseline, encoder throughput, and full data, see [`.github/baseline.json`](https://github.com/B67687/Ithmb-Codec/blob/main/.github/baseline.json).
