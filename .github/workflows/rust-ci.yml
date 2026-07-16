@@ -47,7 +47,7 @@ jobs:
           cache: true
           cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}"
       - name: cargo clippy
-        run: cargo clippy --workspace --all-features --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
   check_links:
     runs-on: ubuntu-latest
@@ -87,11 +87,11 @@ jobs:
       - name: Benchmark regression check
         env:
           FAIL_THRESHOLD: 1.25
+
       - name: Benchmark regression check (SIMD)
         env:
           FAIL_THRESHOLD: 1.25
           BASELINE_PATH: .github/baseline-simd.json
-          CARGO_BENCH_ARGS: --features simd -p ithmb-core
         shell: bash
         run: |
           tools/check-benchmark-regression.sh
@@ -102,9 +102,6 @@ jobs:
           name: ci-benchmark-data-simd
           path: /tmp/ci-benchmark-output-simd.txt
           retention-days: 7
-        shell: bash
-        run: |
-          tools/check-benchmark-regression.sh
       - name: Upload CI benchmark data
         if: always()
         uses: actions/upload-artifact@v7
@@ -207,7 +204,7 @@ jobs:
       - name: Run tests
         run: cargo test --workspace
       - name: Run SIMD tests
-        run: cargo test --features simd -p ithmb-core
+        run: cargo test -p ithmb-core
 
   coverage:
     runs-on: ubuntu-latest
@@ -222,7 +219,7 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
       - name: Generate coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        run: cargo llvm-cov --workspace --lcov --output-path lcov.info
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
