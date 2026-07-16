@@ -2,8 +2,7 @@
 """Compare divan benchmark output against a JSON baseline.
 
 Usage:
-  FAIL_THRESHOLD=3.0 cargo bench --features simd -p ithmb-core --bench decoders 2>&1 | scripts/check-baseline.py
-
+  FAIL_THRESHOLD=3.0 cargo bench -p ithmb-core --bench decoders 2>&1 | scripts/check-baseline.py
 Exit codes:
   0 — all within threshold (or no baseline found)
   1 — at least one benchmark regressed by >FAIL_THRESHOLD

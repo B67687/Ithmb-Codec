@@ -7,6 +7,8 @@
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;
+#[cfg(feature = "logging")]
+use log::debug;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
 
@@ -29,6 +31,8 @@ pub fn is_jpeg(src: &[u8]) -> bool {
 /// valid JPEG stream. Returns [`DecodeError::Jpeg`] if the underlying JPEG
 /// decoder fails.
 pub fn decode(src: &[u8], _profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
+    #[cfg(feature = "logging")]
+    debug!("jpeg::decode: len={}", src.len());
     if src.len() < 2 {
         return Err(DecodeError::BufferTooShort {
             expected: 2,

@@ -40,7 +40,7 @@ use std::sync::atomic::AtomicBool;
 /// | `InvalidFormat` | Non-positive, or odd width or height |
 /// | `BufferTooShort` | Input is smaller than `w×h + (w/2)×(h/2)×2` |
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 0)?;
+    let (_, w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 0)?;
 
     // YCbCr 4:2:0 chroma subsampling requires even dimensions.
     if w % 2 != 0 || h % 2 != 0 {
@@ -81,41 +81,21 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
 
     let mut dst = vec![0u8; w * h * 4];
 
-    #[cfg(feature = "simd")]
-    {
-        // SIMD path: process 2x2 macroblocks in row-pair batches via
-        // `crate::simd::yuv420_row_pair_to_bgra`, eliminating per-quad dispatch.
-        let block_h = h / 2;
-        for cy in 0..block_h {
-            crate::pixel_utils::check_canceled(canceled, "ycbcr420 decode canceled")?;
-            let y_base = cy * 2 * w;
-            let cb_base = cy * cb_w;
-            crate::simd::yuv420_row_pair_to_bgra(
-                &y_plane[y_base..y_base + 2 * w],
-                &cb_plane[cb_base..cb_base + cb_w],
-                &cr_buf[cb_base..cb_base + cb_w],
-                &mut dst[y_base * 4..(y_base + 2 * w) * 4],
-                w,
-                cb_w,
-            );
-        }
-    }
-
-    #[cfg(not(feature = "simd"))]
-    {
-        for y in 0..h {
-            crate::pixel_utils::check_canceled(canceled, "ycbcr420 decode canceled")?;
-            let cy = y / 2;
-            for x in 0..w {
-                let cx = x / 2;
-                let y_val = y_plane[y * w + x];
-                let cb = cb_plane[cy * cb_w + cx];
-                let cr = cr_buf[cy * cb_w + cx];
-                let pixel = yuv::yuv_to_bgra(y_val, cb, cr);
-                let dst_off = (y * w + x) * 4;
-                dst[dst_off..dst_off + 4].copy_from_slice(&pixel);
-            }
-        }
+    // SIMD path: process 2x2 macroblocks in row-pair batches via
+    // `crate::simd::yuv420_row_pair_to_bgra`, eliminating per-quad dispatch.
+    let block_h = h / 2;
+    for cy in 0..block_h {
+        crate::pixel_utils::check_canceled(canceled, "ycbcr420 decode canceled")?;
+        let y_base = cy * 2 * w;
+        let cb_base = cy * cb_w;
+        crate::simd::yuv420_row_pair_to_bgra(
+            &y_plane[y_base..y_base + 2 * w],
+            &cb_plane[cb_base..cb_base + cb_w],
+            &cr_buf[cb_base..cb_base + cb_w],
+            &mut dst[y_base * 4..(y_base + 2 * w) * 4],
+            w,
+            cb_w,
+        );
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -338,7 +318,7 @@ mod tests {
     // SIMD cross-validation (1000 random 16×16 images)
     // -----------------------------------------------------------------------
 
-    #[cfg(feature = "simd")]
+    // SIMD_ALWAYS_ON
     #[test]
     #[allow(
         clippy::cast_possible_truncation,

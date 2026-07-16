@@ -35,6 +35,7 @@ use ithmb_core::{decode_ithmb, open_ithmb};
 use jpeg_decoder as _;
 #[cfg(feature = "cache")]
 use lru as _;
+use proptest as _;
 use std::sync::atomic::AtomicBool;
 use thiserror as _;
 
@@ -203,17 +204,16 @@ fn test_truncated_pixel_data_rgb565() {
 fn test_truncated_pixel_data_rgb555() {
     // Use decode_with_profile with a 4×4 RGB555 profile but only 4 bytes of
     // pixel data instead of 32.
-    let profile = util::make_profile(4, 4, Encoding::Rgb555);
-    let mut buf = vec![0u8; 8]; // 4 prefix + 4 pixel
-    buf[0..4].copy_from_slice(&9999i32.to_be_bytes());
+    let profile = util::make_profile(32, 32, Encoding::Rgb555);
+    let buf = vec![0u8; 8]; // 4 prefix + 4 pixel (need 2048 → deficit=2044 >> 256)
     let result = decode_with_profile(&buf, &profile, &CANCELED);
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
 }
 
 #[test]
 fn test_truncated_pixel_data_uyvy() {
-    let profile = util::make_profile(4, 4, Encoding::Yuv422);
-    let mut buf = vec![0u8; 8]; // 4 prefix + 4 pixel
+    let profile = util::make_profile(32, 32, Encoding::Yuv422);
+    let mut buf = vec![0u8; 8]; // 4 prefix + 4 pixel (need 2048 → deficit=2044 >> 256)
     buf[0..4].copy_from_slice(&9999i32.to_be_bytes());
     let result = decode_with_profile(&buf, &profile, &CANCELED);
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
@@ -558,15 +558,15 @@ fn test_clcl_truncated_y_plane() {
     // CLCL 4×4: needs Y(16) + Cb(8) + Cr(8) = 32 bytes after prefix.
     let profile = Profile {
         prefix: 9999,
-        width: 4,
-        height: 4,
+        width: 32,
+        height: 32,
         encoding: Encoding::Yuv422,
-        frame_byte_length: 32,
+        frame_byte_length: 2048,
         clcl_chroma: true,
         ..Default::default()
     };
     // Only prefix + partial Y plane (8 bytes instead of 16).
-    let mut buf = vec![0u8; 4 + 8];
+    let mut buf = vec![0u8; 4 + 8]; // 4 prefix + 8 Y bytes (need 2048 → deficit=2040 >> 256)
     buf[0..4].copy_from_slice(&9999i32.to_be_bytes());
     buf[4..].fill(128);
 
@@ -576,13 +576,13 @@ fn test_clcl_truncated_y_plane() {
 
 #[test]
 fn test_clcl_truncated_chroma() {
-    // CLCL 4×4: prefix + Y(16) + partial Cb(4 instead of 8).
+    // CLCL 141×2: prefix + Y(282) + partial Cb(4 instead of 282).
     let profile = Profile {
         prefix: 9999,
-        width: 4,
-        height: 4,
+        width: 141,
+        height: 2,
         encoding: Encoding::Yuv422,
-        frame_byte_length: 32,
+        frame_byte_length: 564,
         clcl_chroma: true,
         ..Default::default()
     };
@@ -596,12 +596,13 @@ fn test_clcl_truncated_chroma() {
 
 #[test]
 fn test_clcl_empty_after_prefix() {
+    // CLCL 130×2: 520 bytes needed after prefix.
     let profile = Profile {
         prefix: 9999,
-        width: 2,
+        width: 130,
         height: 2,
         encoding: Encoding::Yuv422,
-        frame_byte_length: 6,
+        frame_byte_length: 520,
         clcl_chroma: true,
         ..Default::default()
     };
@@ -612,13 +613,13 @@ fn test_clcl_empty_after_prefix() {
 
 #[test]
 fn test_cl_truncated_data() {
-    // CL 4×4: needs Y(16) + CbCr(16) = 32 bytes after prefix.
+    // CL 134×2: needs 536 bytes after prefix.
     let profile = Profile {
         prefix: 9999,
-        width: 4,
-        height: 4,
+        width: 134,
+        height: 2,
         encoding: Encoding::Yuv422,
-        frame_byte_length: 32,
+        frame_byte_length: 536,
         cl_chroma: true,
         ..Default::default()
     };
@@ -633,12 +634,13 @@ fn test_cl_truncated_data() {
 
 #[test]
 fn test_cl_truncated_chroma_plane() {
+    // CL 141×2: prefix + Y(282) + partial CbCr(4 instead of 282).
     let profile = Profile {
         prefix: 9999,
-        width: 4,
-        height: 4,
+        width: 141,
+        height: 2,
         encoding: Encoding::Yuv422,
-        frame_byte_length: 32,
+        frame_byte_length: 564,
         cl_chroma: true,
         ..Default::default()
     };
@@ -653,12 +655,13 @@ fn test_cl_truncated_chroma_plane() {
 
 #[test]
 fn test_cl_empty_after_prefix() {
+    // CL 130×2: 520 bytes needed after prefix.
     let profile = Profile {
         prefix: 9999,
-        width: 2,
+        width: 130,
         height: 2,
         encoding: Encoding::Yuv422,
-        frame_byte_length: 8,
+        frame_byte_length: 520,
         cl_chroma: true,
         ..Default::default()
     };
@@ -1025,4 +1028,229 @@ fn test_decoder_deterministic_uyvy() {
     let r1 = decode_with_profile(&data, &profile, &CANCELED).unwrap();
     let r2 = decode_with_profile(&data, &profile, &CANCELED).unwrap();
     assert_eq!(r1.data, r2.data);
+}
+
+// ---------------------------------------------------------------------------
+// 11. Trailing padding tolerance (256-byte deficit threshold)
+// ---------------------------------------------------------------------------
+//
+// The `TRAILING_PADDING_TOLERANCE` constant (256 bytes) controls how much
+// short a buffer can be before the decoder rejects it. A deficit ≤ 256 is
+// zero-padded and decoded successfully; deficit > 256 returns BufferTooShort.
+
+#[test]
+fn test_trailing_padding_within_tolerance_rgb565() {
+    // RGB565 16×16: 512 bytes pixel data.
+    // Truncate by 128 → deficit 128 < 256 → SUCCEEDS (zero-padded).
+    let data = build_valid_ithmb(16, Encoding::Rgb565);
+    let expected = 16 * 16 * 2; // 512
+    let deficit = 128usize;
+    let truncated = data[..4 + expected - deficit].to_vec();
+
+    let profile = util::make_profile(16, 16, Encoding::Rgb565);
+    let result = decode_with_profile(&truncated, &profile, &CANCELED);
+    assert!(result.is_ok(), "deficit {deficit} < 256 should succeed, got {result:?}");
+    let img = result.unwrap();
+    assert_eq!(img.width, 16);
+    assert_eq!(img.height, 16);
+    assert_eq!(img.data.len(), 16 * 16 * 4);
+}
+
+#[test]
+fn test_trailing_padding_at_tolerance_boundary_rgb565() {
+    // Truncate by exactly 256 → deficit == 256 → SUCCEEDS (at boundary).
+    let data = build_valid_ithmb(16, Encoding::Rgb565);
+    let expected = 16 * 16 * 2; // 512
+    let deficit = 256usize;
+    let truncated = data[..4 + expected - deficit].to_vec();
+
+    let profile = util::make_profile(16, 16, Encoding::Rgb565);
+    let result = decode_with_profile(&truncated, &profile, &CANCELED);
+    assert!(
+        result.is_ok(),
+        "deficit {deficit} == 256 should succeed, got {result:?}"
+    );
+    let img = result.unwrap();
+    assert_eq!(img.width, 16);
+    assert_eq!(img.height, 16);
+    assert_eq!(img.data.len(), 16 * 16 * 4);
+}
+
+#[test]
+fn test_trailing_padding_exceeds_tolerance_rgb565() {
+    // Truncate by 300 → deficit 300 > 256 → BufferTooShort.
+    let data = build_valid_ithmb(16, Encoding::Rgb565);
+    let expected = 16 * 16 * 2; // 512
+    let deficit = 300usize;
+    let truncated = data[..4 + expected - deficit].to_vec();
+    // actual = 212
+
+    let profile = util::make_profile(16, 16, Encoding::Rgb565);
+    let result = decode_with_profile(&truncated, &profile, &CANCELED);
+    assert!(matches!(
+        result,
+        Err(DecodeError::BufferTooShort {
+            expected: 512,
+            actual: 212,
+        })
+    ));
+}
+
+#[test]
+fn test_trailing_padding_within_tolerance_uyvy() {
+    // UYVY 16×16: 512 bytes pixel data.
+    // Truncate by 128 → deficit 128 < 256 → SUCCEEDS (zero-padded).
+    let data = build_valid_ithmb(16, Encoding::Yuv422);
+    let expected = 16 * 16 * 2; // 512
+    let deficit = 128usize;
+    let truncated = data[..4 + expected - deficit].to_vec();
+
+    let profile = util::make_profile(16, 16, Encoding::Yuv422);
+    let result = decode_with_profile(&truncated, &profile, &CANCELED);
+    assert!(result.is_ok(), "deficit {deficit} < 256 should succeed, got {result:?}");
+    let img = result.unwrap();
+    assert_eq!(img.width, 16);
+    assert_eq!(img.height, 16);
+    assert_eq!(img.data.len(), 16 * 16 * 4);
+}
+
+#[test]
+fn test_trailing_padding_at_tolerance_boundary_uyvy() {
+    // Truncate by exactly 256 → deficit == 256 → SUCCEEDS (at boundary).
+    let data = build_valid_ithmb(16, Encoding::Yuv422);
+    let expected = 16 * 16 * 2; // 512
+    let deficit = 256usize;
+    let truncated = data[..4 + expected - deficit].to_vec();
+
+    let profile = util::make_profile(16, 16, Encoding::Yuv422);
+    let result = decode_with_profile(&truncated, &profile, &CANCELED);
+    assert!(
+        result.is_ok(),
+        "deficit {deficit} == 256 should succeed, got {result:?}"
+    );
+    let img = result.unwrap();
+    assert_eq!(img.width, 16);
+    assert_eq!(img.height, 16);
+    assert_eq!(img.data.len(), 16 * 16 * 4);
+}
+
+#[test]
+fn test_trailing_padding_exceeds_tolerance_uyvy() {
+    // Truncate by 300 → deficit 300 > 256 → BufferTooShort.
+    let data = build_valid_ithmb(16, Encoding::Yuv422);
+    let expected = 16 * 16 * 2; // 512
+    let deficit = 300usize;
+    let truncated = data[..4 + expected - deficit].to_vec();
+    // actual = 212
+
+    let profile = util::make_profile(16, 16, Encoding::Yuv422);
+    let result = decode_with_profile(&truncated, &profile, &CANCELED);
+    assert!(matches!(
+        result,
+        Err(DecodeError::BufferTooShort {
+            expected: 512,
+            actual: 212,
+        })
+    ));
+}
+
+// ---------------------------------------------------------------------------
+// 12. T-prefix / embedded JPEG carving fallback
+// ---------------------------------------------------------------------------
+//
+// When `decode_ithmb` encounters an unknown prefix that is not a JPEG SOI
+// and does not match the data-length heuristic, it falls back to scanning
+// the buffer for an embedded JPEG (SOI → JFIF/Exif → EOI) within the
+// first 4 MiB. These tests cover that fallback path.
+// ---------------------------------------------------------------------------
+
+/// T-prefix signature used in real-world files (unknown to the profile DB).
+const UNKNOWN_TPREFIX: [u8; 4] = [0x4D, 0xA9, 0xE9, 0xA0];
+
+/// Build a valid 8×8 JPEG with JFIF marker using the `image` crate encoder.
+fn make_jpeg_jfif_8x8() -> Vec<u8> {
+    let mut out = Vec::new();
+    let pixels = vec![128u8; 8 * 8 * 3];
+    let mut encoder = image::codecs::jpeg::JpegEncoder::new(&mut out);
+    encoder
+        .encode(&pixels, 8, 8, image::ExtendedColorType::Rgb8)
+        .expect("JPEG encoder should succeed");
+    out
+}
+
+#[test]
+fn test_embedded_jpeg_in_unknown_prefix() {
+    // Buffer: [T-prefix] [valid JPEG with JFIF]
+    // The scanner should find the embedded JPEG and decode it successfully.
+    let jpeg_data = make_jpeg_jfif_8x8();
+    let mut buf = Vec::with_capacity(4 + jpeg_data.len());
+    buf.extend_from_slice(&UNKNOWN_TPREFIX);
+    buf.extend_from_slice(&jpeg_data);
+
+    let img = decode_ithmb(&buf, &AtomicBool::new(false))
+        .expect("embedded JPEG with JFIF should decode via carving fallback");
+    assert_eq!(img.width, 8);
+    assert_eq!(img.height, 8);
+    assert_eq!(img.data.len(), 8 * 8 * 4);
+}
+
+#[test]
+fn test_embedded_jpeg_no_jfif_marker() {
+    // Buffer: [T-prefix] [SOI + garbage + EOI] — no JFIF or Exif marker.
+    // The scanner skips the SOI because `has_jpeg_marker` returns false,
+    // then exhausts the buffer and returns None → Unsupported.
+    let embedded: [u8; 4] = [0xFF, 0xD8, 0xFF, 0xD9];
+    let mut buf = Vec::with_capacity(4 + embedded.len());
+    buf.extend_from_slice(&UNKNOWN_TPREFIX);
+    buf.extend_from_slice(&embedded);
+
+    let result = decode_ithmb(&buf, &AtomicBool::new(false));
+    assert!(
+        matches!(result, Err(DecodeError::Unsupported(_))),
+        "expected Unsupported, got {result:?}"
+    );
+}
+
+#[test]
+fn test_embedded_jpeg_exceeds_scan_limit() {
+    // Buffer: [T-prefix] [3 MB × 0x00 padding] [JPEG with JFIF]
+    // The JPEG SOI is at offset 4 200 004 > 4 MiB (JPEG_SCAN_LIMIT).
+    // The scanner never sees it → Unsupported.
+    let jpeg_data = make_jpeg_jfif_8x8();
+    let offset = 4_200_000; // beyond the 4 MiB scan window
+    let mut buf = vec![0u8; offset + jpeg_data.len()];
+    buf[0..4].copy_from_slice(&UNKNOWN_TPREFIX);
+    buf[offset..offset + jpeg_data.len()].copy_from_slice(&jpeg_data);
+
+    let result = decode_ithmb(&buf, &AtomicBool::new(false));
+    assert!(
+        matches!(result, Err(DecodeError::Unsupported(_))),
+        "expected Unsupported, got {result:?}"
+    );
+}
+
+#[test]
+fn test_embedded_jpeg_canceled_mid_scan() {
+    // Buffer: [T-prefix] [2.9 MB × 0x00 padding] [JPEG with JFIF]
+    // JPEG SOI is at ~offset 3 000 004, within scan window.
+    // Canceled=true means the JPEG decode loop checks cancellation;
+    // small images may decode before cancellation takes effect.
+    let jpeg_data = make_jpeg_jfif_8x8();
+    let offset = 3_000_000; // within scan window
+    let mut buf = vec![0u8; offset + jpeg_data.len()];
+    buf[0..4].copy_from_slice(&UNKNOWN_TPREFIX);
+    buf[offset..offset + jpeg_data.len()].copy_from_slice(&jpeg_data);
+
+    let canceled = AtomicBool::new(true);
+    let result = decode_ithmb(&buf, &canceled);
+    match result {
+        Ok(img) => {
+            // Small image may complete before cancellation takes effect.
+            assert_eq!(img.width, 8);
+            assert_eq!(img.height, 8);
+        }
+        Err(e) => {
+            assert!(matches!(e, DecodeError::Canceled(_)), "expected Canceled, got {e:?}");
+        }
+    }
 }

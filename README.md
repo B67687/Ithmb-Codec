@@ -19,13 +19,7 @@
 <a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/opencode.svg" alt="OpenCode"></a>
 <a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
 
-
-
-
-
-
 <br>
-
 
 </div>
 <br>
@@ -123,26 +117,26 @@ For detailed build instructions see [Build from source](#build-from-source).
 
 This project builds on the work of the iPod reverse-engineering community. Key references:
 
-| Project | Author | Role |
-|---------|--------|------|
-| [iOpenPod](https://github.com/TheRealSavi/iOpenPod) | Savi | Primary format profile reference (50+ entries, empirically validated across multiple iPod models) |
-| [libgpod](https://sourceforge.net/p/gtkpod/libgpod/ci/master/tree/) | community | PhotoDB/ArtworkDB chunk parser, format ID tables |
-| [Keith's iPod Photo Reader](https://github.com/kebwi/Keiths_iPod_Photo_Reader) | kebwi | Original RE (2005), multi-frame confirmation, 13 decode methods |
-| [clickwheel](https://github.com/dstaley/clickwheel) | dstaley | C# ArtworkDB read/write, 40+ format IDs |
-| [OrgZ](https://github.com/FoxCouncil/OrgZ) | Fox | C# ArtworkDB+ithmb read/write |
-| [pyithmb](https://github.com/wrinklykong/pyithmb) | wrinklykong | Python YUV reference decoder |
+| Project                                                                        | Author      | Role                                                                                              |
+| ------------------------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
+| [iOpenPod](https://github.com/TheRealSavi/iOpenPod)                            | Savi        | Primary format profile reference (50+ entries, empirically validated across multiple iPod models) |
+| [libgpod](https://sourceforge.net/p/gtkpod/libgpod/ci/master/tree/)            | community   | PhotoDB/ArtworkDB chunk parser, format ID tables                                                  |
+| [Keith's iPod Photo Reader](https://github.com/kebwi/Keiths_iPod_Photo_Reader) | kebwi       | Original RE (2005), multi-frame confirmation, 13 decode methods                                   |
+| [clickwheel](https://github.com/dstaley/clickwheel)                            | dstaley     | C# ArtworkDB read/write, 40+ format IDs                                                           |
+| [OrgZ](https://github.com/FoxCouncil/OrgZ)                                     | Fox         | C# ArtworkDB+ithmb read/write                                                                     |
+| [pyithmb](https://github.com/wrinklykong/pyithmb)                              | wrinklykong | Python YUV reference decoder                                                                      |
 
 See [ACKNOWLEDGMENTS.md](docs/ACKNOWLEDGMENTS.md) for the full list (33 projects, sample file sources, academic references, and color conversion standards).
 
 ### Contribution breakdown
 
-| Area | What was done | Who |
-|------|--------------|-----|
-| **Community foundations** | iOpenPod, libgpod, clickwheel, Keith's RE, pyithmb, ithmb-rs, 15+ more | Community |
-| **Hardware-validated profiles** | 50+ profiles empirically validated across multiple iPod models | Savi (iOpenPod) |
-| **Sample contribution** | First public F-prefix .ithmb test vectors + 30 reference PNG files (CC0) | Reuhno |
-| **AI execution** | Code, testing, documentation, CI, format cross-referencing | AI (Sisyphus + OMO) |
-| **Project lead** | Vision, architecture, quality control, community engagement, verification, hardware coordination | B67687 |
+| Area                            | What was done                                                                                    | Who                 |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------- |
+| **Community foundations**       | iOpenPod, libgpod, clickwheel, Keith's RE, pyithmb, ithmb-rs, 15+ more                           | Community           |
+| **Hardware-validated profiles** | 50+ profiles empirically validated across multiple iPod models                                   | Savi (iOpenPod)     |
+| **Sample contribution**         | First public F-prefix .ithmb test vectors + 30 reference PNG files (CC0)                         | Reuhno              |
+| **AI execution**                | Code, testing, documentation, CI, format cross-referencing                                       | AI (Sisyphus + OMO) |
+| **Project lead**                | Vision, architecture, quality control, community engagement, verification, hardware coordination | B67687              |
 
 ---
 
@@ -184,12 +178,12 @@ cargo build --release
 
 The workspace produces four artifacts:
 
-| Crate | Artifact | Install |
-|-------|----------|---------|
-| `ithmb-core`   | `libithmb_core.rlib` (static library) | `cargo add ithmb-core` (crates.io) |
-| `ithmb-cli`    | `ithmb` CLI binary                   | `cargo install ithmb-cli` (crates.io) |
-| `ithmb-python` | `libithmb_python.{so,dylib,pyd}`     | `pip install pymod/` (or crates.io when published) |
-| `ithmb-gen`    | `ithmb-gen` sample generator binary | `cargo install --path crates/ithmb-gen` |
+| Crate          | Artifact                              | Install                                            |
+| -------------- | ------------------------------------- | -------------------------------------------------- |
+| `ithmb-core`   | `libithmb_core.rlib` (static library) | `cargo add ithmb-core` (crates.io)                 |
+| `ithmb-cli`    | `ithmb` CLI binary                    | `cargo install ithmb-cli` (crates.io)              |
+| `ithmb-python` | `libithmb_python.{so,dylib,pyd}`      | `pip install pymod/` (or crates.io when published) |
+| `ithmb-gen`    | `ithmb-gen` sample generator binary   | `cargo install --path crates/ithmb-gen`            |
 
 A separate C ABI shared library for ImageGlass integration is maintained at [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
 
@@ -215,11 +209,12 @@ cargo build --release --target x86_64-pc-windows-gnu
 ```
 
 Enable SIMD acceleration:
+
 ```bash
-cargo build --release --features simd
+cargo build --release --features cache
 ```
 
-Available features: `simd` (SSE2/AVX2/NEON YUV conversion), `cache` (LRU raw file cache), `metrics` (decode timing counters).
+Available features: `cache` (LRU raw file cache), `metrics` (decode timing counters), `c` (C ABI). SIMD acceleration is always compiled with runtime dispatch.
 
 > [!NOTE]
 > RGB565/RGB555 pixel-unpack formats use auto-vectorized scalar loops instead of hand-written SIMD — the hand-written SSE2/AVX2 was 34× slower on Intel due to AVX frequency downclock and port-5 bottleneck.
@@ -270,29 +265,29 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 
 **21 modules** organized by domain:
 
-| Module | Purpose |
-|--------|---------|
-| `pipeline/` | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
-| `jpeg.rs` | JPEG decoder wrapper (`jpeg-decoder` crate), EXIF orientation parsing |
-| `rgb565.rs` | RGB565 decoder (16-bit RGB 5/6/5) |
-| `rgb555.rs` | RGB555 decoder (15-bit RGB 5/5/5) |
-| `reordered_rgb555.rs` | Reordered RGB555 decoder (byte-swapped variant) |
-| `uyvy.rs` | UYVY 4:2:2 + Interlaced UYVY decoders (YUV→BGRA uses SSE2/AVX2/NEON with `--features simd`) |
-| `ycbcr420.rs` | YCbCr 4:2:0 planar decoder (YUV→BGRA uses SSE2/AVX2/NEON with `--features simd`) |
-| `clcl.rs` | CLCL nibble-chroma decoder (YUV→BGRA uses SSE2/AVX2/NEON with `--features simd`) |
-| `cl.rs` | CL per-pixel chroma decoder (YUV→BGRA uses SSE2/AVX2/NEON with `--features simd`) |
-| `yuv.rs` | Shared YUV conversion helpers, SSE2/AVX2/NEON runtime dispatch |
-| `simd/` | SSE2/AVX2/NEON YUV conversion dispatch (feature-gated), per-format SIMD sub-modules |
-| `device_profiles.rs` | 18-device iPod/iPhone format lookup table |
-| `enc.rs` | Synthetic encoders for all raw formats |
-| `enc/helpers.rs` | Shared encoder helpers (InterlaceFields, BT.601) |
-| `profile.rs` | Profile struct (IthmbVariantProfile, IthmbEncoding) |
-| `profile_db.rs` | Built-in profile database (54 entries) |
-| `profile_parser.rs` | JSON parser for external `profiles.json` |
-| `cache.rs` | LRU raw file cache (feature-gated) |
-| `metrics.rs` | Decode timing counters (feature-gated) |
-| `error.rs` | Typed error enum (`DecodeError`) + decoded image type (`DecodedImage`) |
-| `photodb/` | PhotoDB/ArtworkDB chunk parser, writer, integrity checker, and type definitions |
+| Module                | Purpose                                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pipeline/`           | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
+| `jpeg.rs`             | JPEG decoder wrapper (`jpeg-decoder` crate), EXIF orientation parsing                                                                                    |
+| `rgb565.rs`           | RGB565 decoder (16-bit RGB 5/6/5)                                                                                                                        |
+| `rgb555.rs`           | RGB555 decoder (15-bit RGB 5/5/5)                                                                                                                        |
+| `reordered_rgb555.rs` | Reordered RGB555 decoder (byte-swapped variant)                                                                                                          |
+| `uyvy.rs`             | UYVY 4:2:2 + Interlaced UYVY decoders (YUV→BGRA uses SSE2/AVX2/NEON )                                                                                    |
+| `ycbcr420.rs`         | YCbCr 4:2:0 planar decoder (YUV→BGRA uses SSE2/AVX2/NEON )                                                                                               |
+| `clcl.rs`             | CLCL nibble-chroma decoder (YUV→BGRA uses SSE2/AVX2/NEON )                                                                                               |
+| `cl.rs`               | CL per-pixel chroma decoder (YUV→BGRA uses SSE2/AVX2/NEON )                                                                                              |
+| `yuv.rs`              | Shared YUV conversion helpers, SSE2/AVX2/NEON runtime dispatch                                                                                           |
+| `simd/`               | SSE2/AVX2/NEON YUV conversion dispatch (feature-gated), per-format SIMD sub-modules                                                                      |
+| `device_profiles.rs`  | 18-device iPod/iPhone format lookup table                                                                                                                |
+| `enc.rs`              | Synthetic encoders for all raw formats                                                                                                                   |
+| `enc/helpers.rs`      | Shared encoder helpers (InterlaceFields, BT.601)                                                                                                         |
+| `profile.rs`          | Profile struct (IthmbVariantProfile, IthmbEncoding)                                                                                                      |
+| `profile_db.rs`       | Built-in profile database (54 entries)                                                                                                                   |
+| `profile_parser.rs`   | JSON parser for external `profiles.json`                                                                                                                 |
+| `cache.rs`            | LRU raw file cache (feature-gated)                                                                                                                       |
+| `metrics.rs`          | Decode timing counters (feature-gated)                                                                                                                   |
+| `error.rs`            | Typed error enum (`DecodeError`) + decoded image type (`DecodedImage`)                                                                                   |
+| `photodb/`            | PhotoDB/ArtworkDB chunk parser, writer, integrity checker, and type definitions                                                                          |
 
 **Data flow:**
 
@@ -347,45 +342,46 @@ A CLI tool for generating synthetic `.ithmb` test vectors and reference PNG file
 
 The `ithmb` CLI tool supports four modes:
 
-| Command | Description |
-|---------|-------------|
-| `ithmb input.ithmb [output.png]` | Decode to PNG (auto-detects format from extension) |
-| `ithmb --info input.ithmb` | Print metadata (size, prefix, profile, frame count) |
-| `ithmb --list-profiles` | Print the 54-profile database as a formatted table |
-| `ithmb --frame N input.ithmb [output.png]` | Extract frame N from a multi-frame file |
+| Command                                    | Description                                         |
+| ------------------------------------------ | --------------------------------------------------- |
+| `ithmb input.ithmb [output.png]`           | Decode to PNG (auto-detects format from extension)  |
+| `ithmb --info input.ithmb`                 | Print metadata (size, prefix, profile, frame count) |
+| `ithmb --list-profiles`                    | Print the 54-profile database as a formatted table  |
+| `ithmb --frame N input.ithmb [output.png]` | Extract frame N from a multi-frame file             |
 
 Output options: `--raw` for raw BGRA binary, `--format bin` for explicit binary, `.png` extension auto-selects PNG.
 
 ## Benchmarks
 
-Measured on AMD Ryzen AI 9 HX 370 with `--features simd`. Same order across both Rust and C#.
+Measured on AMD Ryzen AI 9 HX 370 . Same order across both Rust and C#.
 
-| Decoder | 64×64 | 720×480 |
-|---------|-------|--------|
-| RGB565 | 0.52 µs | 45 µs |
-| RGB555 | 0.55 µs | 47 µs |
-| UYVY | 0.97 µs | 82 µs |
-| UYVY (interlaced) | 2.05 µs | 82 µs |
-| YCbCr 4:2:0 | 3.6 µs | 199 µs |
-| CL | 1.3 µs | 112 µs |
-| CLCL | 0.22 µs | 19 µs |
-| Reordered RGB555 | — | 632 µs (512×512) |
+| Decoder           | 64×64   | 720×480          |
+| ----------------- | ------- | ---------------- |
+| RGB565            | 0.52 µs | 45 µs            |
+| RGB555            | 0.55 µs | 47 µs            |
+| UYVY              | 0.97 µs | 82 µs            |
+| UYVY (interlaced) | 2.05 µs | 82 µs            |
+| YCbCr 4:2:0       | 3.6 µs  | 199 µs           |
+| CL                | 1.3 µs  | 112 µs           |
+| CLCL              | 0.22 µs | 19 µs            |
+| Reordered RGB555  | —       | 632 µs (512×512) |
 
 See [`BENCHMARKS.md`](docs/benchmarks/BENCHMARKS.md) for full results (all 4 sizes, encoder throughput, methodology).
-With `--features simd`, Rust is faster than the C# original on 5 of 8 decoders (see BENCHMARKS.md for full comparison).
+With ``, Rust is faster than the C# original on 5 of 8 decoders (see BENCHMARKS.md for full comparison).
+
 ### Performance Limits
 
 Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s bandwidth):
 
-| Format | Current | Limit | Bottleneck | Room to improve |
-|--------|---------|-------|------------|-----------------|
-| RGB565 | **7.5 µs** | **7.5 µs** | L2 bandwidth saturated (35 GB/s) | **0%** — at hardware limit |
-| RGB555 | **7.7 µs** | ~7.5 µs | L2 bandwidth | ~3% |
-| CLCL | **2.9 µs** | ~2 µs | Nibble table lookup (4→8 bit expansion) | ~25% |
-| CL | **49 µs** | ~15 µs | Per-pixel BT.601 YUV→BGRA (ALU throughput) | ~70% |
-| UYVY | **17 µs** | ~8 µs | AVX2 vpshufb + vpmaddwd pipeline latency | ~50% |
-| YCbCr 4:2:0 | **38 µs** | ~15 µs | Per-pixel YUV clamp+pack (same UYVY bottleneck) | ~60% |
-| ReorderedRGB555 | **106 µs** | ~80 µs | Z-order Morton non-linear address pattern | ~25% |
+| Format          | Current    | Limit      | Bottleneck                                      | Room to improve            |
+| --------------- | ---------- | ---------- | ----------------------------------------------- | -------------------------- |
+| RGB565          | **7.5 µs** | **7.5 µs** | L2 bandwidth saturated (35 GB/s)                | **0%** — at hardware limit |
+| RGB555          | **7.7 µs** | ~7.5 µs    | L2 bandwidth                                    | ~3%                        |
+| CLCL            | **2.9 µs** | ~2 µs      | Nibble table lookup (4→8 bit expansion)         | ~25%                       |
+| CL              | **49 µs**  | ~15 µs     | Per-pixel BT.601 YUV→BGRA (ALU throughput)      | ~70%                       |
+| UYVY            | **17 µs**  | ~8 µs      | AVX2 vpshufb + vpmaddwd pipeline latency        | ~50%                       |
+| YCbCr 4:2:0     | **38 µs**  | ~15 µs     | Per-pixel YUV clamp+pack (same UYVY bottleneck) | ~60%                       |
+| ReorderedRGB555 | **106 µs** | ~80 µs     | Z-order Morton non-linear address pattern       | ~25%                       |
 
 > **Note on bottlenecks** — Simple pixel unpack (RGB565, RGB555) is memory-bandwidth limited.
 > YUV formats (UYVY, YCbCr420, CL, CLCL) are ALU-limited by per-pixel BT.601 arithmetic.
@@ -399,6 +395,7 @@ Theoretical maximum throughput per format at 256×256 (L2 cache ~1 MB, ~100 GB/s
 This codec was first implemented in **C#** as a Native AOT plugin for ImageGlass v10. The **Rust** workspace evolved from that reference to enable broader distribution (crates.io, CLI, Python bindings). See [EVOLUTION.md](docs/EVOLUTION.md) for the full migration story, architecture decisions, and acknowledgments.
 
 The C# reference repository ([B67687/Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)) is archived but remains the authoritative source for algorithm verification.
+
 ## Profile Reference
 
 **54 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [docs/PROFILES.md](docs/PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
@@ -418,7 +415,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 >
 > **Hardware validation details** — see [HARDWARE_GUIDE.md](docs/guides/HARDWARE_GUIDE.md) for the full device testing matrix and methodology.
 >
-> **SIMD acceleration** — SSE2 for YUV conversion paths (UYVY, YCbCr420, CL, CLCL). AVX2 and ARM NEON runtime dispatch via `--features simd`. On macOS ARM, NEON is gated (known runner edge case) and falls back to scalar — see [STANDARDS.md](docs/standards/STANDARDS.md) for details.
+> **SIMD acceleration** — SSE2 for YUV conversion paths (UYVY, YCbCr420, CL, CLCL). AVX2 and ARM NEON runtime dispatch via ``. On macOS ARM, NEON is gated (known runner edge case) and falls back to scalar — see [STANDARDS.md](docs/standards/STANDARDS.md) for details.
 
 ---
 
@@ -492,17 +489,18 @@ Every bit helps keep the research going. Thank you 🙏
 
 This codec has been systematically reviewed across multiple rounds:
 
-| Round | Scope | Date |
-|-------|-------|------|
-| 1 | Initial code audit — format profiles, pipeline, all 7 decoders | 2026-06 |
-| 2 | Documentation review — all 19 markdown files, link checking (lychee) | 2026-06 |
-| 3 | C# reference parity — golden vectors, exhaustive roundtrip, SIMD constants, zero-alloc audit | 2026-07 |
-| 4 | Coverage expansion — SIMD tail boundaries, cancellation, profile validation, statistical completeness | 2026-07 |
-| 5 | Polish — benchmark regression baseline, ADR docs, review documentation | 2026-07 |
+| Round | Scope                                                                                                 | Date    |
+| ----- | ----------------------------------------------------------------------------------------------------- | ------- |
+| 1     | Initial code audit — format profiles, pipeline, all 7 decoders                                        | 2026-06 |
+| 2     | Documentation review — all 19 markdown files, link checking (lychee)                                  | 2026-06 |
+| 3     | C# reference parity — golden vectors, exhaustive roundtrip, SIMD constants, zero-alloc audit          | 2026-07 |
+| 4     | Coverage expansion — SIMD tail boundaries, cancellation, profile validation, statistical completeness | 2026-07 |
+| 5     | Polish — benchmark regression baseline, ADR docs, review documentation                                | 2026-07 |
 
 **Current test count:** See [STATS.md](docs/STATS.md) for the latest count and suite breakdown.
 
 **Known gaps:**
+
 - macOS ARM NEON is gated (known CI runner edge case) — falls back to scalar. See [STANDARDS.md](docs/standards/STANDARDS.md).
 - No dedicated NEON CI runner (deferred — no reliable ARM64 CI available at this time).
 - Cache concurrency stress tests (deferred — feature-gated LRU cache, low user impact).

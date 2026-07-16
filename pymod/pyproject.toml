@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "ithmb-core"
-version = "1.9.0"
+version = "1.9.1"
 requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Rust",
@@ -17,3 +17,5 @@ readme = "README.md"
 
 [tool.maturin]
 module-name = "ithmb_core"
+abi3 = true
+abi3-py312 = true

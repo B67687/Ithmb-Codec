@@ -87,7 +87,7 @@ Key test categories (see STATS.md for live counts):
 
 ```bash
 cargo build --workspace           # All crates
-cargo build --features simd       # With SIMD acceleration
+cargo build --release       # SIMD always compiled for x86_64 and aarch64
 cargo build -p ithmb-core         # Just the library
 wasm-pack build crates/ithmb-wasm # WASM target (requires wasm-pack)
 maturin develop --release -m pymod/Cargo.toml  # Python bindings
@@ -95,7 +95,7 @@ maturin develop --release -m pymod/Cargo.toml  # Python bindings
 
 ## Key Decisions
 
-- **SIMD gated behind `--features simd`** — not default. SSE2/AVX2 for x64, NEON for ARM64 (macOS ARM uses scalar fallback per STANDARDS.md)
+# - **SIMD compiled unconditionally** — not default. SSE2/AVX2 for x64, NEON for ARM64 (macOS ARM uses scalar fallback per STANDARDS.md)
 - **C ABI plugin in separate repo** — [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin)
 - **54 built-in profiles** — embedded in binary, optionally overridable via external `profiles.json`
 - **File size guard**: 8 MB max (ADR-0005), covers all known real-world files with 10× margin

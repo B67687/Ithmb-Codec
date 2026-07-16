@@ -8,7 +8,7 @@
 )]
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
@@ -66,7 +66,7 @@ pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed
 /// (caller must check `is_x86_feature_detected!("avx2")`).
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, clippy::similar_names)]
 pub(crate) unsafe fn rgb555_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {

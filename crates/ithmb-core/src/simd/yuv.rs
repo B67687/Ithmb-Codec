@@ -12,7 +12,7 @@ use core::arch::x86_64::__m128i;
 
 // ---- SSE2 quad (4× Y + 1× Cb + 1× Cr -> 16× BGRA) ----
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(clippy::similar_names, unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
 pub(crate) unsafe fn yuv420_quad_to_bgra_sse2(quad: &[u8; 6]) -> [u8; 16] {
@@ -72,7 +72,7 @@ pub(crate) unsafe fn yuv420_quad_to_bgra_sse2(quad: &[u8; 6]) -> [u8; 16] {
 /// - Must be called on `x86`/`x86_64` with SSE4.1 enabled.
 /// - `dst` must have sufficient capacity for the writes.
 /// - `y_row`, `cb_row`, `cr_row` must have valid indices at position `c`.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[target_feature(enable = "sse4.1")]
 #[allow(clippy::too_many_arguments, clippy::cast_sign_loss, unsafe_op_in_unsafe_fn)]
@@ -138,7 +138,7 @@ unsafe fn store_sse41_quad(
 
 // ---- YCbCr 4:2:0 row pair -> BGRA (SSE4.1) ----
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE4.1 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[target_feature(enable = "sse4.1")]
 #[allow(unsafe_op_in_unsafe_fn)]
@@ -186,7 +186,7 @@ pub(crate) unsafe fn yuv420_row_pair_to_bgra_sse41(
 /// # Safety
 /// - Must be called on `x86_64` with AVX2 enabled.
 /// - `dst` must have sufficient capacity for the writes.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "avx2")]
 #[allow(clippy::too_many_arguments, unsafe_op_in_unsafe_fn)]
@@ -294,7 +294,7 @@ unsafe fn store_avx2_chroma_pair(
 
 // ---- YCbCr 4:2:0 row pair -> BGRA (AVX2, 16 px/iter) ----
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
 pub(crate) unsafe fn yuv420_row_pair_to_bgra_avx2(

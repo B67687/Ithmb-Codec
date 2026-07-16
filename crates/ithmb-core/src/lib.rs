@@ -25,7 +25,6 @@
 //!
 //! | Feature | Description | Default |
 //! |---|---|---|
-//! | `simd` | SSE2/AVX2/NEON YUV conversion acceleration | no |
 //! | `cache` | LRU raw file cache | no |
 //! | `metrics` | Decode timing counters | no |
 //! | `c` | C ABI shared library (`#![crate_type = "cdylib"]`) | no |
@@ -34,7 +33,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! ithmb-core = { version = "1.9", features = ["simd"] }
+//! ithmb-core = { version = "1.9", features = ["cache"] }
 //! ```
 //!
 //! # Architecture
@@ -61,6 +60,8 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "c")))]
 #[cfg(feature = "c")]
 pub mod c_api;
+/// Runtime configuration for decode parameters.
+pub mod config;
 
 /// LRU cache for repeatedly accessed raw `.ithmb` files.
 #[cfg_attr(docsrs, doc(cfg(feature = "cache")))]
@@ -102,7 +103,7 @@ pub mod reordered_rgb555;
 pub mod rgb555;
 /// RGB565 decoder (16-bit, 5/6/5 layout) — most common raw format.
 pub mod rgb565;
-/// SIMD-accelerated pixel conversions (feature-gated behind `simd`).
+/// SIMD-accelerated pixel conversions (SSE2/AVX2/NEON with runtime dispatch, scalar fallback).
 pub mod simd;
 /// UYVY 4:2:2 decoder (linear and interlaced variants).
 pub mod uyvy;
@@ -116,5 +117,19 @@ pub use error::{DecodeError, DecodedImage};
 /// Central decode dispatch — the primary entry point for `.ithmb` decoding.
 pub mod pipeline;
 
-/// Re-export of [`decode_ithmb`], [`open_ithmb`], and [`encoding_name_for_prefix`] for convenience.
-pub use pipeline::{decode_ithmb, encoding_name_for_prefix, open_ithmb};
+/// Re-export of [`decode_ithmb`], [`open_ithmb`], [`encoding_name_for_prefix`],
+/// and the `_with_config` variants for convenience.
+pub use pipeline::{
+    decode_ithmb, decode_ithmb_with_config, decode_with_profile, decode_with_profile_with_config,
+    encoding_name_for_prefix, open_ithmb, open_ithmb_with_config,
+};
+
+/// Re-export of [`DeviceProfile`] for convenience.
+pub use crate::device_profiles::DeviceProfile;
+/// Re-export of [`Encoding`] and [`Profile`] for convenience.
+pub use crate::profile::{Encoding, Profile};
+/// Re-export of [`ProfileDb`] for convenience.
+pub use crate::profile_db::ProfileDb;
+
+/// Re-export of [`DecodeConfig`] for convenience.
+pub use config::DecodeConfig;

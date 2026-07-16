@@ -12,12 +12,14 @@
 mod open;
 mod profile_loader;
 
-pub use self::open::open_ithmb;
+pub use self::open::{open_ithmb, open_ithmb_with_config};
 
 use self::profile_loader::fallback_jpeg_profile;
 pub(crate) use self::profile_loader::get_db;
 use crate::cl;
 use crate::clcl;
+use crate::config;
+use crate::decoder_helpers;
 use crate::error::{DecodeError, DecodedImage};
 use crate::jpeg;
 use crate::profile::{Encoding, Profile};
@@ -26,6 +28,8 @@ use crate::rgb555;
 use crate::rgb565;
 use crate::uyvy;
 use crate::ycbcr420;
+#[cfg(feature = "logging")]
+use log::{debug, info, warn};
 use std::sync::atomic::AtomicBool;
 
 /// Look up the human-readable encoding name for a given format prefix.
@@ -63,6 +67,22 @@ pub fn encoding_name_for_prefix(prefix: i32) -> String {
 /// | | and the data is not a JPEG stream. |
 /// | Decoder errors | Propagated from the underlying decoder. |
 pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
+    decode_ithmb_with_config(src, canceled, config::default_config())
+}
+
+/// Decode a complete `.ithmb` file with a custom [`DecodeConfig`](crate::config::DecodeConfig).
+///
+/// Like ``decode_ithmb`` but allows overriding decode parameters (file size limit,
+/// JPEG scan limit, cancellation check interval, etc.) at runtime.
+///
+/// # Errors
+///
+/// Same as ``decode_ithmb``.
+pub fn decode_ithmb_with_config(
+    src: &[u8],
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+) -> Result<DecodedImage, DecodeError> {
     if src.len() < 4 {
         return Err(DecodeError::BufferTooShort {
             expected: 4,
@@ -70,14 +90,16 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
         });
     }
 
-    if src.len() > open::MAX_RAW_FILE_SIZE {
+    if src.len() > config.max_raw_file_size() {
         return Err(DecodeError::FileTooLarge {
             size: src.len(),
-            limit: open::MAX_RAW_FILE_SIZE,
+            limit: config.max_raw_file_size(),
         });
     }
 
     let prefix = i32::from_be_bytes([src[0], src[1], src[2], src[3]]);
+    #[cfg(feature = "logging")]
+    debug!("decode_ithmb_with_config: prefix={prefix:08X}, len={}", src.len());
     let is_jpeg_stream = src[0] == 0xFF && src[1] == 0xD8;
 
     let db = get_db();
@@ -87,21 +109,45 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
     } else if let Some(p) = db.get(prefix) {
         p.clone()
     } else {
-        // Fallback: scan for embedded JPEG within the buffer.
-        // Many real-world .ithmb files have unknown format prefixes but contain
-        // a full JPEG stream embedded in the pixel data area.
-        match scan_for_embedded_jpeg(src) {
-            Some(jpeg_data) => {
-                let jp = fallback_jpeg_profile();
-                return decode_with_profile(jpeg_data, &jp, canceled);
+        // Tier 2: data-size heuristic.
+        let data_len = src.len() - 4;
+        let mut best: Option<Profile> = None;
+        let mut best_delta: usize = usize::MAX;
+        for p in db.all().values() {
+            #[allow(clippy::cast_sign_loss)]
+            let delta = data_len.abs_diff(p.frame_byte_length as usize);
+            if delta <= 256 && delta < best_delta {
+                best_delta = delta;
+                best = Some(p.clone());
             }
-            None => {
-                return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
+        }
+        if let Some(profile) = best {
+            profile
+        } else {
+            // Fallback: scan for embedded JPEG within the buffer.
+            #[cfg(feature = "logging")]
+            info!("decode_ithmb_with_config: unknown prefix {prefix:08X}, scanning for embedded JPEG");
+            match scan_for_embedded_jpeg(
+                src,
+                canceled,
+                config.jpeg_scan_limit(),
+                config.cancel_check_interval(),
+                config.jfif_exif_scan_window(),
+            ) {
+                Some(jpeg_data) => {
+                    let jp = fallback_jpeg_profile();
+                    return decode_with_profile_with_config(jpeg_data, &jp, canceled, config);
+                }
+                None => {
+                    return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
+                }
             }
         }
     };
 
-    decode_with_profile(src, &profile, canceled)
+    decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
+        decode_with_profile_with_config(src, &profile, canceled, config)
+    })
 }
 
 /// Decode an `.ithmb` file using an explicit profile, bypassing prefix-lookup.
@@ -111,7 +157,7 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
 ///
 /// # Errors
 ///
-/// Returns [`DecodeError::BufferTooShort`] if the input is too short for the
+/// Returns ``DecodeError::BufferTooShort`` if the input is too short for the
 /// expected prefix (4 bytes for raw formats). Propagates decoder errors.
 pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
     // stream). Raw formats have a 4-byte format prefix before pixel data.
@@ -131,28 +177,92 @@ pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool)
     Ok(apply_post_process(img, profile))
 }
 
+/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig).
+///
+/// Like [`decode_with_profile`] but accepts a [`DecodeConfig`](crate::config::DecodeConfig) for runtime
+///
+/// # Errors
+///
+/// Same as ``decode_with_profile``.
+pub fn decode_with_profile_with_config(
+    src: &[u8],
+    profile: &Profile,
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+) -> Result<DecodedImage, DecodeError> {
+    decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
+        // stream). Raw formats have a 4-byte format prefix before pixel data.
+        let frame_data = if profile.encoding == Encoding::Jpeg {
+            src
+        } else {
+            if src.len() < 4 {
+                return Err(DecodeError::BufferTooShort {
+                    expected: 4,
+                    actual: src.len(),
+                });
+            }
+            &src[4..]
+        };
+
+        let img = dispatch_decode(frame_data, profile, canceled)?;
+        Ok(apply_post_process(img, profile))
+    })
+}
 // ---------------------------------------------------------------------------
 // Decoder dispatch
 // ---------------------------------------------------------------------------
 
 /// Dispatches to the correct decoder based on the profile's encoding.
+///
+/// If the primary decoder fails and the profile specifies `fallback_encodings`,
+/// each fallback is tried in order. Returns the first successful result or the
+/// original error if no fallback succeeds.
 fn dispatch_decode(data: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    match profile.encoding {
-        Encoding::Rgb565 => rgb565::decode(data, profile, canceled),
-        Encoding::Rgb555 => rgb555::decode(data, profile, canceled),
-        Encoding::ReorderedRgb555 => reordered_rgb555::decode(data, profile, canceled),
-        Encoding::Yuv422 => {
-            if profile.clcl_chroma {
-                clcl::decode(data, profile, canceled)
-            } else if profile.cl_chroma {
-                cl::decode(data, profile, canceled)
-            } else {
-                uyvy::decode(data, profile, canceled)
+    /// Inner dispatch — routes to the correct decoder for a single encoding.
+    fn try_decode(data: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
+        match profile.encoding {
+            Encoding::Rgb565 => rgb565::decode(data, profile, canceled),
+            Encoding::Rgb555 => rgb555::decode(data, profile, canceled),
+            Encoding::ReorderedRgb555 => reordered_rgb555::decode(data, profile, canceled),
+            Encoding::Yuv422 => {
+                if profile.clcl_chroma {
+                    clcl::decode(data, profile, canceled)
+                } else if profile.cl_chroma {
+                    cl::decode(data, profile, canceled)
+                } else {
+                    uyvy::decode(data, profile, canceled)
+                }
+            }
+            Encoding::Ycbcr420 => ycbcr420::decode(data, profile, canceled),
+            Encoding::Jpeg => jpeg::decode(data, profile, canceled),
+        }
+    }
+
+    #[cfg(feature = "logging")]
+    debug!(
+        "dispatch_decode: encoding={:?}, dimensions={}x{}",
+        profile.encoding, profile.width, profile.height
+    );
+
+    try_decode(data, profile, canceled).or_else(|primary_err| {
+        if let Some(fallbacks) = &profile.fallback_encodings {
+            for &enc in fallbacks {
+                #[cfg(feature = "logging")]
+                warn!("dispatch_decode: primary failed, trying fallback encoding {enc:?}");
+                let fallback_profile = Profile {
+                    encoding: enc,
+                    // Prevent infinite recursion — fallbacks do not themselves
+                    // carry a fallback list.
+                    fallback_encodings: None,
+                    ..profile.clone()
+                };
+                if let Ok(img) = try_decode(data, &fallback_profile, canceled) {
+                    return Ok(img);
+                }
             }
         }
-        Encoding::Ycbcr420 => ycbcr420::decode(data, profile, canceled),
-        Encoding::Jpeg => jpeg::decode(data, profile, canceled),
-    }
+        Err(primary_err)
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -307,15 +417,64 @@ fn rotate_270_cw(img: DecodedImage) -> DecodedImage {
 // Tests
 // ---------------------------------------------------------------------------
 
-/// Scan the buffer for an embedded JPEG stream (SOI to EOI).
+// ---------------------------------------------------------------------------
+// Embedded JPEG scanning
+// ---------------------------------------------------------------------------
+
+/// JFIF marker bytes (including null terminator).
+const JFIF_MARKER: &[u8] = b"JFIF\x00";
+
+/// Exif marker bytes (including nulls).
+const EXIF_MARKER: &[u8] = b"Exif\x00\x00";
+
+/// Check if a valid JFIF or Exif marker exists within the scan window after SOI.
+fn has_jpeg_marker(src: &[u8], soi_pos: usize, jfif_exif_scan_window: usize) -> bool {
+    let end = (soi_pos + jfif_exif_scan_window).min(src.len());
+    let window = &src[soi_pos..end];
+
+    window.windows(JFIF_MARKER.len()).any(|w| w == JFIF_MARKER)
+        || window.windows(EXIF_MARKER.len()).any(|w| w == EXIF_MARKER)
+}
+
+/// Scan the buffer for an embedded JPEG stream (SOI to EOI) with marker validation.
 ///
 /// Returns the JPEG data slice if found. Some .ithmb files have unregistered
 /// format prefixes but contain a complete JPEG stream within the pixel data.
-fn scan_for_embedded_jpeg(src: &[u8]) -> Option<&[u8]> {
-    let soi = src.windows(2).position(|w| w == b"\xff\xd8")?;
-    let after_soi = &src[soi + 2..];
-    let eoi = after_soi.windows(2).position(|w| w == b"\xff\xd9")?;
-    Some(&src[soi..=soi + 2 + eoi + 1])
+/// This function validates that a JFIF or Exif marker exists near the SOI to
+/// avoid false positives from random pixel data containing 0xFF 0xD8.
+fn scan_for_embedded_jpeg<'a>(
+    src: &'a [u8],
+    canceled: &AtomicBool,
+    jpeg_scan_limit: usize,
+    cancel_check_interval: usize,
+    jfif_exif_scan_window: usize,
+) -> Option<&'a [u8]> {
+    let scan_limit = src.len().min(jpeg_scan_limit);
+    let scan_src = &src[..scan_limit];
+    let mut search_start = 0;
+    let mut bytes_since_check: usize = 0;
+    loop {
+        let soi = scan_src[search_start..].windows(2).position(|w| w == b"\xff\xd8")?;
+        let soi_abs = search_start + soi;
+
+        if has_jpeg_marker(scan_src, soi_abs, jfif_exif_scan_window) {
+            let after_soi = &src[soi_abs + 2..];
+            if let Some(eoi) = after_soi.windows(2).position(|w| w == b"\xff\xd9") {
+                return Some(&src[soi_abs..=soi_abs + 2 + eoi + 1]);
+            }
+        }
+        // Skip past this SOI and continue scanning for the next one.
+        search_start = soi_abs + 2;
+
+        // Periodic cancellation check.
+        bytes_since_check += 2;
+        if bytes_since_check >= cancel_check_interval {
+            if canceled.load(std::sync::atomic::Ordering::Relaxed) {
+                return None;
+            }
+            bytes_since_check = 0;
+        }
+    }
 }
 
 #[cfg(test)]

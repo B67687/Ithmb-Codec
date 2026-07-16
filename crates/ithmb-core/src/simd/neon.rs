@@ -1,5 +1,5 @@
 //! AArch64 NEON SIMD implementations for pixel conversions.
-//! Only compiled when `--features simd` is enabled and target is `aarch64`.
+//! Compiled when target is `aarch64`.
 use core::arch::aarch64::*;
 
 /// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
@@ -344,4 +344,297 @@ pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] 
     vst1_u8(out.as_mut_ptr(), out_lo);
     vst1_u8(out.as_mut_ptr().add(8), out_hi);
     out
+}
+
+// ---------------------------------------------------------------------------
+// YCbCr 4:2:0 row pair -> BGRA (processes 2 rows of Y + 1 row each of Cb/Cr)
+// ---------------------------------------------------------------------------
+
+/// Convert a 2-row YCbCr 4:2:0 macroblock to BGRA using AArch64 NEON.
+///
+/// Each chroma position covers 4 Y pixels (2×2 block). Delegates to
+/// [`yuv420_quad_to_bgra_neon`] which handles the NEON BT.601 arithmetic.
+#[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub(crate) unsafe fn yuv420_row_pair_to_bgra_neon(
+    y_row: &[u8],
+    cb_row: &[u8],
+    cr_row: &[u8],
+    dst: &mut [u8],
+    w: usize,
+    cb_w: usize,
+) {
+    for cx in 0..cb_w {
+        let quad = [
+            y_row[cx * 2],
+            y_row[cx * 2 + 1],
+            y_row[w + cx * 2],
+            y_row[w + cx * 2 + 1],
+            cb_row[cx],
+            cr_row[cx],
+        ];
+        let out = yuv420_quad_to_bgra_neon(&quad);
+        let off = cx * 8;
+        dst[off..off + 4].copy_from_slice(&out[0..4]);
+        dst[off + 4..off + 8].copy_from_slice(&out[4..8]);
+        let off2 = off + w * 4;
+        dst[off2..off2 + 4].copy_from_slice(&out[8..12]);
+        dst[off2 + 4..off2 + 8].copy_from_slice(&out[12..16]);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// CLCL (separate Cb/Cr nibble-chroma planes) row -> BGRA
+// ---------------------------------------------------------------------------
+
+/// Convert one CLCL row (separate Y/Cb/Cr nibble planes) to BGRA.
+///
+/// Uses NEON for nibble expansion and BT.601 YUV→RGB conversion in parallel.
+#[inline]
+#[allow(clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub(crate) unsafe fn clcl_row_to_bgra_neon(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8]) {
+    use core::arch::aarch64::{
+        vaddq_s32, vcombine_s16, vdup_n_s16, vdup_n_u8, vdupq_n_s32, vget_high_u16, vget_low_u16, vld1_u8, vmovl_u8,
+        vmovl_u16, vmulq_s32, vqmovn_s32, vqmovun_s16, vreinterpretq_s32_u32, vshr_n_u8, vshrq_n_s32, vst1_u8,
+        vsubq_s32, vzip_s16, vzip_u8,
+    };
+
+    let full_batches = (width / 8) * 8;
+    let mut i = 0usize;
+
+    // BT.601 constants (shared across all batches)
+    let cent = vdupq_n_s32(128);
+    let c359 = vdupq_n_s32(359);
+    let c88 = vdupq_n_s32(88);
+    let c183 = vdupq_n_s32(183);
+    let c454 = vdupq_n_s32(454);
+    let low_mask = vdup_n_u8(0x0F);
+
+    while i < full_batches {
+        // ---- Load 8 Y bytes ----
+        let y8 = vld1_u8(y.as_ptr().add(i));
+
+        // ---- Load 4 Cb/Cr bytes (nibble-packed, 2 pixels/byte) into padded arrays ----
+        let mut cb_tmp = [0u8; 8];
+        cb_tmp[..4].copy_from_slice(&cb[i / 2..i / 2 + 4]);
+        let mut cr_tmp = [0u8; 8];
+        cr_tmp[..4].copy_from_slice(&cr[i / 2..i / 2 + 4]);
+        let cb4 = vld1_u8(cb_tmp.as_ptr());
+        let cr4 = vld1_u8(cr_tmp.as_ptr());
+
+        // ---- Extract low/high nibbles ----
+        let cb_lo = vand_u8(cb4, low_mask);
+        let cb_hi = vshr_n_u8(cb4, 4);
+        let cr_lo = vand_u8(cr4, low_mask);
+        let cr_hi = vshr_n_u8(cr4, 4);
+
+        // Interleave nibbles: [lo0, hi0, lo1, hi1, ..., lo3, hi3]
+        let cb_zip = vzip_u8(cb_lo, cb_hi);
+        let cr_zip = vzip_u8(cr_lo, cr_hi);
+
+        // Expand nibbles to 8-bit: nibble << 4
+        let cb8 = vshl_n_u8(cb_zip.val[0], 4);
+        let cr8 = vshl_n_u8(cr_zip.val[0], 4);
+
+        // ---- Widen Y, Cb, Cr to u16 then split for BT.601 ----
+        let y16 = vmovl_u8(y8);
+        let cb16 = vmovl_u8(cb8);
+        let cr16 = vmovl_u8(cr8);
+
+        // ======== Batch 0: pixels i..i+3 ========
+        let y0_32 = vmovl_u16(vget_low_u16(y16));
+        let cb0_32 = vmovl_u16(vget_low_u16(cb16));
+        let cr0_32 = vmovl_u16(vget_low_u16(cr16));
+
+        let y0 = vreinterpretq_s32_u32(y0_32);
+        let cb0_c = vsubq_s32(vreinterpretq_s32_u32(cb0_32), cent);
+        let cr0_c = vsubq_s32(vreinterpretq_s32_u32(cr0_32), cent);
+
+        let rc0 = vshrq_n_s32(vmulq_s32(cr0_c, c359), 8);
+        let gb0 = vshrq_n_s32(vmulq_s32(cb0_c, c88), 8);
+        let gr0 = vshrq_n_s32(vmulq_s32(cr0_c, c183), 8);
+        let bc0 = vshrq_n_s32(vmulq_s32(cb0_c, c454), 8);
+
+        let r0 = vaddq_s32(y0, rc0);
+        let g0 = vsubq_s32(vsubq_s32(y0, gb0), gr0);
+        let b0 = vaddq_s32(y0, bc0);
+
+        // Narrow and interleave batch 0
+        let r16_0 = vqmovn_s32(r0);
+        let g16_0 = vqmovn_s32(g0);
+        let b16_0 = vqmovn_s32(b0);
+        let a16 = vdup_n_s16(255);
+
+        let bg0 = vzip_s16(b16_0, g16_0);
+        let ra0 = vzip_s16(r16_0, a16);
+        let lo0 = vzip_s16(bg0.0, ra0.0);
+        let hi0 = vzip_s16(bg0.1, ra0.1);
+
+        let combined_lo0 = vcombine_s16(lo0.0, lo0.1);
+        let combined_hi0 = vcombine_s16(hi0.0, hi0.1);
+
+        let out_lo0 = vqmovun_s16(combined_lo0);
+        let out_hi0 = vqmovun_s16(combined_hi0);
+
+        // Store batch 0 (pixels i..i+3)
+        let off = i * 4;
+        vst1_u8(dst.as_mut_ptr().add(off), out_lo0);
+        vst1_u8(dst.as_mut_ptr().add(off + 8), out_hi0);
+
+        // ======== Batch 1: pixels i+4..i+7 ========
+        let y1_32 = vmovl_u16(vget_high_u16(y16));
+        let cb1_32 = vmovl_u16(vget_high_u16(cb16));
+        let cr1_32 = vmovl_u16(vget_high_u16(cr16));
+
+        let y1 = vreinterpretq_s32_u32(y1_32);
+        let cb1_c = vsubq_s32(vreinterpretq_s32_u32(cb1_32), cent);
+        let cr1_c = vsubq_s32(vreinterpretq_s32_u32(cr1_32), cent);
+
+        let rc1 = vshrq_n_s32(vmulq_s32(cr1_c, c359), 8);
+        let gb1 = vshrq_n_s32(vmulq_s32(cb1_c, c88), 8);
+        let gr1 = vshrq_n_s32(vmulq_s32(cr1_c, c183), 8);
+        let bc1 = vshrq_n_s32(vmulq_s32(cb1_c, c454), 8);
+
+        let r1 = vaddq_s32(y1, rc1);
+        let g1 = vsubq_s32(vsubq_s32(y1, gb1), gr1);
+        let b1 = vaddq_s32(y1, bc1);
+
+        let r16_1 = vqmovn_s32(r1);
+        let g16_1 = vqmovn_s32(g1);
+        let b16_1 = vqmovn_s32(b1);
+
+        let bg1 = vzip_s16(b16_1, g16_1);
+        let ra1 = vzip_s16(r16_1, a16);
+        let lo1 = vzip_s16(bg1.0, ra1.0);
+        let hi1 = vzip_s16(bg1.1, ra1.1);
+
+        let combined_lo1 = vcombine_s16(lo1.0, lo1.1);
+        let combined_hi1 = vcombine_s16(hi1.0, hi1.1);
+
+        let out_lo1 = vqmovun_s16(combined_lo1);
+        let out_hi1 = vqmovun_s16(combined_hi1);
+
+        // Store batch 1 (pixels i+4..i+7)
+        vst1_u8(dst.as_mut_ptr().add(off + 16), out_lo1);
+        vst1_u8(dst.as_mut_ptr().add(off + 24), out_hi1);
+
+        i += 8;
+    }
+
+    // Scalar remainder (0-7 pixels)
+    for j in i..width {
+        let cb_byte = cb[j / 2];
+        let cr_byte = cr[j / 2];
+        let n_cb = if j & 1 == 0 { cb_byte & 0x0F } else { cb_byte >> 4 };
+        let n_cr = if j & 1 == 0 { cr_byte & 0x0F } else { cr_byte >> 4 };
+        let pixel = crate::yuv::yuv_to_bgra(y[j], n_cb << 4, n_cr << 4);
+        let out = j * 4;
+        dst[out..out + 4].copy_from_slice(&pixel);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// RGB565 row -> BGRA
+// ---------------------------------------------------------------------------
+
+/// Convert one row of RGB565 pixels to BGRA8 using AArch64 NEON.
+///
+/// Processes 8 pixels per iteration: loads 16 bytes, extracts R5/G6/B5,
+/// MSB-replicates to 8-bit, and stores 32 bytes of interleaved BGRA.
+#[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
+    let n = src.len();
+    debug_assert_eq!(dst.len(), (n / 2) * 4);
+
+    let mask5 = vdupq_n_u16(0x1F);
+    let mask6 = vdupq_n_u16(0x3F);
+    let alpha = vdup_n_u8(255);
+
+    let mut i = 0usize;
+    while i + 16 <= n {
+        let src_ptr = src.as_ptr().add(i);
+        let dst_ptr = dst.as_mut_ptr().add(i * 2);
+
+        // Load 8 pixels (16 bytes) as 8 × u16.
+        let data = vld1q_u16(src_ptr.cast::<u16>());
+
+        // Extract R5 (bits 15-11), G6 (bits 10-5), B5 (bits 4-0).
+        let r5 = vandq_u16(vshrq_n_u16(data, 11), mask5);
+        let g6 = vandq_u16(vshrq_n_u16(data, 5), mask6);
+        let b5 = vandq_u16(data, mask5);
+
+        // MSB replicate: 5-bit -> (v<<3)|(v>>2), 6-bit -> (v<<2)|(v>>4).
+        let r8 = vorrq_u16(vshlq_n_u16(r5, 3), vshrq_n_u16(r5, 2));
+        let g8 = vorrq_u16(vshlq_n_u16(g6, 2), vshrq_n_u16(g6, 4));
+        let b8 = vorrq_u16(vshlq_n_u16(b5, 3), vshrq_n_u16(b5, 2));
+
+        // Narrow u16 -> u8 (saturating).
+        let r_u8 = vqmovn_u16(r8);
+        let g_u8 = vqmovn_u16(g8);
+        let b_u8 = vqmovn_u16(b8);
+
+        // Interleave and store: BGRA for 8 pixels (32 bytes).
+        vst4_u8(dst_ptr, uint8x8x4_t(b_u8, g_u8, r_u8, alpha));
+
+        i += 16;
+    }
+
+    // Remainder pixels (scalar fallback).
+    if i < n {
+        super::scalar::rgb565_row_to_bgra_scalar(&src[i..], &mut dst[i * 2..]);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// RGB555 row -> BGRA
+// ---------------------------------------------------------------------------
+
+/// Convert one row of RGB555 pixels to BGRA8 using AArch64 NEON.
+///
+/// Processes 8 pixels per iteration: loads 16 bytes, extracts R5/G5/B5,
+/// MSB-replicates to 8-bit, and stores 32 bytes of interleaved BGRA.
+#[inline]
+#[allow(unsafe_op_in_unsafe_fn)]
+pub(crate) unsafe fn rgb555_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
+    let n = src.len();
+    debug_assert_eq!(dst.len(), (n / 2) * 4);
+
+    let mask5 = vdupq_n_u16(0x1F);
+    let alpha = vdup_n_u8(255);
+
+    let mut i = 0usize;
+    while i + 16 <= n {
+        let src_ptr = src.as_ptr().add(i);
+        let dst_ptr = dst.as_mut_ptr().add(i * 2);
+
+        // Load 8 pixels (16 bytes) as 8 × u16.
+        let data = vld1q_u16(src_ptr.cast::<u16>());
+
+        // Extract R5 (bits 14-10), G5 (bits 9-5), B5 (bits 4-0).
+        let r5 = vandq_u16(vshrq_n_u16(data, 10), mask5);
+        let g5 = vandq_u16(vshrq_n_u16(data, 5), mask5);
+        let b5 = vandq_u16(data, mask5);
+
+        // MSB replicate 5->8 bits: (v << 3) | (v >> 2).
+        let r8 = vorrq_u16(vshlq_n_u16(r5, 3), vshrq_n_u16(r5, 2));
+        let g8 = vorrq_u16(vshlq_n_u16(g5, 3), vshrq_n_u16(g5, 2));
+        let b8 = vorrq_u16(vshlq_n_u16(b5, 3), vshrq_n_u16(b5, 2));
+
+        // Narrow u16 -> u8 (saturating).
+        let r_u8 = vqmovn_u16(r8);
+        let g_u8 = vqmovn_u16(g8);
+        let b_u8 = vqmovn_u16(b8);
+
+        // Interleave and store: BGRA for 8 pixels (32 bytes).
+        vst4_u8(dst_ptr, uint8x8x4_t(b_u8, g_u8, r_u8, alpha));
+
+        i += 16;
+    }
+
+    // Remainder pixels (scalar fallback).
+    if i < n {
+        super::scalar::rgb555_row_to_bgra_scalar(&src[i..], &mut dst[i * 2..]);
+    }
 }

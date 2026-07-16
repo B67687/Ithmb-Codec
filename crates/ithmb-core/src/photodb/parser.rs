@@ -24,6 +24,29 @@ const MAX_DEPTH: u32 = 64;
 // Public types
 // ---------------------------------------------------------------------------
 
+/// Describes how a PhotoDB entry carries its pixel data.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhotoDbEntryKind {
+    /// Pixel data is embedded inline in [`PhotoDbEntry::data`].
+    Inline,
+    /// Entry references an external `.ithmb` file
+    /// (`ithmb_offset == -1`, `image_size > 0`).
+    ExternalReference,
+    /// No pixel data is available for this entry.
+    NoData,
+}
+
+/// Optional metadata extracted from MHOD/MHIF chunks during tree-walking.
+#[derive(Debug, Clone, Default)]
+pub struct PhotoDbMetadata {
+    /// Decoded MHOD null-terminated strings (e.g. album names, photo dates).
+    pub mhod_strings: Vec<String>,
+    /// Raw bytes of the last-seen MHIF file-info data.
+    pub mhif_data: Vec<u8>,
+    /// Info type from the MHIF header, if any MHIF was seen.
+    pub mhif_info_type: Option<u32>,
+}
+
 /// A single thumbnail entry extracted from a PhotoDB/ArtworkDB binary file.
 #[derive(Debug, Clone)]
 pub struct PhotoDbEntry {
@@ -40,6 +63,12 @@ pub struct PhotoDbEntry {
     pub width: i32,
     /// Image height in pixels.
     pub height: i32,
+    /// How this entry carries its pixel data.
+    pub kind: PhotoDbEntryKind,
+    /// Path to the external `.ithmb` file (only for ExternalReference entries).
+    pub ithmb_path: String,
+    /// Metadata captured from parent MHOD/MHIF chunks.
+    pub metadata: PhotoDbMetadata,
 }
 
 // ---------------------------------------------------------------------------
@@ -239,16 +268,18 @@ fn walk_entries(
                 let mut mhni_pos = pos;
                 let mhni = MhniHeader::parse(data, &mut mhni_pos, little_endian)?;
 
-                let entry_data = if mhni.ithmb_offset >= 0 && mhni.image_size > 0 {
+                let (entry_data, kind) = if mhni.ithmb_offset >= 0 && mhni.image_size > 0 {
                     let off = mhni.ithmb_offset as usize;
                     let sz = mhni.image_size as usize;
                     if off.saturating_add(sz) <= data.len() {
-                        data[off..off + sz].to_vec()
+                        (data[off..off + sz].to_vec(), PhotoDbEntryKind::Inline)
                     } else {
-                        Vec::new()
+                        (Vec::new(), PhotoDbEntryKind::NoData)
                     }
+                } else if mhni.ithmb_offset == -1 && mhni.image_size > 0 {
+                    (Vec::new(), PhotoDbEntryKind::ExternalReference)
                 } else {
-                    Vec::new()
+                    (Vec::new(), PhotoDbEntryKind::NoData)
                 };
 
                 entries.push(PhotoDbEntry {
@@ -258,6 +289,9 @@ fn walk_entries(
                     image_size: mhni.image_size,
                     width: mhni.width,
                     height: mhni.height,
+                    kind,
+                    ithmb_path: String::new(),
+                    metadata: PhotoDbMetadata::default(),
                 });
             }
 
@@ -282,8 +316,42 @@ fn walk_entries(
             }
 
             MHIF | MHOD => {
-                // File info and metadata records — skip. These carry
-                // supplementary data, not thumbnails.
+                // File info and metadata records — attach to the most
+                // recently pushed entry, if any. These chunks always follow
+                // their associated MHNI within the same container.
+                if let Some(last) = entries.last_mut() {
+                    if magic == MHOD {
+                        // MHOD: 4-byte header (tag + size) then raw data.
+                        let mhod_start = pos + 8;
+                        let mut mhod_pos = mhod_start;
+                        if mhod_pos + MhodHeader::SIZE <= chunk_end {
+                            let mhod_hdr = MhodHeader::parse(data, &mut mhod_pos, little_endian)?;
+                            if mhod_hdr.tag == 1 && mhod_hdr.size > 0 {
+                                let mhod_s = MhodString::parse(data, &mut mhod_pos, mhod_hdr.size as usize)?;
+                                // Decode as UTF-8, stripping trailing nulls.
+                                let trimmed = mhod_s.raw.iter().take_while(|&&b| b != 0).copied().collect::<Vec<_>>();
+                                if let Ok(s) = String::from_utf8(trimmed) {
+                                    // Use as ithmb_path for ExternalReference entries.
+                                    if last.kind == PhotoDbEntryKind::ExternalReference && last.ithmb_path.is_empty() {
+                                        last.ithmb_path.clone_from(&s);
+                                    }
+                                    last.metadata.mhod_strings.push(s);
+                                }
+                            }
+                        }
+                    } else {
+                        // MHIF: info_type at pos+8, data starts at pos+12 (past
+                        // the 12-byte magic+header_size+info_type header).
+                        let if_data_start = pos + MhifHeader::SIZE;
+                        if if_data_start <= chunk_end {
+                            let info_type = read_u32(data, pos + 8, little_endian);
+                            last.metadata.mhif_info_type = Some(info_type);
+                            if if_data_start < chunk_end {
+                                last.metadata.mhif_data = data[if_data_start..chunk_end].to_vec();
+                            }
+                        }
+                    }
+                }
             }
 
             _ => {

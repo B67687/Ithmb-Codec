@@ -10,7 +10,7 @@
 // ---- RGB555 pack to BGRA (SSE2, 4 px) ----
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
@@ -72,7 +72,7 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool)
 /// # SAFETY
 ///
 /// Caller must ensure SSSE3 is available (`is_x86_feature_detected!("ssse3")`).
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
@@ -147,10 +147,9 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool
 // ---- RGB555 pack to BGRA (AVX2) ----
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
-#[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
@@ -231,13 +230,21 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool)
 
 #[must_use]
 pub fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] {
-    #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            return rgb555_pack_to_bgra_avx2(&pixels, swap);
+        }
+    }
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         rgb555_pack_to_bgra_sse2(&pixels, swap)
     }
 
-    #[cfg(not(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86"))))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
     // Portable scalar
     super::scalar::rgb555_pack_to_bgra(pixels, swap)
 }

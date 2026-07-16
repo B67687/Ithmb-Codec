@@ -4,7 +4,7 @@
 //! counterpart byte-for-byte and lane-for-lane.  This is a read-only test — no
 //! decoder code is exercised, only the constant loading intrinsics.
 
-#![allow(unsafe_code, clippy::pedantic, clippy::unwrap_used)]
+#![allow(unsafe_code, clippy::pedantic, clippy::unwrap_used, dead_code)]
 #![allow(unused_crate_dependencies)]
 #![allow(unsafe_op_in_unsafe_fn)]
 #![allow(
@@ -452,7 +452,7 @@ mod aarch64_tests {
     #[test]
     fn neon_scalar_coefficients_match_expected() {
         // NEON code uses the same scalar coefficients; full vector tests
-        // require NEON intrinsics that are gated behind `feature = "simd"`.
+        // require NEON intrinsics (aarch64 target).
         // We verify the scalar ground-truth at minimum.
         assert_eq!(YUV_R_COEF, 359, "NEON R_COEF scalar");
         assert_eq!(YUV_G_COEF_CB, 88, "NEON G_COEF_CB scalar");
@@ -460,8 +460,7 @@ mod aarch64_tests {
         assert_eq!(YUV_B_COEF, 454, "NEON B_COEF scalar");
     }
 
-    #[test]
-    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
     fn neon_alpha_vector_is_all_0xff() {
         use core::arch::aarch64::*;
         unsafe {
@@ -472,8 +471,7 @@ mod aarch64_tests {
         }
     }
 
-    #[test]
-    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
     fn neon_splat_coefficient_vectors_match_scalar() {
         use core::arch::aarch64::*;
         unsafe {
@@ -498,8 +496,7 @@ mod aarch64_tests {
         }
     }
 
-    #[test]
-    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
     fn neon_offset128_vector_is_all_128() {
         use core::arch::aarch64::*;
         unsafe {
@@ -510,8 +507,7 @@ mod aarch64_tests {
         }
     }
 
-    #[test]
-    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
     fn neon_zero_vector_is_all_zeros() {
         use core::arch::aarch64::*;
         unsafe {
@@ -522,8 +518,7 @@ mod aarch64_tests {
         }
     }
 
-    #[test]
-    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
     fn neon_uyvy_double_quad_coefficients_match_scalar() {
         use core::arch::aarch64::*;
         unsafe {
@@ -546,8 +541,7 @@ mod aarch64_tests {
         }
     }
 
-    #[test]
-    #[cfg(feature = "simd")]
+    #[cfg(target_arch = "aarch64")]
     fn neon_alpha16_vector_is_255() {
         use core::arch::aarch64::*;
         unsafe {

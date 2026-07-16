@@ -33,7 +33,7 @@ jobs:
           cache-key: "release-${{ matrix.target }}-${{ hashFiles('rust-toolchain.toml') }}"
           targets: ${{ matrix.target }}
       - name: Build ithmb-cli
-        run: cargo build -p ithmb-cli --release --target ${{ matrix.target }} --features simd
+        run: cargo build -p ithmb-cli --release --target ${{ matrix.target }}
       - name: Package (Unix)
         if: runner.os != 'Windows'
         run: tar czf ithmb-cli-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release ithmb

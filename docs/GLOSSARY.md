@@ -395,13 +395,13 @@ Our `Cargo.toml` defines optional features to keep the base build lean:
 
 | Flag | Default | What it enables |
 |------|---------|-----------------|
-| `simd` | off | SSE2/AVX2/NEON SIMD acceleration for YUV color conversion |
+| SIMD | always on | SSE2/AVX2/NEON SIMD acceleration for YUV color conversion |
 | `cache` | off | LRU cache for decoded file data (64 entries) |
 | `c` | off | C ABI FFI exports (`ithmb_decode`, `ithmb_prefix_to_profile`) |
 | `metrics` | off | Decode timing counters for performance monitoring |
 | `png-output` | on | PNG image encoding support in the CLI (`--output` flag) |
 
-Enable with: `cargo build --release --features simd,cache`
+SIMD is always compiled for x86_64 and aarch64 with scalar fallback.
 
 ## OnceLock
 

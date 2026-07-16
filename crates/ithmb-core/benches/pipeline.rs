@@ -117,7 +117,7 @@ fn build_photodb_entry() -> Vec<u8> {
     };
 
     // Use the same header/padding values as the builder's own tests.
-    try_build_photodb(&[entry], 36, 40).unwrap()
+    try_build_photodb(&[entry], 36, 40, false).unwrap()
 }
 
 #[divan::bench]

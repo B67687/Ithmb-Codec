@@ -34,7 +34,9 @@ use std::sync::atomic::AtomicBool;
 /// Returns [`DecodeError::InvalidFormat`] if width or height is zero or negative.
 /// Returns [`DecodeError::BufferTooShort`] if `src` is smaller than `w * h * 2`.
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    let (w, h) = crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let (data, w, h) =
+        crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;
+    let src = &*data;
     let le = profile.little_endian;
     let swap = profile.swap_rgb_channels;
     let total_pixels = w * h;
@@ -49,8 +51,8 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         let dst_start = y * w * 4;
         let row_dst = &mut dst[dst_start..dst_start + w * 4];
 
-        // SIMD fast path (LE + x86 with simd feature)
-        #[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+        // SIMD fast path (LE + x86 with SSE2/AVX2 runtime dispatch)
+        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
         if le {
             crate::simd::rgb555_apply_row_to_bgra(&src[row_start..row_start + w * 2], row_dst);
             if swap {
@@ -150,14 +152,15 @@ mod tests {
 
     #[test]
     fn buffer_too_short_reports_exact_counts() {
-        let profile = make_profile(10, 10, true, false);
-        let result = decode(&[0u8; 50], &profile, &AtomicBool::new(false));
+        let profile = make_profile(14, 10, true, false);
+        // 14*10*2 = 280 needed, deficit=270 > 256 → still BufferTooShort
+        let result = decode(&[0u8; 10], &profile, &AtomicBool::new(false));
         match result {
             Err(DecodeError::BufferTooShort {
-                expected: 200,
-                actual: 50,
+                expected: 280,
+                actual: 10,
             }) => {} // ok
-            other => panic!("expected BufferTooShort(200, 50), got {other:?}"),
+            other => panic!("expected BufferTooShort(280, 10), got {other:?}"),
         }
     }
 

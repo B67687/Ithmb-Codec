@@ -8,7 +8,7 @@
 )]
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
 pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
@@ -61,7 +61,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
 }
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
@@ -127,7 +127,7 @@ pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     }
 }
 
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse4.1")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
@@ -195,7 +195,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse41(quad: &[u8; 8]) -> [u8; 16] {
 }
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE4.1+SSSE3 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "sse4.1,ssse3")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]
@@ -452,7 +452,7 @@ pub(crate) unsafe fn cl_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
 /// # Safety
 ///
 /// Must only be called on `x86`/`x86_64` where SSSE3 is guaranteed.
-#[cfg(all(feature = "simd", any(target_arch = "x86_64", target_arch = "x86")))]
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn)]
@@ -492,7 +492,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_ssse3(quad: &[u8; 8]) -> [u8; 16] {
 }
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
@@ -586,7 +586,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
 // ---------------------------------------------------------------------------
 
 /// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
-#[cfg(all(feature = "simd", target_arch = "x86_64"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]

@@ -6,11 +6,11 @@
 //! - `decode_{format}_simd` — SIMD dispatch (SSE2/AVX2/NEON when available)
 //!
 //! A third shot at the speedup ratios in the README at 256×256, both paths
-//! processing *identical* checkerboard input in the *same binary*.  Requires
-//! `--features simd` to see SIMD numbers; the scalar variants are always
+//! processing *identical* checkerboard input in the *same binary*.  SIMD numbers
+//! are selected at compile time by target architecture; scalar variants are always
 //! available.
 //!
-//! Run:  cargo bench --features simd --bench simd_compare
+//! Run:  cargo bench --bench simd_compare
 //!
 //! The speedup table in the README was produced by comparing SIMD runs against
 //! scalar runs of the benches in `decoders.rs`.  This file adds both paths to

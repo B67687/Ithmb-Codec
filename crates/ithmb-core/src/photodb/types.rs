@@ -544,6 +544,7 @@ impl MhniHeader {
         } else {
             // Apple TV / Animal — external .ithmb files or no data.
             // Width/Height packed at +20: low 16 bits = width, high 16 bits = height.
+            // +24 still contains the image_size (byte length of external file).
             let packed = read_i32(data, start + 20, little_endian);
             let packed_bits = packed as u32;
             let width = (packed_bits & 0xFFFF) as i32;
@@ -553,7 +554,7 @@ impl MhniHeader {
                 magic,
                 header_size,
                 format_id,
-                image_size: 0,
+                image_size: img_size, // preserve for ExternalReference
                 ithmb_offset: -1,
                 width,
                 height,

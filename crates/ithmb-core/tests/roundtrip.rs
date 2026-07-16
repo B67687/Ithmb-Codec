@@ -17,6 +17,7 @@ use ithmb_core::profile::{Encoding, Profile};
 use jpeg_decoder as _;
 #[cfg(feature = "cache")]
 use lru as _;
+use proptest as _;
 use std::sync::atomic::AtomicBool;
 use thiserror as _;
 mod util;

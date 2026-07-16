@@ -25,7 +25,7 @@ use crate::profile::{Encoding, Profile};
 
 mod cl;
 mod clcl;
-mod helpers;
+pub(crate) mod helpers;
 mod reordered;
 mod rgb555;
 mod rgb565;
@@ -116,15 +116,17 @@ pub(crate) fn rotate_bgra(src: &[u8], w: i32, h: i32, rotation: i32) -> Vec<u8> 
 /// 4. Pad to `profile.frame_byte_length + 4` if `profile.is_padded`.
 #[must_use]
 pub fn build_ithmb_file(bgra: &[u8], w: i32, h: i32, profile: &Profile) -> Vec<u8> {
-    // 1. Rotate
-    let rotated = if profile.rotation != 0 {
-        rotate_bgra(bgra, w, h, profile.rotation)
+    // 1. Rotate (reverse direction for identity roundtrip: encode→decode)
+    let rev = (360 - profile.rotation) % 360;
+    let rotated = if rev != 0 {
+        rotate_bgra(bgra, w, h, rev)
     } else {
         bgra.to_vec()
     };
 
-    // 2. Encode
-    let encoded = encode_bgra(&rotated, w, h, profile);
+    // 2. Encode (swap dimensions for 90°/270° rotation)
+    let (ew, eh) = if profile.rotation % 180 == 90 { (h, w) } else { (w, h) };
+    let encoded = encode_bgra(&rotated, ew, eh, profile);
 
     // 3. Prepend the 4-byte prefix (big-endian i32)
     let prefix_bytes = (profile.prefix as u32).to_be_bytes();

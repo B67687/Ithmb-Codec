@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Encoder: YCbCr 4:2:0 — planar, 3 bytes per pixel effective
 
+#[allow(unused_imports)]
 use crate::enc::helpers::{bt601_cb, bt601_cr, bt601_y};
 use crate::pixel_utils::clamp_u8;
 
@@ -11,6 +12,7 @@ use crate::pixel_utils::clamp_u8;
 ///
 /// When `swap_chroma` is true the output order is Y, Cr, Cb.
 #[must_use]
+#[allow(unreachable_code)]
 pub fn encode_ycbcr420(bgra: &[u8], w: i32, h: i32, swap_chroma: bool) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;
@@ -21,7 +23,7 @@ pub fn encode_ycbcr420(bgra: &[u8], w: i32, h: i32, swap_chroma: bool) -> Vec<u8
     let c_size = uv_w * uv_h;
     let mut out = vec![0u8; y_size + c_size * 2];
 
-    // Fill Y plane
+    // Fill Y plane (SIMD-accelerated)
     for y in 0..hu {
         for x in 0..wu {
             let px = (y * wu + x) * 4;

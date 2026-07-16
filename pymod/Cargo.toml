@@ -16,7 +16,6 @@ ithmb-core = { path = "../crates/ithmb-core", version = "1.9" }
 pyo3 = { version = "0.29", features = ["extension-module", "abi3", "abi3-py312", "auto-initialize"] }
 
 [features]
-simd = ["ithmb-core/simd"]
 default = []
 
 [lints]

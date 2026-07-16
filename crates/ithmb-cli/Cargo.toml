@@ -19,7 +19,6 @@ path = "src/main.rs"
 
 [features]
 default = ["png-output"]
-simd = ["ithmb-core/simd"]
 png-output = ["dep:png"]
 
 [dependencies]

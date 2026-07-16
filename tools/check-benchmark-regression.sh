@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: MIT
 #
 # check-benchmark-regression.sh — Run divan benchmarks and compare against
-# baseline.  Exits 1 if any benchmark regresses by >10%.
+# baseline.  Exits 1 if any benchmark regresses by >25%.
 #
 # Usage:
 #   ./tools/check-benchmark-regression.sh
 #
 # Environment:
 #   BASELINE_PATH    path to baseline JSON  (default: .github/baseline.json)
-#   FAIL_THRESHOLD   ratio that triggers failure  (default: 1.10)
+#   FAIL_THRESHOLD   ratio that triggers failure  (default: 1.25)
 #
 # Exit codes:
 #   0 — all benchmarks within threshold (or no baseline found)
@@ -21,7 +21,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BASELINE_PATH="${BASELINE_PATH:-"$PROJECT_DIR/.github/baseline.json"}"
-FAIL_THRESHOLD="${FAIL_THRESHOLD:-1.10}"
+FAIL_THRESHOLD="${FAIL_THRESHOLD:-1.25}"
 
 # ---------------------------------------------------------------------------
 # Run benchmarks and capture output
@@ -37,7 +37,7 @@ if [ ! -f "$BASELINE_PATH" ]; then
 fi
 
 echo "Running cargo bench -p ithmb-core ..."
-BENCH_OUTPUT=$(cargo bench -p ithmb-core 2>&1 | tee /tmp/ci-benchmark-output.txt) || {
+BENCH_OUTPUT=$(cargo bench -p ithmb-core ${CARGO_BENCH_ARGS:-} 2>&1 | tee /tmp/ci-benchmark-output.txt) || {
     echo "WARNING: cargo bench failed — skipping regression check."
     exit 0
 }

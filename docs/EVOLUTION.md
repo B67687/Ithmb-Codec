@@ -69,7 +69,7 @@ This gap existed because the Rust code was written in fewer, faster cycles. The 
 
 ### ADR-1: Cross-platform SIMD dispatch
 
-**Decision:** Use cargo feature gates (`--features simd`) instead of runtime CPUID dispatch for SIMD paths.
+**Decision:** SIMD is compiled unconditionally with runtime dispatch for ISA selection.
 
 **Rationale:** Runtime dispatch in Rust requires `#[target_feature]` + `#[cfg]` macros, leading to per-ISA abstraction layers for every decoder function. Feature-gating keeps the code cleaner and lets users opt out entirely on platforms where SIMD doesn't apply.
 

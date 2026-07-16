@@ -7,6 +7,7 @@
 
 use divan as _;
 use jpeg_decoder as _;
+use proptest as _;
 use thiserror as _;
 
 use ithmb_core::DecodedImage;

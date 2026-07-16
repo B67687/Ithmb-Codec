@@ -1,0 +1,42 @@
+# publish.yml — Automated crates.io publish on version tags
+name: publish
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "publish-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: Verify tag is on main branch
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Tag commit is not an ancestor of main — refusing to publish"
+            exit 1
+          fi
+      - name: cargo publish --dry-run -p ithmb-core
+        continue-on-error: true
+        run: cargo publish --dry-run -p ithmb-core
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: cargo publish -p ithmb-core
+        run: cargo publish -p ithmb-core
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      - name: Wait for crates.io index to update
+        run: sleep 30
+      - name: cargo publish -p ithmb-cli
+        run: cargo publish -p ithmb-cli
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

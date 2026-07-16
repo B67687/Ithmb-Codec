@@ -34,10 +34,10 @@ fuzz_target!(|data: &[u8]| {
         return;
     };
 
-    let profile = Profile {
-        width: w as u32,
-        height: h as u32,
-        frame_byte_length: (pixel_count * 2) as u32,
+    let mut profile = Profile {
+        width: w,
+        height: h,
+        frame_byte_length: (pixel_count * 2) as i32,
         ..Default::default()
     };
 
@@ -64,7 +64,7 @@ fuzz_target!(|data: &[u8]| {
         }
         5 => {
             profile.encoding = Encoding::Ycbcr420;
-            encode_ycbcr420(&bgra, w, h)
+            encode_ycbcr420(&bgra, w, h, false)
         }
         6 => {
             profile.encoding = Encoding::Yuv422;
