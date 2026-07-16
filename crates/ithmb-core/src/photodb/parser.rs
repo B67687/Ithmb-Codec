@@ -574,11 +574,11 @@ mod tests {
         let img_size = 22i32; // just the JPEG SOI..EOI part
         data[off..off + 4].copy_from_slice(b"mhni");
         data[off + 4..off + 8].copy_from_slice(&[36, 0, 0, 0]); // hdr_size = 36
-                                                                // +8..+16 padding (zeros)
+        // +8..+16 padding (zeros)
         data[off + 16..off + 20].copy_from_slice(&[0xFB, 0x03, 0, 0]); // format_id = 1019 LE
         data[off + 20..off + 24].copy_from_slice(&i32::try_from(pixel_offset).unwrap().to_le_bytes()); // ithmb_offset
         data[off + 24..off + 28].copy_from_slice(&img_size.to_le_bytes()); // image_size
-                                                                           // +28..+32 reserved / padding
+        // +28..+32 reserved / padding
         data[off + 32..off + 34].copy_from_slice(&[16, 0]); // height = 16 LE u16
         data[off + 34..off + 36].copy_from_slice(&[16, 0]); // width = 16 LE u16
         off += 36;

@@ -89,7 +89,7 @@ pub(super) fn unpack_rgb555(pixel: u16) -> [u8; 4] {
 pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
     use core::arch::x86_64::{
         __m128i, _mm_loadl_epi64, _mm_or_si128, _mm_set1_epi32, _mm_setzero_si128, _mm_slli_epi32, _mm_storeu_si128,
-        _mm_unpackhi_epi16, _mm_unpacklo_epi16, _mm_unpacklo_epi8,
+        _mm_unpackhi_epi16, _mm_unpacklo_epi8, _mm_unpacklo_epi16,
     };
     let n = gray.len();
     let mut dst = vec![0u8; n * 4];

@@ -13,7 +13,7 @@ mod util;
 
 use divan::counter::BytesCount;
 use ithmb_core::enc;
-use ithmb_core::photodb::builder::{try_build_photodb, BuildEntry};
+use ithmb_core::photodb::builder::{BuildEntry, try_build_photodb};
 use ithmb_core::pipeline::open_ithmb;
 use ithmb_core::profile::Encoding;
 use ithmb_core::profile_db::ProfileDb;

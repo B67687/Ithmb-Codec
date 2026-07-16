@@ -15,7 +15,7 @@
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi16, _mm_set1_epi8,
+        __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi8, _mm_set1_epi16,
         _mm_setzero_si128, _mm_slli_epi16, _mm_srli_epi16, _mm_storeu_si128, _mm_unpacklo_epi8, _mm_xor_si128,
     };
 
@@ -78,8 +78,8 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool)
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi16,
-        _mm_set1_epi8, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srli_epi16, _mm_storeu_si128,
+        __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8,
+        _mm_set1_epi16, _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_srli_epi16, _mm_storeu_si128,
         _mm_unpacklo_epi8, _mm_xor_si128,
     };
     // Load 8 bytes (4 u16 LE pixels) into lower 64 bits.
@@ -153,10 +153,10 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
-        __m128i, _mm256_and_si256, _mm256_cvtepu16_epi32, _mm256_extracti128_si256, _mm256_packus_epi32,
-        _mm256_set1_epi32, _mm256_setzero_si256, _mm256_srli_epi32, _mm256_xor_si256, _mm_add_epi8, _mm_and_si128,
-        _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8, _mm_setr_epi8, _mm_setzero_si128,
-        _mm_shuffle_epi8, _mm_storeu_si128, _mm_unpacklo_epi8,
+        __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8,
+        _mm_setr_epi8, _mm_setzero_si128, _mm_shuffle_epi8, _mm_storeu_si128, _mm_unpacklo_epi8, _mm256_and_si256,
+        _mm256_cvtepu16_epi32, _mm256_extracti128_si256, _mm256_packus_epi32, _mm256_set1_epi32, _mm256_setzero_si256,
+        _mm256_srli_epi32, _mm256_xor_si256,
     };
 
     // Load 8 bytes (4 u16 LE pixels) — native LE, no byte-swap needed.

@@ -205,7 +205,7 @@ fn test_truncated_pixel_data_rgb555() {
     // Use decode_with_profile with a 4×4 RGB555 profile but only 4 bytes of
     // pixel data instead of 32.
     let profile = util::make_profile(32, 32, Encoding::Rgb555);
-    let mut buf = vec![0u8; 8]; // 4 prefix + 4 pixel (need 2048 → deficit=2044 >> 256)
+    let buf = vec![0u8; 8]; // 4 prefix + 4 pixel (need 2048 → deficit=2044 >> 256)
     let result = decode_with_profile(&buf, &profile, &CANCELED);
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
 }
@@ -594,6 +594,7 @@ fn test_clcl_truncated_chroma() {
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
 }
 
+#[test]
 fn test_clcl_empty_after_prefix() {
     // CLCL 130×2: 520 bytes needed after prefix.
     let profile = Profile {
@@ -610,6 +611,7 @@ fn test_clcl_empty_after_prefix() {
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
 }
 
+#[test]
 fn test_cl_truncated_data() {
     // CL 134×2: needs 536 bytes after prefix.
     let profile = Profile {
@@ -630,6 +632,7 @@ fn test_cl_truncated_data() {
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
 }
 
+#[test]
 fn test_cl_truncated_chroma_plane() {
     // CL 141×2: prefix + Y(282) + partial CbCr(4 instead of 282).
     let profile = Profile {
@@ -650,6 +653,7 @@ fn test_cl_truncated_chroma_plane() {
     assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
 }
 
+#[test]
 fn test_cl_empty_after_prefix() {
     // CL 130×2: 520 bytes needed after prefix.
     let profile = Profile {

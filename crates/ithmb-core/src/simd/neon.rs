@@ -164,7 +164,7 @@ pub(crate) unsafe fn cl_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
     use core::arch::aarch64::{
-        vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u16, vmovl_u8, vqmovn_s32,
+        vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u8, vmovl_u16, vqmovn_s32,
         vqmovun_s16, vreinterpretq_s32_u32, vst1_u8, vsubq_s32, vzip_s16,
     };
 
@@ -273,7 +273,7 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] {
     use core::arch::aarch64::{
-        vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u16, vmovl_u8, vmulq_s32,
+        vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u8, vmovl_u16, vmulq_s32,
         vqmovn_s32, vqmovun_s16, vreinterpretq_s32_u32, vshrq_n_s32, vst1_u8, vsubq_s32, vtbl1_u8, vzip_s16,
     };
 
@@ -395,8 +395,8 @@ pub(crate) unsafe fn yuv420_row_pair_to_bgra_neon(
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn clcl_row_to_bgra_neon(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8]) {
     use core::arch::aarch64::{
-        vaddq_s32, vcombine_s16, vdup_n_s16, vdup_n_u8, vdupq_n_s32, vget_high_u16, vget_low_u16, vld1_u8, vmovl_u16,
-        vmovl_u8, vmulq_s32, vqmovn_s32, vqmovun_s16, vreinterpretq_s32_u32, vshr_n_u8, vshrq_n_s32, vst1_u8,
+        vaddq_s32, vcombine_s16, vdup_n_s16, vdup_n_u8, vdupq_n_s32, vget_high_u16, vget_low_u16, vld1_u8, vmovl_u8,
+        vmovl_u16, vmulq_s32, vqmovn_s32, vqmovun_s16, vreinterpretq_s32_u32, vshr_n_u8, vshrq_n_s32, vst1_u8,
         vsubq_s32, vzip_s16, vzip_u8,
     };
 

@@ -131,11 +131,11 @@ pub unsafe fn clcl_row_to_bgra_sse2(y_ptr: *const u8, cb_ptr: *const u8, cr_ptr:
 pub unsafe fn clcl_row_to_bgra_avx2(y_ptr: *const u8, cb_ptr: *const u8, cr_ptr: *const u8, width: u32, dst: *mut u8) {
     unsafe {
         use core::arch::x86_64::{
-            __m128i, _mm256_add_epi32, _mm256_castsi256_si128, _mm256_cvtepu8_epi32, _mm256_extracti128_si256,
-            _mm256_max_epi32, _mm256_min_epi32, _mm256_mullo_epi32, _mm256_packus_epi16, _mm256_packus_epi32,
-            _mm256_set1_epi16, _mm256_set1_epi32, _mm256_setzero_si256, _mm256_srai_epi32, _mm256_sub_epi32,
-            _mm256_unpacklo_epi16, _mm_and_si128, _mm_loadl_epi64, _mm_loadu_si128, _mm_set1_epi8, _mm_slli_epi16,
-            _mm_srli_epi16, _mm_srli_si128, _mm_storeu_si128, _mm_unpacklo_epi8,
+            __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_loadu_si128, _mm_set1_epi8, _mm_slli_epi16, _mm_srli_epi16,
+            _mm_srli_si128, _mm_storeu_si128, _mm_unpacklo_epi8, _mm256_add_epi32, _mm256_castsi256_si128,
+            _mm256_cvtepu8_epi32, _mm256_extracti128_si256, _mm256_max_epi32, _mm256_min_epi32, _mm256_mullo_epi32,
+            _mm256_packus_epi16, _mm256_packus_epi32, _mm256_set1_epi16, _mm256_set1_epi32, _mm256_setzero_si256,
+            _mm256_srai_epi32, _mm256_sub_epi32, _mm256_unpacklo_epi16,
         };
 
         let w = width as usize;

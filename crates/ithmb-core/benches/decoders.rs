@@ -41,9 +41,7 @@ fn decode_jpeg(bencher: divan::Bencher) {
     bencher
         .counter(BytesCount::new(JPEG_OUTPUT_BYTES))
         .with_inputs(|| (src, &profile, &canceled))
-        .bench_refs(|(src, profile, canceled)| {
-            jpeg::decode(src, profile, canceled)
-        });
+        .bench_refs(|(src, profile, canceled)| jpeg::decode(src, profile, canceled));
 }
 
 // ---------------------------------------------------------------------------
@@ -146,9 +144,7 @@ bench_decoder!(
 fn main() {
     // Extract --output-json=<path> flag before Divan parses args
     let args: Vec<String> = std::env::args().collect();
-    let output_json_path = std::env::args().find_map(|arg| {
-        arg.strip_prefix("--output-json=").map(|s| s.to_string())
-    });
+    let output_json_path = std::env::args().find_map(|arg| arg.strip_prefix("--output-json=").map(|s| s.to_string()));
 
     if let Some(ref json_path) = output_json_path {
         // Re-run self without the --output-json flag, capturing Divan output
@@ -189,9 +185,7 @@ fn main() {
         bencher
             .counter(BytesCount::new((256 * 256 * 4) as u64))
             .with_inputs(|| &encoded)
-            .bench_refs(|src| {
-                ithmb_core::simd::rgb565_row_to_bgra(src)
-            });
+            .bench_refs(|src| ithmb_core::simd::rgb565_row_to_bgra(src));
     }
 
     #[divan::bench]
@@ -201,9 +195,7 @@ fn main() {
         bencher
             .counter(BytesCount::new((256 * 256 * 4) as u64))
             .with_inputs(|| &encoded)
-            .bench_refs(|src| {
-                ithmb_core::simd::rgb555_row_to_bgra(src)
-            });
+            .bench_refs(|src| ithmb_core::simd::rgb555_row_to_bgra(src));
     }
     divan::main();
 }

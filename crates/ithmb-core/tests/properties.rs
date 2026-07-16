@@ -43,7 +43,9 @@ enum TestFormat {
     Ycbcr420,
     Clcl,
     Cl,
+    #[allow(dead_code)]
     Jpeg,
+    // JPEG excluded: no encoder exists for roundtrip testing
 }
 
 impl TestFormat {

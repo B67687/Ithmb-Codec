@@ -81,6 +81,7 @@ fn c_api_integration() {
     );
 }
 
+#[cfg(feature = "c")]
 /// Find the cdylib in either `target/debug/` or `target/debug/deps/`.
 fn find_cdylib(target_dir: &std::path::Path, deps_dir: &std::path::Path) -> std::path::PathBuf {
     let lib_name = if cfg!(target_os = "macos") {

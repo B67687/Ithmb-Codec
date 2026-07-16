@@ -24,7 +24,7 @@
 
 use crate::error::DecodeError;
 use crate::photodb::types::{
-    is_known_magic, read_i32, read_u32, read_u32_be, read_u32_le, MHBA, MHFD, MHIA, MHIF, MHII, MHL, MHNI, MHOD, MHSD,
+    MHBA, MHFD, MHIA, MHIF, MHII, MHL, MHNI, MHOD, MHSD, is_known_magic, read_i32, read_u32, read_u32_be, read_u32_le,
 };
 use crate::profile::Profile;
 use crate::profile_db::ProfileDb;
@@ -808,7 +808,7 @@ mod tests {
         // MHNI is at offset 52 inside the MHII at offset 40
         assert_eq!(read_u32_le(&result, 52 + 4), 40); // headerSize
         assert_eq!(read_u32_le(&result, 52 + 8), 90); // totalLen
-                                                      // ithmbOffset should use the custom totalLen
+        // ithmbOffset should use the custom totalLen
         let expected_off = 12 + 16 + 12 + 102; // MHFD + MHSD + MHL + one MHII+MHNI
         assert_eq!(read_i32_le(&result, 52 + 20), expected_off);
     }

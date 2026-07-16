@@ -331,7 +331,7 @@ bench_decoder!(
 );
 bench_decoder!(
     decode_uyvy,
-    |b, w, h| enc::encode_uyvy(b, w, h),
+    enc::encode_uyvy,
     |len| make_profile(Encoding::Yuv422, len),
     uyvy::decode
 );
@@ -343,14 +343,14 @@ bench_decoder!(
 );
 bench_decoder!(
     decode_clcl,
-    |b, w, h| enc::encode_clcl(b, w, h),
-    |len| make_profile_clcl(len),
+    enc::encode_clcl,
+    make_profile_clcl,
     clcl::decode
 );
 bench_decoder!(
     decode_cl,
-    |b, w, h| enc::encode_cl(b, w, h),
-    |len| make_profile_cl(len),
+    enc::encode_cl,
+    make_profile_cl,
     cl::decode
 );
 

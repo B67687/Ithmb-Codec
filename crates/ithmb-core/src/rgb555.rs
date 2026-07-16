@@ -321,7 +321,7 @@ mod tests {
         assert_eq!(img.data[1], 0x00); // G
         assert_eq!(img.data[2], 0x00); // R
         assert_eq!(img.data[3], 0xFF); // A
-                                       // Assert last pixel (all max)
+        // Assert last pixel (all max)
         let last = img.data.len() - 4;
         assert_eq!(img.data[last], 0xFF);
         assert_eq!(img.data[last + 1], 0xFF);

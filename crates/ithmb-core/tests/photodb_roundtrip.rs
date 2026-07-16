@@ -157,7 +157,7 @@ fn fix_be_magics(buf: &mut [u8], num_entries: usize, mhni_header_size: i32, mhni
 /// We overwrite those zeros with valid MHOD+MHIF chunks, which the parser
 /// picks up as children of the enclosing MHII container.
 fn inject_mhod_mhif(
-    buf: &mut Vec<u8>,
+    buf: &mut [u8],
     entry_index: usize,
     mhni_header_size: i32,
     mhni_padding_size: i32,
@@ -428,7 +428,7 @@ fn metadata_roundtrip() {
     {
         let mut data = try_build_photodb(&entries, 36, 200, false).expect("LE build (metadata)");
         for i in 0..entries.len() {
-            inject_mhod_mhif(&mut data, i, 36, 200, false);
+            inject_mhod_mhif(data.as_mut_slice(), i, 36, 200, false);
         }
         let mut parsed = Vec::new();
         try_parse_photodb(&data, &mut parsed).expect("LE parse (metadata)");
@@ -452,7 +452,7 @@ fn metadata_roundtrip() {
         let mut data = try_build_photodb(&entries, 36, 200, true).expect("BE build (metadata)");
         fix_be_magics(&mut data, entries.len(), 36, 200);
         for i in 0..entries.len() {
-            inject_mhod_mhif(&mut data, i, 36, 200, true);
+            inject_mhod_mhif(data.as_mut_slice(), i, 36, 200, true);
         }
         let mut parsed = Vec::new();
         try_parse_photodb(&data, &mut parsed).expect("BE parse (metadata)");

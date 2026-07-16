@@ -18,7 +18,7 @@ use core::arch::x86_64::__m128i;
 pub(crate) unsafe fn yuv420_quad_to_bgra_sse2(quad: &[u8; 6]) -> [u8; 16] {
     use core::arch::x86_64::{
         _mm_add_epi32, _mm_cvtsi32_si128, _mm_set1_epi32, _mm_setzero_si128, _mm_storeu_si128, _mm_sub_epi32,
-        _mm_unpacklo_epi16, _mm_unpacklo_epi8,
+        _mm_unpacklo_epi8, _mm_unpacklo_epi16,
     };
 
     // ---- Precompute chroma contributions (scalar, once for all 4 pixels) ----
@@ -89,8 +89,8 @@ unsafe fn store_sse41_quad(
 ) {
     use core::arch::x86_64::{
         _mm_add_epi32, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_max_epi32, _mm_min_epi32, _mm_packus_epi16,
-        _mm_packus_epi32, _mm_set1_epi32, _mm_storel_epi64, _mm_sub_epi32, _mm_unpackhi_epi64, _mm_unpacklo_epi16,
-        _mm_unpacklo_epi8,
+        _mm_packus_epi32, _mm_set1_epi32, _mm_storel_epi64, _mm_sub_epi32, _mm_unpackhi_epi64, _mm_unpacklo_epi8,
+        _mm_unpacklo_epi16,
     };
 
     let y_chunk = _mm_cvtsi32_si128(i32::from_le_bytes([
@@ -202,9 +202,9 @@ unsafe fn store_avx2_chroma_pair(
     dst: &mut [u8],
 ) {
     use core::arch::x86_64::{
-        _mm256_add_epi32, _mm256_cvtepu8_epi32, _mm256_extracti128_si256, _mm256_setr_epi32, _mm256_sub_epi32,
         _mm_cvtsi32_si128, _mm_max_epi32, _mm_min_epi32, _mm_packus_epi16, _mm_packus_epi32, _mm_storel_epi64,
-        _mm_unpackhi_epi64, _mm_unpacklo_epi16, _mm_unpacklo_epi32, _mm_unpacklo_epi8,
+        _mm_unpackhi_epi64, _mm_unpacklo_epi8, _mm_unpacklo_epi16, _mm_unpacklo_epi32, _mm256_add_epi32,
+        _mm256_cvtepu8_epi32, _mm256_extracti128_si256, _mm256_setr_epi32, _mm256_sub_epi32,
     };
 
     // ---- Load 8 Y bytes for 2 chroma positions (4 Y per position) ----

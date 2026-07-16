@@ -1133,14 +1133,14 @@ mod tests {
             let bgra = gen_test_bgra(n);
             let mut y = vec![0u8; n];
             bgra_to_y_plane(&bgra, &mut y);
-            for i in 0..n {
+            for (i, y_val) in y.iter().enumerate() {
                 let px = i * 4;
                 let expected = clamp_u8(bt601_y(
                     i32::from(bgra[px + 2]),
                     i32::from(bgra[px + 1]),
                     i32::from(bgra[px]),
                 ));
-                assert_eq!(y[i], expected, "Y plane n={n} i={i}");
+                assert_eq!(*y_val, expected, "Y plane n={n} i={i}");
             }
         }
     }
@@ -1150,14 +1150,14 @@ mod tests {
         let bgra = gen_test_bgra(1000);
         let mut y = vec![0u8; 1000];
         bgra_to_y_plane(&bgra, &mut y);
-        for i in 0..1000 {
+        for (i, y_val) in y.iter().enumerate() {
             let px = i * 4;
             let expected = clamp_u8(bt601_y(
                 i32::from(bgra[px + 2]),
                 i32::from(bgra[px + 1]),
                 i32::from(bgra[px]),
             ));
-            assert_eq!(y[i], expected, "Y plane i={i}");
+            assert_eq!(*y_val, expected, "Y plane i={i}");
         }
     }
 

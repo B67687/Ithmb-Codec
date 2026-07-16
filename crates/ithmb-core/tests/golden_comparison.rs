@@ -10,8 +10,8 @@ use jpeg_decoder as _;
 use proptest as _;
 use thiserror as _;
 
-use ithmb_core::profile::{Encoding, Profile};
 use ithmb_core::DecodedImage;
+use ithmb_core::profile::{Encoding, Profile};
 #[cfg(feature = "cache")]
 use lru as _;
 use std::sync::atomic::AtomicBool;
