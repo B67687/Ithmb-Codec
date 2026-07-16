@@ -1,6 +1,6 @@
 # rust-ci.yml — Build matrix (OS x features) + clippy verification.
 name: rust-ci
-on:
+"on":
   push: { branches: [main] }
   pull_request: { branches: [main] }
 permissions: { contents: read }
