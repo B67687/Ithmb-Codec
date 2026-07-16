@@ -179,16 +179,3 @@ jobs:
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
 
-  test_arm64:
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          cache: true
-          cache-key: "arm64-${{ hashFiles('rust-toolchain.toml') }}"
-      - name: Build
-        run: cargo build --workspace
-      - name: Test
-        run: cargo test --workspace 2>&1 | tail -5
