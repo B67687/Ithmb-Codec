@@ -20,7 +20,7 @@ use std::sync::atomic::AtomicBool;
 /// Open a `PhotoDB` container file and decode all contained thumbnails.
 ///
 /// When the input is a bare .ithmb file (no MHFD magic), the entire input is
-/// decoded as a single frame via [`decode_ithmb`] and returned as a one-element
+/// decoded as a single frame via `decode_ithmb` and returned as a one-element
 /// vector.
 ///
 /// `device_name` is an optional case-insensitive device name (e.g. 'iPod Classic 5G').
@@ -47,9 +47,9 @@ pub fn open_ithmb(
     open_ithmb_with_config(src, canceled, device_name, config::default_config())
 }
 
-/// Open a `PhotoDB` container file (or bare .ithmb) with a custom [`DecodeConfig`].
+/// Open a `PhotoDB` container file (or bare .ithmb) with a custom `DecodeConfig`.
 ///
-/// Like [`open_ithmb`] but accepts a [`DecodeConfig`] for runtime parameter
+/// Like `open_ithmb` but accepts a `DecodeConfig` for runtime parameter
 /// customization (file size limit, etc.).
 ///
 /// # Errors

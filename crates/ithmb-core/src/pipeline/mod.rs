@@ -70,14 +70,14 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
     decode_ithmb_with_config(src, canceled, config::default_config())
 }
 
-/// Decode a complete `.ithmb` file with a custom [`DecodeConfig`].
+/// Decode a complete `.ithmb` file with a custom [`DecodeConfig`](crate::config::DecodeConfig).
 ///
-/// Like [`decode_ithmb`] but allows overriding decode parameters (file size limit,
+/// Like ``decode_ithmb`` but allows overriding decode parameters (file size limit,
 /// JPEG scan limit, cancellation check interval, etc.) at runtime.
 ///
 /// # Errors
 ///
-/// Same as [`decode_ithmb`].
+/// Same as ``decode_ithmb``.
 pub fn decode_ithmb_with_config(
     src: &[u8],
     canceled: &AtomicBool,
@@ -157,7 +157,7 @@ pub fn decode_ithmb_with_config(
 ///
 /// # Errors
 ///
-/// Returns [`DecodeError::BufferTooShort`] if the input is too short for the
+/// Returns ``DecodeError::BufferTooShort`` if the input is too short for the
 /// expected prefix (4 bytes for raw formats). Propagates decoder errors.
 pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
     // stream). Raw formats have a 4-byte format prefix before pixel data.
@@ -177,14 +177,13 @@ pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool)
     Ok(apply_post_process(img, profile))
 }
 
-/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`].
+/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig).
 ///
-/// Like [`decode_with_profile`] but accepts a [`DecodeConfig`] for runtime
-/// parameter customization (e.g. trailing padding tolerance).
+/// Like [`decode_with_profile`] but accepts a [`DecodeConfig`](crate::config::DecodeConfig) for runtime
 ///
 /// # Errors
 ///
-/// Same as [`decode_with_profile`].
+/// Same as ``decode_with_profile``.
 pub fn decode_with_profile_with_config(
     src: &[u8],
     profile: &Profile,

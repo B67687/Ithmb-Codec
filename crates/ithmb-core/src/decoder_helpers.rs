@@ -5,9 +5,9 @@
 //! casts, and buffer-too-short guards).
 //!
 //! The trailing-padding tolerance is configurable at runtime through a thread-local
-//! override set by [`set_tolerance`] / [`with_tolerance`]. The [`decode_ithmb_with_config`]
-//! entry point uses this mechanism to wire [`DecodeConfig::trailing_padding_tolerance`]
-//! through to [`validate_dimensions`] without changing the public `decode` function
+//! override set by `set_tolerance` / `with_tolerance`. The `decode_ithmb_with_config`
+//! entry point uses this mechanism to wire `DecodeConfig::trailing_padding_tolerance`
+//! through to `validate_dimensions` without changing the public decode function
 //! signatures in individual decoder modules.
 
 use crate::error::DecodeError;

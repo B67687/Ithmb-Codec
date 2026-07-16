@@ -1,6 +1,6 @@
 //! Runtime configuration for the decode pipeline.
 //!
-//! [`DecodeConfig`] allows callers to customize decode parameters such as
+//! `DecodeConfig` allows callers to customize decode parameters such as
 //! maximum file size, JPEG scan limits, and cancellation check frequency,
 //! instead of using hardcoded defaults.
 //!
@@ -42,7 +42,7 @@ pub struct DecodeConfig {
     cancel_check_interval: usize,
     /// Trailing padding tolerance in bytes. Decoders tolerate up to this
     /// many missing bytes at the end of a frame before raising
-    /// [`DecodeError::BufferTooShort`](crate::DecodeError::BufferTooShort).
+    /// ``DecodeError::BufferTooShort`` (`crate::DecodeError::BufferTooShort`).
     trailing_padding_tolerance: usize,
     /// Maximum bytes after JPEG SOI to search for JFIF or Exif marker.
     jfif_exif_scan_window: usize,
@@ -141,14 +141,14 @@ impl DecodeConfig {
 // Global default config
 // ---------------------------------------------------------------------------
 
-/// Global default [`DecodeConfig`] that existing entry points use.
+/// Global default ``DecodeConfig`` that existing entry points use.
 ///
-/// This is lazily initialized to [`DecodeConfig::default()`] on first access.
+/// This is lazily initialized to ``DecodeConfig::default()`` on first access.
 /// Users who want a fully custom config can ignore this and pass their own
 /// `&DecodeConfig` to the `_with_config` function variants.
 pub static DEFAULT_CONFIG: OnceLock<DecodeConfig> = OnceLock::new();
 
-/// Return a reference to the global default [`DecodeConfig`], initializing it
+/// Return a reference to the global default ``DecodeConfig``, initializing it
 /// on the first call.
 #[must_use]
 pub fn default_config() -> &'static DecodeConfig {
