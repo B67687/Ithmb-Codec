@@ -100,7 +100,10 @@ pub(crate) fn validate_dimensions<'a>(
     let h = h_i32 as usize;
 
     if bpp > 0 {
-        let expected = w * h * bpp;
+        let expected = w
+            .checked_mul(h)
+            .and_then(|wh| wh.checked_mul(bpp))
+            .ok_or(DecodeError::BufferTooShort { expected: 0, actual: 0 })?;
         if src.len() < expected {
             let deficit = expected - src.len();
             let tolerance = get_tolerance();

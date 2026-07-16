@@ -17,6 +17,7 @@ use std::fmt;
 
 /// A fully decoded bitmap.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct DecodedImage {
     /// Raw pixel data in BGRA 8-bit order (blue, green, red, alpha).
     pub data: Vec<u8>,

@@ -26,6 +26,9 @@ jobs:
           exclude=""
           if [ "${{ matrix.os }}" = "macos-latest" ]; then exclude='--exclude ithmb-python'; fi
           cargo build --workspace $exclude
+      - name: Build with logging feature
+        shell: bash
+        run: cargo build --features logging -p ithmb-core
       - name: Test
         shell: bash
         env:
@@ -179,3 +182,20 @@ jobs:
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
 
+  format_check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo fmt --check
+        run: cargo fmt --check --all
+  cargo_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-audit/rust-audit@v1

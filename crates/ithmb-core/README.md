@@ -73,11 +73,12 @@ for entry in &entries {
 
 ## Crate features
 
-| Feature   | Description                   |
-| --------- | ----------------------------- |
-| `cache`   | LRU raw file cache            |
-| `cache`   | LRU raw file cache            |
-| `metrics` | Decode timing counters        |
+| Feature   | Description            |
+| --------- | ---------------------- |
+| `c`       | C ABI exports          |
+| `cache`   | LRU raw file cache     |
+| `logging` | Logging support        |
+| `metrics` | Decode timing counters |
 
 ## License
 

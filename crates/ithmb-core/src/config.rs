@@ -15,6 +15,7 @@
 ///
 /// assert_eq!(config.max_raw_file_size(), 16 * 1024 * 1024);
 /// ```
+use std::fmt;
 use std::sync::OnceLock;
 
 /// Runtime configuration for `.ithmb` decode parameters.
@@ -31,7 +32,7 @@ use std::sync::OnceLock;
 /// | `cancel_check_interval` | 64 KiB | Byte interval between cancellation polls |
 /// | `trailing_padding_tolerance` | 256 | Padding deficit allowed before `BufferTooShort` |
 /// | `jfif_exif_scan_window` | 512 | Bytes after SOI to search for JFIF/Exif |
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DecodeConfig {
     /// Maximum raw file size in bytes. Files larger than this are rejected
     /// before any decoding begins (prevents OOM from pathological input).
@@ -134,6 +135,18 @@ impl DecodeConfig {
     pub fn with_jfif_exif_scan_window(mut self, val: usize) -> Self {
         self.jfif_exif_scan_window = val;
         self
+    }
+}
+
+impl fmt::Display for DecodeConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DecodeConfig")
+            .field("max_raw_file_size", &self.max_raw_file_size)
+            .field("jpeg_scan_limit", &self.jpeg_scan_limit)
+            .field("cancel_check_interval", &self.cancel_check_interval)
+            .field("trailing_padding_tolerance", &self.trailing_padding_tolerance)
+            .field("jfif_exif_scan_window", &self.jfif_exif_scan_window)
+            .finish()
     }
 }
 

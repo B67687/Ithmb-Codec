@@ -606,7 +606,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-cli"
-version = "1.9.1"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -616,7 +616,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-core"
-version = "1.9.1"
+version = "1.9.3"
 dependencies = [
  "divan",
  "image",
@@ -629,7 +629,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-gen"
-version = "1.9.1"
+version = "1.9.3"
 dependencies = [
  "clap",
  "ithmb-core",
@@ -637,7 +637,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-python"
-version = "1.9.1"
+version = "1.9.3"
 dependencies = [
  "ithmb-core",
  "pyo3",
@@ -645,7 +645,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-wasm"
-version = "1.9.1"
+version = "1.9.3"
 dependencies = [
  "ithmb-core",
  "wasm-bindgen",

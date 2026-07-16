@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.10.0-enterprise] — 2026-07-13
 
 ### Added
+
 - **WASM decoder** — Browser-based .ithmb decoder at [Ithmb-Codec-Dev](https://github.com/B67687/Ithmb-Codec-Dev)
 - **Opt-in format metadata sharing** — GitHub issue via checkbox-gated opt-in
 - **ADR-0006** — Zero-trust telemetry pattern documented
@@ -15,14 +16,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Gen tool profile-aware defaults** — `ithmb-gen` generates at profile-matching dimensions
 
 ### Fixed
+
 - **Plugin ABI rewrite** — IGCodecApi/IGCodecCapability matched to C# SDK
 - **Pixel format enum** — Unknown(0) to Bgra8Unorm(1) for ImageGlass compat
 - **Stack buffer overrun** — Removed monitor thread calling is_cancellation_requested(null)
 - **Metadata dimension parsing** — Fixed comma-formatted profile descriptions
 
+## [1.9.3] - 2026-07-16
+
+### Added
+
+- `#[non_exhaustive]` to DecodeConfig, Profile, DecodedImage for forward-compatibility
+- `Display` impl for `Encoding` and `DecodeConfig`
+- `PartialEq`/`Eq` for DecodeConfig and Profile
+- Root-level re-exports for `PhotoDbEntry`, `PhotoDbMetadata`, `built_in_profiles()`
+
+### Fixed
+
+- Overflow safety: added `checked_mul` guards in dimension calculations
+- Panic removed from profile DB initialization
+- Truncated doc on `decode_with_profile_with_config`
+- Duplicate `cache` feature entry in README
+- SECURITY.md inaccurate unsafe code claim
+- Config.rs doc example misplaced
+- Unconditional cdylib removed from library crate-type
+
+### CI
+
+- Added `cargo fmt --check` workflow
+- Added `cargo audit` security advisory check
+- Tests now run before release artifact build
+- Changed: FAIL_THRESHOLD 5.0→1.25
+- Removed: encoder SIMD (was causing 3x regression)
+
 ## [1.9.0] — 2026-07-07
 
 ### Added
+
 - **Initial Rust port** — Full C#→Rust conversion of Ithmb-Codec as a pure Rust workspace (5 crates: ithmb-core, ithmb-cli, ithmb-core-cabi, ithmb-gen, pymod)
 - **8 pixel decoders** — RGB565, RGB555, ReorderedRGB555 (Morton Z-order), UYVY (YUV422), YCbCr420, CLCL (nibble-chroma), CL (per-pixel chroma), JPEG
 - **7 synthetic encoders** — All raw formats with BuildIthmbFile dispatch, rotation, padding, interlacing
@@ -51,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **ECOSYSTEM.md** — Documented original contributions to the .ithmb reverse-engineering space
 
 ### Changed
+
 - **SIMD architecture** — RGB565/RGB555 use auto-vectorized scalar (hand-written SSE2/AVX2 was 34× slower on Intel due to AVX frequency downclock). SIMD kept only for YUV BT.601 arithmetic where it provides 1.5×+ speedup
 - **CL/CLCL nibble scaling** — Corrected from ×17 to ×16 (<<4), matching SIMD expansion. 15,625 nibble combos verified
 - **ReorderedRGB555 decoder** — Fixed row-major→Morton Z-order de-interleave for correct >2×2 decode
@@ -59,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **README restructured**: Hardcoded test/profile counts replaced with STATS.md cross-refs; badge layout grouped; troubleshooting table pipe syntax fixed; unclosed code block fixed
 
 ### Fixed
+
 - **CL/CLCL scalar nibble bug** — Cb/Cr variable swap and wrong expansion (×17 instead of <<4) corrected
 - **ReorderedRGB555 Morton mismatch** — Decoder read row-major but encoder wrote Z-order Morton; now correctly de-interleaves
 - **All clippy warnings** — 74+ warnings fixed across workspace, pedantic=deny enforced
@@ -69,6 +101,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Stale 32 MB references** — All README references updated to 8 MB (matching ADR-0005)
 
 ### Removed
+
 - **C# CI workflow** — dotnet.yml and related .NET infrastructure removed (project is now pure Rust)
 - **C# ADR documents** — Stale architecture decision records from C# era deleted
 - **AVX-512 dispatch** — Removed after benchmarking showed 34× regression on Intel (frequency downclock + port-5 bottleneck)
@@ -76,11 +109,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Stale v0.3.0 tag** — Orphan tag from squashed history, not on main
 
 ### Infrastructure
+
 - **Rust workspace** — ithmb-core, ithmb-cli, ithmb-core-cabi, ithmb-gen, pymod (Python bindings)
 - **CI/CD** — rust-ci.yml with build, test, clippy (pedantic=deny), fuzz build
 - **.omo/** — Agent orchestration infrastructure for structured work tracking
 
 ### Docs
+
 - **FORMAT.md**: Complete format specification covering all 6 known ithmb variants, header structures, profile tables, JPEG embedding, PhotoDB/ArtworkDB chunk format
 - **STANDARDS.md**: Cross-platform SIMD lessons learned table; macOS NEON limitation documented; dispatch pseudocode updated with platform cfg
 - **ADR-0004**: Quarterly audit protocol (removed stale synthesis reference)
@@ -90,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*(placeholder for future changes)*
+_(placeholder for future changes)_
 
 ---
 
@@ -99,6 +134,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 ## [1.6.0] — 2026-06-30
 
 ### Added
+
 - **Thread safety: Lock wrapper for RawFileCache** — SetCachedFile, TryGetCachedFile, and ClearRawFileCache all wrapped in `System.Threading.Lock`
 - **Observability: decode lifecycle logging** — every decode call emits START|{file}|{size} and END|{file}|{status}|{ms:F1}ms lines
 - **Observability: periodic stats** — every 100 decode attempts a summary line (count, success, fail, avg ms)
@@ -109,8 +145,9 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **MHNI header parameterization** — `TryBuildPhotoDb` accepts optional mhniHeaderSize (default 76) and mhniPaddingSize (default 64) for non-Classic MHNI layouts.
 
 ### Changed
+
 - **TryFindJpegSlice accepts ReadOnlySpan<byte>** — eliminates ArrayPool over-read bug from pooled array Length vs logical data size; callers pass exact span
-- **_rawFileCache LRU eviction** — Clear() replaced with oldest-LastAccess eviction, preventing cache thrashing under concurrent multi-image workloads
+- **\_rawFileCache LRU eviction** — Clear() replaced with oldest-LastAccess eviction, preventing cache thrashing under concurrent multi-image workloads
 - **Peek buffer allocation** — new byte[4MB] replaced with ArrayPool<byte>.Shared.Rent/Return, reducing LOH pressure
 - **KnownProfiles thread-safe publication** — Interlocked.Exchange replaces raw volatile field write
 - **Log calls include correlation token** — all Log(4,...) in DecodePipeline.cs include Path.GetFileName(path) for traceability
@@ -120,6 +157,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **Readme source layout 18 → 19 files** — added ProfilesJson.cs row to Architecture table
 
 ### Fixed
+
 - **CI: gitleaks SHA pin** — updated to v3.0.0 actual commit `e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e`
 - **CI: YAML syntax error in SAST step** — `WARNING:` colon+space in plain scalar broke YAML. Quoted the `run:` value
 - **CI: DecodePipeline indentation** — P4 try/finally left 4 spaces too-shallow indent; corrected by `dotnet format`
@@ -136,6 +174,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **iOpenPod issue link** — ProfilesJson.cs disabled profile comments reference issue #81
 
 ### Refactored
+
 - **SIMD constants centralized** — per-method UyvySimdConstants struct instances replaced by shared SimdConstants static class
 - **P5: DecodeInfrastructure extracted** — RawFileCache, DecodeMetrics, MaxCarvingFileSize from DecodePipeline.cs → new DecodeInfrastructure.cs
 - **P5: Strings extracted** — AllocUtf16 buffers + InitStrings/FreePluginStrings from IthmbCodecPlugin.cs → new Strings.cs
@@ -144,6 +183,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **P5: JsonParser extracted** — JSON tokenizer + depth-limited parser from ProfileSystem.cs → new JsonParser.cs
 
 ### Security
+
 - **NUL-in-path guard** — decode entry rejects paths containing embedded NUL bytes, preventing truncated-path decode in Native AOT
 - **profiles.json integrity logging** — FNV-1a CRC logged on external profile load for tamper detection
 - **Catch blocks log ex.Message** — all 3 bare `catch(Exception) { return; }` in ProfileSystem.cs now include error detail
@@ -152,10 +192,12 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **CLSCompliant(false)** — explicit opt-out via Properties/AssemblyInfo.cs, suppressing CS3000/CS3016 warnings from Native AOT unsafe patterns
 
 ### Performance
+
 - **Two-phase peek buffer** — 512 KB first probe, extend to full 4 MB only if JPEG SOI found within window. Reduces peak I/O for common small thumbnails.
 - **Decode metrics infrastructure** — Interlocked counters (_decodeCount, _decodeSuccessCount, _decodeTotalTicks) + GetDecodeStats()/ResetDecodeStats()
 
 ### CI/CD
+
 - **dotnet format --verify-no-changes** — added as CI step in build-linux.yml, enforcing consistent formatting
 - **Tag validation** — release-windows.yml validates tag matches `v*` before proceeding
 - **Code coverage gate** — build-linux.yml collects XPlat Code Coverage with 72% threshold (raised from 70%)
@@ -166,6 +208,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **benchmark.yml deduplicated** — removed duplicate "Display dotnet info" step
 
 ### Testing
+
 - **EncoderHelpers: 23 new tests** — InterlaceFields (2Bpp, YCbCr420, edge dims), BT.601 known colors, scalar decoder fallback at sub-SIMD width w=6
 - **DecodePipeline coverage push** — UnknownPrefix_NoJpeg + UnknownPrefix_EmbeddedJpeg tests (+2)
 - **JpegDecode coverage push** — real iPhone JPEG slice decode + early bailout paths (+2)
@@ -183,6 +226,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 ## [1.5.0] — 2026-06-29
 
 ### Added
+
 - **Architecture SVG updated to match current profile counts** — 54 profiles (was 49), 25 photo (was 22), 29 cover art (was 27). Pipeline inner boxes vertically centered. Long decoder label shortened (RGB565/RGB555→RGB565/555). EXIF box widened to match JPEG Path. Font-size reduced on crowded decoder line.
 - **README Contributions to ecosystem section updated** — surveyed implementations 4→22, dimension discrepancies 9→15. Added Steee29 iPhone 2G real-device validation, clickwheel 1062 discovery, gnupod/OrgZ profile corrections.
 - **Format 1062 (56×56 RGB565, frameBytes=6272) added** — from clickwheel (dstaley) SysInfoExtended table. Not in any prior device profile. (+2 test assertions). Profiles count: 53 active + 1 speculative disabled (54 total).
@@ -199,6 +243,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **Zero-dimension edge-case tests** — all 7 decoder formats tested on 0×4, 4×0, and 0×0 (all return false). Null outBuf guard tested for DecodeRawProfile (returns OK). (+8 tests)
 
 ### Changed
+
 - **Profile system: Nano 7G override data deduplicated** — shared `Nano7GOverrides` field powers both `BuildProfileAlternates()` and `BuildDeviceOverrides()` instead of hardcoding the same values twice.
 - **ProfilesJson.cs sorted by prefix ascending** — easier maintenance, no functional change.
 - **Profile flexibility system:** Added `UseMhniDimensions` flag (use actual Width/Height from MHNI chunk instead of profile's fixed dimensions) and `FallbackEncodings[]` array (ordered list of alternative encodings on primary decode failure). Enabled on profile 1061 to resolve dimension disagreement.
@@ -210,6 +255,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **README intro restructured:** Removed duplicate Goal paragraph, replaced with Key Features bullet list (54 profiles, 7 decoders, SIMD, PhotoDB, cross-platform).
 
 ### Fixed
+
 - **Padded-profile short-file blind spot** — when `IsPadded=true` and raw data was slightly shorter than `validSize`, neither trim path nor zero-pad path ran. Now zero-pads within tolerance.
 - **Defense-in-depth: padded-profile guard `>`→`>=`** — ensures exact-size files don't slip through trim check.
 - **Nano 5G/6G device profiles inverted** — Our Nano 5G had Nano 6G photo formats (1092/1093) and vice versa. Corrected per OrgZ IPodCapabilities table.
@@ -226,9 +272,11 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **.gitignore purge (history-rewritten):** Removed 6 leaky blacklist entries (`.ruff_cache/`, `BenchmarkDotNet.Artifacts/`, `.omo/`, `HANDOVER.md`, `TestResults/`, `.codegraph/`) — all already covered by the whitelist pattern.
 
 ### Documentation
+
 - **Stale counts/docs updated** — README/CHANGELOG/PROFILES/what-is-this.md test count 530→538, profiles 53→55 active. PROFILES.md 3009 dimension corrected. 1062 added to profile table.
 
 ### Test
+
 - **Tautological assertions fixed:** 7 assertions in Fuzz.cs that always passed due to wrong variables. Extracted `MutateBuffer` helper, reduced iteration count 1000→300.
 - **Memory leaks fixed:** `outBuf->Data` null-guarded free added in 18 `finally` blocks across 5 roundtrip test files.
 - **Redundant SIMD test removed:** `Rgb565_Exhaustive_SIMD_Redundant` was a no-op copy of the scalar exhaustive test.
@@ -238,6 +286,7 @@ _The sections below record the C# era (v1.0 – v1.6). For Rust codec history, s
 - **CI configs fixed:** benchmark.yml lockfile restore, upload `if: always()`, test-neon.yml locked-mode, release-windows.yml if syntax. IthmbCodec.csproj `AnalysisLevel` case.
 - **Fuzz_Corruption_RandomByteMutations assertions added:** Pixel validity checks gated on decoder return (void decoders always check; bool decoders skip when returning false for early exits).
 - **Photo/cover art split corrected:** README claimed 22+32, actual is 25+29. All 547 tests pass.
+
 ## [1.4.0] — 2026-06-26
 
 ### Fixed
@@ -439,7 +488,8 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - Stale files removed: RESEARCH.md, SOURCES.md, ACADEMIC.md, src/README.md, .mmd files, decode-pipeline-test/
 - REVIEW_PLAN.md scrubbed from all commit history
 
-[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.3...HEAD
+[1.9.3]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.0...v1.9.3
 [1.9.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.6.0...v1.9.0
 [1.6.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.4.0...v1.5.0

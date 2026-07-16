@@ -133,3 +133,8 @@ pub use crate::profile_db::ProfileDb;
 
 /// Re-export of [`DecodeConfig`] for convenience.
 pub use config::DecodeConfig;
+
+/// Re-export of [`PhotoDbEntry`] and [`PhotoDbMetadata`] for convenience.
+pub use photodb::parser::{PhotoDbEntry, PhotoDbMetadata};
+/// Re-export of [`built_in_profiles`] for convenience.
+pub use profile::built_in_profiles;
