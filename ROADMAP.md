@@ -5,7 +5,7 @@
 These items are already done but worth calling out so contributors don't propose them again:
 
 - **WASM decoder page**: Browser-based .ithmb decoder at [Ithmb-Codec-Dev](https://github.com/B67687/Ithmb-Codec-Dev) with drag-drop PNG rendering (v1.10.0-enterprise).
-- **C ABI plugin split**: The ImageGlass plugin lives in its own repo ([Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin)) with independent versioning and CI (ADR-0002).
+- **C ABI plugin split**: The ImageGlass plugin lives in its own repo ([ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin)) with independent versioning and CI (ADR-0002).
 - **8 MB file size guard**: Systematic research-driven limit with 10x margin on the largest known frame (ADR-0005).
 - **Cross-platform SIMD dispatch**: SSE2/AVX2/NEON compiled with runtime `is_x86_feature_detected!` selection; scalar fallback always available (ADR-0001).
 - **Quarterly audit protocol**: Layered adversarial reviews every quarter with 4 parallel research agents (ADR-0004).

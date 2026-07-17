@@ -37,7 +37,7 @@ A pure Rust codec library, CLI tool, and C ABI shared library for decoding and e
 - BGR15 channel-swap for iPhone compatibility
 - JPEG-embedded T-prefix decoding via pure Rust JPEG decoder
 - Cross-platform (Linux x64/ARM64, macOS x64/ARM64, Windows x64)
-- C ABI shared library for FFI integration — see [separate plugin repo](https://github.com/B67687/Imageglass-Ithmb-Plugin)
+- C ABI shared library for FFI integration — see [separate plugin repo](https://github.com/B67687/ImageGlass-Ithmb-Plugin)
 - CLI tool for decoding, inspection, and frame extraction
 - Python bindings (PyO3) for scripting and ML pipelines
 - Full SIMD acceleration (SSE2+AVX2+NEON runtime dispatch) for YUV conversion paths
@@ -185,7 +185,7 @@ The workspace produces four artifacts:
 | `ithmb-python` | `libithmb_python.{so,dylib,pyd}`      | `pip install ithmb-python` (PyPI via maturin) |
 | `ithmb-gen`    | `ithmb-gen` sample generator binary   | `cargo install --path crates/ithmb-gen`       |
 
-A separate C ABI shared library for ImageGlass integration is maintained at [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
+A separate C ABI shared library for ImageGlass integration is maintained at [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin).
 
 ### Cross-compilation
 
@@ -324,7 +324,7 @@ ithmb --raw input.ithmb output.bin
 
 ### C ABI shared library
 
-The C ABI library (`ithmb-core-cabi`) — a `cdylib` implementing the ImageGlass v10 native plugin ABI — is now maintained in its [own repository](https://github.com/B67687/Imageglass-Ithmb-Plugin) to keep the plugin scope separate from the format codec. It enables integration into the ImageGlass image viewer **(Windows-only)** and provides FFI from any language with C FFI support.
+The C ABI library (`ithmb-core-cabi`) — a `cdylib` implementing the ImageGlass v10 native plugin ABI — is now maintained in its [own repository](https://github.com/B67687/ImageGlass-Ithmb-Plugin) to keep the plugin scope separate from the format codec. It enables integration into the ImageGlass image viewer **(Windows-only)** and provides FFI from any language with C FFI support.
 
 ### ithmb-python (PyO3 bindings)
 

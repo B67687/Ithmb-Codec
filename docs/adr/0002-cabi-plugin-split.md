@@ -16,25 +16,25 @@ The C# prototype had the opposite problem: it was a single-purpose Native AOT pl
 
 ## Decision
 
-Extract the C ABI plugin into its **own repository**: [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
+Extract the C ABI plugin into its **own repository**: [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin).
 
 ### What was moved
 
-| Item | Old location (workspace) | New location |
-|------|-------------------------|-------------|
-| C ABI `cdylib` crate | `crates/ithmb-core-cabi/` | [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin) |
-| ImageGlass SDK bindings | `cabi/src/ig_sdk/` | Plugin repo (internal) |
-| Plugin CI jobs | `./github/workflows/cabi.yml` | Plugin repo (separate workflow) |
-| Symbol export test | `cabi/tests/symbol_export.rs` | Plugin repo |
+| Item                    | Old location (workspace)      | New location                                                                 |
+| ----------------------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| C ABI `cdylib` crate    | `crates/ithmb-core-cabi/`     | [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) |
+| ImageGlass SDK bindings | `cabi/src/ig_sdk/`            | Plugin repo (internal)                                                       |
+| Plugin CI jobs          | `./github/workflows/cabi.yml` | Plugin repo (separate workflow)                                              |
+| Symbol export test      | `cabi/tests/symbol_export.rs` | Plugin repo                                                                  |
 
 ### What stayed in the workspace
 
-| Crate | Role |
-|-------|------|
+| Crate        | Role                                  |
+| ------------ | ------------------------------------- |
 | `ithmb-core` | Core library (published to crates.io) |
-| `ithmb-cli` | Standalone CLI binary |
-| `ithmb-gen` | Synthetic sample generator |
-| `pymod` | Python bindings (PyO3) |
+| `ithmb-cli`  | Standalone CLI binary                 |
+| `ithmb-gen`  | Synthetic sample generator            |
+| `pymod`      | Python bindings (PyO3)                |
 
 ### Dependency relationship
 
@@ -50,7 +50,7 @@ This is a one-way dependency. The core library has no knowledge of the plugin or
 ### Release cycle independence
 
 - **Core library** (`ithmb-core`): Ships on its own cadence. PRs, releases, version bumps are independent of the plugin.
-- **Plugin** (`Imageglass-Ithmb-Plugin`): Ships when the ImageGlass plugin ABI changes or when a new core release is needed. The plugin pins a specific `ithmb-core` version (or Git revision) and can lag behind the latest core release.
+- **Plugin** (`ImageGlass-Ithmb-Plugin`): Ships when the ImageGlass plugin ABI changes or when a new core release is needed. The plugin pins a specific `ithmb-core` version (or Git revision) and can lag behind the latest core release.
 
 ### crates.io publishing implications
 
@@ -82,17 +82,17 @@ The plugin is not published to crates.io because its ImageGlass SDK dependency i
 
 ## Alternatives Considered
 
-| Approach | Why rejected |
-|----------|-------------|
-| **Keep `cabi` in workspace with `--exclude`** | Every developer and CI job must remember `--exclude ithmb-core-cabi` on non-Windows platforms. Workspace commands like `cargo test --workspace` would fail without it. |
-| **Feature-gate the `cabi` crate** | Would require a workspace-level feature flag that default-members skip. Complex to maintain and still couples release cycles. |
-| **Monorepo with workspace exclusion** | Same problem as `--exclude` — the crate would live in the repo but be excluded in most CI jobs, inviting bitrot. |
-| **Keep as-is (co-located)** | The workspace was designed for library distribution. A cdylib plugin is a fundamentally different artifact with different build, test, and distribution requirements. Keeping them together forced compromises on both. |
+| Approach                                      | Why rejected                                                                                                                                                                                                            |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Keep `cabi` in workspace with `--exclude`** | Every developer and CI job must remember `--exclude ithmb-core-cabi` on non-Windows platforms. Workspace commands like `cargo test --workspace` would fail without it.                                                  |
+| **Feature-gate the `cabi` crate**             | Would require a workspace-level feature flag that default-members skip. Complex to maintain and still couples release cycles.                                                                                           |
+| **Monorepo with workspace exclusion**         | Same problem as `--exclude` — the crate would live in the repo but be excluded in most CI jobs, inviting bitrot.                                                                                                        |
+| **Keep as-is (co-located)**                   | The workspace was designed for library distribution. A cdylib plugin is a fundamentally different artifact with different build, test, and distribution requirements. Keeping them together forced compromises on both. |
 
 ## References
 
 - C# Native AOT approach (superseded): [ADR-0001](csharp/0001-use-native-aot-plugin-boundary.md)
 - Migration context: [EVOLUTION.md](../EVOLUTION.md#phase-3-c-abi-split)
-- Plugin repository: [Imageglass-Ithmb-Plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin)
+- Plugin repository: [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin)
 - ABI integrity standard: [STANDARDS.md](../standards/STANDARDS.md) (C ABI release integrity)
 - Workspace structure: [README.md](../../README.md#c-abi-shared-library)

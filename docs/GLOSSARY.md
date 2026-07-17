@@ -19,18 +19,19 @@ Short for **encoder/decoder**. A codec takes image data, compresses it (encodes)
 
 This project has **8 decoders** (one for each format the iPod uses) and **7 encoders** (can write back all formats).
 
-**In practice**: Most people only use the decoder — they want to extract photos from an old iPod. The encoder exists for syncing artwork *to* an iPod without iTunes.
+**In practice**: Most people only use the decoder — they want to extract photos from an old iPod. The encoder exists for syncing artwork _to_ an iPod without iTunes.
 
 ---
 
 ## Lossy vs Lossless
 
-| Term | Meaning | Example |
-|------|---------|---------|
-| **Lossless** | Every bit of the original data is preserved. Decoding gives back the exact original. | ZIP files, PNG images |
-| **Lossy** | Some detail is thrown away to save space. What you get back is close but not exact. | JPEG photos, MP3 audio |
+| Term         | Meaning                                                                              | Example                |
+| ------------ | ------------------------------------------------------------------------------------ | ---------------------- |
+| **Lossless** | Every bit of the original data is preserved. Decoding gives back the exact original. | ZIP files, PNG images  |
+| **Lossy**    | Some detail is thrown away to save space. What you get back is close but not exact.  | JPEG photos, MP3 audio |
 
 **Every raw `.ithmb` format is lossy.** iPod thumbnails were stored with reduced color precision because:
+
 - Thumbnails are tiny (usually 56×55 to 320×320 pixels)
 - The human eye barely notices missing color detail at that size
 - Apple wanted to fit thousands of thumbnails into limited iPod storage (30GB hard drives, not 256GB)
@@ -60,6 +61,7 @@ encode(decode(encode(input))) == encode(input)
 ```
 
 In plain English: if you decode an existing `.ithmb` file and re-encode the result, you get the exact same bytes back. This proves:
+
 1. The encoder and decoder agree on the format specification exactly
 2. No information is lost beyond what the format inherently discards
 3. The codec is self-consistent
@@ -73,15 +75,20 @@ In plain English: if you decode an existing `.ithmb` file and re-encode the resu
 These are different ways to represent the same colors:
 
 ### RGB (Red, Green, Blue)
+
 The standard way computers store images. Each pixel is three numbers: how much Red, Green, and Blue. A pixel with R=255, G=0, B=0 is pure red.
+
 - Standard RGB: 24 bits per pixel (8 bits for each of R, G, B)
 - 16.7 million possible colors
 
 ### BGRA (Blue, Green, Red, Alpha)
+
 Same as RGB but the order is shuffled: Blue byte first, then Green, then Red, then Alpha (transparency). This is the layout Windows and most image viewers expect. Our decoders output BGRA.
 
 ### YUV (Luma + Chroma)
+
 A different way to store color that separates brightness from color:
+
 - **Y** = brightness (luma) — the black-and-white part
 - **U** and **V** = color (chroma) — the color part
 
@@ -95,12 +102,13 @@ The human eye is more sensitive to brightness than color. YUV exploits this by s
 
 These numbers describe how many bits are used for each color channel:
 
-| Name | Red bits | Green bits | Blue bits | Total colors | Looks like |
-|------|----------|------------|-----------|-------------|------------|
-| **RGB565** | 5 | 6 | 5 | 65,536 | 16-bit color |
-| **RGB555** | 5 | 5 | 5 | 32,768 | 15-bit color |
+| Name       | Red bits | Green bits | Blue bits | Total colors | Looks like   |
+| ---------- | -------- | ---------- | --------- | ------------ | ------------ |
+| **RGB565** | 5        | 6          | 5         | 65,536       | 16-bit color |
+| **RGB555** | 5        | 5          | 5         | 32,768       | 15-bit color |
 
 Your phone or monitor shows **8 bits per channel** (24-bit / 16.7 million colors). The iPod used 5 or 6 bits because:
+
 - Thumbnails are tiny
 - The iPod's screen was also low-color (early models had 65K color displays)
 - Less data means more thumbnails fit in storage
@@ -123,13 +131,14 @@ Profile IDs `1019`, `1061`, and `2002` use interlaced UYVY. Our decoder detects 
 
 These numbers describe how much color information is kept versus thrown away:
 
-| Notation | What it means |
-|----------|---------------|
-| **4:4:4** | Every pixel has full color — no compression |
-| **4:2:2** | Horizontal pairs of pixels share color (color is half resolution horizontally) |
+| Notation  | What it means                                                                      |
+| --------- | ---------------------------------------------------------------------------------- |
+| **4:4:4** | Every pixel has full color — no compression                                        |
+| **4:2:2** | Horizontal pairs of pixels share color (color is half resolution horizontally)     |
 | **4:2:0** | Blocks of 4 pixels (2×2) share color (color is half resolution in both directions) |
 
 **Analogy**: Imagine a coloring book:
+
 - **4:4:4** = every pixel individually colored (full quality, large file)
 - **4:2:2** = color every other pixel, let neighbors share (half the coloring work)
 - **4:2:0** = color one pixel per 2×2 block (quarter the coloring work)
@@ -137,6 +146,7 @@ These numbers describe how much color information is kept versus thrown away:
 The iPod used 4:2:2 and 4:2:0 because thumbnails are small and the loss is barely visible at that size.
 
 **Formats in this project**:
+
 - **UYVY** = 4:2:2 (horizontal sharing)
 - **YCbCr 4:2:0** = 4:2:0 (2×2 block sharing)
 - **CL/CLCL** = even more aggressive color compression using nibble-sized (4-bit) color values
@@ -163,6 +173,7 @@ A **nibble** is half a byte (4 bits). CL and CLCL formats store color informatio
 ## Profile / Format ID
 
 A profile is a recipe that tells the decoder how to interpret the pixel data. It includes:
+
 - Image dimensions (width × height)
 - Encoding format (RGB565, UYVY, etc.)
 - Byte length of the frame
@@ -179,11 +190,13 @@ A profile is a recipe that tells the decoder how to interpret the pixel data. It
 These are **database files** (not `.ithmb` files) that Apple's iPod software uses to organize thumbnails. They're named `PhotoDB` (for camera photos) and `ArtworkDB` (for album art).
 
 **Structure**: They use a binary chunk format similar to IFF or RIFF:
+
 ```
 MHFD → MHSD → MHLI → ... → MHNI (actual thumbnail data)
 ```
 
 Our codec can:
+
 1. **Parse** these files (walk the chunk tree)
 2. **Extract** individual thumbnails (inline pixel data or as external `.ithmb` file references)
 3. **Write** new PhotoDB files (for syncing artwork to iPod without iTunes)
@@ -267,13 +280,13 @@ Our codec scans for SOI to detect JPEG-embedded .ithmb files (T-prefix), then ex
 
 These are the SIMD instruction sets supported by different CPUs:
 
-| Term | Full name | What it does | Available on |
-|------|-----------|-------------|--------------|
-| **SSE2** | Streaming SIMD Extensions 2 | 128-bit SIMD (4-8 pixels at once) | Every x86-64 CPU since 2004 |
-| **SSSE3** | Supplemental Streaming SIMD Extensions 3 | Byte-shuffle for pixel unpacking | Intel Core 2 / AMD Bulldozer+ |
-| **SSE4.1** | Streaming SIMD Extensions 4.1 | Packed min/max/clamp for YUV math | Intel Penryn / AMD Barcelona+ |
-| **AVX2** | Advanced Vector Extensions 2 | 256-bit SIMD (8-16 pixels at once) | Intel Haswell (2013) / AMD Excavator (2015) |
-| **NEON** | ARM Advanced SIMD (not an acronym) | 128-bit SIMD (similar to SSE2) | All ARM64 CPUs (Apple Silicon, Android) |
+| Term       | Full name                                | What it does                       | Available on                                |
+| ---------- | ---------------------------------------- | ---------------------------------- | ------------------------------------------- |
+| **SSE2**   | Streaming SIMD Extensions 2              | 128-bit SIMD (4-8 pixels at once)  | Every x86-64 CPU since 2004                 |
+| **SSSE3**  | Supplemental Streaming SIMD Extensions 3 | Byte-shuffle for pixel unpacking   | Intel Core 2 / AMD Bulldozer+               |
+| **SSE4.1** | Streaming SIMD Extensions 4.1            | Packed min/max/clamp for YUV math  | Intel Penryn / AMD Barcelona+               |
+| **AVX2**   | Advanced Vector Extensions 2             | 256-bit SIMD (8-16 pixels at once) | Intel Haswell (2013) / AMD Excavator (2015) |
+| **NEON**   | ARM Advanced SIMD (not an acronym)       | 128-bit SIMD (similar to SSE2)     | All ARM64 CPUs (Apple Silicon, Android)     |
 
 **Dispatch**: the codec checks your CPU at runtime and picks the fastest available path. SSE2 is guaranteed on any x86-64 machine. SIMD is only used where it measurably helps (YUV math).
 
@@ -288,6 +301,7 @@ This means pixel (0,0) is stored first, then (1,0), then (0,1), then (1,1) — t
 **Field88** is a specific Morton-order pixel layout used by early iPod models (iPod Photo, iPod Classic). The name comes from the format ID `F0088`. Each 48×48 tile is stored in Z-order within an 8×8 block grid — 36 tiles (6×6) arranged in snake-row order.
 
 This layout was reverse-engineered and [documented](https://github.com/mgminformatique/ipod-photo-recovery) by the `mgminformatique/ipod-photo-recovery` project. Our decoder handles it through the [ReorderedRGB555](#reorderedrgb555) path with specific profile parameters.
+
 ## BGRA Output — Why Blue First?
 
 Most image formats store pixels as Red-Green-Blue (RGB). But Windows graphics APIs (DirectX, GDI) expect Blue-Green-Red-Alpha (BGRA). Our decoders output BGRA because:
@@ -305,9 +319,9 @@ The decoder always outputs BGRA. If you need plain RGB, it's a simple byte swap 
 Endianness describes the order of bytes in a multi-byte number:
 
 - **Little-endian** (LE): Least significant byte first. Used by Intel/AMD CPUs.
-  - The number `0x1234` is stored as `[0x34, 0x12]`
+    - The number `0x1234` is stored as `[0x34, 0x12]`
 - **Big-endian** (BE): Most significant byte first. Used by network protocols and older formats.
-  - The number `0x1234` is stored as `[0x12, 0x34]`
+    - The number `0x1234` is stored as `[0x12, 0x34]`
 
 iPod `.ithmb` files use **big-endian byte order** for the 4-byte prefix and multi-byte values (the iPod's CPU was PowerPC or ARM, both of which can do either). Some formats also have little-endian variants.
 
@@ -337,13 +351,13 @@ Built with `clap` for argument parsing and `png` crate for PNG output.
 
 **C ABI** (Application Binary Interface) is a standard way for programming languages to call each other's code. By exposing our codec as a C ABI shared library (`.so` / `.dylib` / `.dll`), any language that can call C functions (Python, C++, Swift, Go, etc.) can use our decoder without knowing Rust.
 
-The `ithmb-core-cabi` crate (now in its [own repository](https://github.com/B67687/Imageglass-Ithmb-Plugin)) implements the ImageGlass v10 plugin API (`ig_plugin_get_api()`), which is how the ImageGlass image viewer loads native codec plugins on Windows.
+The `ithmb-core-cabi` crate (now in its [own repository](https://github.com/B67687/ImageGlass-Ithmb-Plugin)) implements the ImageGlass v10 plugin API (`ig_plugin_get_api()`), which is how the ImageGlass image viewer loads native codec plugins on Windows.
 
 ---
 
 ## FFI — Foreign Function Interface
 
-**FFI** (Foreign Function Interface) is a way for code in one programming language to call code written in another language. The ImageGlass plugin [repo](https://github.com/B67687/Imageglass-Ithmb-Plugin) exposes a C FFI, which means Python (via ctypes), C++, Swift, Go, and other languages can call our decoder without needing to know Rust.
+**FFI** (Foreign Function Interface) is a way for code in one programming language to call code written in another language. The ImageGlass plugin [repo](https://github.com/B67687/ImageGlass-Ithmb-Plugin) exposes a C FFI, which means Python (via ctypes), C++, Swift, Go, and other languages can call our decoder without needing to know Rust.
 
 ## PyO3 — Rust ↔ Python Bridge
 
@@ -351,11 +365,12 @@ The `ithmb-core-cabi` crate (now in its [own repository](https://github.com/B676
 
 ## cdylib — C Dynamic Library
 
-**`cdylib`** (C dynamic library) is a Rust compilation mode that produces a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) file that other programs can load at runtime. The ImageGlass plugin [repo](https://github.com/B67687/Imageglass-Ithmb-Plugin) compiles as a `cdylib`.
+**`cdylib`** (C dynamic library) is a Rust compilation mode that produces a `.so` (Linux), `.dylib` (macOS), or `.dll` (Windows) file that other programs can load at runtime. The ImageGlass plugin [repo](https://github.com/B67687/ImageGlass-Ithmb-Plugin) compiles as a `cdylib`.
 
 ## Golden Tests
 
 A "golden" file is a known-correct reference. For each format, we have:
+
 - An `.ithmb` file (known-good encoding)
 - A `.bin` file (expected decoder output, BGRA pixels)
 - A `.meta` file (profile metadata)
@@ -369,6 +384,7 @@ When tests run, the decoder processes the `.ithmb` file and the test asserts the
 Fuzz testing feeds random, malformed, or unexpected data to the decoder to see if it crashes or panics. This finds security bugs that normal testing misses.
 
 Our fuzz suite includes:
+
 - **libfuzzer targets** (3 targets): 1.2M+ iterations, 0 crashes
 - **Random mutation fuzz**: 10,000 random byte mutations across all 8 decoders
 - **Edge cases**: empty input, truncated data, negative dimensions, garbage data
@@ -393,13 +409,13 @@ The cache is behind a `cache` feature flag (not enabled by default). Size limit:
 
 Our `Cargo.toml` defines optional features to keep the base build lean:
 
-| Flag | Default | What it enables |
-|------|---------|-----------------|
-| SIMD | always on | SSE2/AVX2/NEON SIMD acceleration for YUV color conversion |
-| `cache` | off | LRU cache for decoded file data (64 entries) |
-| `c` | off | C ABI FFI exports (`ithmb_decode`, `ithmb_prefix_to_profile`) |
-| `metrics` | off | Decode timing counters for performance monitoring |
-| `png-output` | on | PNG image encoding support in the CLI (`--output` flag) |
+| Flag         | Default   | What it enables                                               |
+| ------------ | --------- | ------------------------------------------------------------- |
+| SIMD         | always on | SSE2/AVX2/NEON SIMD acceleration for YUV color conversion     |
+| `cache`      | off       | LRU cache for decoded file data (64 entries)                  |
+| `c`          | off       | C ABI FFI exports (`ithmb_decode`, `ithmb_prefix_to_profile`) |
+| `metrics`    | off       | Decode timing counters for performance monitoring             |
+| `png-output` | on        | PNG image encoding support in the CLI (`--output` flag)       |
 
 SIMD is always compiled for x86_64 and aarch64 with scalar fallback.
 

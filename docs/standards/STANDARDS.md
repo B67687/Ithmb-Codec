@@ -26,7 +26,7 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 | 2    | SIMD CI                           | ✅ CI tests SIMD code paths on all platforms                                                                                      |
 | 2    | Python bindings CI                | ✅ `pymod/` built via maturin/abi3-py312                                                                                          |
 | 2    | File size gate (250 LOC)          | 🟡 Script at `tools/check-file-sizes.sh`, not yet wired into CI                                                                   |
-| 2    | C ABI release integrity           | ✅ Built in the [plugin repo](https://github.com/B67687/Imageglass-Ithmb-Plugin); `nm` verifies `ig_plugin_get_api` symbol export |
+| 2    | C ABI release integrity           | ✅ Built in the [plugin repo](https://github.com/B67687/ImageGlass-Ithmb-Plugin); `nm` verifies `ig_plugin_get_api` symbol export |
 | 2    | Cancellation polling              | ✅ `AtomicBool` parameter in all decoder functions                                                                                |
 | 2    | C# cross-verification             | ✅ All 7 formats verified pixel-for-pixel against C# oracle during development                                                    |
 | 2    | Miri unsafety check               | ✅ `cargo +nightly miri test --all-features` — 21 SSE2 tests verified, 0 UB                                                       |

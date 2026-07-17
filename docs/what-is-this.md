@@ -1,6 +1,6 @@
 # What Is This?
 
-This is a pure Rust codec for Apple's `.ithmb` thumbnail format — used as a Rust library, a standalone CLI tool, or as an [ImageGlass plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin) on Windows.
+This is a pure Rust codec for Apple's `.ithmb` thumbnail format — used as a Rust library, a standalone CLI tool, or as an [ImageGlass plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) on Windows.
 
 ## What's an .ithmb File?
 
@@ -13,7 +13,7 @@ There are two kinds:
 
 ## What Does the Codec Do?
 
-It reads an `.ithmb` file and converts it to a normal image (BGRA pixels). You can use it as a [Rust library crate](https://crates.io/crates/ithmb-core), as a standalone CLI tool, or as an [ImageGlass plugin](https://github.com/B67687/Imageglass-Ithmb-Plugin).
+It reads an `.ithmb` file and converts it to a normal image (BGRA pixels). You can use it as a [Rust library crate](https://crates.io/crates/ithmb-core), as a standalone CLI tool, or as an [ImageGlass plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin).
 
 The logic goes:
 
@@ -36,16 +36,17 @@ There are 54 built-in profiles covering known iPod/iPhone devices from 2004 thro
 ## What's a Decoder?
 
 A decoder is code that converts raw pixel data from one format to BGRA (blue, green, red, alpha — what ImageGlass displays). This project has 8 decoders:
-| Decoder | Used by iPod/iPhone |
-|---------|-------------------|
-| RGB565 | 16-bit RGB (5 bits red, 6 bits green, 5 bits blue) |
-| RGB555 | 15-bit RGB (5 bits per channel) |
-| ReorderedRGB555 | Byte-swapped 15-bit RGB variant |
-| UYVY | YUV 4:2:2 (luminance + color difference, packed) |
-| YCbCr 4:2:0 | YUV with subsampled color (common in video) |
-| YUV422 Interlaced | Same as UYVY but stored as two interleaved fields |
-| CLCL | Nibble-based chroma (compact Apple-specific format) |
-| CL | Per-pixel chroma (another Apple-specific format) |
+
+| Decoder           | Used by iPod/iPhone                                 |
+| ----------------- | --------------------------------------------------- |
+| RGB565            | 16-bit RGB (5 bits red, 6 bits green, 5 bits blue)  |
+| RGB555            | 15-bit RGB (5 bits per channel)                     |
+| ReorderedRGB555   | Byte-swapped 15-bit RGB variant                     |
+| UYVY              | YUV 4:2:2 (luminance + color difference, packed)    |
+| YCbCr 4:2:0       | YUV with subsampled color (common in video)         |
+| YUV422 Interlaced | Same as UYVY but stored as two interleaved fields   |
+| CLCL              | Nibble-based chroma (compact Apple-specific format) |
+| CL                | Per-pixel chroma (another Apple-specific format)    |
 
 ## What's SIMD?
 
@@ -62,6 +63,7 @@ The library can:
 ## What's the CLI?
 
 The `ithmb` CLI tool is a standalone binary that doesn't need ImageGlass. Build from source: `cargo build --release` in the repo root, then `./target/release/ithmb`. Then:
+
 - `ithmb input.ithmb [output.png]` — decode a single .ithmb file to PNG (auto-detects format from extension)
 - `ithmb --info input.ithmb` — print metadata (size, prefix, profile, frame count)
 - `ithmb --list-profiles` — list all 54 known profiles in a formatted table

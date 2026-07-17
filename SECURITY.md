@@ -5,7 +5,7 @@
 This policy covers repos under the B67687 organization related to the Ithmb-Codec project:
 
 - **Ithmb-Codec** — Rust SIMD codec library, CLI tools, and documentation
-- **Imageglass-Ithmb-Plugin** — ImageGlass v10 native codec plugin
+- **ImageGlass-Ithmb-Plugin** — ImageGlass v10 native codec plugin
 - **Ithmb-Codec-Dev** — Website, WASM decoder, and developer tools
 
 ## Reporting a Vulnerability

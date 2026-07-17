@@ -35,7 +35,7 @@
 
 
                      ┌──────────────────────┐
-                     │ Imageglass-Ithmb-Plugin│
+                     │ ImageGlass-Ithmb-Plugin│
                      │ (separate repo)       │
                      │                      │
                      │ Uses ithmb-core      │
@@ -46,12 +46,12 @@
 
 **How the APIs serve different audiences:**
 
-| Interface | Who uses it | Why it exists |
-|-----------|-------------|---------------|
-| **`ithmb-core`** (Rust lib) | Rust projects | `cargo add ithmb-core` |
-| **`ithmb-cli`** (CLI) | End users | `cargo install ithmb-cli` to decode `.ithmb` files |
-| **`ithmb-python`** (PyO3) | Python devs | `pip install ithmb-python` for ML/scraping |
-| **`ithmb-wasm`** (WASM) | Browser/web | Drag-drop demo page, WASM from any web app |
-| **C API** (`--features c`) | Any language | Ruby `ffi`, Go `cgo`, Zig, etc. — no PyO3 needed |
-| **ImageGlass plugin** | ImageGlass users | Separate repo for `ig_plugin_get_api()` |
-| **`ithmb-gen`** (encoder) | Devs/testers | Generate synthetic `.ithmb` files for validation |
+| Interface                   | Who uses it      | Why it exists                                      |
+| --------------------------- | ---------------- | -------------------------------------------------- |
+| **`ithmb-core`** (Rust lib) | Rust projects    | `cargo add ithmb-core`                             |
+| **`ithmb-cli`** (CLI)       | End users        | `cargo install ithmb-cli` to decode `.ithmb` files |
+| **`ithmb-python`** (PyO3)   | Python devs      | `pip install ithmb-python` for ML/scraping         |
+| **`ithmb-wasm`** (WASM)     | Browser/web      | Drag-drop demo page, WASM from any web app         |
+| **C API** (`--features c`)  | Any language     | Ruby `ffi`, Go `cgo`, Zig, etc. — no PyO3 needed   |
+| **ImageGlass plugin**       | ImageGlass users | Separate repo for `ig_plugin_get_api()`            |
+| **`ithmb-gen`** (encoder)   | Devs/testers     | Generate synthetic `.ithmb` files for validation   |
