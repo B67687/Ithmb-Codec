@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **macOS ARM NEON acceleration**: The `not(target_os = "macos")` gate removed from all 19 dispatch points. NEON BRGA interleave bug fixed (vzip_s16 pairing corrected). Confirmed by all 581 tests passing on ARM64 CI runner. Apple Silicon now gets full NEON speed.
 - **Branch protection enabled**: `main` requires `rust-ci` to pass before merge.
 - **Dependabot auto-merge split**: Approval runs immediately, auto-merge waits for CI checks.
+- `#[non_exhaustive]` on DecodeConfig, Profile, DecodedImage for forward-compatibility
+- `Display` impl for `Encoding` and `DecodeConfig`
+- `PartialEq`/`Eq` for DecodeConfig and Profile
+- Root-level re-exports for `PhotoDbEntry`, `PhotoDbMetadata`, `built_in_profiles()`
 
 ### Fixed
 
@@ -19,13 +23,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **cargo-audit CI failure**: Replaced broken `actions-rust-audit/rust-audit@v1` with manual `cargo install cargo-audit && cargo audit`.
 - **macOS-13 runner in release CI**: `macos-13` runner was fully deprecated (removed Dec 2025). Switched to `macos-15-intel`.
 - **Benchmark baseline corruption**: Restored from commit history, updated to reflect encoder SIMD revert.
+- Overflow safety: added `checked_mul` guards in dimension calculations
+- Panic removed from profile DB initialization
+- Truncated doc on `decode_with_profile_with_config`
+- Duplicate `cache` feature entry in ithmb-core README
+- SECURITY.md inaccurate unsafe code claim
+- Config.rs doc example misplaced
+- Unconditional cdylib removed then restored (needed for C ABI)
 
 ### Removed
 
 - **Encoder SIMD**: Removed `simd/enc.rs` (was causing 3x regression compared to scalar).
 - **Publish workflow**: Removed `publish.yml` (manual crates.io publishing preferred).
 - **CONTRIBUTING.md**: Removed (no external contributions expected).
-- **Unconditional cdylib**: Changed back to `["lib", "cdylib"]` — needed for C ABI checks.
 
 ### CI
 
@@ -41,29 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Docs
 
-- CHANGELOG: v1.9.4 entry added with full scope
+- CHANGELOG: v1.9.4 entry covers full scope
 - AGENTS.md: NEON gate status updated
 - ADR-0001: macOS ARM NEON section re-written
 - ithmb-core README: features table fixed, config.rs doc example fixed
 - ithmb-cli README: created (was missing)
 - SECURITY.md: unsafe code claim corrected
-
-## [1.10.0-enterprise] — 2026-07-13
-
-### Added
-
-- **WASM decoder** — Browser-based .ithmb decoder at [Ithmb-Codec-Dev](https://github.com/B67687/Ithmb-Codec-Dev)
-- **Opt-in format metadata sharing** — GitHub issue via checkbox-gated opt-in
-- **ADR-0006** — Zero-trust telemetry pattern documented
-- **Enterprise page redesign** — Apple-style light theme, realistic support promises
-- **Gen tool profile-aware defaults** — `ithmb-gen` generates at profile-matching dimensions
-
-### Fixed
-
-- **Plugin ABI rewrite** — IGCodecApi/IGCodecCapability matched to C# SDK
-- **Pixel format enum** — Unknown(0) to Bgra8Unorm(1) for ImageGlass compat
-- **Stack buffer overrun** — Removed monitor thread calling is_cancellation_requested(null)
-- **Metadata dimension parsing** — Fixed comma-formatted profile descriptions
 
 ## [1.9.3] - 2026-07-16
 
@@ -532,7 +525,7 @@ Dispatch pattern for all NEON-enabled decoders: `Sse2.IsSupported` → SSE2, `Ad
 - REVIEW_PLAN.md scrubbed from all commit history
 
 [Unreleased]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.4...HEAD
-[1.9.4]: https://github.com/B67687/Ithmb-Codec/compare/v1.9.3...v1.9.4
+[1.9.4]: https://github.com/B67687/Ithmb-Codec/releases/tag/v1.9.4
 [1.9.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.6.0...v1.9.0
 [1.6.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/B67687/Ithmb-Codec/compare/v1.4.0...v1.5.0
