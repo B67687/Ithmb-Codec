@@ -1,50 +1,53 @@
 # dependabot-auto-merge.yml — Auto-merge Dependabot PRs when CI passes
 #
-# Patch updates merged automatically.
-# Minor and major updates approved and flagged for manual review.
-# Uses pull_request_target so the token has full permissions.
+# Two phases:
+#   1. On PR open: approve the PR immediately
+#   2. On check suite completion: enable auto-merge if all checks pass
+#
+# Uses pull_request_target so the token has full permissions on the base repo.
 
 name: dependabot-auto-merge
 
-on: pull_request_target
+on:
+  pull_request_target:
+    types: [opened, reopened]
 
 permissions:
   pull-requests: write
   contents: write
 
 jobs:
-  auto-merge:
+  approve:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Fetch Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@v3
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Approve and enable auto-merge (patch)
+      - name: Approve patch update
         if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
         run: |
-          gh pr review --approve --body "✅ Auto-approved patch bump — CI required before merge." "$PR_URL"
-          gh pr merge --auto --squash "$PR_URL"
+          gh pr review --approve --body "✅ Auto-approved patch bump." "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve and flag minor updates for review
+      - name: Flag minor update for manual review
         if: steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: |
-          gh pr review --approve --body "⚠️ **Minor version bump** — review before merge." "$PR_URL"
+          gh pr review --approve --body "⚠️ Minor update — review before merge." "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Approve and flag major updates for manual review
+      - name: Flag major update for manual review
         if: steps.metadata.outputs.update-type == 'version-update:semver-major'
         run: |
-          gh pr review --approve --body "⚠️ **Major version bump** — review changelog manually before merge." "$PR_URL"
+          gh pr review --approve --body "⚠️ Major update — review changelog before merge." "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

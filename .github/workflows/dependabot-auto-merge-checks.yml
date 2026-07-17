@@ -1,0 +1,42 @@
+# dependabot-auto-merge-checks.yml — Enable auto-merge after CI passes
+#
+# Triggered when a check suite completes on a Dependabot PR.
+# Enables auto-merge only if the PR is approved and all checks pass.
+
+name: dependabot-auto-merge-checks
+
+on:
+  check_suite:
+    types: [completed]
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  enable-auto-merge:
+    if: >
+      github.event.check_suite.conclusion == 'success' &&
+      github.event.check_suite.head_branch != 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Find PRs for this head branch
+        id: find-pr
+        env:
+          HEAD_BRANCH: ${{ github.event.check_suite.head_branch }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(gh pr list \
+            --head "$HEAD_BRANCH" \
+            --json number,author,reviews,autoMergeRequest,statusCheckRollup \
+            --jq '.[] | select(.author.login == "dependabot[bot]") | select(.autoMergeRequest == null) | select(.reviews | any(.state == "APPROVED")) | .number' \
+            | head -1)
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Enable auto-merge for approved patch PR
+        if: steps.find-pr.outputs.pr_number != ''
+        run: |
+          gh pr merge --auto --squash "${{ steps.find-pr.outputs.pr_number }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
