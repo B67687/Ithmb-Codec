@@ -7,11 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [1.9.4] - 2026-07-16
 
+### Added
+
+- **macOS ARM NEON acceleration**: The `not(target_os = "macos")` gate removed from all 19 dispatch points. NEON BRGA interleave bug fixed (vzip_s16 pairing corrected). Confirmed by all 581 tests passing on ARM64 CI runner. Apple Silicon now gets full NEON speed.
+- **Branch protection enabled**: `main` requires `rust-ci` to pass before merge.
+- **Dependabot auto-merge split**: Approval runs immediately, auto-merge waits for CI checks.
+
 ### Fixed
 
-- **NEON BRGA interleave bug**: `vzip_s16` produced wrong channel order (red/green swapped) in `yuv420_quad_to_bgra_neon`, `uyvy_double_quad_to_bgra_neon`, and `clcl_row_to_bgra_neon`. Fixed pairing to `vzip_s16(b, r)` + `vzip_s16(g, a)`.
-- **macOS ARM NEON enabled**: The `not(target_os = "macos")` gate removed from all 19 dispatch points after ARM64 CI confirmed all 581 tests pass. Apple Silicon now gets full NEON acceleration.
-- **ADR-0001 updated**: macOS ARM NEON gating section re-written to reflect the fix.
+- **NEON BRGA interleave bug**: `vzip_s16` produced BRGA instead of BGRA in 4 interleave sites.
+- **cargo-audit CI failure**: Replaced broken `actions-rust-audit/rust-audit@v1` with manual `cargo install cargo-audit && cargo audit`.
+- **macOS-13 runner in release CI**: `macos-13` runner was fully deprecated (removed Dec 2025). Switched to `macos-15-intel`.
+- **Benchmark baseline corruption**: Restored from commit history, updated to reflect encoder SIMD revert.
+
+### Removed
+
+- **Encoder SIMD**: Removed `simd/enc.rs` (was causing 3x regression compared to scalar).
+- **Publish workflow**: Removed `publish.yml` (manual crates.io publishing preferred).
+- **CONTRIBUTING.md**: Removed (no external contributions expected).
+- **Unconditional cdylib**: Changed back to `["lib", "cdylib"]` — needed for C ABI checks.
+
+### CI
+
+- `cargo fmt --check` job added
+- `cargo audit` job added
+- Release workflow runs `cargo test` before building artifacts
+- Python wheels built as GitHub Release artifacts (macOS/Windows/Linux)
+- CLI binary builds for 5 targets (Linux x64/ARM64, macOS x64/ARM64, Windows x64)
+- Benchmark regression threshold tightened from 5.0x to 1.25x
+- macOS ARM NEON tested on `ubuntu-24.04-arm` runner
+- README features table, SECURITY.md, ADR-0001 updated
+- 609 tests passing, clippy clean
+
+### Docs
+
+- CHANGELOG: v1.9.4 entry added with full scope
+- AGENTS.md: NEON gate status updated
+- ADR-0001: macOS ARM NEON section re-written
+- ithmb-core README: features table fixed, config.rs doc example fixed
+- ithmb-cli README: created (was missing)
+- SECURITY.md: unsafe code claim corrected
 
 ## [1.10.0-enterprise] — 2026-07-13
 
