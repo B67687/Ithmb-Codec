@@ -150,6 +150,87 @@ pub fn decode_ithmb_with_config(
     })
 }
 
+/// Decode a complete `.ithmb` file with custom limits AND runtime decode-parameter
+/// overrides ([`TransformConfig`](crate::config::TransformConfig)).
+///
+/// Like [`decode_ithmb_with_config`] but additionally applies the caller-supplied
+/// transform overrides (rotation, crop, channel swap, chroma ordering) after
+/// profile selection. This is the additive counterpart to the `_with_config`
+/// family — existing callers are unaffected.
+///
+/// # Errors
+///
+/// Same as [`decode_ithmb_with_config`].
+pub fn decode_ithmb_with_transform(
+    src: &[u8],
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+    transform: &config::TransformConfig,
+) -> Result<DecodedImage, DecodeError> {
+    if src.len() < 4 {
+        return Err(DecodeError::BufferTooShort {
+            expected: 4,
+            actual: src.len(),
+        });
+    }
+
+    if src.len() > config.max_raw_file_size() {
+        return Err(DecodeError::FileTooLarge {
+            size: src.len(),
+            limit: config.max_raw_file_size(),
+        });
+    }
+
+    let prefix = i32::from_be_bytes([src[0], src[1], src[2], src[3]]);
+    #[cfg(feature = "logging")]
+    debug!("decode_ithmb_with_transform: prefix={prefix:08X}, len={}", src.len());
+    let is_jpeg_stream = src[0] == 0xFF && src[1] == 0xD8;
+
+    let db = get_db();
+
+    let profile = if is_jpeg_stream {
+        db.get(prefix).cloned().unwrap_or_else(fallback_jpeg_profile)
+    } else if let Some(p) = db.get(prefix) {
+        p.clone()
+    } else {
+        // Tier 2: data-size heuristic.
+        let data_len = src.len() - 4;
+        let mut best: Option<Profile> = None;
+        let mut best_delta: usize = usize::MAX;
+        for p in db.all().values() {
+            #[allow(clippy::cast_sign_loss)]
+            let delta = data_len.abs_diff(p.frame_byte_length as usize);
+            if delta <= 256 && delta < best_delta {
+                best_delta = delta;
+                best = Some(p.clone());
+            }
+        }
+        if let Some(profile) = best {
+            profile
+        } else {
+            #[cfg(feature = "logging")]
+            info!("decode_ithmb_with_transform: unknown prefix {prefix:08X}, scanning for embedded JPEG");
+            match scan_for_embedded_jpeg(
+                src,
+                canceled,
+                config.jpeg_scan_limit(),
+                config.cancel_check_interval(),
+                config.jfif_exif_scan_window(),
+            ) {
+                Some(jpeg_data) => {
+                    let jp = fallback_jpeg_profile();
+                    return decode_with_profile_with_transform(jpeg_data, &jp, canceled, config, transform);
+                }
+                None => {
+                    return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
+                }
+            }
+        }
+    };
+
+    decode_with_profile_with_transform(src, &profile, canceled, config, transform)
+}
+
 /// Decode an `.ithmb` file using an explicit profile, bypassing prefix-lookup.
 ///
 /// This is useful when the caller already knows the profile (e.g. from `PhotoDB`
@@ -191,7 +272,6 @@ pub fn decode_with_profile_with_config(
     config: &config::DecodeConfig,
 ) -> Result<DecodedImage, DecodeError> {
     decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
-        // stream). Raw formats have a 4-byte format prefix before pixel data.
         let frame_data = if profile.encoding == Encoding::Jpeg {
             src
         } else {
@@ -206,6 +286,41 @@ pub fn decode_with_profile_with_config(
 
         let img = dispatch_decode(frame_data, profile, canceled)?;
         Ok(apply_post_process(img, profile))
+    })
+}
+
+/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig)
+/// with runtime decode-parameter overrides ([`TransformConfig`](crate::config::TransformConfig)).
+///
+/// Like [`decode_with_profile_with_config`] but applies the caller-supplied
+/// transform overrides after profile selection. Additive — existing callers are
+/// unaffected.
+///
+/// # Errors
+///
+/// Same as [`decode_with_profile_with_config`].
+pub fn decode_with_profile_with_transform(
+    src: &[u8],
+    profile: &Profile,
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+    transform: &config::TransformConfig,
+) -> Result<DecodedImage, DecodeError> {
+    decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
+        let frame_data = if profile.encoding == Encoding::Jpeg {
+            src
+        } else {
+            if src.len() < 4 {
+                return Err(DecodeError::BufferTooShort {
+                    expected: 4,
+                    actual: src.len(),
+                });
+            }
+            &src[4..]
+        };
+
+        let img = dispatch_decode(frame_data, profile, canceled)?;
+        Ok(apply_post_process_with_transform(img, profile, transform))
     })
 }
 // ---------------------------------------------------------------------------
@@ -281,6 +396,40 @@ fn apply_post_process(mut img: DecodedImage, profile: &Profile) -> DecodedImage 
 
     // 3. Rotate according to the profile's rotation field.
     apply_rotation(img, profile)
+}
+
+/// Applies dimension swap, crop, and rotation in that order, with runtime
+/// overrides taking precedence over the profile's own fields.
+///
+/// For fields the caller does not override (`None`), the profile's value is used
+/// — an identity [`TransformConfig`](crate::config::TransformConfig) (default)
+/// produces output identical to [`apply_post_process`].
+fn apply_post_process_with_transform(
+    mut img: DecodedImage,
+    profile: &Profile,
+    transform: &config::TransformConfig,
+) -> DecodedImage {
+    // 1. Swap display dimensions if the profile requests it.
+    if profile.swaps_dimensions {
+        std::mem::swap(&mut img.width, &mut img.height);
+    }
+
+    // 2. Crop to the visible region.
+    img = apply_crop(img, profile);
+
+    // 3. Rotate — runtime override wins over the profile's rotation field.
+    let rotation = transform.rotation().unwrap_or(profile.rotation);
+    apply_rotation_with(img, rotation)
+}
+
+/// Rotates by an explicit angle (degrees; 0/90/180/270, others no-op).
+fn apply_rotation_with(img: DecodedImage, rotation: i32) -> DecodedImage {
+    match rotation {
+        90 => rotate_90_cw(img),
+        180 => rotate_180(img),
+        270 => rotate_270_cw(img),
+        _ => img,
+    }
 }
 
 /// Crops the image to the region specified by the profile.
@@ -1192,5 +1341,57 @@ mod tests {
         assert_eq!(img.width, 2);
         assert_eq!(img.height, 1);
         assert_eq!(img.data.len(), 2 * 4);
+    }
+
+    #[test]
+    fn transform_override_rotation_applies_over_profile_zero() {
+        // Profile says no rotation (0); TransformConfig says 90 → 90 must win.
+        let img = DecodedImage {
+            data: vec![0u8; 2 * 3 * 4],
+            width: 2,
+            height: 3,
+        };
+        let profile = Profile {
+            rotation: 0,
+            ..Profile::default()
+        };
+        let transform = config::TransformConfig::default().with_rotation(90);
+        let out = apply_post_process_with_transform(img, &profile, &transform);
+        assert_eq!(out.width, 3);
+        assert_eq!(out.height, 2);
+    }
+
+    #[test]
+    fn transform_default_falls_back_to_profile_rotation() {
+        // Identity transform must NOT override: profile rotation 90 wins.
+        let img = DecodedImage {
+            data: vec![0u8; 2 * 3 * 4],
+            width: 2,
+            height: 3,
+        };
+        let profile = Profile {
+            rotation: 90,
+            ..Profile::default()
+        };
+        let transform = config::TransformConfig::default();
+        let out = apply_post_process_with_transform(img, &profile, &transform);
+        assert_eq!(out.width, 3);
+        assert_eq!(out.height, 2);
+    }
+
+    #[test]
+    fn transform_identity_matches_apply_post_process() {
+        let img = DecodedImage {
+            data: vec![7u8; 2 * 3 * 4],
+            width: 2,
+            height: 3,
+        };
+        let profile = Profile {
+            rotation: 90,
+            ..Profile::default()
+        };
+        let a = apply_post_process(img.clone(), &profile);
+        let b = apply_post_process_with_transform(img, &profile, &config::TransformConfig::default());
+        assert_eq!(a, b);
     }
 }
