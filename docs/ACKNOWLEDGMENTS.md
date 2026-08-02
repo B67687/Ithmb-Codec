@@ -52,7 +52,7 @@ These projects were surveyed during research. Their format behavior was studied 
 | atimevil/Ithmb-Converter | atimevil | https://github.com/atimevil/Ithmb-Converter | Python | MIT | Korean converter with AI upscaling |
 | yosoyemi/ithmb-converter-a-jpg | yosoyemi | https://github.com/yosoyemi/ithmb-converter-a-jpg | Python | MIT | UYVY big-endian decode |
 | mgminformatique/ipod-photo-recovery | mgminformatique | https://github.com/mgminformatique/ipod-photo-recovery | Python | MIT | Independent tiled-pixel layout RE (Morton-order 48×48 tiles, snake-row, field88 analysis) |
- 
+
 ### Lost / unrecoverable
 
 - **iThmbConv** (C, 2007) — Windows CLI tool by "Anywho" (Whirlpool). First working F3008 (iPhone RGB565) and F1067 (Nano YCbCr 4:2:0) decoder. Source hosted on quicksharing.com (dead ~15 years). [Whirlpool forum thread](https://forums.whirlpool.net.au/archive/661720)

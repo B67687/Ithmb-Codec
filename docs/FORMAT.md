@@ -1,7 +1,7 @@
 # Apple .ithmb Thumbnail Cache Format Specification
 
-**Document version:** 1.0  
-**Format domain:** iPod Classic / Nano / Photo / Video, iPhone 2G, iPod Touch  
+**Document version:** 1.0
+**Format domain:** iPod Classic / Nano / Photo / Video, iPhone 2G, iPod Touch
 **Container names:** `.ithmb` (bare frame), `PhotoDB` / `ArtworkDB` (chunk-container database)
 
 ---
@@ -249,7 +249,7 @@ This section describes all eight pixel encoding formats supported by the decoder
 
 ### 5.1 RGB565 (16-bit, 5/6/5)
 
-**BPP:** 2 bytes per pixel  
+**BPP:** 2 bytes per pixel
 **Used by:** Most iPod formats (1007, 1024, 1027, 1029, 1055, 1060, 1061, etc.)
 
 Bit layout within each 16-bit word:
@@ -271,7 +271,7 @@ Output: BGRA 8-bit per channel (B at byte 0, G at byte 1, R at byte 2, A = 255 a
 
 ### 5.2 RGB555 (15-bit, 5/5/5)
 
-**BPP:** 2 bytes per pixel (MSB of each 16-bit word is unused)  
+**BPP:** 2 bytes per pixel (MSB of each 16-bit word is unused)
 **Used by:** iPhone/iPod Touch formats (3004, 3005, 3006, 3007, 3008, 3009, 3011)
 
 Default layout (`swap_rgb_channels = false`):
@@ -296,7 +296,7 @@ Bit     15 14 13 12 11 10  9  8  7  6  5  4  3  2  1  0
 
 ### 5.3 Reordered RGB555 (Morton Z-Order Interleave)
 
-**BPP:** 2 bytes per pixel  
+**BPP:** 2 bytes per pixel
 **Used by:** iPod Touch formats (3001, 3002, 3003)
 
 This variant of RGB555 stores each 16-bit pixel in big-endian byte order AND rearranges pixel positions using a Morton Z-order curve. The decoder reads pixels from Z-order positions and writes them in row-major order.
@@ -329,7 +329,7 @@ For non-power-of-2 dimensions, gaps in the Z-order address space are zero-filled
 
 ### 5.4 UYVY (YUV 4:2:2, Packed)
 
-**BPP:** 2 bytes per pixel  
+**BPP:** 2 bytes per pixel
 **Used by:** iPod Classic 5G/5.5G (format 1019, 720x480 full-screen video)
 
 Layout per 2-pixel pair (4 bytes):
@@ -359,7 +359,7 @@ B = clamp(Y + (Cb - 128) * 454 / 256)
 
 ### 5.5 YCbCr 4:2:0 (Planar)
 
-**BPP:** 1.5 bytes per pixel (average)  
+**BPP:** 1.5 bytes per pixel (average)
 **Used by:** iPod Classic 6G (format 1067, 720x480 padded)
 
 Three separate planes:
@@ -383,7 +383,7 @@ Example for 720x480: Y = 345,600 bytes, each chroma plane = 86,400 bytes, total 
 
 ### 5.6 CL (Compressed Luma — Per-Pixel Nibble Chroma)
 
-**BPP:** 2 bytes per pixel  
+**BPP:** 2 bytes per pixel
 **Used by:** Certain Yuv422 profiles with `cl_chroma = true`
 
 Planar layout:
@@ -411,7 +411,7 @@ Byte 3: (Cr1 << 4) | Cb1
 
 ### 5.7 CLCL (Compressed Luma+Chroma — Separate Nibble Planes)
 
-**BPP:** 2 bytes per pixel  
+**BPP:** 2 bytes per pixel
 **Used by:** Certain Yuv422 profiles with `clcl_chroma = true`
 
 Planar layout with three planes:
@@ -442,7 +442,7 @@ Byte 7: (Cr3 << 4) | Cr2   // Cr nibbles for pixels 2, 3
 
 ### 5.8 JPEG Passthrough
 
-**BPP:** Variable (compressed)  
+**BPP:** Variable (compressed)
 **Used by:** T-prefix files (e.g. iPhone 5, iPod Touch JPEG-embedded thumbnails)
 
 The file (or inline data blob) contains a standard JPEG stream delimited by SOI (`0xFF 0xD8`) and EOI (`0xFF 0xD9`) markers. Decoding is performed by a standard JPEG decoder (the `jpeg-decoder` crate). EXIF orientation tag (0x0112) is parsed and exposed.

@@ -77,6 +77,21 @@ Key test categories (see STATS.md for live counts):
 - **Concurrency**: 11 stress scenarios (Barrier sync, cancellation, cache contention)
 - **Profile validation**: All 54 profiles decode without error
 
+## CI Policy (3 layers)
+
+Checks are triaged by **fast-and-runnable vs slow/platform-specific** — not "local vs remote":
+
+| Layer | What runs | When | Speed |
+|---|---|---|---|
+| **1. Pre-commit hook** (`.githooks/pre-commit`) | fmt, clippy `--all-targets`, full tests | every commit, auto | ~10s |
+| **2. `./scripts/local-ci.sh`** | fmt, clippy, tests, builds (workspace/logging/wasm/C-API), cargo-deny, cargo-audit | before pushing, on demand | ~30s |
+| **3. GitHub CI** (`rust-ci.yml`) | macOS/Windows matrix (NEON, endianness), fuzz, benchmark regression, miri (weekly), release (tag-gated) | every push, auto | 2-6min |
+
+Rules:
+- Run `./scripts/local-ci.sh` before pushing. The pre-commit hook is the floor; local-ci.sh is the full Linux-runnable set.
+- Fuzz is slow (minutes) — opt in via `./scripts/local-ci.sh --fuzz`. It stays off by default.
+- miri, benchmark regression, and the macOS/Windows legs stay on GitHub: miri is 10-100x slower, benchmarks need stored baselines, and macOS/Windows are not runnable on this machine.
+- CI commit-message types allowed: `feat, fix, docs, refactor, test, chore, cleanup, perf` (not `ci`).
 ## What NOT to Do
 
 - Do NOT add new dependencies without checking if existing ones cover the need
