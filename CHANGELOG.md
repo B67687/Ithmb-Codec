@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.9.5] - 2026-08-01
+
+### Added
+
+- **WASM runtime smoke tests**: 6 tests via `wasm-pack test --node` — decode the real synthetic sample, verify pixel buffer length matches declared dimensions, varied pattern, known encoding name, and garbage rejection. Gated behind a `wasm-test` feature so native builds skip it.
+- **PyO3 runtime smoke tests**: 6 tests via pytest — module export completeness, `list_profiles`, real decode with buffer-length and varied-pixel assertions, garbage raises.
+- **Fuzz confirmation**: all 3 cargo-fuzz targets run clean against current code (2.78M total executions, zero crashes).
+
+### Changed
+
+- Dependencies updated to latest patch versions (clap 4.6.5, anyhow 1.0.104, thiserror 2.0.19, plus transitive patches). No breaking changes; full test suite green.
+
 ## [1.9.4] - 2026-07-16
 
 ### Added
