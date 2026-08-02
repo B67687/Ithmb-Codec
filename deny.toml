@@ -15,6 +15,12 @@ allow = [
 [bans]
 multiple-versions = "deny"
 wildcards = "warn"
+skip = [
+    # syn 2.x (clap_derive, thiserror-impl) and syn 3.x (async-trait via
+    # wasm-bindgen-test) coexist as separate proc-macro graphs — benign.
+    { name = "syn", version = "2" },
+    { name = "syn", version = "3" },
+]
 
 [sources]
 unknown-registry = "deny"

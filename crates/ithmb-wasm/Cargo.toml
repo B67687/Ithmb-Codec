@@ -11,8 +11,19 @@ description = "WASM bindings for ithmb-core — decode .ithmb files in the brows
 workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+wasm-test = []  # enables the runtime smoke tests (wasm-pack test --features wasm-test)
 
 [dependencies]
 ithmb-core = { path = "../ithmb-core" }
 wasm-bindgen = "0.2"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[[test]]
+name = "wasm_runtime"
+path = "tests/wasm_runtime.rs"
+required-features = ["wasm-test"]

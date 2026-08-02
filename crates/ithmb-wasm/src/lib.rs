@@ -7,6 +7,9 @@
 
 use wasm_bindgen::prelude::*;
 
+#[cfg(test)]
+use wasm_bindgen_test as _; // mark dev-dep used under deny(unused_crate_dependencies)
+
 /// Decode a `.ithmb` file from raw bytes into RGBA pixel data.
 ///
 /// Returns `Some(buffer)` on success where the buffer layout is:
