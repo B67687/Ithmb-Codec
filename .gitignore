@@ -40,4 +40,3 @@ target/
 mcp/
 .ruff_cache/
 *.bak
-*.ithmb

@@ -13,18 +13,20 @@ echo "✓ cargo fmt --check passed"
 
 # Only run clippy when Rust source files are staged
 if git diff --cached --name-only --diff-filter=ACM -- '*.rs' | head -1 | grep -q .; then
-    echo "➳ cargo clippy (--lib --bins) ..."
-    cargo clippy --workspace --lib --bins -- -D warnings
+    echo "➳ cargo clippy (--workspace --all-targets) ..."
+    cargo clippy --workspace --all-targets -- -D warnings
     echo "✓ cargo clippy passed"
 else
     echo "✓ cargo clippy (skipped — no .rs files staged)"
 fi
 
-# Quick lib test check (skips integration tests for speed)
+# Run the full test suite (lib + integration) when Rust source files are staged —
+# matches what CI runs. The integration tests (e.g. ithmb-cli/tests/cli.rs) have
+# caught real regressions (version_flag) that --lib alone misses.
 if git diff --cached --name-only --diff-filter=ACM -- '*.rs' | head -1 | grep -q .; then
-    echo "➳ cargo test --lib (workspace) ..."
-    cargo test --lib --workspace 2>/dev/null
-    echo "✓ cargo test --lib passed"
+    echo "➳ cargo test --workspace --tests ..."
+    cargo test --workspace --tests 2>/dev/null
+    echo "✓ cargo test passed"
 else
-    echo "✓ cargo test --lib (skipped — no .rs files staged)"
+    echo "✓ cargo test (skipped — no .rs files staged)"
 fi

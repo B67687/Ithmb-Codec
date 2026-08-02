@@ -86,7 +86,13 @@ fn version_flag() {
     let out = run_ithmb(&["--version"]);
     assert_ok(&out);
     let stdout = String::from_utf8_lossy(&out.stdout);
-    assert!(stdout.contains("1.9"), "expected version 1.9.x, got: {stdout}");
+    // Assert a semantic version (X.Y.Z) is printed rather than a hardcoded
+    // prefix that breaks on every bump (e.g. 1.9 -> 1.10).
+    let has_semver = stdout
+        .chars()
+        .zip(stdout.chars().skip(1))
+        .any(|(a, b)| a.is_ascii_digit() && b == '.');
+    assert!(has_semver, "expected semantic version, got: {stdout}");
 }
 
 #[test]
