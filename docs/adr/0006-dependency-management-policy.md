@@ -14,7 +14,7 @@
 **Manage dependencies locally; remove all automated dependency tooling.**
 
 - Delete `.github/dependabot.yml` and both dependabot auto-merge workflows.
-- Keep `pr-checks.yml` (fast checks on PRs + pushes: fmt, clippy, typos, links, deny, audit, doc) and `ci-full.yml` (expensive suite on push to main only: 3-OS build matrix, fuzz, benchmarks, wasm, C-API) — correctness gates, unrelated to dependency churn. Also `miri.yml` (weekly UB detection).
+- Keep `rust-ci.yml` (continuous build + test) and `miri.yml` (weekly UB detection) — these are correctness gates, unrelated to dependency churn.
 - Keep `release.yml` (cross-platform build matrix + packaging). It runs only on `v*` tags and is the compatibility gate that guarantees the codec + CLI + Python wheels build on Linux x86_64/ARM64, macOS Intel/ARM, and Windows x86_64 — a check that cannot be replicated locally on a single machine.
 
 ### Local dependency ritual
