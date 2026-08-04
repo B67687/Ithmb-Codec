@@ -127,8 +127,18 @@ pub unsafe extern "C" fn ithmb_decode(
     };
 
     let out_ref = &mut *out;
+    // The caller sizes out->data from ithmb_prefix_to_profile. If the decoded
+    // image is larger than the profile claims (e.g. a JPEG embedded under a
+    // profile with smaller display dimensions), copying nbytes would overflow
+    // the caller's buffer — reject instead of corrupting memory (CWE-787).
+    // Area-based (w×h) so EXIF rotation, which swaps width/height, does not
+    // false-positive.
+    if (u64::from(img.width) * u64::from(img.height)) > (u64::from(out_ref.width) * u64::from(out_ref.height)) {
+        return ITHMB_ERROR_INVALID;
+    }
     let nbytes = (img.width as usize) * (img.height as usize) * 4;
-    // SAFETY: out_ref.data is valid for nbytes (caller must ensure).
+    // SAFETY: out_ref.data is valid for nbytes — the check above guarantees
+    // nbytes fits the profile-sized caller buffer.
     unsafe {
         std::ptr::copy_nonoverlapping(img.data.as_ptr(), out_ref.data, nbytes);
     }

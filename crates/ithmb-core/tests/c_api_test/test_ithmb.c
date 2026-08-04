@@ -235,6 +235,45 @@ static int test_decode_null_src(void) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Test 6: ithmb_decode rejects a caller buffer sized smaller than the decode
+ * --------------------------------------------------------------------------- */
+static int test_decode_oversized_buffer(void) {
+    /* A valid 480×864 file, but the caller sizes the output for 1×1 — the
+     * bounds check must return ITHMB_ERROR_INVALID instead of copying past
+     * the buffer (CWE-787). */
+    size_t file_len = 0;
+    uint8_t* file_buf = build_test_file(&file_len);
+    if (!file_buf) return 1;
+
+    uint8_t guard[16];
+    memset(guard, 0xAB, sizeof(guard));
+
+    IthmbImage out = {0};
+    out.width = 1;
+    out.height = 1;
+    out.data = guard;
+
+    int32_t ret = ithmb_decode(file_buf, file_len, &out, NULL);
+    if (ret != ITHMB_ERROR_INVALID) {
+        fprintf(stderr, "FAIL test_decode_oversized_buffer: returned %d, expected %d\n",
+                ret, ITHMB_ERROR_INVALID);
+        free(file_buf);
+        return 1;
+    }
+    for (size_t i = 0; i < sizeof(guard); i++) {
+        if (guard[i] != 0xAB) {
+            fprintf(stderr, "FAIL test_decode_oversized_buffer: guard byte %zu overwritten\n", i);
+            free(file_buf);
+            return 1;
+        }
+    }
+
+    fprintf(stdout, "PASS test_decode_oversized_buffer\n");
+    free(file_buf);
+    return 0;
+}
+
+/* ---------------------------------------------------------------------------
  * Main
  * ------------------------------------------------------------------------- */
 int main(void) {
@@ -245,6 +284,7 @@ int main(void) {
     failures += test_decode();
     failures += test_decode_cancel();
     failures += test_decode_null_src();
+    failures += test_decode_oversized_buffer();
 
     if (failures > 0) {
         fprintf(stdout, "\n%d test(s) FAILED\n", failures);
