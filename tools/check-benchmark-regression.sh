@@ -122,8 +122,8 @@ for key, cur_time in sorted(current.items()):
 
 print('')
 if matched == 0:
-    print('WARNING: No benchmarks matched baseline entries — check name format.')
-    sys.exit(0)
+    print('ERROR: No benchmarks matched baseline entries — parser drift or renamed benches. Failing CI.')
+    sys.exit(1)
 
 if failed:
     print(f'RESULT: FAILED — {sum(1 for k in current if k in baseline and current[k] / baseline[k][\"time_us\"] > FAIL_THRESHOLD)} benchmark(s) regressed >{FAIL_THRESHOLD}x')

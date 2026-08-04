@@ -16,11 +16,11 @@ set -euo pipefail
 THRESHOLD=250
 THRESHOLD_TEST=550
 QUIET=false
-TARGET="${2:-src/IthmbCodec}"
+TARGET="${2:-crates}"
 
 if [ "${1:-}" = "--quiet" ]; then
   QUIET=true
-  TARGET="${2:-src/IthmbCodec}"
+  TARGET="${2:-crates}"
 elif [ -n "${2:-}" ]; then
   TARGET="$2"
 fi

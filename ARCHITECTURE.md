@@ -6,7 +6,7 @@
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  crates/ithmb-core          [lib]                     │   │
 │  │  ───────────────────────                              │   │
-│  │  • 7 decoders (RGB565..JPEG)                         │   │
+│  │  • 8 decoders (RGB565..JPEG)                         │   │
 │  │  • 54 built-in profiles                              │   │
 │  │  • PhotoDB/ArtworkDB parser                          │   │
 │  │  • 7 encoders                                        │   │
