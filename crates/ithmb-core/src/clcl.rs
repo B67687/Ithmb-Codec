@@ -117,8 +117,8 @@ mod tests {
             prefix: 0,
             width: w,
             height: h,
-            encoding: Encoding::Rgb565,
-            frame_byte_length: (w * h * 2).max(0),
+            encoding: Encoding::Yuv422,
+            frame_byte_length: w * h * 2,
             clcl_chroma: true,
             ..Default::default()
         }

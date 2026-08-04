@@ -273,56 +273,17 @@ fn parse_tiff_orientation(tiff: &[u8], _remaining: usize) -> u8 {
 /// - 3: 180° rotation
 /// - 6: 90° clockwise rotation (dimensions swap)
 /// - 8: 270° clockwise / 90° counter-clockwise rotation (dimensions swap)
+///
+/// Delegates to the shared [`crate::pixel_utils::rotate_pixels`] helper;
+/// the mapping is identical to the historic inline implementation.
 fn rotate_bgra(data: &[u8], w: u32, h: u32, orientation: u8) -> (Vec<u8>, u32, u32) {
-    let total = (w * h * 4) as usize;
-    // The output buffer is always the same size (w * h * 4 == h * w * 4).
-    let mut rotated = vec![0u8; total];
-    let wu = w as usize;
-    let hu = h as usize;
-
-    match orientation {
-        3 => {
-            // Rotate 180°: reverse pixel order.
-            for i in 0..(wu * hu) {
-                let src_idx = i * 4;
-                let dst_idx = (wu * hu - 1 - i) * 4;
-                rotated[dst_idx..dst_idx + 4].copy_from_slice(&data[src_idx..src_idx + 4]);
-            }
-            (rotated, w, h)
-        }
-        6 => {
-            // Rotate 90° CW: old (ix, iy) → new (h-1-iy, ix).
-            // Output dimensions: (h, w).
-            for iy in 0..hu {
-                for ix in 0..wu {
-                    let src_idx = (iy * wu + ix) * 4;
-                    let ox = hu - 1 - iy;
-                    let oy = ix;
-                    let dst_idx = (oy * hu + ox) * 4;
-                    rotated[dst_idx..dst_idx + 4].copy_from_slice(&data[src_idx..src_idx + 4]);
-                }
-            }
-            (rotated, h, w)
-        }
-        8 => {
-            // Rotate 270° CW (90° CCW): output(x, y) = input(y, w - 1 - x).
-            // Output dimensions: (h, w).
-            let mut rotated = vec![0u8; total];
-            for iy in 0..hu {
-                for ix in 0..wu {
-                    let src_idx = (iy * wu + ix) * 4;
-                    // 270° CW: old (ix, iy) → new (iy, w-1-ix)
-                    let ox = iy;
-                    #[allow(clippy::cast_possible_truncation)]
-                    let oy = wu - 1 - ix;
-                    let dst_idx = (oy * hu + ox) * 4;
-                    rotated[dst_idx..dst_idx + 4].copy_from_slice(&data[src_idx..src_idx + 4]);
-                }
-            }
-            (rotated, h, w)
-        }
-        _ => (data.to_vec(), w, h),
-    }
+    let rotation = match orientation {
+        3 => 180,
+        6 => 90,
+        8 => 270,
+        _ => 0,
+    };
+    crate::pixel_utils::rotate_pixels(data, w, h, rotation)
 }
 
 // ---------------------------------------------------------------------------

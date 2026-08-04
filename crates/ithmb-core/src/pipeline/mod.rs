@@ -72,16 +72,99 @@ pub fn decode_ithmb(src: &[u8], canceled: &AtomicBool) -> Result<DecodedImage, D
 
 /// Decode a complete `.ithmb` file with a custom [`DecodeConfig`](crate::config::DecodeConfig).
 ///
-/// Like ``decode_ithmb`` but allows overriding decode parameters (file size limit,
+/// Like [`decode_ithmb`] but allows overriding decode parameters (file size limit,
 /// JPEG scan limit, cancellation check interval, etc.) at runtime.
 ///
 /// # Errors
 ///
-/// Same as ``decode_ithmb``.
+/// Same as [`decode_ithmb`].
 pub fn decode_ithmb_with_config(
     src: &[u8],
     canceled: &AtomicBool,
     config: &config::DecodeConfig,
+) -> Result<DecodedImage, DecodeError> {
+    decode_ithmb_inner(src, canceled, config, None)
+}
+
+/// Decode a complete `.ithmb` file with custom limits AND runtime decode-parameter
+/// overrides ([`TransformConfig`](crate::config::TransformConfig)).
+///
+/// Like [`decode_ithmb_with_config`] but additionally applies the caller-supplied
+/// transform overrides (rotation, crop) after profile selection.
+///
+/// # Errors
+///
+/// Same as [`decode_ithmb_with_config`].
+pub fn decode_ithmb_with_transform(
+    src: &[u8],
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+    transform: &config::TransformConfig,
+) -> Result<DecodedImage, DecodeError> {
+    decode_ithmb_inner(src, canceled, config, Some(transform))
+}
+
+/// Decode an `.ithmb` file using an explicit profile, bypassing prefix-lookup.
+///
+/// This is useful when the caller already knows the profile (e.g. from `PhotoDB`
+/// metadata, or for testing with synthetic data).
+///
+/// # Errors
+///
+/// Returns ``DecodeError::BufferTooShort`` if the input is too short for the
+/// expected prefix (4 bytes for raw formats). Propagates decoder errors.
+pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
+    decode_with_profile_with_config(src, profile, canceled, config::default_config())
+}
+
+/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig).
+///
+/// Like [`decode_with_profile`] but accepts a [`DecodeConfig`](crate::config::DecodeConfig) for runtime
+/// configuration of parameters such as trailing padding tolerance and file-size limits.
+///
+/// # Errors
+///
+/// Same as ``decode_with_profile``.
+pub fn decode_with_profile_with_config(
+    src: &[u8],
+    profile: &Profile,
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+) -> Result<DecodedImage, DecodeError> {
+    decode_inner(src, profile, canceled, config, None)
+}
+
+/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig)
+/// with runtime decode-parameter overrides ([`TransformConfig`](crate::config::TransformConfig)).
+///
+/// Like [`decode_with_profile_with_config`] but applies the caller-supplied
+/// transform overrides after profile selection.
+///
+/// # Errors
+///
+/// Same as [`decode_with_profile_with_config`].
+pub fn decode_with_profile_with_transform(
+    src: &[u8],
+    profile: &Profile,
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+    transform: &config::TransformConfig,
+) -> Result<DecodedImage, DecodeError> {
+    decode_inner(src, profile, canceled, config, Some(transform))
+}
+
+// ---------------------------------------------------------------------------
+// Internal decode core — one implementation, thin public wrappers above
+// ---------------------------------------------------------------------------
+
+/// Shared entry core: prefix parsing, profile lookup, and embedded-JPEG fallback
+/// for the `decode_ithmb*` family. `transform == None` means "use the profile's
+/// own post-processing fields" — identical to the non-transform entry points.
+fn decode_ithmb_inner(
+    src: &[u8],
+    canceled: &AtomicBool,
+    config: &config::DecodeConfig,
+    transform: Option<&config::TransformConfig>,
 ) -> Result<DecodedImage, DecodeError> {
     if src.len() < 4 {
         return Err(DecodeError::BufferTooShort {
@@ -99,7 +182,7 @@ pub fn decode_ithmb_with_config(
 
     let prefix = i32::from_be_bytes([src[0], src[1], src[2], src[3]]);
     #[cfg(feature = "logging")]
-    debug!("decode_ithmb_with_config: prefix={prefix:08X}, len={}", src.len());
+    debug!("decode: prefix={prefix:08X}, len={}", src.len());
     let is_jpeg_stream = src[0] == 0xFF && src[1] == 0xD8;
 
     let db = get_db();
@@ -126,7 +209,7 @@ pub fn decode_ithmb_with_config(
         } else {
             // Fallback: scan for embedded JPEG within the buffer.
             #[cfg(feature = "logging")]
-            info!("decode_ithmb_with_config: unknown prefix {prefix:08X}, scanning for embedded JPEG");
+            info!("decode: unknown prefix {prefix:08X}, scanning for embedded JPEG");
             match scan_for_embedded_jpeg(
                 src,
                 canceled,
@@ -136,7 +219,7 @@ pub fn decode_ithmb_with_config(
             ) {
                 Some(jpeg_data) => {
                     let jp = fallback_jpeg_profile();
-                    return decode_with_profile_with_config(jpeg_data, &jp, canceled, config);
+                    return decode_inner(jpeg_data, &jp, canceled, config, transform);
                 }
                 None => {
                     return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
@@ -145,131 +228,18 @@ pub fn decode_ithmb_with_config(
         }
     };
 
-    decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
-        decode_with_profile_with_config(src, &profile, canceled, config)
-    })
+    decode_inner(src, &profile, canceled, config, transform)
 }
 
-/// Decode a complete `.ithmb` file with custom limits AND runtime decode-parameter
-/// overrides ([`TransformConfig`](crate::config::TransformConfig)).
-///
-/// Like [`decode_ithmb_with_config`] but additionally applies the caller-supplied
-/// transform overrides (rotation, crop, channel swap, chroma ordering) after
-/// profile selection. This is the additive counterpart to the `_with_config`
-/// family — existing callers are unaffected.
-///
-/// # Errors
-///
-/// Same as [`decode_ithmb_with_config`].
-pub fn decode_ithmb_with_transform(
-    src: &[u8],
-    canceled: &AtomicBool,
-    config: &config::DecodeConfig,
-    transform: &config::TransformConfig,
-) -> Result<DecodedImage, DecodeError> {
-    if src.len() < 4 {
-        return Err(DecodeError::BufferTooShort {
-            expected: 4,
-            actual: src.len(),
-        });
-    }
-
-    if src.len() > config.max_raw_file_size() {
-        return Err(DecodeError::FileTooLarge {
-            size: src.len(),
-            limit: config.max_raw_file_size(),
-        });
-    }
-
-    let prefix = i32::from_be_bytes([src[0], src[1], src[2], src[3]]);
-    #[cfg(feature = "logging")]
-    debug!("decode_ithmb_with_transform: prefix={prefix:08X}, len={}", src.len());
-    let is_jpeg_stream = src[0] == 0xFF && src[1] == 0xD8;
-
-    let db = get_db();
-
-    let profile = if is_jpeg_stream {
-        db.get(prefix).cloned().unwrap_or_else(fallback_jpeg_profile)
-    } else if let Some(p) = db.get(prefix) {
-        p.clone()
-    } else {
-        // Tier 2: data-size heuristic.
-        let data_len = src.len() - 4;
-        let mut best: Option<Profile> = None;
-        let mut best_delta: usize = usize::MAX;
-        for p in db.all().values() {
-            #[allow(clippy::cast_sign_loss)]
-            let delta = data_len.abs_diff(p.frame_byte_length as usize);
-            if delta <= 256 && delta < best_delta {
-                best_delta = delta;
-                best = Some(p.clone());
-            }
-        }
-        if let Some(profile) = best {
-            profile
-        } else {
-            #[cfg(feature = "logging")]
-            info!("decode_ithmb_with_transform: unknown prefix {prefix:08X}, scanning for embedded JPEG");
-            match scan_for_embedded_jpeg(
-                src,
-                canceled,
-                config.jpeg_scan_limit(),
-                config.cancel_check_interval(),
-                config.jfif_exif_scan_window(),
-            ) {
-                Some(jpeg_data) => {
-                    let jp = fallback_jpeg_profile();
-                    return decode_with_profile_with_transform(jpeg_data, &jp, canceled, config, transform);
-                }
-                None => {
-                    return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
-                }
-            }
-        }
-    };
-
-    decode_with_profile_with_transform(src, &profile, canceled, config, transform)
-}
-
-/// Decode an `.ithmb` file using an explicit profile, bypassing prefix-lookup.
-///
-/// This is useful when the caller already knows the profile (e.g. from `PhotoDB`
-/// metadata, or for testing with synthetic data).
-///
-/// # Errors
-///
-/// Returns ``DecodeError::BufferTooShort`` if the input is too short for the
-/// expected prefix (4 bytes for raw formats). Propagates decoder errors.
-pub fn decode_with_profile(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    // stream). Raw formats have a 4-byte format prefix before pixel data.
-    let frame_data = if profile.encoding == Encoding::Jpeg {
-        src
-    } else {
-        if src.len() < 4 {
-            return Err(DecodeError::BufferTooShort {
-                expected: 4,
-                actual: src.len(),
-            });
-        }
-        &src[4..]
-    };
-
-    let img = dispatch_decode(frame_data, profile, canceled)?;
-    Ok(apply_post_process(img, profile))
-}
-
-/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig).
-///
-/// Like [`decode_with_profile`] but accepts a [`DecodeConfig`](crate::config::DecodeConfig) for runtime
-/// configuration of parameters such as trailing padding tolerance and file-size limits.
-/// # Errors
-///
-/// Same as ``decode_with_profile``.
-pub fn decode_with_profile_with_config(
+/// Shared decode core: strips the 4-byte prefix (raw formats), dispatches to the
+/// format decoder, then applies post-processing. The trailing-padding tolerance
+/// from `config` is applied exactly once around the whole decode.
+fn decode_inner(
     src: &[u8],
     profile: &Profile,
     canceled: &AtomicBool,
     config: &config::DecodeConfig,
+    transform: Option<&config::TransformConfig>,
 ) -> Result<DecodedImage, DecodeError> {
     decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
         let frame_data = if profile.encoding == Encoding::Jpeg {
@@ -285,42 +255,10 @@ pub fn decode_with_profile_with_config(
         };
 
         let img = dispatch_decode(frame_data, profile, canceled)?;
-        Ok(apply_post_process(img, profile))
-    })
-}
-
-/// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig)
-/// with runtime decode-parameter overrides ([`TransformConfig`](crate::config::TransformConfig)).
-///
-/// Like [`decode_with_profile_with_config`] but applies the caller-supplied
-/// transform overrides after profile selection. Additive — existing callers are
-/// unaffected.
-///
-/// # Errors
-///
-/// Same as [`decode_with_profile_with_config`].
-pub fn decode_with_profile_with_transform(
-    src: &[u8],
-    profile: &Profile,
-    canceled: &AtomicBool,
-    config: &config::DecodeConfig,
-    transform: &config::TransformConfig,
-) -> Result<DecodedImage, DecodeError> {
-    decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
-        let frame_data = if profile.encoding == Encoding::Jpeg {
-            src
-        } else {
-            if src.len() < 4 {
-                return Err(DecodeError::BufferTooShort {
-                    expected: 4,
-                    actual: src.len(),
-                });
-            }
-            &src[4..]
-        };
-
-        let img = dispatch_decode(frame_data, profile, canceled)?;
-        Ok(apply_post_process_with_transform(img, profile, transform))
+        Ok(match transform {
+            Some(t) => apply_post_process_with_transform(img, profile, t),
+            None => apply_post_process(img, profile),
+        })
     })
 }
 // ---------------------------------------------------------------------------
@@ -414,8 +352,11 @@ fn apply_post_process_with_transform(
         std::mem::swap(&mut img.width, &mut img.height);
     }
 
-    // 2. Crop to the visible region.
-    img = apply_crop(img, profile);
+    // 2. Crop — runtime override wins over the profile's crop fields.
+    img = match transform.crop() {
+        Some(crop) => apply_crop_with(img, crop),
+        None => apply_crop(img, profile),
+    };
 
     // 3. Rotate — runtime override wins over the profile's rotation field.
     let rotation = transform.rotation().unwrap_or(profile.rotation);
@@ -423,13 +364,14 @@ fn apply_post_process_with_transform(
 }
 
 /// Rotates by an explicit angle (degrees; 0/90/180/270, others no-op).
+///
+/// The `DecodedImage` is passed by value for pipeline symmetry with the other
+/// post-processing steps (crop, swap) — historic `rotate_90_cw`/`180`/`270_cw`
+/// carried the same allow.
+#[allow(clippy::needless_pass_by_value)]
 fn apply_rotation_with(img: DecodedImage, rotation: i32) -> DecodedImage {
-    match rotation {
-        90 => rotate_90_cw(img),
-        180 => rotate_180(img),
-        270 => rotate_270_cw(img),
-        _ => img,
-    }
+    let (data, width, height) = crate::pixel_utils::rotate_pixels(&img.data, img.width, img.height, rotation);
+    DecodedImage { data, width, height }
 }
 
 /// Crops the image to the region specified by the profile.
@@ -442,24 +384,37 @@ fn apply_crop(img: DecodedImage, profile: &Profile) -> DecodedImage {
     if !needs_crop {
         return img;
     }
+    apply_crop_with(
+        img,
+        config::Crop {
+            x: profile.crop_x,
+            y: profile.crop_y,
+            width: profile.crop_width,
+            height: profile.crop_height,
+        },
+    )
+}
 
+/// Crops the image to the region specified by `crop` (0 width/height = remaining
+/// span from the corresponding offset; all values clamped to the image bounds).
+fn apply_crop_with(img: DecodedImage, crop: config::Crop) -> DecodedImage {
     #[allow(clippy::cast_sign_loss)]
-    let cx = profile.crop_x.max(0) as usize;
+    let cx = crop.x.max(0) as usize;
     #[allow(clippy::cast_sign_loss)]
-    let cy = profile.crop_y.max(0) as usize;
+    let cy = crop.y.max(0) as usize;
     let iw = img.width as usize;
     let ih = img.height as usize;
 
     #[allow(clippy::cast_sign_loss)]
-    let cw = if profile.crop_width > 0 {
-        profile.crop_width as usize
+    let cw = if crop.width > 0 {
+        crop.width as usize
     } else {
         iw.saturating_sub(cx)
     };
 
     #[allow(clippy::cast_sign_loss)]
-    let ch = if profile.crop_height > 0 {
-        profile.crop_height as usize
+    let ch = if crop.height > 0 {
+        crop.height as usize
     } else {
         ih.saturating_sub(cy)
     };
@@ -491,77 +446,12 @@ fn apply_crop(img: DecodedImage, profile: &Profile) -> DecodedImage {
 ///
 /// Supports 0°, 90°, 180°, and 270° clockwise rotation. Other values are
 /// silently ignored.
+/// Applies the rotation specified by the profile.
+///
+/// Supports 0°, 90°, 180°, and 270° clockwise rotation. Other values are
+/// silently ignored.
 fn apply_rotation(img: DecodedImage, profile: &Profile) -> DecodedImage {
-    match profile.rotation {
-        90 => rotate_90_cw(img),
-        180 => rotate_180(img),
-        270 => rotate_270_cw(img),
-        _ => img,
-    }
-}
-
-#[allow(clippy::needless_pass_by_value, clippy::cast_possible_truncation)]
-fn rotate_90_cw(img: DecodedImage) -> DecodedImage {
-    let w = img.width as usize;
-    let h = img.height as usize;
-    let cap = w.checked_mul(h).and_then(|v| v.checked_mul(4)).unwrap_or(0);
-    let mut rotated = Vec::with_capacity(cap);
-
-    for x in 0..w {
-        for y in (0..h).rev() {
-            let src_idx = (y * w + x) * 4;
-            rotated.extend_from_slice(&img.data[src_idx..src_idx + 4]);
-        }
-    }
-
-    DecodedImage {
-        data: rotated,
-        width: h as u32,
-        height: w as u32,
-    }
-}
-
-#[allow(clippy::needless_pass_by_value)]
-fn rotate_180(img: DecodedImage) -> DecodedImage {
-    let total_pixels = img.data.len() / 4;
-    let mut rotated = vec![0u8; total_pixels * 4];
-
-    for i in 0..total_pixels {
-        let src_idx = i * 4;
-        let dst_idx = (total_pixels - 1 - i) * 4;
-        rotated[dst_idx..dst_idx + 4].copy_from_slice(&img.data[src_idx..src_idx + 4]);
-    }
-
-    DecodedImage {
-        data: rotated,
-        width: img.width,
-        height: img.height,
-    }
-}
-
-#[allow(clippy::needless_pass_by_value, clippy::cast_possible_truncation)]
-fn rotate_270_cw(img: DecodedImage) -> DecodedImage {
-    let w = img.width as usize;
-    let h = img.height as usize;
-    let total = w.checked_mul(h).and_then(|v| v.checked_mul(4)).unwrap_or(0);
-    let mut rotated = vec![0u8; total];
-
-    for y in 0..h {
-        for x in 0..w {
-            let src_idx = (y * w + x) * 4;
-            // 270° CW: old (x, y) -> new (y, w - 1 - x)
-            let ox = y;
-            let oy = w - 1 - x;
-            let dst_idx = (oy * h + ox) * 4;
-            rotated[dst_idx..dst_idx + 4].copy_from_slice(&img.data[src_idx..src_idx + 4]);
-        }
-    }
-
-    DecodedImage {
-        data: rotated,
-        width: h as u32,
-        height: w as u32,
-    }
+    apply_rotation_with(img, profile.rotation)
 }
 
 // ---------------------------------------------------------------------------
@@ -1249,13 +1139,13 @@ mod tests {
 
     #[test]
     fn test_rotation_90_cw_identity() {
-        // rotate_90_cw then rotate_270_cw should return to original.
+        // 90° CW then 270° CW should return to original.
         let original = DecodedImage {
             data: (0..16).collect(), // 2×2 image, every byte is its index
             width: 2,
             height: 2,
         };
-        let rotated = rotate_90_cw(rotate_270_cw(original.clone()));
+        let rotated = apply_rotation_with(apply_rotation_with(original.clone(), 90), 270);
         assert_eq!(rotated.width, original.width);
         assert_eq!(rotated.height, original.height);
         assert_eq!(rotated.data, original.data);
@@ -1268,7 +1158,7 @@ mod tests {
             width: 2,
             height: 3,
         };
-        let rotated = rotate_180(rotate_180(original.clone()));
+        let rotated = apply_rotation_with(apply_rotation_with(original.clone(), 180), 180);
         assert_eq!(rotated.data, original.data);
         assert_eq!(rotated.width, original.width);
         assert_eq!(rotated.height, original.height);

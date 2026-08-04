@@ -87,7 +87,7 @@ mod tests {
             prefix: 0,
             width: w,
             height: h,
-            encoding: Encoding::Rgb565,
+            encoding: Encoding::Yuv422,
             frame_byte_length: w * h * 2,
             cl_chroma: true,
             ..Default::default()

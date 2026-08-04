@@ -53,54 +53,12 @@ pub use ycbcr420::encode_ycbcr420;
 // ---------------------------------------------------------------------------
 
 /// Apply a clockwise rotation to BGRA pixel data.
+///
+/// Thin wrapper over the shared [`crate::pixel_utils::rotate_pixels`] helper.
 #[must_use]
 pub(crate) fn rotate_bgra(src: &[u8], w: i32, h: i32, rotation: i32) -> Vec<u8> {
-    let wu = w as usize;
-    let hu = h as usize;
-    match rotation % 360 {
-        90 => {
-            // Rotate clockwise: each pixel (x, y) → (h-1-y, x)
-            let mut dst = vec![0u8; wu * hu * 4];
-            for sy in 0..hu {
-                for sx in 0..wu {
-                    let s_idx = (sy * wu + sx) * 4;
-                    let dx = hu - 1 - sy;
-                    let dy = sx;
-                    let d_idx = (dy * hu + dx) * 4;
-                    dst[d_idx..d_idx + 4].copy_from_slice(&src[s_idx..s_idx + 4]);
-                }
-            }
-            dst
-        }
-        180 => {
-            let mut dst = vec![0u8; wu * hu * 4];
-            for sy in 0..hu {
-                for sx in 0..wu {
-                    let s_idx = (sy * wu + sx) * 4;
-                    let dx = wu - 1 - sx;
-                    let dy = hu - 1 - sy;
-                    let d_idx = (dy * wu + dx) * 4;
-                    dst[d_idx..d_idx + 4].copy_from_slice(&src[s_idx..s_idx + 4]);
-                }
-            }
-            dst
-        }
-        270 => {
-            // 270° CW = 90° CCW
-            let mut dst = vec![0u8; wu * hu * 4];
-            for sy in 0..hu {
-                for sx in 0..wu {
-                    let s_idx = (sy * wu + sx) * 4;
-                    let dx = sy;
-                    let dy = wu - 1 - sx;
-                    let d_idx = (dy * hu + dx) * 4;
-                    dst[d_idx..d_idx + 4].copy_from_slice(&src[s_idx..s_idx + 4]);
-                }
-            }
-            dst
-        }
-        _ => src.to_vec(),
-    }
+    let (data, _, _) = crate::pixel_utils::rotate_pixels(src, w as u32, h as u32, rotation);
+    data
 }
 
 // ---------------------------------------------------------------------------

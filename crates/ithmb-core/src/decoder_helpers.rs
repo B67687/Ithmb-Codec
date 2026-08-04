@@ -5,10 +5,11 @@
 //! casts, and buffer-too-short guards).
 //!
 //! The trailing-padding tolerance is configurable at runtime through a thread-local
-//! override set by `set_tolerance` / `with_tolerance`. The `decode_ithmb_with_config`
-//! entry point uses this mechanism to wire `DecodeConfig::trailing_padding_tolerance`
-//! through to `validate_dimensions` without changing the public decode function
-//! signatures in individual decoder modules.
+//! override set by `set_tolerance` / `with_tolerance`. The pipeline entry points use
+//! this mechanism to wire `DecodeConfig::trailing_padding_tolerance` through to
+//! `validate_dimensions` without changing the public decode function signatures in
+//! individual decoder modules. Internal call sites that hold a config explicitly
+//! should prefer [`validate_dimensions_with_tolerance`].
 
 use crate::error::DecodeError;
 use crate::profile::Profile;
@@ -89,6 +90,20 @@ pub(crate) fn validate_dimensions<'a>(
     name: &str,
     bpp: usize,
 ) -> Result<(Cow<'a, [u8]>, usize, usize), DecodeError> {
+    validate_dimensions_with_tolerance(src, profile, name, bpp, get_tolerance())
+}
+
+/// Same as [`validate_dimensions`], but with the trailing-padding tolerance passed
+/// explicitly instead of read from the thread-local override. Prefer this at
+/// call sites that already hold a concrete tolerance value.
+#[allow(clippy::cast_sign_loss)]
+pub(crate) fn validate_dimensions_with_tolerance<'a>(
+    src: &'a [u8],
+    profile: &Profile,
+    name: &str,
+    bpp: usize,
+    tolerance: usize,
+) -> Result<(Cow<'a, [u8]>, usize, usize), DecodeError> {
     let w_i32 = profile.width;
     let h_i32 = profile.height;
 
@@ -103,10 +118,9 @@ pub(crate) fn validate_dimensions<'a>(
         let expected = w
             .checked_mul(h)
             .and_then(|wh| wh.checked_mul(bpp))
-            .ok_or(DecodeError::BufferTooShort { expected: 0, actual: 0 })?;
+            .ok_or_else(|| DecodeError::InvalidFormat("dimensions too large".into()))?;
         if src.len() < expected {
             let deficit = expected - src.len();
-            let tolerance = get_tolerance();
             if deficit > tolerance {
                 return Err(DecodeError::BufferTooShort {
                     expected,

@@ -42,3 +42,64 @@ pub(crate) fn check_canceled(canceled: &AtomicBool, name: &str) -> Result<(), De
     }
     Ok(())
 }
+
+/// Rotate BGRA8 pixel data clockwise by `rotation` degrees (0/90/180/270;
+/// any other value returns an unrotated copy).
+///
+/// Returns `(rotated_data, new_width, new_height)` — for 90°/270° the
+/// dimensions swap. This is the single rotation implementation shared by
+/// the pipeline post-processor, the encoders, and the JPEG EXIF path.
+///
+/// The mapping used is: 90° CW `old (x, y) → new (h-1-y, x)`,
+/// 180° `old (x, y) → new (w-1-x, h-1-y)`,
+/// 270° CW `old (x, y) → new (y, w-1-x)` — identical to the historic
+/// `rotate_bgra` semantics of the encoder and the JPEG EXIF path.
+#[must_use]
+pub(crate) fn rotate_pixels(src: &[u8], width: u32, height: u32, rotation: i32) -> (Vec<u8>, u32, u32) {
+    let wu = width as usize;
+    let hu = height as usize;
+    let total = wu * hu * 4;
+    match rotation % 360 {
+        90 => {
+            let mut dst = vec![0u8; total];
+            for sy in 0..hu {
+                for sx in 0..wu {
+                    let s_idx = (sy * wu + sx) * 4;
+                    let dx = hu - 1 - sy;
+                    let dy = sx;
+                    let d_idx = (dy * hu + dx) * 4;
+                    dst[d_idx..d_idx + 4].copy_from_slice(&src[s_idx..s_idx + 4]);
+                }
+            }
+            (dst, height, width)
+        }
+        180 => {
+            let mut dst = vec![0u8; total];
+            for sy in 0..hu {
+                for sx in 0..wu {
+                    let s_idx = (sy * wu + sx) * 4;
+                    let dx = wu - 1 - sx;
+                    let dy = hu - 1 - sy;
+                    let d_idx = (dy * wu + dx) * 4;
+                    dst[d_idx..d_idx + 4].copy_from_slice(&src[s_idx..s_idx + 4]);
+                }
+            }
+            (dst, width, height)
+        }
+        270 => {
+            // 270° CW = 90° CCW
+            let mut dst = vec![0u8; total];
+            for sy in 0..hu {
+                for sx in 0..wu {
+                    let s_idx = (sy * wu + sx) * 4;
+                    let dx = sy;
+                    let dy = wu - 1 - sx;
+                    let d_idx = (dy * hu + dx) * 4;
+                    dst[d_idx..d_idx + 4].copy_from_slice(&src[s_idx..s_idx + 4]);
+                }
+            }
+            (dst, height, width)
+        }
+        _ => (src.to_vec(), width, height),
+    }
+}

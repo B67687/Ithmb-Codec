@@ -142,3 +142,7 @@ pub use config::{Crop, TransformConfig};
 pub use photodb::parser::{PhotoDbEntry, PhotoDbMetadata};
 /// Re-export of [`built_in_profiles`] for convenience.
 pub use profile::built_in_profiles;
+
+/// Shared unit-test helpers (compiled only in test builds).
+#[cfg(test)]
+mod test_support;

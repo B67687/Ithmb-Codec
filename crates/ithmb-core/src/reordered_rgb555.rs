@@ -174,125 +174,6 @@ mod tests {
     }
 
     #[test]
-    fn zero_dimensions_returns_err() {
-        let profile = make_profile(0, 100, false);
-        let result = decode(b"", &profile, &AtomicBool::new(false));
-        assert!(result.is_err());
-        assert!(matches!(result, Err(DecodeError::InvalidFormat(_))));
-    }
-
-    #[test]
-    fn negative_dimension_returns_err() {
-        let profile = make_profile(-1, 100, false);
-        let result = decode(b"", &profile, &AtomicBool::new(false));
-        assert!(result.is_err());
-        assert!(matches!(result, Err(DecodeError::InvalidFormat(_))));
-    }
-
-    #[test]
-    fn too_short_returns_buffer_too_short() {
-        let profile = make_profile(100, 100, false);
-        let result = decode(&[0u8; 10], &profile, &AtomicBool::new(false));
-        assert!(result.is_err());
-        assert!(matches!(result, Err(DecodeError::BufferTooShort { .. })));
-    }
-
-    #[test]
-    fn buffer_too_short_reports_exact_counts() {
-        let profile = make_profile(14, 10, false);
-        // 14*10*2 = 280 needed, deficit=270 > 256 → still BufferTooShort
-        let result = decode(&[0u8; 10], &profile, &AtomicBool::new(false));
-        match result {
-            Err(DecodeError::BufferTooShort {
-                expected: 280,
-                actual: 10,
-            }) => {} // ok
-            other => panic!("expected BufferTooShort(280, 10), got {other:?}"),
-        }
-    }
-
-    #[test]
-    fn dst_allocation_matches_geometry() {
-        let profile = make_profile(3, 2, false);
-        let pixels = vec![0u8; 3 * 2 * 2];
-        let img = decode(&pixels, &profile, &AtomicBool::new(false)).unwrap();
-        assert_eq!(img.data.len(), 3 * 2 * 4);
-        assert_eq!(img.width, 3);
-        assert_eq!(img.height, 2);
-    }
-
-    #[test]
-    fn solid_white_pixel() {
-        // RGB555 0x7FFF → R=31, G=31, B=31 → all 255 in BGRA
-        // Big-endian: [0xFF, 0x7F]
-        let profile = make_profile(1, 1, false);
-        let img = decode(&[0xFF, 0x7F], &profile, &AtomicBool::new(false)).unwrap();
-        assert_eq!(img.data, vec![0xFF, 0xFF, 0xFF, 255]);
-    }
-
-    #[test]
-    fn solid_black_pixel() {
-        // RGB555 0x0000 → all zeros
-        let profile = make_profile(1, 1, false);
-        let img = decode(&[0x00, 0x00], &profile, &AtomicBool::new(false)).unwrap();
-        assert_eq!(img.data, vec![0, 0, 0, 255]);
-    }
-
-    #[test]
-    fn solid_red_pixel() {
-        // Layout xRRRRRGGGGGBBBBB, R=31 → bits 14..10 = 11111
-        // Pixel = 0x7C00, LE: [0x00, 0x7C]
-        let profile = make_profile(1, 1, false);
-        let img = decode(&[0x00, 0x7C], &profile, &AtomicBool::new(false)).unwrap();
-        // BGRA: B=0, G=0, R=255
-        assert_eq!(img.data, vec![0, 0, 0xFF, 255]);
-    }
-
-    #[test]
-    fn solid_blue_pixel() {
-        // Layout xRRRRRGGGGGBBBBB, B=31 → bits 4..0 = 11111
-        // Pixel = 0x001F, LE: [0x1F, 0x00]
-        let profile = make_profile(1, 1, false);
-        let img = decode(&[0x1F, 0x00], &profile, &AtomicBool::new(false)).unwrap();
-        // BGRA: B=255, G=0, R=0
-        assert_eq!(img.data, vec![0xFF, 0, 0, 255]);
-    }
-
-    #[test]
-    fn solid_green_pixel() {
-        // Layout xRRRRRGGGGGBBBBB, G=31 → bits 9..5 = 11111
-        // Pixel = 0x03E0, LE: [0xE0, 0x03]
-        let profile = make_profile(1, 1, false);
-        let img = decode(&[0xE0, 0x03], &profile, &AtomicBool::new(false)).unwrap();
-        // BGRA: B=0, G=255, R=0
-        assert_eq!(img.data, vec![0, 0xFF, 0, 255]);
-    }
-
-    #[test]
-    fn decode_swap_rgb_channels() {
-        // swap_rgb_channels=true: layout becomes xBBBBBGGGGGRRRRR
-        // Blue=31 → bits 14..10 = 11111, pixel = 0x7C00
-        // Big-endian: [0x00, 0x7C]
-        // With swap, high bits = B, so B_out = 255
-        let profile = make_profile(1, 1, true);
-        let img = decode(&[0x00, 0x7C], &profile, &AtomicBool::new(false)).unwrap();
-        // Swap mode: B from high bits = 31 → 255, R from low bits = 0
-        assert_eq!(img.data, vec![0xFF, 0, 0, 255]);
-    }
-
-    #[test]
-    fn swap_mode_red_stays_low() {
-        // swap_rgb_channels=true: xBBBBBGGGGGRRRRR
-        // Red=31 → bits 4..0 = 11111, pixel = 0x001F
-        // Big-endian: [0x1F, 0x00]
-        let profile = make_profile(1, 1, true);
-        let img = decode(&[0x1F, 0x00], &profile, &AtomicBool::new(false)).unwrap();
-        // Swap mode: R from low bits = 31 → R_out=255
-        // BGRA: B=0 (from high bits), G=0, R=255
-        assert_eq!(img.data, vec![0, 0, 0xFF, 255]);
-    }
-
-    #[test]
     fn two_pixel_decode() {
         // 2 white pixels in Morton order: z=0→white, z=1→gap, z=2→white
         let profile = make_profile(2, 1, false);
@@ -321,22 +202,10 @@ mod tests {
     }
 
     #[test]
-    fn msb_replicate_clamping() {
-        assert_eq!(crate::pixel_utils::msb_replicate_5(31), 0xFF);
-        assert_eq!(crate::pixel_utils::msb_replicate_5(0), 0x00);
-        assert_eq!(crate::pixel_utils::msb_replicate_5(16), 0x84);
-        assert_eq!(crate::pixel_utils::msb_replicate_5(8), 0x42);
-        assert_eq!(crate::pixel_utils::msb_replicate_5(1), 0x08);
-    }
-
-    #[test]
-    fn output_has_correct_alpha() {
-        let profile = make_profile(2, 2, false);
-        let pixels = vec![0u8; 8];
-        let img = decode(&pixels, &profile, &AtomicBool::new(false)).unwrap();
-        for i in 0..4 {
-            assert_eq!(img.data[i * 4 + 3], 255);
-        }
+    fn shared_decode_suite() {
+        // Historic per-decoder unit tests (14 fns) collapsed into one shared
+        // suite — byte-for-byte identical assertions, see src/test_support.rs.
+        crate::test_support::run_rgb555_family_suite(decode, make_profile);
     }
     #[test]
     fn decode_4x4_morton_order_quadrants() {
