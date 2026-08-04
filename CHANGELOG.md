@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.3] - 2026-08-04
+
+### CI
+
+- Fixed the weekly miri job: dropped the contradictory `-Zmiri-permissive-provenance` flag (kept strict + tree-borrows)
+- Benchmark regression gate now actually gates: removed `continue-on-error`; a `cargo bench` failure or zero parser matches now fails CI (parser verified against current divan output — 74 benches matched)
+- Fuzz job uploads crash artifacts (`if: failure()`) so CI-discovered crashes are reproducible; fuzz nightly pinned via `fuzz/rust-toolchain.toml`
+- Added gitleaks secrets scan (pr-checks) + `dependabot.yml` (cargo + actions)
+- AGENTS.md refreshed to the real workflow split (pr-checks/ci-full/miri/release), the dev/public dual-repo ritual, the wasm regeneration pipeline, and the security posture; new `docs/RELEASING.md` checklist
+- Hygiene: removed duplicate `_typos.toml`, the stray `pre-commit.bak`, and the duplicate typos line; fixed `scripts/check-file-sizes.sh` default path; synced `Cargo.lock` to 1.10.x
+
 ## [1.10.2] - 2026-08-04
 
 ### Security

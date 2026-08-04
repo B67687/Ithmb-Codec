@@ -23,5 +23,5 @@ jobs:
         run: |
           cargo miri test --workspace --all-features --all-targets
         env:
-          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-tree-borrows -Zmiri-permissive-provenance"
+          MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-tree-borrows"
           RUST_BACKTRACE: 1
