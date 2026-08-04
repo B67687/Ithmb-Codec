@@ -55,7 +55,9 @@ A pure Rust codec library, CLI tool, and C ABI shared library for decoding and e
 
 > [!TIP]
 > New to `.ithmb` files? See [docs/what-is-this.md](docs/what-is-this.md) for a plain-english explainer.
+> 
 > Confused by technical terms? See [docs/GLOSSARY.md](docs/GLOSSARY.md) for simple definitions.
+> 
 > Want to extract photos from your iPod? See [docs/guides/GUIDE.md](docs/guides/GUIDE.md) for a walkthrough.
 
 ---
