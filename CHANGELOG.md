@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.2] - 2026-08-04
+
+### Security
+
+- **Reject undersized C-API output buffers (CWE-787)**: `ithmb_decode` copied `img.width*img.height*4` bytes into a caller buffer sized from `ithmb_prefix_to_profile`. A file decoding larger than its profile claims (e.g. a JPEG embedded under a profile with smaller display dimensions) overflowed the caller's heap buffer. An area-based bounds check now returns `ITHMB_ERROR_INVALID` before the copy (area-based so EXIF rotation, which swaps width/height, does not false-positive).
+
+### CI
+
+- SHA-pinned all GitHub Actions (9 actions) and version-pinned installs (`cargo-fuzz 0.13.2`, `cargo-audit 0.22.2`, `maturin 1.14.1`); new `scripts/check-ci-pins.sh` job fails on any future unpinned ref.
+
 ## [1.10.1] - 2026-08-04
 
 ### Security
