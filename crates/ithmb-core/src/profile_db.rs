@@ -37,6 +37,9 @@ impl ProfileDb {
     ///
     /// # Errors
     /// Returns `DecodeError::Profile` if the file cannot be read or parsed.
+    /// NOTE: currently no production caller exercises this — it is a documented
+    /// library feature (docs/adr/0003-profile-resolution-and-discovery.md); kept for
+    /// library users, not dead code.
     pub fn load_external<P: AsRef<Path>>(&mut self, path: P) -> Result<(), DecodeError> {
         let data = fs::read_to_string(path.as_ref())
             .map_err(|e| DecodeError::Profile(format!("failed to read '{}': {e}", path.as_ref().display())))?;

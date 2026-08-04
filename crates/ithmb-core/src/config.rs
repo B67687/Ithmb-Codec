@@ -210,6 +210,8 @@ pub struct TransformConfig {
     /// Crop rectangle override.
     crop: Option<Crop>,
     /// Swap RGB channel order (BGRA <-> RGBA), if set.
+    /// NOTE: not consumed by any current decoder — kept for API completeness;
+    /// do not delete without a semver-aware contract check.
     swap_rgb_channels: Option<bool>,
     /// Swap chroma planes, if set.
     swap_chroma_planes: Option<bool>,

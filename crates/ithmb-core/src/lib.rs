@@ -59,6 +59,8 @@
 /// C ABI shared library for ImageGlass native plugin integration.
 #[cfg_attr(docsrs, doc(cfg(feature = "c")))]
 #[cfg(feature = "c")]
+/// C ABI exports for external consumers (ImageGlass native plugin). This is a
+/// live contract verified by CI (`nm -D | grep ithmb_decode`) — not dead code.
 pub mod c_api;
 /// Runtime configuration for decode parameters.
 pub mod config;
