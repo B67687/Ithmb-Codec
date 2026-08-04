@@ -1,8 +1,10 @@
-# rust-ci.yml — Build matrix (OS x features) + clippy verification.
-name: rust-ci
+# ci-full.yml — EXPENSIVE full suite, ONLY on push/merge to main.
+# PRs get the fast checks (pr-checks.yml); the 3-OS build matrix, fuzz,
+# benchmarks, wasm, and C-API build run here, when code actually lands.
+# Keeps CI minutes low on PRs while main is always fully verified.
+name: ci-full
 on:
   push: { branches: [main] }
-  pull_request: { branches: [main] }
 permissions: { contents: read }
 
 jobs:
@@ -38,47 +40,9 @@ jobs:
           if [ "${{ matrix.os }}" = "macos-latest" ]; then exclude='--exclude ithmb-python'; fi
           cargo test --workspace $exclude
 
-  verify_clippy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: clippy
-          cache: true
-          cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}"
-      - name: cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-  check_links:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - name: Check links
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' --exclude 'forums.whirlpool.net.au' --exclude 'github.com/itsmichaelwest/classick' README.md docs/
-          fail: true
-
-  verify_deny:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          cache: true
-          cache-key: "deny-${{ hashFiles('deny.toml') }}"
-      - name: Install cargo-deny
-        run: cargo install cargo-deny --locked --version 0.20.2
-      - name: cargo deny check
-        run: cargo deny check
-
   benchmark_regression:
     runs-on: ubuntu-latest
-    needs: [build, verify_clippy, check_links, verify_deny]
+    needs: [build]
     continue-on-error: true
     timeout-minutes: 20
     steps:
@@ -102,7 +66,7 @@ jobs:
           retention-days: 7
   fuzz:
     runs-on: ubuntu-latest
-    needs: [build, verify_clippy]
+    needs: [build]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -124,6 +88,7 @@ jobs:
 
   build_c_api:
     runs-on: ubuntu-latest
+    needs: [build]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -140,6 +105,7 @@ jobs:
 
   wasm:
     runs-on: ubuntu-latest
+    needs: [build]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -154,54 +120,3 @@ jobs:
       - name: Build wasm
         shell: bash
         run: wasm-pack build crates/ithmb-wasm/
-
-  doc_check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: rust-docs
-          cache: true
-          cache-key: "doc-${{ hashFiles('rust-toolchain.toml') }}"
-      - name: cargo doc
-        env:
-          RUSTDOCFLAGS: "-D warnings"
-        run: cargo doc --no-deps --workspace
-
-  typos:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - name: typos-cli check
-        shell: bash
-        run: |
-          cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
-          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
-          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
-
-  format_check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - name: cargo fmt --check
-        run: cargo fmt --check --all
-  cargo_audit:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          cache: true
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
-      - name: Run cargo audit
-        run: cargo audit
