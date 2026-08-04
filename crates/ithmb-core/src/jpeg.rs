@@ -12,6 +12,13 @@ use log::debug;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
 
+/// Maximum decoded pixel-buffer budget for a single JPEG, in RGB bytes.
+/// ~256 MiB allows roughly 9450×9450 px — far beyond any real ithmb
+/// thumbnail — while bounding hostile progressive-JPEG allocations
+/// (CWE-400: a 166-byte SOF2-65535×65535 stream once triggered an ~8 GiB
+/// allocation that aborted the process).
+const MAX_JPEG_PIXEL_BYTES: u64 = 256 * 1024 * 1024;
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -29,7 +36,12 @@ pub fn is_jpeg(src: &[u8]) -> bool {
 /// Returns [`DecodeError::BufferTooShort`] if the input is shorter than the
 /// SOI marker. Returns [`DecodeError::InvalidFormat`] if the input is not a
 /// valid JPEG stream. Returns [`DecodeError::Jpeg`] if the underlying JPEG
-/// decoder fails.
+/// decoder fails or the frame dimensions exceed the decode budget.
+///
+/// # Panics
+///
+/// Never in practice: the 256 MiB decode budget always fits a `usize` on
+/// every supported target (including 32-bit wasm).
 pub fn decode(src: &[u8], _profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
     #[cfg(feature = "logging")]
     debug!("jpeg::decode: len={}", src.len());
@@ -44,11 +56,35 @@ pub fn decode(src: &[u8], _profile: &Profile, canceled: &AtomicBool) -> Result<D
     }
 
     let mut decoder = jpeg_decoder::Decoder::new(Cursor::new(src));
-    let pixels = decoder.decode().map_err(|e| DecodeError::Jpeg(e.to_string()))?;
 
+    // Security: reject oversized frames BEFORE decoding (CWE-400). jpeg-decoder
+    // 0.3.2 allocates the progressive-JPEG coefficient buffer at the first SOS
+    // from the frame dimensions alone — a 166-byte SOF2-65535×65535 stream
+    // triggers an ~8 GiB allocation that aborts the process. read_info() parses
+    // only the frame header (SOF) with zero pixel allocations, so we can check
+    // dimensions first. set_max_dimensions does not exist in 0.3.2, and
+    // set_max_decoding_buffer_size is enforced only after the coefficient
+    // buffer exists — hence the explicit pre-check below.
+    decoder.read_info().map_err(|e| DecodeError::Jpeg(e.to_string()))?;
     let info = decoder
         .info()
         .ok_or_else(|| DecodeError::Jpeg("no JPEG metadata".into()))?;
+    let frame_w = u64::from(info.width);
+    let frame_h = u64::from(info.height);
+    // The budget on w×h×3 bounds both the RGB planes and the per-component
+    // coefficient buffers (~3×w×h for 4:4:4 sampling).
+    if frame_w.saturating_mul(frame_h).saturating_mul(3) > MAX_JPEG_PIXEL_BYTES {
+        return Err(DecodeError::Jpeg(format!(
+            "JPEG dimensions {}x{} exceed the {} byte decode budget",
+            info.width, info.height, MAX_JPEG_PIXEL_BYTES,
+        )));
+    }
+    // Belt-and-braces: cap the decoder's output buffer (enforced at EOI).
+    decoder.set_max_decoding_buffer_size(
+        usize::try_from(MAX_JPEG_PIXEL_BYTES).expect("256 MiB JPEG budget always fits usize"),
+    );
+
+    let pixels = decoder.decode().map_err(|e| DecodeError::Jpeg(e.to_string()))?;
 
     let w = u32::from(info.width);
     let h = u32::from(info.height);
@@ -400,6 +436,62 @@ mod tests {
         }
         // Data length should be width * height * 4.
         assert_eq!(img.data.len(), (img.width * img.height * 4) as usize);
+    }
+
+    /// Builds a minimal progressive JPEG (`SOF2`) declaring 65535×65535 — the
+    /// `CWE-400` regression fixture. `jpeg-decoder` 0.3.2 allocated an ~8 GiB
+    /// coefficient buffer from these headers alone (`SIGABRT`) before the
+    /// `read_info` pre-check existed. Mirrors the byte-identical 193-byte
+    /// artifact verified by the security-research `PoC` engineers.
+    fn huge_progressive_jpeg() -> Vec<u8> {
+        fn segment(marker: u8, payload: &[u8]) -> Vec<u8> {
+            let mut out = Vec::with_capacity(payload.len() + 4);
+            out.extend_from_slice(&[0xFF, marker]);
+            let seg_len = u16::try_from(payload.len() + 2).expect("test segment fits u16");
+            out.extend_from_slice(&seg_len.to_be_bytes());
+            out.extend_from_slice(payload);
+            out
+        }
+        // DQT: precision 0, tables 0 and 1, all elements nonzero.
+        let mut dqt = vec![0x00];
+        dqt.extend_from_slice(&[0x01; 64]);
+        dqt.push(0x01);
+        dqt.extend_from_slice(&[0x01; 64]);
+        let dqt = segment(0xDB, &dqt);
+        // SOF2 (progressive): prec=8, H=65535, W=65535, 3 components.
+        let sof2 = segment(
+            0xC2,
+            &[8, 0xFF, 0xFF, 0xFF, 0xFF, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1],
+        );
+        // DHT: one DC table (class 0, index 1), one symbol.
+        let mut huff = vec![0x01, 0x01];
+        huff.extend_from_slice(&[0x00; 15]);
+        huff.push(0x00);
+        let huff = segment(0xC4, &huff);
+        // SOS: DC-only progressive first scan.
+        let sos = segment(0xDA, &[3, 1, 0x10, 2, 0x10, 3, 0x10, 0, 0, 0]);
+        let mut jpeg = vec![0xFF, 0xD8];
+        jpeg.extend_from_slice(&dqt);
+        jpeg.extend_from_slice(&sof2);
+        jpeg.extend_from_slice(&huff);
+        jpeg.extend_from_slice(&sos);
+        jpeg.extend_from_slice(&[0xFF, 0xD9]);
+        jpeg
+    }
+
+    #[test]
+    fn decode_rejects_oversized_progressive_jpeg() {
+        // The read_info pre-check must reject the frame BEFORE decode() can
+        // allocate the ~8 GiB progressive coefficient buffer. Regression for
+        // CWE-400 (SIGABRT on a 166-byte SOF2-65535×65535 stream).
+        let profile = Profile::default();
+        let jpeg = huge_progressive_jpeg();
+        assert_eq!(jpeg.len(), 193, "fixture drifted from the verified artifact");
+        let result = decode(&jpeg, &profile, &AtomicBool::new(false));
+        assert!(
+            matches!(result, Err(DecodeError::Jpeg(ref msg)) if msg.contains("exceed")),
+            "expected dimension-budget rejection, got {result:?}",
+        );
     }
 
     #[test]
