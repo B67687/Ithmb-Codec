@@ -1,0 +1,100 @@
+# pr-checks.yml — FAST checks on every PR and push to main.
+# Cheap jobs only (fmt, clippy, typos, links, deny, audit, doc) for quick
+# feedback. The EXPENSIVE suite (3-OS matrix, fuzz, benchmarks, wasm,
+# C-API) runs only on push to main — see ci-full.yml.
+name: pr-checks
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+permissions: { contents: read }
+
+jobs:
+  format_check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo fmt --check
+        run: cargo fmt --check --all
+
+  verify_clippy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+          cache: true
+          cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+  typos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: typos-cli check
+        shell: bash
+        run: |
+          cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
+          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+
+  check_links:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' --exclude 'forums.whirlpool.net.au' --exclude 'github.com/itsmichaelwest/classick' README.md docs/
+          fail: true
+
+  verify_deny:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+          cache-key: "deny-${{ hashFiles('deny.toml') }}"
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked --version 0.20.2
+      - name: cargo deny check
+        run: cargo deny check
+
+  cargo_audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          cache: true
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Run cargo audit
+        run: cargo audit
+
+  doc_check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rust-docs
+          cache: true
+          cache-key: "doc-${{ hashFiles('rust-toolchain.toml') }}"
+      - name: cargo doc
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --no-deps --workspace
