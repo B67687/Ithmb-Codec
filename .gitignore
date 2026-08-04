@@ -40,3 +40,7 @@ target/
 mcp/
 .ruff_cache/
 *.bak
+
+# Core dumps (Linux: core.<pid>)
+core.[0-9]*
+*.core
