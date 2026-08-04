@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.1] - 2026-08-04
+
+### Security
+
+- **Cap embedded-JPEG dimensions before decode (CWE-400)**: `jpeg.rs` decoded untrusted JPEGs with no size limits. `jpeg-decoder` 0.3.2 allocates the progressive-JPEG coefficient buffer at the first SOS from the frame dimensions alone — *before* its only size-limit check — so a 166-byte SOF2-65535×65535 stream triggered an ~8 GiB allocation and SIGABRT in the CLI/python bindings (and a heap overflow in C consumers, whose buffers are sized from the profile). `set_max_decoding_buffer_size` alone does not cover the coefficient buffer, and `set_max_dimensions` does not exist in 0.3.2, so the fix is a `read_info()` pre-check (parses SOF, zero pixel allocations) rejecting frames over a 256 MiB w·h·3 budget, plus the buffer limit as belt-and-braces. Regression test ships a 193-byte progressive-JPEG fixture asserting an `Err` with zero allocation.
+
 ## [1.10.0] - 2026-08-02
 
 ### Added
