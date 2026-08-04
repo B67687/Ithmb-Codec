@@ -16,8 +16,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           target: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
           cache: true
@@ -46,8 +46,8 @@ jobs:
     continue-on-error: true
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           cache: true
           cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}"
@@ -59,7 +59,7 @@ jobs:
           tools/check-benchmark-regression.sh
       - name: Upload CI benchmark data
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ci-benchmark-data
           path: /tmp/ci-benchmark-output.txt
@@ -69,13 +69,13 @@ jobs:
     needs: [build]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           cache: true
           cache-key: "fuzz-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('fuzz/Cargo.toml') }}"
       - name: Install cargo-fuzz
-        run: cargo install cargo-fuzz --debug 2>&1 | tail -3
+        run: cargo install cargo-fuzz --debug --locked --version 0.13.2 2>&1 | tail -3
       - name: Fuzz decode_ithmb
         run: cargo fuzz run fuzz_decode_ithmb -- -max_total_time=30 2>&1 | tail -5
         working-directory: ./fuzz
@@ -91,8 +91,8 @@ jobs:
     needs: [build]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           cache: true
           cache-key: "c-api-${{ hashFiles('rust-toolchain.toml') }}"
@@ -108,8 +108,8 @@ jobs:
     needs: [build]
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           target: wasm32-unknown-unknown
           cache: true
