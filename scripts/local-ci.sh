@@ -47,12 +47,41 @@ fi
 run cargo build -p ithmb-core --features c
 run cargo test -p ithmb-core --features c --test c_api_test
 
+# Typos (pinned like CI)
+if command -v typos >/dev/null 2>&1; then
+  run typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+else
+  echo "--- typos not installed; skipping (install: cargo install typos-cli --locked --version 1.42.3) ---"
+fi
+
+# Rustdoc -D warnings (matches pr-checks doc_check)
+run env RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
+
+# CI pin enforcement (matches pr-checks check_ci_pins)
+run bash scripts/check-ci-pins.sh
+
+# Secrets scan (matches pr-checks secrets_scan)
+if command -v gitleaks >/dev/null 2>&1; then
+  run gitleaks detect --source .
+else
+  echo "--- gitleaks not installed; skipping (see https://github.com/gitleaks/gitleaks) ---"
+fi
+
+# Dependency updates — dev-first alternative to dependabot: run this, then
+# commit upgrades on dev and ship them like any other change.
+if command -v cargo-outdated >/dev/null 2>&1; then
+  echo "--- dependency updates (cargo-outdated, informational) ---"
+  cargo outdated -R 2>/dev/null | tail -n +2 | head -20 || true
+else
+  echo "--- cargo-outdated not installed; skipping (install: cargo install cargo-outdated) ---"
+fi
+
 # Fuzz is slow (minutes) — only run when explicitly requested.
 if [ "${1:-}" = "--fuzz" ]; then
-  echo "--- fuzz: bounded runs (15s per target) ---"
-  (cd fuzz && cargo +nightly fuzz run fuzz_decode_ithmb -- -max_total_time=15 -print_final_stats=1 2>/dev/null | grep -E 'Done|crash') || fail=1
-  (cd fuzz && cargo +nightly fuzz run fuzz_open_ithmb -- -max_total_time=15 -print_final_stats=1 2>/dev/null | grep -E 'Done|crash') || fail=1
-  (cd fuzz && cargo +nightly fuzz run fuzz_encode_roundtrip -- -max_total_time=15 -print_final_stats=1 2>/dev/null | grep -E 'Done|crash') || fail=1
+  echo "--- fuzz: bounded runs (15s per target; pinned nightly via fuzz/rust-toolchain.toml) ---"
+  (cd fuzz && cargo fuzz run fuzz_decode_ithmb -- -max_total_time=15 -print_final_stats=1 2>/dev/null | grep -E 'Done|crash') || fail=1
+  (cd fuzz && cargo fuzz run fuzz_open_ithmb -- -max_total_time=15 -print_final_stats=1 2>/dev/null | grep -E 'Done|crash') || fail=1
+  (cd fuzz && cargo fuzz run fuzz_encode_roundtrip -- -max_total_time=15 -print_final_stats=1 2>/dev/null | grep -E 'Done|crash') || fail=1
 else
   echo "--- fuzz skipped (run ./scripts/local-ci.sh --fuzz to include) ---"
 fi
