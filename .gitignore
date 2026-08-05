@@ -44,3 +44,5 @@ mcp/
 # Core dumps (Linux: core.<pid>)
 core.[0-9]*
 *.core
+
+!typos.toml
