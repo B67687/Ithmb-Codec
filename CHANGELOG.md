@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.4] - 2026-08-05
+
+### CI / Tooling
+
+- Dropped dependabot (would open PRs directly on the public repo, bypassing dev-first) — dependency upgrades are now a **local check** (`cargo-outdated` in `local-ci.sh`); commit upgrades on dev and ship them like any other change. Tree parity between dev and public is restored.
+- `local-ci.sh` completed to a superset of the Linux-runnable checks: added typos, rustdoc `-D warnings`, gitleaks, `check-ci-pins.sh`, and the dependency-update check; fuzz now honors the pinned nightly (`fuzz/rust-toolchain.toml`).
+
 ## [1.10.3] - 2026-08-04
 
 ### CI

@@ -128,7 +128,7 @@ cp pkg/ithmb_wasm_bg.wasm ../../../Ithmb-Codec-Web/ithmb-decoder/ithmb_wasm_bg.w
 - **CWE-400 JPEG cap** (`jpeg.rs`): `read_info()` pre-check rejects frames over a 256 MiB w·h·3 budget before decode — `set_max_decoding_buffer_size` alone does NOT cover the progressive coefficient buffer, and `set_max_dimensions` doesn't exist in jpeg-decoder 0.3.2. Regression test: 193-byte SOF2-65535×65535 fixture.
 - **CWE-787 C-API guard** (`c_api.rs`): `ithmb_decode` rejects undersized caller buffers (area-based, so EXIF rotation doesn't false-positive). Guard test in `test_ithmb.c`.
 - **No attacker-reachable panics** — zero `unwrap()`/`panic!` outside tests; unsafe confined to SIMD on validated slices.
-- `SECURITY.md` + gitleaks scan in pr-checks; `cargo-audit` + `cargo-deny` gated in pr-checks; `dependabot.yml` opens dep PRs.
+- `SECURITY.md` + gitleaks scan in pr-checks; `cargo-audit` + `cargo-deny` gated in pr-checks. Dependency upgrades are a LOCAL check (`cargo-outdated` in local-ci.sh) — commit upgrades on dev and ship them dev-first, so the public tree always mirrors dev.
 - Secrets history scan: clean; no `${{ secrets.* }}` values ever committed.
 
 ## Building
