@@ -25,7 +25,7 @@ fi
 # caught real regressions (version_flag) that --lib alone misses.
 if git diff --cached --name-only --diff-filter=ACM -- '*.rs' | head -1 | grep -q .; then
     echo "➳ cargo test --workspace --tests ..."
-    cargo test --workspace --tests 2>/dev/null
+    cargo test --workspace --tests
     echo "✓ cargo test passed"
 else
     echo "✓ cargo test (skipped — no .rs files staged)"

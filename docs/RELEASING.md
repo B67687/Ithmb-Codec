@@ -1,5 +1,7 @@
 # Releasing
 
+**Canonical standard: `docs/standards/RELEASE_WORKFLOW.md`** — this file is the release checklist; the standard is the source of truth for the dev/public ritual.
+
 How to ship a new version of Ithmb-Codec. The dev/public dual-repo ritual lives in `AGENTS.md` — this file is the release-specific checklist.
 
 ## Prerequisites (every release)

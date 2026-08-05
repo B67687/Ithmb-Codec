@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.5] - 2026-08-05
+
+### Process
+
+- **Canonical release-workflow standard** (`docs/standards/RELEASE_WORKFLOW.md`): the dev/public dual-repo ritual (dev-first → thematic squash → tree-verify → fast-forward public → tag) was scattered across four docs with inconsistent wording; it is now defined once and referenced from AGENTS.md, RELEASING.md, and the web repo's docs.
+- Removed the dead `scripts/check-baseline.py` (divergent benchmark comparator — the CI uses `tools/check-benchmark-regression.sh`).
+
+### CI
+
+- `release.yml` now runs `clippy -D warnings` + `cargo-audit` before building artifacts (the release gate was the least-verified artifact in the system).
+- Pre-commit no longer swallows test stderr (`2>/dev/null` removed — build errors are visible).
+
 ## [1.10.4] - 2026-08-05
 
 ### CI / Tooling
