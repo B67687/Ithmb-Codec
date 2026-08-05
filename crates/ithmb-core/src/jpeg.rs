@@ -12,11 +12,12 @@ use log::debug;
 use std::io::Cursor;
 use std::sync::atomic::AtomicBool;
 
-/// Maximum decoded pixel-buffer budget for a single JPEG, in RGB bytes.
-/// ~256 MiB allows roughly 9450×9450 px — far beyond any real ithmb
-/// thumbnail — while bounding hostile progressive-JPEG allocations
-/// (CWE-400: a 166-byte SOF2-65535×65535 stream once triggered an ~8 GiB
-/// allocation that aborted the process).
+/// Maximum decoded pixel-buffer budget for a single JPEG, in the worst-case
+/// bytes-per-pixel factor (w×h×11: RGB out + BGRA conversion + rotation copy).
+/// ~256 MiB allows roughly 4940×4940 px — far beyond any real ithmb
+/// thumbnail (≤ 2048 px) — while bounding hostile progressive-JPEG
+/// allocations (CWE-400: a 166-byte SOF2-65535×65535 stream once triggered
+/// an ~8 GiB allocation that aborted the process).
 const MAX_JPEG_PIXEL_BYTES: u64 = 256 * 1024 * 1024;
 
 // ---------------------------------------------------------------------------
@@ -71,9 +72,13 @@ pub fn decode(src: &[u8], _profile: &Profile, canceled: &AtomicBool) -> Result<D
         .ok_or_else(|| DecodeError::Jpeg("no JPEG metadata".into()))?;
     let frame_w = u64::from(info.width);
     let frame_h = u64::from(info.height);
-    // The budget on w×h×3 bounds both the RGB planes and the per-component
-    // coefficient buffers (~3×w×h for 4:4:4 sampling).
-    if frame_w.saturating_mul(frame_h).saturating_mul(3) > MAX_JPEG_PIXEL_BYTES {
+    // The budget is on w×h×11 — the measured worst-case bytes-per-pixel for
+    // a decoded JPEG (3 RGB out + 4 BGRA conversion + 4 EXIF-rotation copy;
+    // the old w×h×3 check let a ~9450×9450 frame transiently allocate ~944
+    // MiB). This bounds the peak (coeff ≤ budget + RGB ≤ budget + BGRA +
+    // rotation copy) at ~256 MiB while still admitting every real ithmb
+    // thumbnail (≤ 2048 px).
+    if frame_w.saturating_mul(frame_h).saturating_mul(11) > MAX_JPEG_PIXEL_BYTES {
         return Err(DecodeError::Jpeg(format!(
             "JPEG dimensions {}x{} exceed the {} byte decode budget",
             info.width, info.height, MAX_JPEG_PIXEL_BYTES,

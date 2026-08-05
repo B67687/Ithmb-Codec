@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.6] - 2026-08-05
+
+### Security
+
+- **PhotoDB parser infinite-loop guard (CWE-835)**: a crafted container with an `mhii` chunk declaring `total_len == 0` made the walker never advance (`child_end == pos`) — `open_ithmb` hung at 100% CPU (24-byte file, reachable via CLI + python bindings). The walk now bails out on zero/negative-size containers. Found + fix-verified by the final security-research pass (independent PoCs).
+- **JPEG budget accounts for full output path (CWE-400 residual)**: the pre-decode check now bounds `w×h×11` (RGB out + BGRA conversion + EXIF-rotation copy) instead of `w×h×3` — the old constant let a ~9450×9450 frame transiently allocate ~944 MiB. Peak is now ≤ ~256 MiB; every real ithmb thumbnail (≤ 2048 px) still decodes.
+
+### CI
+
+- `release.yml`: `contents: write` scoped to the release job only (build/test/wheel jobs hold read); `upload-artifact if-no-files-found: error` on the CLI binaries (a missing artifact can no longer ship a release without that platform binary).
+- Removed a duplicate `timeout-minutes` key in `ci-full.yml`.
+
 ## [1.10.5] - 2026-08-05
 
 ### Process

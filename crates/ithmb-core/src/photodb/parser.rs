@@ -254,6 +254,11 @@ fn walk_entries(
                 let total_len = read_u32(data, pos + 8, little_endian) as usize;
                 let child_start = pos + MhiiHeader::SIZE;
                 let child_end = pos.saturating_add(total_len).min(data.len());
+                if child_end <= pos {
+                    // Zero/negative-size container: no children and no
+                    // advancement possible — bail out of the walk (C1).
+                    break;
+                }
                 if child_start < child_end {
                     walk_entries(data, child_start, child_end, little_endian, entries, depth + 1)?;
                 }
