@@ -100,6 +100,8 @@ Rules:
 
 ## Dev / Public Dual-Repo Workflow (CRITICAL)
 
+**Canonical standard: `docs/standards/RELEASE_WORKFLOW.md`** — this section is a summary; the standard is the source of truth.
+
 ```
 origin  → https://github.com/B67687/Ithmb-Codec-Dev   (PRIVATE — editing repo, CI billing-blocked)
 public  → https://github.com/B67687/Ithmb-Codec       (PUBLIC — shipped repo, FREE CI)
