@@ -145,7 +145,7 @@ maturin develop --release -m crates/ithmb-python/Cargo.toml  # Python bindings
 
 ## Release Process
 
-Follow `docs/RELEASING.md`. In short: bump `Cargo.toml` (workspace) + CHANGELOG → dev commit → local-ci → ship to public → create `vX.Y.Z` tag on the PUBLIC repo (tag-gates `release.yml`). **Do not release without a tag** — versions 1.9.5-1.10.2 shipped untagged once; tags are the traceability.
+Follow `docs/RELEASING.md`. In short: bump `Cargo.toml` (workspace) + CHANGELOG → dev commit → local-ci → ship to public → create `vX.Y.Z` tag on the PUBLIC repo (tag-gates `release.yml`). **Do not release without a tag** — early 1.9.x versions shipped untagged once; tags are the traceability.
 
 ## Key Decisions
 
