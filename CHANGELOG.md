@@ -3,9 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
-and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [1.10.6] - 2026-08-05
+## [1.9.5] / [1.9.4] - 2026-08-06
+
+### Process
+
+- **Renumbered release**: ithmb-core publishes as **1.9.5**, ithmb-cli as **1.9.4**, continuing the crates.io 1.9.x series (crates.io last published 1.9.4 / 1.9.3). This section consolidates the former 1.10.6 entry; the 1.10.0–1.10.5 entries remain below as history. 1.10.6 was republished under the 1.9.x continuation and yanked, so crates.io consumers see only the 1.9.x numbers. Also supersedes the local-only 1.9.5 entry of 2026-08-01 (never published).
 
 ### Security
 

@@ -1,6 +1,6 @@
 [package]
 name = "ithmb-cli"
-version.workspace = true
+version = "1.9.4"
 readme = "README.md"
 edition.workspace = true
 license.workspace = true
