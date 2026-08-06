@@ -43,7 +43,6 @@ jobs:
         shell: bash
         run: |
           cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
-          cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
           typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
 
   check_links:
@@ -54,7 +53,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
         with:
-          args: --max-retries 5 --timeout 30 --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude theiphonewiki.com --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' --exclude 'forums.whirlpool.net.au' --exclude 'github.com/itsmichaelwest/classick' README.md docs/
+          args: --max-retries 5 --timeout 30 --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude theiphonewiki.com --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' --exclude 'forums.whirlpool.net.au' --exclude 'github.com/itsmichaelwest/classick' --exclude shnatsel.medium.com README.md docs/
           fail: true
 
   verify_deny:
