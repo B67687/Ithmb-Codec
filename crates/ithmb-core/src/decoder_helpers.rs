@@ -9,7 +9,7 @@
 //! this mechanism to wire `DecodeConfig::trailing_padding_tolerance` through to
 //! `validate_dimensions` without changing the public decode function signatures in
 //! individual decoder modules. Internal call sites that hold a config explicitly
-//! should prefer [`validate_dimensions_with_tolerance`].
+//! should prefer `validate_dimensions_with_tolerance`.
 
 use crate::error::DecodeError;
 use crate::profile::Profile;
