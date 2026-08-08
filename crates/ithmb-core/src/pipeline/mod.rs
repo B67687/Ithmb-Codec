@@ -446,11 +446,10 @@ fn apply_crop_with(img: DecodedImage, crop: config::Crop) -> DecodedImage {
 ///
 /// Supports 0°, 90°, 180°, and 270° clockwise rotation. Other values are
 /// silently ignored.
-/// Applies the rotation specified by the profile.
-///
-/// Supports 0°, 90°, 180°, and 270° clockwise rotation. Other values are
-/// silently ignored.
 fn apply_rotation(img: DecodedImage, profile: &Profile) -> DecodedImage {
+    if profile.rotation % 360 == 0 {
+        return img;
+    }
     apply_rotation_with(img, profile.rotation)
 }
 
