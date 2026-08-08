@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-//! ithmb-gen — sample .ithmb file generator for all 7 pixel encoding formats.
+//! ithmb-gen — sample .ithmb file generator for the 5 profile-matched pixel encoding formats.
 
 use std::path::PathBuf;
 
@@ -16,8 +16,6 @@ enum Format {
     ReorderedRgb555,
     Uyvy,
     Ycbcr420,
-    Clcl,
-    Cl,
 }
 
 #[derive(Parser, Debug)]
@@ -114,8 +112,6 @@ fn encode(format: Format, bgra: &[u8], w: u32, h: u32) -> Vec<u8> {
         Format::ReorderedRgb555 => ithmb_core::enc::encode_reordered_rgb555(bgra, w_i32, h_i32, true),
         Format::Uyvy => ithmb_core::enc::encode_uyvy(bgra, w_i32, h_i32),
         Format::Ycbcr420 => ithmb_core::enc::encode_ycbcr420(bgra, w_i32, h_i32, false),
-        Format::Clcl => ithmb_core::enc::encode_clcl(bgra, w_i32, h_i32),
-        Format::Cl => ithmb_core::enc::encode_cl(bgra, w_i32, h_i32),
     }
 }
 
@@ -127,7 +123,7 @@ fn encode(format: Format, bgra: &[u8], w: u32, h: u32) -> Vec<u8> {
 fn format_default_dim(fmt: Format) -> (u32, u32) {
     match fmt {
         Format::Rgb565 => (320, 240),
-        Format::ReorderedRgb555 | Format::Clcl | Format::Cl => (256, 256),
+        Format::ReorderedRgb555 => (256, 256),
         Format::Uyvy | Format::Ycbcr420 => (720, 480),
         Format::Rgb555 => (320, 320),
     }
@@ -141,8 +137,6 @@ fn format_prefix(fmt: Format) -> i32 {
         Format::ReorderedRgb555 => 3001,
         Format::Uyvy => 1019,
         Format::Ycbcr420 => 1067,
-        Format::Clcl => 9001,
-        Format::Cl => 9002,
     }
 }
 
@@ -154,8 +148,6 @@ fn format_name(fmt: Format) -> &'static str {
         Format::ReorderedRgb555 => "Reordered RGB555",
         Format::Uyvy => "UYVY",
         Format::Ycbcr420 => "YCbCr 4:2:0",
-        Format::Clcl => "CLCL",
-        Format::Cl => "CL",
     }
 }
 
@@ -176,8 +168,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Format::ReorderedRgb555,
             Format::Uyvy,
             Format::Ycbcr420,
-            Format::Clcl,
-            Format::Cl,
         ] {
             let (w, h) = format_default_dim(fmt);
             let prefix = format_prefix(fmt);
