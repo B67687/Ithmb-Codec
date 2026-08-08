@@ -139,6 +139,7 @@ Closed the quality gap between the C# reference and Rust port through 11 dedicat
   | C# v1.9.0 | 2026-06 | Final C# release, repo archived |
   | Rust v1.9.0 | 2026-06 | Initial crates.io publish of ithmb-core |
   | Rust v1.9.1 | 2026-07 | Quality parity (3 waves, 11 tasks) |
+  | Rust v1.9.5 | 2026-08 | Security hardening (photodb infinite-loop guard + JPEG peak budget, CWE-835/400); renumbered from the deleted 1.10.x line; crates.io republish (core 1.9.5 / cli 1.9.4) + GitHub Release; wasm regenerated; web shipped as 1.4.16 |
 
 ---
 
