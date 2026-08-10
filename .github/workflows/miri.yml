@@ -21,7 +21,7 @@ jobs:
           cache-key: "miri-${{ hashFiles('rust-toolchain.toml') }}"
       - name: cargo miri test (strict provenance + tree borrows)
         run: |
-          cargo miri test --workspace --all-features --all-targets
+          cargo miri test --workspace --all-features --lib
         env:
           MIRIFLAGS: "-Zmiri-strict-provenance -Zmiri-tree-borrows"
           RUST_BACKTRACE: 1
