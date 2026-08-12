@@ -25,6 +25,8 @@ use ithmb_core::profile_parser::parse_profiles_json;
 use divan as _;
 use image as _;
 use jpeg_decoder as _;
+#[cfg(feature = "logging")]
+use log as _;
 #[cfg(feature = "cache")]
 use lru as _;
 use proptest as _;

@@ -33,6 +33,8 @@ use ithmb_core::pipeline::decode_with_profile;
 use ithmb_core::profile::{Encoding, Profile};
 use ithmb_core::{decode_ithmb, open_ithmb};
 use jpeg_decoder as _;
+#[cfg(feature = "logging")]
+use log as _;
 #[cfg(feature = "cache")]
 use lru as _;
 use proptest as _;

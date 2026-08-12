@@ -7,6 +7,8 @@
 
 use divan as _;
 use jpeg_decoder as _;
+#[cfg(feature = "logging")]
+use log as _;
 use proptest as _;
 use thiserror as _;
 

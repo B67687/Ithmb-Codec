@@ -25,6 +25,8 @@ use ithmb_core::enc::*;
 use ithmb_core::pipeline::decode_with_profile;
 use ithmb_core::profile::{Encoding, Profile};
 use jpeg_decoder as _;
+#[cfg(feature = "logging")]
+use log as _;
 #[cfg(feature = "cache")]
 use lru as _;
 use proptest as _;
