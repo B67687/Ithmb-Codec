@@ -82,8 +82,16 @@ pub fn build_ithmb_file(bgra: &[u8], w: i32, h: i32, profile: &Profile) -> Vec<u
         bgra.to_vec()
     };
 
-    // 2. Encode (swap dimensions for 90°/270° rotation)
-    let (ew, eh) = if profile.rotation % 180 == 90 { (h, w) } else { (w, h) };
+    // 2. Encode. C# semantics: `swaps_dimensions` applies first, then the
+    // rotation-based swap (no built-in profile has both, so the combined case
+    // is parity-only).
+    let (mut ew, mut eh) = (w, h);
+    if profile.swaps_dimensions {
+        std::mem::swap(&mut ew, &mut eh);
+    }
+    if profile.rotation % 180 == 90 {
+        std::mem::swap(&mut ew, &mut eh);
+    }
     let encoded = encode_bgra(&rotated, ew, eh, profile);
 
     // 3. Prepend the 4-byte prefix (big-endian i32)
@@ -130,7 +138,10 @@ pub fn encode_bgra(src: &[u8], w: i32, h: i32, profile: &Profile) -> Vec<u8> {
         match profile.encoding {
             Encoding::Rgb565 => encode_rgb565(src, w, h, !profile.little_endian),
             Encoding::Rgb555 => encode_rgb555(src, w, h, !profile.little_endian, profile.swap_rgb_channels),
-            Encoding::ReorderedRgb555 => encode_reordered_rgb555(src, w, h, true), // always big-endian
+            // C# passes `!LittleEndian`; the decoder reads `profile.little_endian`,
+            // so honoring it makes encode→decode roundtrip byte-exact instead
+            // of byte-swapped (U9).
+            Encoding::ReorderedRgb555 => encode_reordered_rgb555(src, w, h, !profile.little_endian),
             Encoding::Yuv422 => encode_uyvy(src, w, h),
             Encoding::Ycbcr420 => encode_ycbcr420(src, w, h, profile.swap_chroma_planes),
             Encoding::Jpeg => {

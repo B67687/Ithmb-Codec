@@ -12,7 +12,7 @@ use crate::error::{DecodeError, DecodedImage};
 use crate::photodb::parser::{can_open_photodb, try_parse_photodb};
 use crate::pipeline::profile_loader::{fallback_jpeg_profile, get_db};
 use crate::pipeline::{decode_ithmb_with_config, decode_with_profile_with_config};
-use crate::profile::{Encoding, Profile};
+use crate::profile::Encoding;
 #[cfg(feature = "logging")]
 use log::{debug, info};
 use std::sync::atomic::AtomicBool;
@@ -98,22 +98,15 @@ pub fn open_ithmb_with_config(
                 continue;
             }
 
-            if let Some(profile) = db.get(entry.format_id) {
+            if let Some(mut profile) = db.resolve(entry.format_id, entry.data.len()) {
                 #[cfg(feature = "logging")]
                 debug!("open_ithmb: profile matched: prefix={:08X}", profile.prefix);
                 // Override dimensions from MHNI chunk metadata when the profile
                 // specifies use_mhni_dimensions.
-                let adjusted;
-                let profile = if profile.use_mhni_dimensions {
-                    adjusted = Profile {
-                        width: entry.width,
-                        height: entry.height,
-                        ..profile.clone()
-                    };
-                    &adjusted
-                } else {
-                    profile
-                };
+                if profile.use_mhni_dimensions {
+                    profile.width = entry.width;
+                    profile.height = entry.height;
+                }
 
                 // Known profile - construct the buffer with prefix if needed.
                 let prefixed = if profile.encoding == Encoding::Jpeg {
@@ -126,7 +119,7 @@ pub fn open_ithmb_with_config(
                     with_prefix
                 };
 
-                let img = decode_with_profile_with_config(&prefixed, profile, canceled, config)?;
+                let img = decode_with_profile_with_config(&prefixed, &profile, canceled, config)?;
                 results.push(img);
             } else if entry.data.len() >= 2 && entry.data[0] == 0xFF && entry.data[1] == 0xD8 {
                 // No profile but data is a JPEG stream - use a fallback profile.

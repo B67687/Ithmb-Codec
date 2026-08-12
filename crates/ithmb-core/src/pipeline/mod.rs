@@ -189,8 +189,8 @@ fn decode_ithmb_inner(
 
     let profile = if is_jpeg_stream {
         db.get(prefix).cloned().unwrap_or_else(fallback_jpeg_profile)
-    } else if let Some(p) = db.get(prefix) {
-        p.clone()
+    } else if let Some(p) = db.resolve(prefix, src.len() - 4) {
+        p
     } else {
         // Tier 2: data-size heuristic.
         let data_len = src.len() - 4;
