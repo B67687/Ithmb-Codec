@@ -9,6 +9,10 @@
 use crate::error::DecodeError;
 use crate::profile::{Encoding, Profile};
 
+/// Maximum number of profile objects accepted in a single `profiles.json`
+/// document, matching the C# reference parser (`JsonParser.cs:28`).
+const MAX_PROFILES: usize = 100;
+
 /// Parse a JSON array of profile objects from the given string input.
 ///
 /// # Errors
@@ -223,9 +227,7 @@ impl Parser<'_> {
                 self.pos += 1;
                 return Ok(());
             }
-            if self.peek() != Some(b'[') {
-                self.skip_value()?;
-            }
+            self.skip_value()?;
             self.skip_ws();
             if self.peek() == Some(b',') {
                 self.pos += 1;
@@ -262,6 +264,11 @@ impl Parser<'_> {
             if self.peek() == Some(b']') {
                 self.pos += 1;
                 return Ok(profiles);
+            }
+            if profiles.len() >= MAX_PROFILES {
+                return Err(DecodeError::Profile(format!(
+                    "profile array exceeds the maximum of {MAX_PROFILES} objects"
+                )));
             }
             if !profiles.is_empty() {
                 self.expect(b',')?;
@@ -437,5 +444,49 @@ mod tests {
     fn parse_error_on_bad_json() {
         let result = parse_profiles_json("not json at all");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn skip_value_does_not_hang_on_unclosed_nested_brackets() {
+        // Regression for a DoS: `[{[[` and `[{ [\r` used to spin forever in
+        // `skip_array` because the `peek() != Some(b'[')` guard suppressed the
+        // `skip_value` branch that consumes input for nested arrays, so the loop
+        // made zero progress. Each input must terminate with an error (or a
+        // clean skip) — never hang.
+        for input in ["[{[[", "[{ [\r", "[[", "[[[", "[{\r[", "[ \r[[", "["] {
+            assert!(
+                parse_profiles_json(input).is_err(),
+                "expected a parse error for {input:?} instead of a hang",
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_more_than_100_profile_objects() {
+        let json = format!(
+            "[{}]",
+            (0..101)
+                .map(|i| format!(r#"{{"prefix":{i}}}"#))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
+        let err = parse_profiles_json(&json).unwrap_err();
+        assert!(
+            err.to_string().contains("100"),
+            "error should mention the 100-object cap, got: {err}",
+        );
+    }
+
+    #[test]
+    fn accepts_exactly_100_profile_objects() {
+        let json = format!(
+            "[{}]",
+            (0..100)
+                .map(|i| format!(r#"{{"prefix":{i}}}"#))
+                .collect::<Vec<_>>()
+                .join(","),
+        );
+        let profiles = parse_profiles_json(&json).unwrap();
+        assert_eq!(profiles.len(), 100);
     }
 }
