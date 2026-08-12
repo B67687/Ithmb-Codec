@@ -32,8 +32,8 @@ impl ProfileDb {
     ///
     /// This is the canonical source of the 53 active format profiles derived
     /// from the C# reference implementation. The 54th JSON entry (prefix 1044)
-    /// is parsed but filtered out via [`DISABLED_PREFIXES`] — it mirrors the C#
-    /// reference where 1044 stays commented out.
+    /// is parsed but filtered out via the `DISABLED_PREFIXES` constant — it
+    /// mirrors the C# reference where 1044 stays commented out.
     ///
     /// # Errors
     /// Returns `DecodeError::Profile` if the embedded JSON cannot be parsed.
