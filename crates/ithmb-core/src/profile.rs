@@ -187,3 +187,145 @@ pub fn built_in_profiles() -> Vec<Profile> {
         Err(_) => vec![],
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encoding_to_display_string_for_each_variant() {
+        assert_eq!(Encoding::Rgb565.to_display_string(), "RGB565");
+        assert_eq!(Encoding::Rgb555.to_display_string(), "RGB555");
+        assert_eq!(Encoding::ReorderedRgb555.to_display_string(), "Reordered RGB555");
+        assert_eq!(Encoding::Yuv422.to_display_string(), "UYVY 4:2:2");
+        assert_eq!(Encoding::Ycbcr420.to_display_string(), "YCbCr 4:2:0");
+        assert_eq!(Encoding::Jpeg.to_display_string(), "JPEG passthrough");
+    }
+
+    #[test]
+    fn encoding_display_impl_matches_display_string() {
+        assert_eq!(format!("{}", Encoding::Rgb565), "RGB565");
+        assert_eq!(format!("{}", Encoding::Ycbcr420), "YCbCr 4:2:0");
+        assert_eq!(format!("{}", Encoding::Jpeg), "JPEG passthrough");
+    }
+
+    #[test]
+    fn default_profile_uses_documented_defaults() {
+        let p = Profile::default();
+        assert_eq!(p.prefix, 0);
+        assert_eq!(p.width, 0);
+        assert_eq!(p.height, 0);
+        assert_eq!(p.encoding, Encoding::Rgb565);
+        assert_eq!(p.frame_byte_length, 0);
+        assert!(!p.swaps_dimensions);
+        assert!(p.little_endian, "default pixel byte order is little-endian");
+        assert!(!p.is_padded);
+        assert!(!p.is_interlaced);
+        assert!(!p.clcl_chroma);
+        assert!(!p.swap_chroma_planes);
+        assert!(!p.cl_chroma);
+        assert!(!p.swap_rgb_channels);
+        assert_eq!(p.rotation, 0);
+        assert_eq!(p.crop_x, 0);
+        assert_eq!(p.crop_y, 0);
+        assert_eq!(p.crop_width, 0);
+        assert_eq!(p.crop_height, 0);
+        assert_eq!(p.slot_size, 0);
+        assert!(!p.use_mhni_dimensions);
+        assert_eq!(p.fallback_encodings, None);
+    }
+
+    #[test]
+    fn frame_size_unpadded_ignores_slot() {
+        let p = Profile {
+            frame_byte_length: 42,
+            is_padded: false,
+            slot_size: 64,
+            ..Default::default()
+        };
+        assert_eq!(p.frame_size(), 42);
+    }
+
+    #[test]
+    fn frame_size_padded_with_positive_slot_returns_slot() {
+        let p = Profile {
+            frame_byte_length: 42,
+            is_padded: true,
+            slot_size: 64,
+            ..Default::default()
+        };
+        assert_eq!(p.frame_size(), 64);
+    }
+
+    #[test]
+    fn frame_size_padded_with_zero_slot_falls_back_to_frame_length() {
+        let p = Profile {
+            frame_byte_length: 42,
+            is_padded: true,
+            slot_size: 0,
+            ..Default::default()
+        };
+        assert_eq!(p.frame_size(), 42);
+    }
+
+    #[test]
+    fn frame_size_padded_with_negative_slot_falls_back_to_frame_length() {
+        let p = Profile {
+            frame_byte_length: 42,
+            is_padded: true,
+            slot_size: -5,
+            ..Default::default()
+        };
+        assert_eq!(p.frame_size(), 42);
+    }
+
+    #[test]
+    fn display_dimensions_swap_when_requested() {
+        let swapped = Profile {
+            width: 10,
+            height: 20,
+            swaps_dimensions: true,
+            ..Default::default()
+        };
+        assert_eq!(swapped.display_width(), 20);
+        assert_eq!(swapped.display_height(), 10);
+        let normal = Profile {
+            width: 10,
+            height: 20,
+            swaps_dimensions: false,
+            ..Default::default()
+        };
+        assert_eq!(normal.display_width(), 10);
+        assert_eq!(normal.display_height(), 20);
+    }
+
+    #[test]
+    fn display_dimensions_handle_negative_values() {
+        let p = Profile {
+            width: -3,
+            height: 7,
+            swaps_dimensions: true,
+            ..Default::default()
+        };
+        assert_eq!(p.display_width(), 7);
+        assert_eq!(p.display_height(), -3);
+    }
+
+    #[test]
+    fn built_in_profiles_contains_known_prefixes() {
+        let profiles = built_in_profiles();
+        assert!(!profiles.is_empty(), "built-in profile DB must not be empty");
+        assert!(
+            profiles.iter().any(|p| p.prefix == 1055),
+            "expected prefix 1055 (RGB565 iPod) in built-in profiles"
+        );
+        assert!(
+            profiles.iter().any(|p| p.prefix == 1061),
+            "expected prefix 1061 in built-in profiles"
+        );
+    }
+}

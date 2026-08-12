@@ -94,3 +94,95 @@ impl fmt::Display for DecodedImage {
         )
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::error::Error;
+
+    #[test]
+    fn decoded_image_display_reports_len_and_dims() {
+        let img = DecodedImage {
+            data: vec![1, 2, 3, 4],
+            width: 2,
+            height: 2,
+        };
+        assert_eq!(format!("{img}"), "DecodedImage { data: 4 bytes, width: 2, height: 2 }");
+    }
+
+    #[test]
+    fn decoded_image_display_empty() {
+        let img = DecodedImage {
+            data: vec![],
+            width: 0,
+            height: 0,
+        };
+        assert_eq!(format!("{img}"), "DecodedImage { data: 0 bytes, width: 0, height: 0 }");
+    }
+
+    #[test]
+    fn decode_error_display_string_variants() {
+        assert_eq!(DecodeError::Io("disk".into()).to_string(), "I/O error: disk");
+        assert_eq!(DecodeError::Jpeg("corrupt".into()).to_string(), "JPEG error: corrupt");
+        assert_eq!(
+            DecodeError::InvalidFormat("bad".into()).to_string(),
+            "Invalid format: bad"
+        );
+        assert_eq!(
+            DecodeError::Unsupported("unknown".into()).to_string(),
+            "Unsupported format: unknown"
+        );
+        assert_eq!(
+            DecodeError::Profile("no match".into()).to_string(),
+            "Profile error: no match"
+        );
+        assert_eq!(DecodeError::Canceled("user".into()).to_string(), "Canceled: user");
+    }
+
+    #[test]
+    fn decode_error_display_structured_variants() {
+        assert_eq!(
+            DecodeError::BufferTooShort {
+                expected: 280,
+                actual: 10
+            }
+            .to_string(),
+            "Buffer too short: expected 280 bytes, got 10"
+        );
+        assert_eq!(
+            DecodeError::FileTooLarge { size: 100, limit: 50 }.to_string(),
+            "File too large: 100 bytes exceeds limit of 50 bytes"
+        );
+    }
+
+    #[test]
+    fn decode_error_is_std_error_without_source_chain() {
+        // thiserror derives `std::error::Error`; no variant wraps a source error.
+        assert!(DecodeError::Io("x".into()).source().is_none());
+        assert!(DecodeError::Jpeg("x".into()).source().is_none());
+        assert!(DecodeError::InvalidFormat("x".into()).source().is_none());
+        assert!(DecodeError::Unsupported("x".into()).source().is_none());
+        assert!(
+            DecodeError::BufferTooShort { expected: 1, actual: 2 }
+                .source()
+                .is_none()
+        );
+        assert!(DecodeError::Profile("x".into()).source().is_none());
+        assert!(DecodeError::Canceled("x".into()).source().is_none());
+        assert!(DecodeError::FileTooLarge { size: 1, limit: 2 }.source().is_none());
+    }
+
+    #[test]
+    fn decoded_image_clone_and_eq() {
+        let a = DecodedImage {
+            data: vec![9],
+            width: 1,
+            height: 1,
+        };
+        assert_eq!(a.clone(), a);
+    }
+}

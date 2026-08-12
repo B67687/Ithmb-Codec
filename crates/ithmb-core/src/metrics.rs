@@ -219,3 +219,106 @@ impl DecodeMetrics {
         self.nanos(M_JPEG)
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 1 μs in nanoseconds.
+    const US: u64 = 1_000;
+
+    #[test]
+    fn encoding_to_idx_maps_each_variant_to_its_slot() {
+        assert_eq!(encoding_to_idx(Encoding::Rgb565), M_RGB565);
+        assert_eq!(encoding_to_idx(Encoding::Rgb555), M_RGB555);
+        assert_eq!(encoding_to_idx(Encoding::ReorderedRgb555), M_RGB555_REORDERED);
+        assert_eq!(encoding_to_idx(Encoding::Yuv422), M_UYVY);
+        assert_eq!(encoding_to_idx(Encoding::Ycbcr420), M_YCBCR420);
+        assert_eq!(encoding_to_idx(Encoding::Jpeg), M_JPEG);
+    }
+
+    #[test]
+    fn new_metrics_start_at_zero() {
+        let m = DecodeMetrics::new();
+        assert_eq!(m.snapshot(), [0; NUM_COUNTERS]);
+        assert_eq!(m.rgb565_nanos(), 0);
+        assert_eq!(m.rgb555_nanos(), 0);
+        assert_eq!(m.rgb555_reordered_nanos(), 0);
+        assert_eq!(m.uyvy_nanos(), 0);
+        assert_eq!(m.ycbcr420_nanos(), 0);
+        assert_eq!(m.clcl_nanos(), 0);
+        assert_eq!(m.cl_nanos(), 0);
+        assert_eq!(m.jpeg_nanos(), 0);
+        assert_eq!(m.nanos(M_TOTAL), 0);
+    }
+
+    #[test]
+    fn record_accumulates_format_specific_and_total_counters() {
+        let m = DecodeMetrics::new();
+        m.record(Encoding::Rgb565, Duration::from_micros(1));
+        m.record(Encoding::Rgb555, Duration::from_micros(2));
+        m.record(Encoding::ReorderedRgb555, Duration::from_micros(3));
+        m.record(Encoding::Yuv422, Duration::from_micros(4));
+        m.record(Encoding::Ycbcr420, Duration::from_micros(5));
+        m.record(Encoding::Jpeg, Duration::from_micros(6));
+
+        assert_eq!(m.rgb565_nanos(), US);
+        assert_eq!(m.rgb555_nanos(), 2 * US);
+        assert_eq!(m.rgb555_reordered_nanos(), 3 * US);
+        assert_eq!(m.uyvy_nanos(), 4 * US);
+        assert_eq!(m.ycbcr420_nanos(), 5 * US);
+        assert_eq!(m.jpeg_nanos(), 6 * US);
+        // The reserved CLCL/CL slots are never written by `record`.
+        assert_eq!(m.clcl_nanos(), 0);
+        assert_eq!(m.cl_nanos(), 0);
+        // The total counter is independently incremented for every record.
+        assert_eq!(m.nanos(M_TOTAL), 21 * US);
+        assert_eq!(
+            m.snapshot(),
+            [US, 2 * US, 3 * US, 4 * US, 5 * US, 0, 0, 6 * US, 21 * US]
+        );
+    }
+
+    #[test]
+    fn record_zero_duration_is_a_noop() {
+        let m = DecodeMetrics::new();
+        m.record(Encoding::Ycbcr420, Duration::ZERO);
+        assert_eq!(m.ycbcr420_nanos(), 0);
+        assert_eq!(m.nanos(M_TOTAL), 0);
+    }
+
+    #[test]
+    fn record_clamps_oversized_duration_to_u64_max() {
+        // `Duration::MAX` is ~5.8e38 ns — far beyond `u64::MAX`. The counter must
+        // saturate instead of overflowing or panicking.
+        let m = DecodeMetrics::new();
+        m.record(Encoding::Rgb565, Duration::MAX);
+        assert_eq!(m.rgb565_nanos(), u64::MAX);
+        assert_eq!(m.nanos(M_TOTAL), u64::MAX);
+    }
+
+    #[test]
+    fn reset_zeroes_all_counters() {
+        let m = DecodeMetrics::new();
+        m.record(Encoding::Rgb565, Duration::from_micros(7));
+        m.record(Encoding::Jpeg, Duration::from_micros(8));
+        m.reset();
+        assert_eq!(m.snapshot(), [0; NUM_COUNTERS]);
+        assert_eq!(m.rgb565_nanos(), 0);
+        assert_eq!(m.jpeg_nanos(), 0);
+        assert_eq!(m.nanos(M_TOTAL), 0);
+    }
+
+    #[test]
+    fn nanos_out_of_bounds_returns_zero() {
+        let m = DecodeMetrics::new();
+        m.record(Encoding::Rgb565, Duration::from_micros(1));
+        // The doc comment says this panics; the implementation returns 0.
+        assert_eq!(m.nanos(NUM_COUNTERS), 0);
+        assert_eq!(m.nanos(usize::MAX), 0);
+    }
+}

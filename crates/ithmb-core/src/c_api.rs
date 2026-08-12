@@ -147,3 +147,164 @@ pub unsafe extern "C" fn ithmb_decode(
 
     ITHMB_OK
 }
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+// Return codes are asserted against *literal* values rather than the
+// ITHMB_ERROR_* constants on purpose: a mutated constant (e.g. -1 becoming 1)
+// would otherwise trivially satisfy `ret == ITHMB_ERROR_INVALID`.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A valid white 128×128 RGB565 frame: 4-byte prefix 1055 + 32768 bytes of
+    /// 0xFFFF little-endian (white) pixels.
+    fn white_rgb565_1055_payload() -> Vec<u8> {
+        let mut payload = 1055_i32.to_be_bytes().to_vec();
+        payload.resize(payload.len() + 128 * 128 * 2, 0xFF);
+        payload
+    }
+
+    #[test]
+    fn prefix_to_profile_null_out_returns_invalid() {
+        let ret = unsafe { ithmb_prefix_to_profile(1055, std::ptr::null_mut()) };
+        assert_eq!(ret, -1, "ITHMB_ERROR_INVALID");
+    }
+
+    #[test]
+    fn prefix_to_profile_unknown_prefix_returns_unsupported() {
+        let mut out = IthmbImage {
+            data: std::ptr::null_mut(),
+            width: 0,
+            height: 0,
+        };
+        let ret = unsafe { ithmb_prefix_to_profile(0xDEAD_BEEF, std::ptr::from_mut(&mut out)) };
+        assert_eq!(ret, -2, "ITHMB_ERROR_UNSUPPORTED");
+    }
+
+    #[test]
+    fn prefix_to_profile_known_prefix_returns_display_dims() {
+        let mut out = IthmbImage {
+            data: std::ptr::null_mut(),
+            width: 0,
+            height: 0,
+        };
+        let ret = unsafe { ithmb_prefix_to_profile(1055, std::ptr::from_mut(&mut out)) };
+        assert_eq!(ret, 0, "ITHMB_OK");
+        assert_eq!(out.width, 128);
+        assert_eq!(out.height, 128);
+    }
+
+    #[test]
+    fn decode_null_src_returns_invalid() {
+        let mut out = IthmbImage {
+            data: std::ptr::null_mut(),
+            width: 0,
+            height: 0,
+        };
+        let ret = unsafe { ithmb_decode(std::ptr::null(), 0, std::ptr::from_mut(&mut out), std::ptr::null()) };
+        assert_eq!(ret, -1, "ITHMB_ERROR_INVALID");
+    }
+
+    #[test]
+    fn decode_null_out_returns_invalid() {
+        let src = [0_u8; 4];
+        let ret = unsafe { ithmb_decode(src.as_ptr(), src.len(), std::ptr::null_mut(), std::ptr::null()) };
+        assert_eq!(ret, -1, "ITHMB_ERROR_INVALID");
+    }
+
+    #[test]
+    fn decode_truncated_known_format_returns_invalid() {
+        // Prefix 1055 claims 128×128 (needs 32768 pixel bytes); 100 is far too
+        // short, so the decoder must fail with a buffer error → INVALID.
+        let mut payload = 1055_i32.to_be_bytes().to_vec();
+        payload.extend_from_slice(&[0_u8; 100]);
+        let mut out = IthmbImage {
+            data: std::ptr::null_mut(),
+            width: 0,
+            height: 0,
+        };
+        let ret = unsafe {
+            ithmb_decode(
+                payload.as_ptr(),
+                payload.len(),
+                std::ptr::from_mut(&mut out),
+                std::ptr::null(),
+            )
+        };
+        assert_eq!(ret, -1, "ITHMB_ERROR_INVALID");
+    }
+
+    #[test]
+    fn decode_unknown_prefix_returns_unsupported() {
+        // 0xDEADBEEF matches no built-in profile and is not a JPEG stream; the
+        // size heuristic also fails for an 8-byte payload, so the decoder must
+        // reject the format as unsupported.
+        let payload = [0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut out = IthmbImage {
+            data: std::ptr::null_mut(),
+            width: 0,
+            height: 0,
+        };
+        let ret = unsafe {
+            ithmb_decode(
+                payload.as_ptr(),
+                payload.len(),
+                std::ptr::from_mut(&mut out),
+                std::ptr::null(),
+            )
+        };
+        assert_eq!(ret, -2, "ITHMB_ERROR_UNSUPPORTED");
+    }
+
+    #[test]
+    fn decode_respects_cancel_flag() {
+        let payload = white_rgb565_1055_payload();
+        let mut out_data = vec![0_u8; 128 * 128 * 4];
+        let mut out = IthmbImage {
+            data: out_data.as_mut_ptr(),
+            width: 128,
+            height: 128,
+        };
+        let canceled = AtomicBool::new(true);
+        let ret = unsafe {
+            ithmb_decode(
+                payload.as_ptr(),
+                payload.len(),
+                std::ptr::from_mut(&mut out),
+                std::ptr::from_ref(&canceled),
+            )
+        };
+        assert_eq!(ret, -3, "ITHMB_ERROR_CANCELED");
+    }
+
+    #[test]
+    fn decode_valid_rgb565_returns_image() {
+        let payload = white_rgb565_1055_payload();
+        let mut out_data = vec![0_u8; 128 * 128 * 4];
+        let mut out = IthmbImage {
+            data: out_data.as_mut_ptr(),
+            width: 128,
+            height: 128,
+        };
+        let canceled = AtomicBool::new(false);
+        let ret = unsafe {
+            ithmb_decode(
+                payload.as_ptr(),
+                payload.len(),
+                std::ptr::from_mut(&mut out),
+                std::ptr::from_ref(&canceled),
+            )
+        };
+        assert_eq!(ret, 0, "ITHMB_OK");
+        assert_eq!(out.width, 128);
+        assert_eq!(out.height, 128);
+        // SAFETY: out.data was allocated for exactly 128*128*4 bytes above and
+        // the call reported success.
+        let actual = unsafe { std::slice::from_raw_parts(out.data, 128 * 128 * 4) };
+        let expected = vec![255_u8; 128 * 128 * 4];
+        assert_eq!(actual, &expected[..], "white RGB565 decodes to white BGRA");
+    }
+}
