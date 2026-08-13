@@ -25,8 +25,14 @@ ithmb --open PhotoDB
 # Select a specific frame from a multi-frame file
 ithmb my_photo.ithmb --index 2
 
-# List all 54 known decoding profiles
+# List all 53 known decoding profiles
 ithmb --list-profiles
+
+# Report the frame count of a multi-frame file
+ithmb my_photo.ithmb --frame-count
+
+# Extract every frame to separate files
+ithmb my_photo.ithmb --extract-all
 
 # Forward raw data to stdout (pipe to another tool)
 ithmb my_photo.ithmb --format bin -o - | ffmpeg -f rawvideo -pix_fmt bgra -s 320x240 -i - output.png
@@ -39,7 +45,7 @@ ithmb my_photo.ithmb --format bin -o - | ffmpeg -f rawvideo -pix_fmt bgra -s 320
 - Auto-detection of embedded JPEG data (T-prefix files)
 - PNG output (default feature)
 - Frame index selection for multi-frame files
-- Profile listing
+- Frame count reporting and frame extraction (`--frame-count`, `--extract-all`)
 
 ## Build from source
 

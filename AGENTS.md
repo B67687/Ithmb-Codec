@@ -16,7 +16,7 @@ Ithmb-Codec/
 │   │       ├── pipeline/      # Decode entry points (open_ithmb, decode_ithmb, decode_with_profile)
 │   │       ├── jpeg.rs        # JPEG-embedded decoder — read_info() dimension pre-check (CWE-400)
 │   │       ├── profile.rs     # Profile type + lookup
-│   │       ├── profile_db.rs  # Static profile database (54 profiles)
+│   │       ├── profile_db.rs  # Static profile database (53 profiles)
 │   │       ├── photodb/       # PhotoDB/ArtworkDB chunk parser
 │   │       ├── enc/           # 7 synthetic encoders
 │   │       ├── simd/          # SSE2/AVX2/NEON YUV conversion (only unsafe in the codebase)
@@ -76,7 +76,7 @@ Key test categories (see STATS.md for live counts):
 - **Fuzz**: 3 libfuzzer targets (cargo-fuzz, pinned 0.13.2) + 10,000+ random byte mutations
 - **Concurrency**: 11 stress scenarios (Barrier sync, cancellation, cache contention)
 - **C API**: `cargo test -p ithmb-core --features c --test c_api_test` — includes the undersized-buffer guard test
-- **Profile validation**: All 54 profiles decode without error
+- **Profile validation**: All 53 profiles decode without error
 
 ## CI Policy (3 layers)
 
@@ -151,7 +151,7 @@ Follow `docs/RELEASING.md`. In short: bump `Cargo.toml` (workspace) + CHANGELOG 
 
 - **SIMD compiled unconditionally** — SSE2/AVX2 for x64, NEON for ARM64 (runtime dispatch)
 - **C ABI plugin in separate repo** — [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin)
-- **54 built-in profiles** — embedded in binary, optionally overridable via external `profiles.json`
+- **53 built-in profiles** — embedded in binary, optionally overridable via external `profiles.json`
 - **File size guard**: 8 MB max (ADR-0005), covers all known real-world files with 10× margin
 - **`cache` / `metrics` are feature-gated**; `c` is a feature too (cdylib only when enabled)
 

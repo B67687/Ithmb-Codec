@@ -6,7 +6,7 @@
 
 The codec must handle:
 
-1. **Known formats** — 54 profiles covering iPod Photo 4G through iPhone 2G and iPod Nano 7G, sourced from iOpenPod (TheRealSavi, 50+ empirically validated entries), libgpod (PhotoDB chunk parser), and hardware validation (iPod Classic 6G samples from Reuhno).
+1. **Known formats** — 53 profiles covering iPod Photo 4G through iPhone 2G and iPod Nano 7G, sourced from iOpenPod (TheRealSavi, 50+ empirically validated entries), libgpod (PhotoDB chunk parser), and hardware validation (iPod Classic 6G samples from Reuhno).
 2. **Unknown variants** — Files with a format prefix not in the database, or files whose prefix is known but whose actual encoding differs by device firmware.
 3. **Runtime overrides** — Advanced users who discover a new format variant or need to tweak parameters (crop, rotation, channel swap) without recompiling.
 4. **AOT compatibility** — The C# prototype could not use `System.Text.Json` in Native AOT and required a hand-written JSON parser. The Rust port inherits the same constraint: if serde_json were used, the `simd` dependency would pull in heavy code and increase compile times for an operation that runs once at startup.
@@ -15,7 +15,7 @@ The C# prototype used a three-tier architecture: embedded JSON (53 profiles as s
 
 ## Decision
 
-Use a **three-tier profile architecture** that embeds 54 profiles in the binary, allows external override via `profiles.json`, and chains through fallback encodings when the primary decode fails.
+Use a **three-tier profile architecture** that embeds 53 profiles in the binary, allows external override via `profiles.json`, and chains through fallback encodings when the primary decode fails.
 
 ### Tier 1: Embedded binary profiles
 
@@ -118,7 +118,7 @@ The parser processes the embedded JSON in ~50 µs on modern hardware, well withi
 
 ### Profile data sources
 
-The 54 profiles in `data/profiles.json` derive from:
+The 53 active profiles in `data/profiles.json` derive from:
 
 | Source | Contribution |
 |--------|-------------|
@@ -132,12 +132,12 @@ The 54 profiles in `data/profiles.json` derive from:
 
 ### Positive
 
-- **Zero-config startup**: No database, no network, no config files required. The 54 profiles are always available.
+- **Zero-config startup**: No database, no network, no config files required. The 53 profiles are always available.
 - **Runtime extensibility**: External `profiles.json` can add or override profiles without recompiling — useful for community contributors who discover new variants.
 - **Resilient decode**: The fallback encoding chain handles the known ambiguity cases (format 1081, swapped chroma planes) that would otherwise produce garbled output without explanation.
-- **Compile-time validation**: The embedded JSON is parsed during `ProfileDb::load_builtin()`, tested by `load_builtin_has_54_profiles` — if the JSON is malformed, the test catches it immediately.
+- **Compile-time validation**: The embedded JSON is parsed during `ProfileDb::load_builtin()`, tested by `load_builtin_has_53_profiles` — if the JSON is malformed, the test catches it immediately.
 - **Thread-safe initialization**: `OnceLock` guarantees exactly-one initialization with no locks on the hot path. The database is read-only after init.
-- **Stable across firmware**: The C# prototype proved that 53 (now 54) profiles cover all known iPod/iPhone firmware versions. The database is not expected to grow rapidly.
+- **Stable across firmware**: The C# prototype proved that 53 profiles cover all known iPod/iPhone firmware versions. The database is not expected to grow rapidly.
 - **AOT-ready**: No reflection, no proc macros, no runtime code generation. The custom parser works identically in all Rust compilation modes.
 
 ### Negative
@@ -152,7 +152,7 @@ The 54 profiles in `data/profiles.json` derive from:
 
 | Approach | Why rejected |
 |----------|-------------|
-| **SQLite database** | Increases deployment size, adds a C dependency via `rusqlite` (conflicts with `unsafe_code = "deny"` at workspace level), and requires complex setup for an embedded device database with 54 rows. |
+| **SQLite database** | Increases deployment size, adds a C dependency via `rusqlite` (conflicts with `unsafe_code = "deny"` at workspace level), and requires complex setup for an embedded device database with 53 rows. |
 | **Remote registry server** | Offline use case (iPod file recovery on an airplane, disconnected archival). Single-user tool that should not depend on network availability. |
 | **Load all from external JSON at startup** | Boot failure if file is missing. An embedded fallback is required anyway — may as well make embedded the primary source. |
 | **serde_json + serde** | Adds 50+ transitive dependencies, slows compile times (~3s for serde derive), and is unnecessary for a 5 KB fixed-schema JSON file parsed once. The custom parser is smaller, faster to compile, and safer (no proc macros). |

@@ -28,7 +28,7 @@ A pure Rust codec library, CLI tool, and C ABI shared library for decoding and e
 
 **Key features**
 
-- 54 built-in profiles (+ 1 speculative disabled) covering known iPod/iPhone formats
+- 53 built-in profiles (+ 1 speculative disabled) covering known iPod/iPhone formats
 - 8 decoders (RGB565, RGB555, ReorderedRGB555, UYVY, YCbCr420, CLCL, CL, JPEG)
 - 7 synthetic encoders for all raw formats
 - Roundtrip-proven tests — see [STATS.md](docs/STATS.md) for current count and suite breakdown
@@ -106,7 +106,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 
 2. **JPEG scan** — checks for the JPEG SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via `jpeg-decoder`, and its EXIF orientation tag (0x0112) is exposed through the profile system.
 
-3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 54 known profiles and runs the appropriate raw decoder (RGB565, RGB555, Reordered RGB555, UYVY, YCbCr420, YUV422 interlaced, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is scanned for embedded JPEG markers (byte-level carving) before being rejected. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, padded frame handling, and channel-swap for BGR15 formats.
+3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 53 known profiles and runs the appropriate raw decoder (RGB565, RGB555, Reordered RGB555, UYVY, YCbCr420, YUV422 interlaced, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is scanned for embedded JPEG markers (byte-level carving) before being rejected. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, padded frame handling, and channel-swap for BGR15 formats.
 
 4. **PhotoDB/ArtworkDB** — Apple's iPod thumbnail databases (PhotoDB, ArtworkDB) use a binary chunk-based format (MHFD→MHSD→MHNI entries). When a file starts with `mhfd`, the codec parses the chunk tree, extracts individual thumbnails (inline pixel data or external `.ithmb` file references), and decodes each via the raw decoder matching its format ID. Read, write, and integrity checking are all supported.
 
@@ -246,7 +246,7 @@ See **[STATS.md](docs/STATS.md)** for current test counts and suite breakdown. C
 **Real-device validation:**
 
 - **iPod Classic 6G (Reuhno):** Real F1061/F1055/F1060 .ithmb files decoded successfully (BGR15 channel-swap, MSB replication — both confirmed correct). 30 reference PNG files match decoder output.
-- **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 54 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
+- **iOpenPod (TheRealSavi):** Empirically validated 50+ profiles across multiple iPod models purchased and tested. Confirmed "no known issues for iPod Nano and iPod Classic models." Our 53 profiles derive from the same format ID sources — hardware validation covered by iOpenPod's testing. See [iOpenPod#140](https://github.com/TheRealSavi/iOpenPod/issues/140).
 - **iPhone 5 (iOS 7):** 956 T-prefix files — 100% extraction
 - **Jakarade.com F00-F08:** 227 public T-prefix files — 100% JPEG+EXIF detection
 - **MVS CTF 2026 (iOS 18):** iPhone 14 Plus full filesystem image scanned — 3 `.ithmb` files found but use a different proprietary format (iOS Photos framework, not decodable by this codec)
@@ -284,7 +284,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 | `enc.rs`              | Synthetic encoders for all raw formats                                                                                                                   |
 | `enc/helpers.rs`      | Shared encoder helpers (InterlaceFields, BT.601)                                                                                                         |
 | `profile.rs`          | Profile struct (IthmbVariantProfile, IthmbEncoding)                                                                                                      |
-| `profile_db.rs`       | Built-in profile database (54 entries)                                                                                                                   |
+| `profile_db.rs`       | Built-in profile database (53 active entries)                                                                                                            |
 | `profile_parser.rs`   | JSON parser for external `profiles.json`                                                                                                                 |
 | `cache.rs`            | LRU raw file cache (feature-gated)                                                                                                                       |
 | `metrics.rs`          | Decode timing counters (feature-gated)                                                                                                                   |
@@ -348,7 +348,7 @@ The `ithmb` CLI tool supports four modes:
 | ------------------------------------------ | --------------------------------------------------- |
 | `ithmb input.ithmb [output.png]`           | Decode to PNG (auto-detects format from extension)  |
 | `ithmb --info input.ithmb`                 | Print metadata (size, prefix, profile, frame count) |
-| `ithmb --list-profiles`                    | Print the 54-profile database as a formatted table  |
+| `ithmb --list-profiles`                    | Print the 53-profile database as a formatted table  |
 | `ithmb --frame N input.ithmb [output.png]` | Extract frame N from a multi-frame file             |
 
 Output options: `--raw` for raw BGRA binary, `--format bin` for explicit binary, `.png` extension auto-selects PNG.
@@ -400,7 +400,7 @@ The C# reference repository ([B67687/Ithmb-Codec-CSharp](https://github.com/B676
 
 ## Profile Reference
 
-**54 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [docs/PROFILES.md](docs/PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
+**53 known profiles** (+ 1 speculative disabled — see note in codebase) covering iPod Photo 4G through iPhone 2G and iPod Nano 7G. Max frame size: 480×864 (RGB565, 830 KB). See [docs/PROFILES.md](docs/PROFILES.md) for the full table with dimensions, encoding, and device mapping. External profiles can be added at runtime via `profiles.json`.
 
 Each profile defines the pixel encoding, dimensions, byte length per frame, and post-processing flags (crop, rotation, channel swap, dimension swap, interlacing, padding).
 
@@ -409,9 +409,9 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 ## Limitations
 
 > [!WARNING]
-> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 54 known profiles and pass roundtrip tests (see [STATS.md](docs/STATS.md) for current count).
+> **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 53 known profiles and pass roundtrip tests (see [STATS.md](docs/STATS.md) for current count).
 >
-> **F-prefix decoder coverage is broad but not exhaustive.** 54 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) if you encounter one.
+> **F-prefix decoder coverage is broad but not exhaustive.** 53 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) if you encounter one.
 >
 > **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
 >
@@ -439,7 +439,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 The library was developed through iterative research, implementation, review, and release cycles:
 
 1. **Format survey** — 33 open-source .ithmb implementations found and analyzed
-2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 54 profiles
+2. **Format table extraction** — iOpenPod (50+ entries), libgpod, iLounge threads, and Keith's iPod Photo Reader provided dimension/encoding tables for 53 profiles
 3. **Implementation** — Pure Rust workspace with 8 decoders, JPEG decode, PhotoDB/ArtworkDB support, CLI tooling, PyO3 Python bindings, and sample generator
 4. **Testing** — Current test count in [STATS.md](docs/STATS.md); unit tests across roundtrip, fuzz, libfuzzer, parsers, speculative paths, buffer-too-small guards, trailing-padding tolerance, JPEG carving fallback, multi-frame raw decode, rotation roundtrip, byte-level corruption fuzz, BGR15 channel-swap, PhotoDB roundtrip write, PhotoDB integrity, PhotoDB JPEG blob decode, device-specific format tables, concurrency stress tests, and format ID profile tests
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, buffer overflow, integer overflow, and defense-in-depth

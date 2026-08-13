@@ -7,7 +7,7 @@ Pure Rust decoder and encoder for Apple `.ithmb` thumbnail-cache files — the f
 ## Features
 
 - **8 decoders** — RGB565, RGB555, ReorderedRGB555, UYVY (linear + interlaced), YCbCr 4:2:0, CLCL nibble-chroma, CL per-pixel chroma, JPEG-embedded
-- **54 built-in profiles** covering known iPod/iPhone formats
+- **53 built-in profiles** covering known iPod/iPhone formats
 - **PhotoDB/ArtworkDB** binary chunk parser, writer, and integrity checker
 - **SIMD acceleration (SSE2/AVX2/NEON runtime dispatch))
 - **Multi-frame** F-prefix raw file support
@@ -22,7 +22,7 @@ Pure Rust decoder and encoder for Apple `.ithmb` thumbnail-cache files — the f
 ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec", branch = "main" }
 
 # Or from crates.io:
-# ithmb-core = "1.9.5"
+# ithmb-core = "1.9.6"
 ```
 
 ### Basic decode

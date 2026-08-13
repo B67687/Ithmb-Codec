@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 
+## [1.9.6] / [1.9.5] - 2026-08-13
+
+### Added
+
+- **CLI `--frame-count` and `--extract-all`**: report the number of frames in a multi-frame file, or extract every frame to separate files. F-files carry their format in the filename (prefix-less payload), so the CLI now resolves layout from the filename for `F{format}_{index}` naming.
+- **Fuzz targets** (`fuzz/`): `fuzz_decode_pipeline`, `fuzz_parse_photodb`, `fuzz_parse_profile` cover the decode pipeline, PhotoDB parsing, and profile JSON parsing.
+- **Property-based tests** (`tests/proptest.rs`): full-pipeline encode/decode roundtrips for all 7 encoders, cache-entry serialization, and profile serialize/parse roundtrips.
+- **Allocation-contract tests** (`tests/alloc_contract.rs`): pin the CVE-400 JPEG guard and dimension-overflow rejection before allocation.
+
+### Fixed
+
+- **Profile parser infinite loop (DoS)**: an unclosed nested array (`[{[[` — 4 bytes) made `skip_array` never consume input, hanging at 100% CPU. Found by fuzzing; `skip_array` now always advances or errors.
+- **Profile array cap**: external `profiles.json` is limited to 100 objects, matching the C# reference parser.
+- **Nano 7G cover art (C# parity)**: profiles 1013/1015/1016 now resolve a Nano 7G alternate (50×50 / 58×58 / 57×57, 256-byte size tolerance) so real Nano 7G cover art decodes.
+- **Reordered RGB555 encoder endianness**: the reordered encoder now honors the profile's little-endian flag instead of hardcoding big-endian — its own decoder is little-endian, so roundtrips are no longer byte-swapped.
+- **Encoder honors `swaps_dimensions`**: `build_ithmb_file` applies the profile's dimension swap (then rotation), matching the C# encoder.
+- **Profile 1044 disabled (C# parity)**: the built-in database loads 53 active profiles (1044 filtered at load, mirroring C# where it is commented out; iOpenPod #81).
+
+### Tests
+
+- **Targeted tests** for previously untested modules (metrics, cache, c_api, error, profile): mutation score 2/81 → 54/81.
+- **Log stubs gated** under the `logging` feature so default-feature test builds compile.
+- **CL/CLCL layout pin tests** lock the planar Rust layouts (CL: planar [Y][CbCr] high-nibble=Cr; CLCL: [Y][Cb][Cr]) against future silent swaps.
+
 ## [1.9.5] / [1.9.4] - 2026-08-06
 
 ### Process

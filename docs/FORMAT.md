@@ -196,7 +196,7 @@ When an MHNI entry carries an unknown `format_id` but its data starts with the J
 
 ## 4. Profile System
 
-Each known bare-frame format is described by a **profile** — a struct containing all parameters needed to decode a frame. The profile database contains 54 built-in profiles derived from community reverse-engineering (iOpenPod, libgpod, clickwheel, Keith's iPod Photo Reader, and 18 other open-source implementations).
+Each known bare-frame format is described by a **profile** — a struct containing all parameters needed to decode a frame. The profile database contains 53 built-in profiles derived from community reverse-engineering (iOpenPod, libgpod, clickwheel, Keith's iPod Photo Reader, and 18 other open-source implementations).
 
 ### 4.1 Profile Fields
 
@@ -456,7 +456,7 @@ The file (or inline data blob) contains a standard JPEG stream delimited by SOI 
 
 ## 6. Built-in Profiles
 
-The following 54 profiles are embedded at compile time in the profile database. Profiles are keyed by their big-endian 4-byte prefix (stored as a signed 32-bit integer). External profiles can be added at runtime via a `profiles.json` file.
+The following 53 profiles are embedded at compile time in the profile database (profile 1044 remains in the data file but is disabled at load time, mirroring the C# reference). Profiles are keyed by their big-endian 4-byte prefix (stored as a signed 32-bit integer). External profiles can be added at runtime via a `profiles.json` file.
 
 ### 6.1 Profile Table
 

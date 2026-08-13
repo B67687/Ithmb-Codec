@@ -42,7 +42,7 @@
 //!
 //! 1. **Peek prefix** — read the 4-byte big-endian format prefix.
 //! 2. **JPEG scan** — check for JPEG SOI marker (`FF D8`).
-//! 3. **Profile lookup** — match prefix against 54 built-in profiles.
+//! 3. **Profile lookup** — match prefix against 53 built-in profiles.
 //! 4. **Decode** — dispatch to the correct pixel or JPEG decoder.
 //! 5. **Post-process** — apply dimension swap, crop, and rotation.
 //! 6. **Output** — [`DecodedImage`] with BGRA8 pixel data.
