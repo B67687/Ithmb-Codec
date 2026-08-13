@@ -61,7 +61,7 @@ The initial Rust port prioritized coverage over thoroughness. Comparing the two 
 | Benchmark regression                                                                                                                                                                                                                                           | baseline.csv + CI gate                   | Divan baselines + CI gate ✅              |
 | ADR documentation                                                                                                                                                                                                                                              | 3 decision records                       | 5 decision records ✅                     |
 | Cancellation tests                                                                                                                                                                                                                                             | Thread-safe polling                      | Barrier-sync + loop tests ✅              |
-| Profile validation                                                                                                                                                                                                                                             | —                                        | 54 profiles validated ✅                  |
+| Profile validation                                                                                                                                                                                                                                             | —                                        | 53 profiles validated ✅                  |
 | This gap existed because the Rust code was written in fewer, faster cycles. The C# code had more review rounds applied to it. **After 3 waves of dedicated quality work, the Rust port has achieved full parity with the C# reference across all dimensions.** |
 
 ---
@@ -129,7 +129,7 @@ Closed the quality gap between the C# reference and Rust port through 11 dedicat
 - Architecture decision records (5 ADRs) ✅
 - SIMD tail/small-width coverage (42 boundary cases) ✅
 - Cancellation-in-loop unit tests ✅
-- Profile validation (54 profiles) ✅
+- Profile validation (53 profiles) ✅
 - Benchmark regression baseline + CI gate ✅
 - Pre-commit hook optimization (~8s) ✅
 - WASM target + C API FFI + demo pages ✅

@@ -54,7 +54,7 @@ All 6 targets are run by `run-bench-perf.sh`:
 | `pipeline`     | End-to-end decode + encode pipeline timing                            |
 | `simd_compare` | SIMD vs scalar cross-validation at 512×512                            |
 | `memory`       | Heap allocation count and bytes per decode (8 formats at 512×512)     |
-| `profiles`     | Decode throughput for all 54 built-in profiles                        |
+| `profiles`     | Decode throughput for all 53 built-in profiles                        |
 
 ### Framework
 

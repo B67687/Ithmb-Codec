@@ -38,7 +38,7 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 | **Modularity**           | 21 modules in ithmb-core. Each decoder in its own file. PhotoDB in its own submodule. Pipeline owns dispatch only. SIMD split into 7 per-format files. |
 | **Data Flow**            | Unidirectional: pipeline detect → prefix match → per-format decoder → DecodedImage. No back-edges.                                                     |
 | **Fail-Fast**            | Buffer-too-small guards in every decoder. Cancellation polled at macroblock boundaries.                                                                |
-| **Parse-Don't-Validate** | 54 built-in profiles parsed at compile-time into `ProfileDb`.                                                                                          |
+| **Parse-Don't-Validate** | 53 built-in profiles parsed at compile-time into `ProfileDb`.                                                                                          |
 | **Layered Dependencies** | `ithmb-core` → `ithmb-cli`, `pymod`. No cycles.                                                                                                        |
 
 ## Code Rules

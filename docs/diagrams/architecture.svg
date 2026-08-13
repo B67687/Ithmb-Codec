@@ -50,11 +50,11 @@
 <rect x="390" y="114" width="220" height="22" class="i"/>
 <text x="500" y="129" class="l">Peek 4B: Detect JPEG / mhfd / 4B</text>
 
-<!-- 54 Profiles -->
+<!-- 53 Profiles -->
 <rect x="710" y="55" width="240" height="115" class="bx"/>
-<text x="830" y="73" class="t">54 Profiles</text>
+<text x="830" y="73" class="t">53 Profiles</text>
 <text x="830" y="97" class="l">25 Photo (1005-3011)</text>
-<text x="830" y="114" class="l">29 Cover Art (1010-1081)</text>
+<text x="830" y="114" class="l">28 Cover Art (1010-1081)</text>
 <text x="830" y="131" class="l">profiles.json override</text>
 <text x="830" y="151" class="s">Runtime extensible (no recompile)</text>
 
@@ -84,7 +84,7 @@
 <rect x="710" y="250" width="240" height="85" class="yw"/>
 <text x="830" y="268" class="t">Raw Path</text>
 <text x="830" y="288" class="l">mhfd → PhotoDB → entries → match</text>
-<text x="830" y="305" class="l">4B prefix → 54 profiles → match</text>
+<text x="830" y="305" class="l">4B prefix → 53 profiles → match</text>
 <text x="830" y="322" class="l">→ raw decoder dispatch</text>
 
 <!-- Convergence arrows -->
