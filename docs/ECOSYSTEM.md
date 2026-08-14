@@ -16,7 +16,7 @@ Beyond building a working codec, this project made several original contribution
 
 **Speculative profile corrections** — The F1064 profile (320×240 YCbCr) circulated in community speculation for years. Cross-checked against every public implementation: none has it. Disabled with rationale. Also corrected CLCL nibble scaling from ×17 (original 2005 Whirlpool RE) to ×16, cross-validated against 2 independent implementations.
 
-**8 MB file size guard** — All prior decoders cite libgpod's 256 MB limit, but no evidence confirms it as a real firmware constant. This project derived 8 MB independently: max frame size across 54 profiles is 829 KB, multi-frame concatenation from 5 RE tools never exceeded ~40 frames, and a public .ithmb file survey found zero files >1 MB. 8 MB is a power of 2 and provides ~10× margin over the largest known single frame (810 KB).
+**8 MB file size guard** — All prior decoders cite libgpod's 256 MB limit, but no evidence confirms it as a real firmware constant. This project derived 8 MB independently: max frame size across the 53 active profiles (54 raw incl. the disabled 1044) is 829 KB, multi-frame concatenation from 5 RE tools never exceeded ~40 frames, and a public .ithmb file survey found zero files >1 MB. 8 MB is a power of 2 and provides ~10× margin over the largest known single frame (810 KB).
 
 ## PhotoDB / ArtworkDB
 

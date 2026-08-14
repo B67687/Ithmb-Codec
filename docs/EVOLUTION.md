@@ -86,7 +86,7 @@ The initial Rust port prioritized coverage over thoroughness. Comparing the two 
 
 ### ADR-3: 54 built-in profiles + external profiles.json
 
-**Decision:** Ship 54 profiles embedded in the binary (from iOpenPod, libgpod, and hardware validation), with an optional external `profiles.json` for runtime overrides.
+**Decision:** Ship 54 profiles embedded in the binary (from iOpenPod, libgpod, and hardware validation), with an optional external `profiles.json` for runtime overrides. *(Amended 2026-08: profile 1044 disabled at load time → 53 active; raw dataset still holds 54, incl. the disabled entry. See PROFILES.md.)*
 
 **Rationale:** The C# version proved the profile database is stable across iPod generations. Embedding it avoids runtime file lookups while letting advanced users override without recompilation. External profiles are parsed by a custom AOT-safe JSON parser (no reflection).
 
@@ -140,6 +140,7 @@ Closed the quality gap between the C# reference and Rust port through 11 dedicat
   | Rust v1.9.0 | 2026-06 | Initial crates.io publish of ithmb-core |
   | Rust v1.9.1 | 2026-07 | Quality parity (3 waves, 11 tasks) |
   | Rust v1.9.5 | 2026-08 | Security hardening (photodb infinite-loop guard + JPEG peak budget, CWE-835/400); renumbered from the deleted 1.10.x line; crates.io republish (core 1.9.5 / cli 1.9.4) + GitHub Release; wasm regenerated; web shipped as 1.4.16 |
+  | Rust v1.9.6 | 2026-08 | F-prefix CLI (frame-count/extract-all), profile-parser DoS fix, hardening batch (fuzz ×3, proptest, alloc-contract), C# divergence fixes (Nano 7G cover art, RGB555 endianness, profile 1044 disabled → 53 active); crates.io core 1.9.6 / cli 1.9.5; GH Release v1.9.6; web 1.4.17 (progressive display + 1.9.6 wasm); pymod wheel fix (ithmb-python 1.9.6) |
 
 ---
 

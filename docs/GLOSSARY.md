@@ -340,7 +340,7 @@ The `ithmb` command-line tool provides:
 ```bash
 ithmb input.ithmb output.png        # Decode to PNG
 ithmb --info input.ithmb              # Show metadata
-ithmb --list-profiles                 # List all 54 profiles
+ithmb --list-profiles                 # List all 53 profiles
 ithmb --frame 2 input.ithmb out.png  # Extract specific frame
 ithmb --raw input.ithmb output.bin   # Raw BGRA output (no PNG)
 ```
