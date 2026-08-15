@@ -26,6 +26,10 @@
 
 A pure Rust codec library, CLI tool, and C ABI shared library for decoding and encoding Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails.
 
+**Related projects**
+- 🌐 [ITHMB Codec Web](https://ithmb-codec.dev/ithmb-decoder/) — browser-based decoder, no install, works on any OS, 100% private
+- 🖼️ [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) — native .ithmb decoding inside ImageGlass
+
 **Key features**
 
 - 53 built-in profiles (+ 1 speculative disabled) covering known iPod/iPhone formats
@@ -430,7 +434,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 | "File too large" error       | File exceeds the **8 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.               |
 
 > [!TIP]
-> If a file doesn't decode correctly, [open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample link. You can also try [ithmb.org](https://ithmb.org) — a browser-based .ithmb decoder (offline, no upload) — to compare results.
+> If a file doesn't decode correctly, [open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample link. You can also try the official [web decoder](https://ithmb-codec.dev/ithmb-decoder/) or [ithmb.org](https://ithmb.org) — browser-based .ithmb decoders (offline, no upload) — to compare results.
 
 ---
 
@@ -479,8 +483,6 @@ If this project helps you recover iPod photos, decode thumbnails, or save old me
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ThumbNami)
 
-[![Enterprise License](https://img.shields.io/badge/Enterprise_License-0b1120?logo=stripe&logoColor=white)](https://ithmb-codec.dev/enterprise/)
-
 </div>
 
 Every bit helps keep the research going. Thank you 🙏
@@ -510,7 +512,8 @@ This codec has been systematically reviewed across multiple rounds:
 The C# reference implementation ([B67687/Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)) underwent 5 review rounds of its own before being archived. The Rust port builds on that foundation with cross-platform distribution as its primary goal.
 
 ## License
-
 MIT — see [LICENSE](LICENSE).
+
+Commercial use? See the [Enterprise License](https://ithmb-codec.dev/enterprise/).
 
 The original IthmbDecoder reference implementation (PR [#2316](https://github.com/d2phap/ImageGlass/pull/2316)) was GPL-3.0. This library is a clean-room implementation, informed by format behavior described in that PR but using no GPL code.
