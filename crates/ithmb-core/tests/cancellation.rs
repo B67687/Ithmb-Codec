@@ -31,8 +31,8 @@ use ithmb_core::DecodeError;
 use ithmb_core::enc::*;
 use ithmb_core::pipeline::decode_with_profile;
 use ithmb_core::profile::{Encoding, Profile};
-use jpeg_decoder as _;
 use thiserror as _;
+use zune_jpeg as _;
 
 mod util;
 

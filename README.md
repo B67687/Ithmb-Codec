@@ -108,7 +108,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 
 1. **Peek read** — reads the entire file into memory (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos). An 8 MB size guard prevents OOM from pathological input (see [ADR-0005](docs/adr/0005-file-size-guard-limit.md)).
 
-2. **JPEG scan** — checks for the JPEG SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via `jpeg-decoder`, and its EXIF orientation tag (0x0112) is exposed through the profile system.
+2. **JPEG scan** — checks for the JPEG SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via `zune-jpeg`, and its EXIF orientation tag (0x0112) is exposed through the profile system.
 
 3. **Raw fallback** — if no JPEG is found, the decoder matches the first 4 bytes (big-endian prefix) against 53 known profiles and runs the appropriate raw decoder (RGB565, RGB555, Reordered RGB555, UYVY, YCbCr420, YUV422 interlaced, CLCL nibble-chroma, or CL per-pixel chroma) to produce BGRA output. If the prefix doesn't match any known profile, the file is scanned for embedded JPEG markers (byte-level carving) before being rejected. Additional decoder variants can be activated via `profiles.json`: swapped chroma planes for YCbCr 4:2:0, per-pixel vs shared nibble chroma, endianness toggles, interlaced field ordering, padded frame handling, and channel-swap for BGR15 formats.
 
@@ -274,7 +274,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 | Module                | Purpose                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pipeline/`           | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
-| `jpeg.rs`             | JPEG decoder wrapper (`jpeg-decoder` crate), EXIF orientation parsing                                                                                    |
+| `jpeg.rs`             | JPEG decoder wrapper (`zune-jpeg` crate), EXIF orientation parsing                                                                                     |
 | `rgb565.rs`           | RGB565 decoder (16-bit RGB 5/6/5)                                                                                                                        |
 | `rgb555.rs`           | RGB555 decoder (15-bit RGB 5/5/5)                                                                                                                        |
 | `reordered_rgb555.rs` | Reordered RGB555 decoder (byte-swapped variant)                                                                                                          |
@@ -298,9 +298,9 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 **Data flow:**
 
 ```
-.ithmb file → JPEG/EXIF scan ──→ JPEG slice → jpeg-decoder crate → BGRA
+.ithmb file → JPEG/EXIF scan ──→ JPEG slice → zune-jpeg → BGRA
                 ├─ No JPEG → prefix lookup → raw decoder → BGRA
-                │              └→ no prefix + JPEG scan → byte-level SOI carving → jpeg-decoder → BGRA
+                │              └→ no prefix + JPEG scan → byte-level SOI carving → zune-jpeg → BGRA
                 │              └→ no prefix + mhfd magic → PhotoDB parser → entries → raw decoder → BGRA
                 └─ external .ithmb reference → read file → raw decoder → BGRA
 ```

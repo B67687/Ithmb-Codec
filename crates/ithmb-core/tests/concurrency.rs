@@ -19,10 +19,10 @@ use ithmb_core::enc::*;
 use ithmb_core::pipeline::decode_with_profile;
 use ithmb_core::profile::{Encoding, Profile};
 use ithmb_core::{DecodeError, DecodedImage};
-use jpeg_decoder as _;
 #[cfg(feature = "cache")]
 use lru as _;
 use thiserror as _;
+use zune_jpeg as _;
 
 fn prefix_buf(profile: &Profile, encoded: &[u8]) -> Vec<u8> {
     let mut buf = profile.prefix.to_be_bytes().to_vec();

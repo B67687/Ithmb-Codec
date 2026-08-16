@@ -127,7 +127,7 @@ cp pkg/ithmb_wasm_bg.wasm ../../../Ithmb-Codec-Web/ithmb-decoder/ithmb_wasm_bg.w
 
 ## Security Posture
 
-- **CWE-400 JPEG cap** (`jpeg.rs`): `read_info()` pre-check rejects frames over a 256 MiB w·h·3 budget before decode — `set_max_decoding_buffer_size` alone does NOT cover the progressive coefficient buffer, and `set_max_dimensions` doesn't exist in jpeg-decoder 0.3.2. Regression test: 193-byte SOF2-65535×65535 fixture.
+- **CWE-400 JPEG cap** (`jpeg.rs`): `decode_headers()` parses only the SOF header (zero pixel allocations), then an explicit pre-check rejects frames over a 256 MiB w·h·11 budget before `decode()` — the sole gate over the progressive coefficient buffer. zune-jpeg's `set_max_width`/`set_max_height` are set to u16::MAX (the JPEG dimension ceiling) so the crate's own SOF-time axis check never rejects a frame the budget admits; the explicit w·h·11 pre-check stays the primary guard. Regression test: 193-byte SOF2-65535×65535 fixture.
 - **CWE-787 C-API guard** (`c_api.rs`): `ithmb_decode` rejects undersized caller buffers (area-based, so EXIF rotation doesn't false-positive). Guard test in `test_ithmb.c`.
 - **No attacker-reachable panics** — zero `unwrap()`/`panic!` outside tests; unsafe confined to SIMD on validated slices.
 - `SECURITY.md` + gitleaks scan in pr-checks; `cargo-audit` + `cargo-deny` gated in pr-checks. Dependency upgrades are a LOCAL check (`cargo-outdated` in local-ci.sh) — commit upgrades on dev and ship them dev-first, so the public tree always mirrors dev.

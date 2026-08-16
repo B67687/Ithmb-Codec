@@ -77,7 +77,7 @@
 <!-- JPEG path -->
 <rect x="50" y="250" width="240" height="65" class="gr"/>
 <text x="170" y="268" class="t">JPEG Path</text>
-<text x="170" y="288" class="l">jpeg-decoder crate</text>
+<text x="170" y="288" class="l">zune-jpeg</text>
 <text x="170" y="305" class="l">BGRA + EXIF Orientation</text>
 
 <!-- Raw path -->

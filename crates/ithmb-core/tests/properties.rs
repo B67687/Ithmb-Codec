@@ -15,12 +15,12 @@ mod util;
 
 use divan as _;
 use image as _;
-use jpeg_decoder as _;
 #[cfg(feature = "logging")]
 use log as _;
 #[cfg(feature = "cache")]
 use lru as _;
 use thiserror as _;
+use zune_jpeg as _;
 
 use ithmb_core::enc::{
     encode_cl, encode_clcl, encode_reordered_rgb555, encode_rgb555, encode_rgb565, encode_uyvy, encode_ycbcr420,

@@ -51,7 +51,7 @@ prior session plans (`.omo/plans/rust-csharp-parity.md`, `rust-csharp-parity-fix
 | Tree-walk depth limit | 64 | 64 | EQUIVALENT | `photodb/parser.rs:21` vs `Core.cs:140` | |
 | MHNI inline/external split | `ithmb_offset>=0 && image_size>0` → inline; `ithmb_offset==-1` → external | Same logic | EQUIVALENT | `parser.rs:276-284` vs `Types.cs:256-277` | Added by parity-fix P4 (external-ref API). |
 | MHNI width/height offsets | width @ +34, height @ +32 (LE u16) | Same (iPod Classic 76B) + extra **Apple TV/Animal packed w/h @ +20** variant detection | **UNRESOLVED (low confidence)** | `parser.rs:587-588` vs `Types.cs:275-276` | Rust MHNI struct not verified to include the packed Apple TV variant; no real sample exists either way. |
-| JPEG auto-trim of non-profile entries | No parse-time trim; JPEG fallback in open.rs passes full blob to jpeg-decoder (stops at EOI) | Trims to EOI during parse for entries not in KnownProfiles | EQUIVALENT | `open.rs:131-139` vs `Core.cs:99-117` | Net behavior same (trailing bytes ignored). |
+| JPEG auto-trim of non-profile entries | No parse-time trim; JPEG fallback in open.rs passes full blob to zune-jpeg (stops at EOI) | Trims to EOI during parse for entries not in KnownProfiles | EQUIVALENT | `open.rs:131-139` vs `Core.cs:99-117` | Net behavior same (trailing bytes ignored). |
 
 ## 4. Row-format decoders
 
@@ -76,8 +76,8 @@ prior session plans (`.omo/plans/rust-csharp-parity.md`, `rust-csharp-parity-fix
 
 | Area | Rust behavior | C# behavior | Classification | Evidence | Notes |
 |---|---|---|---|---|---|
-| Decoder library | `jpeg-decoder` crate (RGB→BGRA, A=255) | StbImageSharp (RGBA→BGRA) | EQUIVALENT | `jpeg.rs:59-111` vs `JpegDecode.cs:78-121` | |
-| **Dimension cap** | **CWE-400 pre-check: `read_info()` then reject `w*h*11 > 256 MiB`** + `set_max_decoding_buffer_size` | **No cap at all** — `result.Width/Height` used directly | **ALLOWLISTED-BUGFIX** | `jpeg.rs:15-21,61-90` vs `JpegDecode.cs:92` | 166-byte SOF2-65535×65535 stream once aborted the process (~8 GiB alloc). Rust-only hardening. |
+| Decoder library | `zune-jpeg` crate (RGB→BGRA, A=255) | StbImageSharp (RGBA→BGRA) | EQUIVALENT | `jpeg.rs:59-111` vs `JpegDecode.cs:78-121` | |
+| **Dimension cap** | **CWE-400 pre-check: `decode_headers()` then reject `w*h*11 > 256 MiB`** (zune-jpeg `set_max_width`/`set_max_height` capped at u16::MAX) | **No cap at all** — `result.Width/Height` used directly | **ALLOWLISTED-BUGFIX** | `jpeg.rs:15-21,59-96` vs `JpegDecode.cs:92` | 166-byte SOF2-65535×65535 stream once aborted the process (~8 GiB alloc). Rust-only hardening. |
 | **EXIF orientation** | Parses APP1→`Exif\0\0`→TIFF II/MM→0x002A→IFD0 tag 0x0112, then **rotates the pixels** (90/180/270 CW) | Same EXIF parser, but orientation goes into image-info **metadata only**; pixels never rotated | **ALLOWLISTED-IMPROVEMENT** | `jpeg.rs:113-122,138-239` vs `Helpers.cs:135-197`, `JpegDecode.cs:94` | **Output pixels differ**: Rust returns rotated, C# returns raw. Rust is standalone (no host); deliberate. |
 | Carving validation | Requires SOI **and** JFIF/Exif within 512 B window; scan bounded by `jpeg_scan_limit` (4 MiB default) | Requires SOI + 3rd byte 0xFF + JFIF/Exif in 512 window; carving skipped > 8 MB (`MaxCarvingFileSize`) | ALLOWLISTED-IMPROVEMENT (window); **UNRESOLVED** (4 vs 8 MiB) | `pipeline/mod.rs:471-518` vs `JpegDecode.cs:45-67`, `DecodePipeline.cs:249-255` | JFIF/Exif validation = deliberate parity-fix P3 (stricter, avoids false positives). Carving extent 4 MiB (Rust) vs 8 MiB (C#) differs. |
 

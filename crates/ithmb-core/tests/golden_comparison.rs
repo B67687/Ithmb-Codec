@@ -6,11 +6,11 @@
 #![allow(clippy::pedantic, clippy::unwrap_used)]
 
 use divan as _;
-use jpeg_decoder as _;
 #[cfg(feature = "logging")]
 use log as _;
 use proptest as _;
 use thiserror as _;
+use zune_jpeg as _;
 
 use ithmb_core::DecodedImage;
 use ithmb_core::profile::{Encoding, Profile};

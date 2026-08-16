@@ -2,7 +2,7 @@
 //!
 //! T-prefix `.ithmb` files contain an embedded JPEG stream rather than raw pixel
 //! data. This module detects JPEG streams by their SOI marker, decodes them
-//! via the `jpeg_decoder` crate, applies EXIF orientation if present, and
+//! via the `zune_jpeg` crate, applies EXIF orientation if present, and
 //! outputs BGRA8 pixel data.
 
 use crate::error::{DecodeError, DecodedImage};
@@ -56,17 +56,25 @@ pub fn decode(src: &[u8], _profile: &Profile, canceled: &AtomicBool) -> Result<D
         return Err(DecodeError::InvalidFormat("not a JPEG stream".into()));
     }
 
-    let mut decoder = jpeg_decoder::Decoder::new(Cursor::new(src));
+    let mut decoder = zune_jpeg::JpegDecoder::new_with_options(
+        Cursor::new(src),
+        // Belt-and-braces: cap the per-axis dimensions so the decoder's own
+        // SOF-time limit never admits a frame our explicit w·h·11 budget
+        // below would reject. u16::MAX is the largest representable JPEG
+        // dimension, so this check is inert for real streams and the explicit
+        // pre-check remains the sole gate — identical to jpeg-decoder 0.3.2.
+        zune_jpeg::zune_core::options::DecoderOptions::default()
+            .set_max_width(usize::from(u16::MAX))
+            .set_max_height(usize::from(u16::MAX)),
+    );
 
-    // Security: reject oversized frames BEFORE decoding (CWE-400). jpeg-decoder
-    // 0.3.2 allocates the progressive-JPEG coefficient buffer at the first SOS
-    // from the frame dimensions alone — a 166-byte SOF2-65535×65535 stream
-    // triggers an ~8 GiB allocation that aborts the process. read_info() parses
-    // only the frame header (SOF) with zero pixel allocations, so we can check
-    // dimensions first. set_max_dimensions does not exist in 0.3.2, and
-    // set_max_decoding_buffer_size is enforced only after the coefficient
-    // buffer exists — hence the explicit pre-check below.
-    decoder.read_info().map_err(|e| DecodeError::Jpeg(e.to_string()))?;
+    // Security: reject oversized frames BEFORE decoding (CWE-400). Both
+    // jpeg-decoder 0.3.2 and zune-jpeg allocate the progressive-JPEG
+    // coefficient buffer from the frame dimensions alone — a 166-byte
+    // SOF2-65535×65535 stream triggers an ~8 GiB allocation that aborts the
+    // process. decode_headers() parses only the frame header (SOF) with zero
+    // pixel allocations, so we can check dimensions first.
+    decoder.decode_headers().map_err(|e| DecodeError::Jpeg(e.to_string()))?;
     let info = decoder
         .info()
         .ok_or_else(|| DecodeError::Jpeg("no JPEG metadata".into()))?;
@@ -84,10 +92,6 @@ pub fn decode(src: &[u8], _profile: &Profile, canceled: &AtomicBool) -> Result<D
             info.width, info.height, MAX_JPEG_PIXEL_BYTES,
         )));
     }
-    // Belt-and-braces: cap the decoder's output buffer (enforced at EOI).
-    decoder.set_max_decoding_buffer_size(
-        usize::try_from(MAX_JPEG_PIXEL_BYTES).expect("256 MiB JPEG budget always fits usize"),
-    );
 
     let pixels = decoder.decode().map_err(|e| DecodeError::Jpeg(e.to_string()))?;
 

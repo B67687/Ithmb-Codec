@@ -445,7 +445,7 @@ Byte 7: (Cr3 << 4) | Cr2   // Cr nibbles for pixels 2, 3
 **BPP:** Variable (compressed)
 **Used by:** T-prefix files (e.g. iPhone 5, iPod Touch JPEG-embedded thumbnails)
 
-The file (or inline data blob) contains a standard JPEG stream delimited by SOI (`0xFF 0xD8`) and EOI (`0xFF 0xD9`) markers. Decoding is performed by a standard JPEG decoder (the `jpeg-decoder` crate). EXIF orientation tag (0x0112) is parsed and exposed.
+The file (or inline data blob) contains a standard JPEG stream delimited by SOI (`0xFF 0xD8`) and EOI (`0xFF 0xD9`) markers. Decoding is performed by a standard JPEG decoder (the `zune-jpeg` crate). EXIF orientation tag (0x0112) is parsed and exposed.
 
 - T-prefix files are always single-frame.
 - JPEG SOI must be within the first 4 MB of the file.
