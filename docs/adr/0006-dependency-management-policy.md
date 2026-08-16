@@ -26,7 +26,7 @@
 | As needed | `cargo update` | Apply safe patch-level bumps |
 | Before release | `cargo test --workspace` | Confirm updates broke nothing (already part of release.yml `test` job) |
 
-The one non-negotiable discipline is **`cargo audit` before each release**. It covers the only security-sensitive dependency (`jpeg-decoder`) at the moment code ships to users. The RustSec DB is fetched in seconds; a scheduled job adds infrastructure without adding protection.
+The one non-negotiable discipline is **`cargo audit` before each release**. It covers the security-sensitive dependencies (`zune-jpeg`, `png`) at the moment code ships to users. The RustSec DB is fetched in seconds; a scheduled job adds infrastructure without adding protection.
 
 ## Consequences
 
