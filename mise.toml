@@ -1,0 +1,7 @@
+# mise tool version pinning — mirrors rust-toolchain.toml (channel 1.88.0).
+min_version = "2026.6.13"
+
+[tools]
+rust = "1.88.0"
+
+[env]

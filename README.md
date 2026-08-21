@@ -6,16 +6,15 @@
 
 [![License: MIT](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/license.svg)](LICENSE)
 [![Rust](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/rust.svg)](https://rust-lang.org)
-[![Python](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/python.svg)](pymod/)
+[![CI](https://github.com/B67687/Ithmb-Codec/actions/workflows/ci-full.yml/badge.svg)](https://github.com/B67687/Ithmb-Codec/actions/workflows/ci-full.yml)
 
 [![Platform](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/platform.svg)](README.md#build-from-source)
 
-<a href="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/showcase.svg"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
+<a href="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/showcase.svg"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
 <i>Concept render — not an actual screenshot.</i>
 <hr style="max-width: 360px;">
 <sub>Built with AI assistance — see <a href="./docs/CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/deepseek.svg" alt="DeepSeek"></a>
 <a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/opencode.svg" alt="OpenCode"></a>
 <a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
 
@@ -106,7 +105,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 
 ## How it works
 
-1. **Peek read** — reads the entire file into memory (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos). An 8 MB size guard prevents OOM from pathological input (see [ADR-0005](docs/adr/0005-file-size-guard-limit.md)).
+1. **Peek read** — reads the entire file into memory (peak memory dominated by the decoded bitmap, typically a few MB for iPhone photos). An 8 MB size guard prevents OOM from pathological input (see [ADR-0005](docs/adr/2026-07-07-file-size-guard-limit.md)).
 
 2. **JPEG scan** — checks for the JPEG SOI marker (`FF D8`) followed by JFIF or Exif within 512 bytes. On match, the JPEG payload is extracted (SOI→EOI), decoded via `zune-jpeg`, and its EXIF orientation tag (0x0112) is exposed through the profile system.
 
@@ -117,7 +116,7 @@ For detailed build instructions see [Build from source](#build-from-source).
 ### File size guard
 
 > [!NOTE]
-> Files larger than **8 MB** are rejected before decoding to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB), and the largest single frame is 810 KB — so 8 MB provides ~10× margin on the largest frame. The actual iPod firmware caps individual .ithmb files at ~500 MB. See [ADR-0005](docs/adr/0005-file-size-guard-limit.md) for the full research.
+> Files larger than **8 MB** are rejected before decoding to prevent OOM/DoS from pathological input. All known real .ithmb files are under 1 MB (max observed: 852 KB), and the largest single frame is 810 KB — so 8 MB provides ~10× margin on the largest frame. The actual iPod firmware caps individual .ithmb files at ~500 MB. See [ADR-0005](docs/adr/2026-07-07-file-size-guard-limit.md) for the full research.
 
 ## Acknowledgments
 

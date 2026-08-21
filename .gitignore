@@ -8,6 +8,7 @@
 !/rust-toolchain.toml
 !/Cargo.toml
 !/Cargo.lock
+!/mise.toml
 !/deny.toml
 !/*.md
 !/.github/
@@ -40,6 +41,10 @@ target/
 mcp/
 .ruff_cache/
 *.bak
+
+# Secrets — never commit environment files
+.env
+.env.*
 
 # Core dumps (Linux: core.<pid>)
 core.[0-9]*
