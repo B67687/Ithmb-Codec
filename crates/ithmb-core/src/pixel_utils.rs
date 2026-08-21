@@ -23,6 +23,24 @@ pub(crate) fn msb_replicate_6(v: u32) -> u8 {
     ((v << 2) | (v >> 4)) as u8
 }
 
+/// Unpack an RGB565 pixel to BGRA (4 bytes).
+///
+/// The caller must provide the correctly-parsed pixel value (endianness
+/// already handled). This function only applies the `swap_rgb_channels`
+/// (BGR15) layout used by iPhone 2G.
+#[inline]
+#[must_use]
+pub(crate) fn unpack_rgb565(pixel: u16, swap: bool) -> [u8; 4] {
+    let r5 = u32::from((pixel >> 11) & 0x1F);
+    let g6 = u32::from((pixel >> 5) & 0x3F);
+    let b5 = u32::from(pixel & 0x1F);
+    if swap {
+        [msb_replicate_5(r5), msb_replicate_6(g6), msb_replicate_5(b5), 255]
+    } else {
+        [msb_replicate_5(b5), msb_replicate_6(g6), msb_replicate_5(r5), 255]
+    }
+}
+
 /// Clamp an `i32` to the 0..255 u8 range.
 #[inline]
 #[must_use]

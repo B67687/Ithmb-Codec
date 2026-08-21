@@ -73,24 +73,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
             } else {
                 u16::from_be_bytes([src_pixel[0], src_pixel[1]])
             };
-            let r5 = u32::from((pixel >> 11) & 0x1F);
-            let g6 = u32::from((pixel >> 5) & 0x3F);
-            let b5 = u32::from(pixel & 0x1F);
-            if swap {
-                dst_pixel.copy_from_slice(&[
-                    crate::pixel_utils::msb_replicate_5(r5),
-                    crate::pixel_utils::msb_replicate_6(g6),
-                    crate::pixel_utils::msb_replicate_5(b5),
-                    255,
-                ]);
-            } else {
-                dst_pixel.copy_from_slice(&[
-                    crate::pixel_utils::msb_replicate_5(b5),
-                    crate::pixel_utils::msb_replicate_6(g6),
-                    crate::pixel_utils::msb_replicate_5(r5),
-                    255,
-                ]);
-            }
+            dst_pixel.copy_from_slice(&crate::pixel_utils::unpack_rgb565(pixel, swap));
         }
     }
 
