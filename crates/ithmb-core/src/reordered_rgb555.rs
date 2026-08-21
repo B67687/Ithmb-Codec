@@ -95,24 +95,9 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
             } else {
                 0x0000
             };
-            let (r5, g5, b5) = if swap {
-                (
-                    u32::from(raw & 0x1F),
-                    u32::from((raw >> 5) & 0x1F),
-                    u32::from((raw >> 10) & 0x1F),
-                )
-            } else {
-                (
-                    u32::from((raw >> 10) & 0x1F),
-                    u32::from((raw >> 5) & 0x1F),
-                    u32::from(raw & 0x1F),
-                )
-            };
+            let bgra = crate::pixel_utils::unpack_rgb555(raw, swap);
             let off = dst_start + rx * 4;
-            dst[off] = crate::pixel_utils::msb_replicate_5(b5);
-            dst[off + 1] = crate::pixel_utils::msb_replicate_5(g5);
-            dst[off + 2] = crate::pixel_utils::msb_replicate_5(r5);
-            dst[off + 3] = 255;
+            dst[off..off + 4].copy_from_slice(&bgra);
         }
     }
 

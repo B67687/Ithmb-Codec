@@ -41,6 +41,28 @@ pub(crate) fn unpack_rgb565(pixel: u16, swap: bool) -> [u8; 4] {
     }
 }
 
+/// Unpack an RGB555 pixel to BGRA (4 bytes).
+///
+/// Handles the `swap_rgb_channels` (BGR15) layout used by iPhone 2G.
+#[inline]
+#[must_use]
+pub(crate) fn unpack_rgb555(pixel: u16, swap: bool) -> [u8; 4] {
+    let (r5, g5, b5) = if swap {
+        (
+            u32::from(pixel & 0x1F),
+            u32::from((pixel >> 5) & 0x1F),
+            u32::from((pixel >> 10) & 0x1F),
+        )
+    } else {
+        (
+            u32::from((pixel >> 10) & 0x1F),
+            u32::from((pixel >> 5) & 0x1F),
+            u32::from(pixel & 0x1F),
+        )
+    };
+    [msb_replicate_5(b5), msb_replicate_5(g5), msb_replicate_5(r5), 255]
+}
+
 /// Clamp an `i32` to the 0..255 u8 range.
 #[inline]
 #[must_use]

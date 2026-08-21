@@ -79,26 +79,8 @@ pub(crate) fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] 
     let mut out = [0u8; 16];
     for i in 0..4 {
         let raw = u16::from_le_bytes(pixels[i]);
-        let (r5, g5, b5) = if swap {
-            (
-                u32::from(raw & 0x1F),
-                u32::from((raw >> 5) & 0x1F),
-                u32::from((raw >> 10) & 0x1F),
-            )
-        } else {
-            (
-                u32::from((raw >> 10) & 0x1F),
-                u32::from((raw >> 5) & 0x1F),
-                u32::from(raw & 0x1F),
-            )
-        };
-        let b = ((b5 << 3) | (b5 >> 2)) as u8;
-        let g = ((g5 << 3) | (g5 >> 2)) as u8;
-        let r = ((r5 << 3) | (r5 >> 2)) as u8;
-        out[i * 4] = b;
-        out[i * 4 + 1] = g;
-        out[i * 4 + 2] = r;
-        out[i * 4 + 3] = 255;
+        let bgra = crate::pixel_utils::unpack_rgb555(raw, swap);
+        out[i * 4..i * 4 + 4].copy_from_slice(&bgra);
     }
     out
 }
