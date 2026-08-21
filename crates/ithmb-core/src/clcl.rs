@@ -91,9 +91,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    let out_w = w as u32;
-    #[allow(clippy::cast_possible_truncation)]
-    let out_h = h as u32;
+    let (out_w, out_h) = (w as u32, h as u32);
 
     Ok(DecodedImage {
         data: dst,

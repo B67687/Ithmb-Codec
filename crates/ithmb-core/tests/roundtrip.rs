@@ -325,11 +325,11 @@ fn exhaustive_rgb565_roundtrip() {
         let b5 = u32::from(rgb565_value & 0x1F);
 
         #[allow(clippy::cast_possible_truncation)]
-        let r8 = ((r5 << 3) | (r5 >> 2)) as u8;
-        #[allow(clippy::cast_possible_truncation)]
-        let g8 = ((g6 << 2) | (g6 >> 4)) as u8;
-        #[allow(clippy::cast_possible_truncation)]
-        let b8 = ((b5 << 3) | (b5 >> 2)) as u8;
+        let (r8, g8, b8) = (
+            ((r5 << 3) | (r5 >> 2)) as u8,
+            ((g6 << 2) | (g6 >> 4)) as u8,
+            ((b5 << 3) | (b5 >> 2)) as u8,
+        );
 
         let bgra = vec![b8, g8, r8, 255];
         let encoded = encode_rgb565(&bgra, 1, 1, false);
