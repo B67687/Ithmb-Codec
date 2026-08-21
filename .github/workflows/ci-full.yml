@@ -21,7 +21,7 @@ jobs:
         with:
           target: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
           cache: true
-          cache-key: "rust-${{ matrix.os }}-${{ hashFiles('rust-toolchain.toml') }}"
+          cache-key: "rust-${{ matrix.os }}-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}"
       - name: Build
         shell: bash
         run: |
@@ -42,13 +42,12 @@ jobs:
 
   benchmark_regression:
     runs-on: ubuntu-latest
-    needs: [build]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           cache: true
-          cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}"
+          cache-key: "bench-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('.github/baseline.json') }}-${{ hashFiles('**/Cargo.lock') }}"
       - name: Benchmark regression check
         env:
           FAIL_THRESHOLD: 1.25
@@ -64,14 +63,13 @@ jobs:
           retention-days: 7
   fuzz:
     runs-on: ubuntu-latest
-    needs: [build]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           cache: true
-          cache-key: "fuzz-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('fuzz/Cargo.toml') }}"
+          cache-key: "fuzz-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('fuzz/Cargo.toml') }}-${{ hashFiles('**/Cargo.lock') }}"
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz --debug --locked --version 0.13.2 2>&1 | tail -3
       - name: Fuzz decode_ithmb
@@ -83,6 +81,15 @@ jobs:
       - name: Fuzz encode roundtrip
         run: cargo fuzz run fuzz_encode_roundtrip -- -max_total_time=30 2>&1 | tail -5
         working-directory: ./fuzz
+      - name: Fuzz decode_pipeline
+        run: cargo fuzz run fuzz_decode_pipeline -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
+      - name: Fuzz parse_photodb
+        run: cargo fuzz run fuzz_parse_photodb -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
+      - name: Fuzz parse_profile
+        run: cargo fuzz run fuzz_parse_profile -- -max_total_time=30 2>&1 | tail -5
+        working-directory: ./fuzz
       - name: Upload fuzz crash artifacts (reproducers)
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -93,14 +100,13 @@ jobs:
 
   build_c_api:
     runs-on: ubuntu-latest
-    needs: [build]
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
         with:
           cache: true
-          cache-key: "c-api-${{ hashFiles('rust-toolchain.toml') }}"
+          cache-key: "c-api-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}"
       - name: Build with c feature
         run: cargo build -p ithmb-core --features c
       - name: Verify C symbols are exported
@@ -110,7 +116,6 @@ jobs:
 
   wasm:
     runs-on: ubuntu-latest
-    needs: [build]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -120,8 +125,11 @@ jobs:
           cache: true
           cache-key: "wasm-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('crates/ithmb-wasm/Cargo.toml') }}"
       - name: Install wasm-pack
-        run: |
-          cargo install wasm-pack --locked --version 0.12.1
-      - name: Build wasm
         shell: bash
-        run: wasm-pack build crates/ithmb-wasm/
+        run: |
+          # Pinned prebuilt musl binary (see ADR-0008). Keep the toolchain + wasm32
+          # target above because wasm-pack shells out to cargo to build.
+          curl -sSL https://github.com/rustwasm/wasm-pack/releases/download/v0.12.1/wasm-pack-v0.12.1-x86_64-unknown-linux-musl.tar.gz -o /tmp/wasm-pack.tgz
+          tar xzf /tmp/wasm-pack.tgz -C /tmp --strip-components=1
+      - name: Build wasm
+        run: /tmp/wasm-pack build crates/ithmb-wasm/

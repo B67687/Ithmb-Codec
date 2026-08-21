@@ -25,22 +25,31 @@ run cargo test --workspace --tests
 run cargo build --workspace
 run cargo build --features logging -p ithmb-core
 
-if command -v cargo-deny >/dev/null 2>&1; then
+# Tool-availability gates: a missing tool is a FAIL, not a skip — the
+# no-false-pass constitution (spec rule 1) forbids silently weakening the
+# gate set. CI runs all of these, so parity requires them locally too.
+# (REVIEW warning fix: was silent-skip.)
+require_tool() {
+  local tool=$1
+  local hint=$2
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "!!! FAILED: required tool '$tool' missing — $hint"
+    fail=1
+    return 1
+  fi
+  return 0
+}
+
+if require_tool cargo-deny 'install: cargo install cargo-deny --locked'; then
   run cargo deny check
-else
-  echo "--- cargo-deny not installed; skipping (install: cargo install cargo-deny --locked) ---"
 fi
 
-if command -v cargo-audit >/dev/null 2>&1; then
+if require_tool cargo-audit 'install: cargo install cargo-audit'; then
   run cargo audit
-else
-  echo "--- cargo-audit not installed; skipping (install: cargo install cargo-audit) ---"
 fi
 
-if command -v wasm-pack >/dev/null 2>&1; then
+if require_tool wasm-pack 'install: rustup target add wasm32-unknown-unknown && cargo install wasm-pack'; then
   run cargo build -p ithmb-wasm --target wasm32-unknown-unknown
-else
-  echo "--- wasm target/toolchain missing; skipping wasm build ---"
 fi
 
 # C API: build the cdylib with the c feature and run its test (fast, local-runnable)
@@ -48,10 +57,8 @@ run cargo build -p ithmb-core --features c
 run cargo test -p ithmb-core --features c --test c_api_test
 
 # Typos (pinned like CI)
-if command -v typos >/dev/null 2>&1; then
+if require_tool typos 'install: cargo install typos-cli --locked --version 1.42.3'; then
   run typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
-else
-  echo "--- typos not installed; skipping (install: cargo install typos-cli --locked --version 1.42.3) ---"
 fi
 
 # Rustdoc -D warnings (matches pr-checks doc_check)
@@ -61,19 +68,17 @@ run env RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
 run bash scripts/check-ci-pins.sh
 
 # Secrets scan (matches pr-checks secrets_scan)
-if command -v gitleaks >/dev/null 2>&1; then
+if require_tool gitleaks 'see https://github.com/gitleaks/gitleaks'; then
   run gitleaks detect --source .
-else
-  echo "--- gitleaks not installed; skipping (see https://github.com/gitleaks/gitleaks) ---"
 fi
 
 # Dependency updates — dev-first alternative to dependabot: run this, then
-# commit upgrades on dev and ship them like any other change.
+# commit upgrades on dev and ship them like any other change. Informational only.
 if command -v cargo-outdated >/dev/null 2>&1; then
   echo "--- dependency updates (cargo-outdated, informational) ---"
   cargo outdated -R 2>/dev/null | tail -n +2 | head -20 || true
 else
-  echo "--- cargo-outdated not installed; skipping (install: cargo install cargo-outdated) ---"
+  echo "--- cargo-outdated not installed; skipping (informational only, not a gate) ---"
 fi
 
 # Fuzz is slow (minutes) — only run when explicitly requested.

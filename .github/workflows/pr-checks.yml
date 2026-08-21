@@ -30,7 +30,7 @@ jobs:
         with:
           components: clippy
           cache: true
-          cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}"
+          cache-key: "verify-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}"
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
@@ -42,8 +42,15 @@ jobs:
       - name: typos-cli check
         shell: bash
         run: |
-          cargo install typos-cli --locked --version 1.42.3 2>&1 | tail -3
-          typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
+          # Pinned prebuilt binary (see ADR-0008) instead of `cargo install` to
+          # avoid recompiling ~150 crates on every cold run. Extract into a
+          # dedicated dir: this tarball has no top-level dir, so extracting into
+          # /tmp directly applies the archive root's sticky-bit metadata to the
+          # root-owned /tmp (permission denied on GH runners).
+          curl -sSL https://github.com/crate-ci/typos/releases/download/v1.42.3/typos-v1.42.3-x86_64-unknown-linux-musl.tar.gz -o /tmp/typos.tgz
+          mkdir -p /tmp/typos-bin
+          tar xzf /tmp/typos.tgz -C /tmp/typos-bin
+          /tmp/typos-bin/typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
 
   check_links:
     runs-on: ubuntu-latest
@@ -53,7 +60,7 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
         with:
-          args: --max-retries 5 --timeout 30 --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude theiphonewiki.com --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' --exclude 'forums.whirlpool.net.au' --exclude 'github.com/itsmichaelwest/classick' --exclude shnatsel.medium.com README.md docs/
+          args: --max-retries 5 --timeout 30 --no-progress --exclude buymeacoffee --exclude 'home.fau.edu' --exclude imageglass.org --exclude theiphonewiki.com --exclude mybroadband --exclude buy.stripe.com --exclude 'mdsite.duckdns.org' --exclude 'forums.whirlpool.net.au' --exclude 'github.com/itsmichaelwest/classick' --exclude shnatsel.medium.com --exclude hungrypoint.com README.md docs/
           fail: true
 
   verify_deny:
@@ -61,27 +68,26 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
-        with:
-          cache: true
-          cache-key: "deny-${{ hashFiles('deny.toml') }}"
-      - name: Install cargo-deny
-        run: cargo install cargo-deny --locked --version 0.20.2
       - name: cargo deny check
-        run: cargo deny check
+        shell: bash
+        run: |
+          # Pinned prebuilt musl binary (see ADR-0008); standalone, no cargo needed.
+          curl -sSL https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz -o /tmp/cargo-deny.tgz
+          tar xzf /tmp/cargo-deny.tgz -C /tmp --strip-components=1
+          /tmp/cargo-deny check
 
   cargo_audit:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
-        with:
-          cache: true
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked --version 0.22.2
       - name: Run cargo audit
-        run: cargo audit
+        shell: bash
+        run: |
+          # Pinned prebuilt gnu binary (see ADR-0008); standalone audit, no cargo needed.
+          curl -sSL https://github.com/rustsec/cargo-audit/releases/download/cargo-audit/v0.22.2/cargo-audit-x86_64-unknown-linux-gnu-v0.22.2.tgz -o /tmp/cargo-audit.tgz
+          tar xzf /tmp/cargo-audit.tgz -C /tmp --strip-components=1
+          /tmp/cargo-audit audit
 
   doc_check:
     runs-on: ubuntu-latest
@@ -92,7 +98,7 @@ jobs:
         with:
           components: rust-docs
           cache: true
-          cache-key: "doc-${{ hashFiles('rust-toolchain.toml') }}"
+          cache-key: "doc-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}"
       - name: cargo doc
         env:
           RUSTDOCFLAGS: "-D warnings"
@@ -106,7 +112,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Gitleaks (secrets in history)
-        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
 
   check_ci_pins:
     runs-on: ubuntu-latest

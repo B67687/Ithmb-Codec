@@ -22,7 +22,7 @@ fi
 echo "--- 2. cargo build --workspace ---"
 cargo build --workspace 2>&1 | scripts/check-zero-warnings.py
 echo "OK"
-# 4. Clippy (all-features, strict)
+# 3. Clippy (default, all-targets)
 echo "--- 3. cargo clippy --workspace --all-targets ---"
 cargo clippy --workspace --all-targets 2>&1 | scripts/check-zero-warnings.py
 echo "OK"
@@ -38,7 +38,6 @@ echo "OK"
 # 6. Doc (full, with private items)
 echo "--- 6. cargo doc --workspace --no-deps --document-private-items ---"
 cargo doc --workspace --no-deps --document-private-items 2>&1 | scripts/check-zero-warnings.py
-echo "OK"
 echo "OK"
 
 if [ -z "${RAPID}" ]; then
