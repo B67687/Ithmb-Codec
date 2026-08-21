@@ -7,6 +7,7 @@
     clippy::cast_sign_loss
 )]
 
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 use crate::error::DecodeError;
 
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
