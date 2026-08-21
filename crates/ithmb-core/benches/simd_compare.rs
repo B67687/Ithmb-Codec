@@ -241,7 +241,8 @@ fn main() {
                     simd::uyvy_row_to_bgra(
                         &src[src_off..src_off + row_stride],
                         &mut d[dst_off..dst_off + groups_per_row * 8],
-                    );
+                    )
+                    .unwrap();
                 }
             });
     }

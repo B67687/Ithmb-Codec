@@ -67,7 +67,7 @@ fn decode_progressive(
         crate::pixel_utils::check_canceled(canceled, "uyvy decode canceled")?;
         let src_off = y * row_stride;
         let dst_off = y * w * 4;
-        decode_row(&src[src_off..], w, &mut dst[dst_off..]);
+        decode_row(&src[src_off..], w, &mut dst[dst_off..])?;
     }
     Ok(())
 }
@@ -86,7 +86,7 @@ fn decode_interlaced(src: &[u8], w: usize, h: usize, dst: &mut [u8], canceled: &
         crate::pixel_utils::check_canceled(canceled, "uyvy decode canceled")?;
         let src_off = i * w * 2;
         let dst_row = i * 2;
-        decode_row(&src[src_off..], w, &mut dst[dst_row * w * 4..]);
+        decode_row(&src[src_off..], w, &mut dst[dst_row * w * 4..])?;
     }
 
     // Odd rows (1, 3, 5, …) from the second field.
@@ -94,7 +94,7 @@ fn decode_interlaced(src: &[u8], w: usize, h: usize, dst: &mut [u8], canceled: &
         crate::pixel_utils::check_canceled(canceled, "uyvy decode canceled")?;
         let src_off = field_bytes + i * w * 2;
         let dst_row = i * 2 + 1;
-        decode_row(&src[src_off..], w, &mut dst[dst_row * w * 4..]);
+        decode_row(&src[src_off..], w, &mut dst[dst_row * w * 4..])?;
     }
     Ok(())
 }
@@ -104,11 +104,11 @@ fn decode_interlaced(src: &[u8], w: usize, h: usize, dst: &mut [u8], canceled: &
 /// Processes pixels in groups of 2 using the 4-byte UYVY group format.
 /// For odd widths the last pixel reads its Y and U from the trailing
 #[allow(clippy::similar_names)]
-fn decode_row(row_src: &[u8], w: usize, row_dst: &mut [u8]) {
+fn decode_row(row_src: &[u8], w: usize, row_dst: &mut [u8]) -> Result<(), DecodeError> {
     let groups = w / 2;
 
     let row_bytes = groups * 4;
-    crate::simd::uyvy_row_to_bgra(&row_src[..row_bytes], &mut row_dst[..groups * 8]);
+    crate::simd::uyvy_row_to_bgra(&row_src[..row_bytes], &mut row_dst[..groups * 8])?;
 
     // Odd width: the incomplete trailing pair provides [U, Y] but no V.
     if w % 2 != 0 {
@@ -121,6 +121,8 @@ fn decode_row(row_src: &[u8], w: usize, row_dst: &mut [u8]) {
         let d_off = groups * 8;
         row_dst[d_off..d_off + 4].copy_from_slice(&px);
     }
+
+    Ok(())
 }
 
 #[cfg(test)]

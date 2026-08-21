@@ -7,6 +7,8 @@
     clippy::cast_sign_loss
 )]
 
+use crate::error::DecodeError;
+
 /// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
@@ -48,13 +50,21 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
 #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
-pub(crate) unsafe fn uyvy_double_quad_to_bgra_sse2(quads: &[u8; 8]) -> [u8; 16] {
-    let left = uyvy_quad_to_bgra_sse2(&quads[..4].try_into().unwrap());
-    let right = uyvy_quad_to_bgra_sse2(&quads[4..].try_into().unwrap());
+pub(crate) unsafe fn uyvy_double_quad_to_bgra_sse2(quads: &[u8; 8]) -> Result<[u8; 16], DecodeError> {
+    let left_arr: [u8; 4] = quads[..4].try_into().map_err(|_| DecodeError::BufferTooShort {
+        expected: 4,
+        actual: quads[..4].len(),
+    })?;
+    let right_arr: [u8; 4] = quads[4..].try_into().map_err(|_| DecodeError::BufferTooShort {
+        expected: 4,
+        actual: quads[4..].len(),
+    })?;
+    let left = uyvy_quad_to_bgra_sse2(&left_arr);
+    let right = uyvy_quad_to_bgra_sse2(&right_arr);
     let mut out = [0u8; 16];
     out[..8].copy_from_slice(&left);
     out[8..].copy_from_slice(&right);
-    out
+    Ok(out)
 }
 
 #[cfg(target_arch = "x86_64")]
