@@ -143,6 +143,24 @@ fn roundtrip(bgra: &[u8], w: i32, h: i32, profile: &Profile) -> ithmb_core::Deco
     decode_with_profile(&with_prefix, profile, &AtomicBool::new(false)).expect("roundtrip decode should succeed")
 }
 
+/// Synthetic 4x4 horizontal gradient: B varies 0..15 per pixel.
+fn make_synth_gradient_4x4() -> Vec<u8> {
+    let (w, h) = (4i32, 4i32);
+    let n = (w * h) as usize;
+    let mut bgra = vec![0u8; n * 4];
+    for y in 0..h {
+        for x in 0..w {
+            let idx = ((y * w + x) * 4) as usize;
+            let t = (y * w + x) as u8;
+            bgra[idx] = t * 17; // B
+            bgra[idx + 1] = t * 7; // G
+            bgra[idx + 2] = 255 - t * 11; // R
+            bgra[idx + 3] = 255; // A
+        }
+    }
+    bgra
+}
+
 // ---------------------------------------------------------------------------
 // Test 1 — Solid-color mean
 // ---------------------------------------------------------------------------
@@ -480,18 +498,7 @@ fn synthetic_gradient_variance_rgb565_nonzero() {
     // Given: a synthetic 4×4 horizontal gradient (B varies 0..15 per pixel)
     let w = 4i32;
     let h = 4i32;
-    let n = (w * h) as usize;
-    let mut bgra = vec![0u8; n * 4];
-    for y in 0..h {
-        for x in 0..w {
-            let idx = ((y * w + x) * 4) as usize;
-            let t = (y * w + x) as u8;
-            bgra[idx] = t * 17; // B
-            bgra[idx + 1] = t * 7; // G
-            bgra[idx + 2] = 255 - t * 11; // R
-            bgra[idx + 3] = 255; // A
-        }
-    }
+    let bgra = make_synth_gradient_4x4();
 
     // When: encode as RGB565, decode back
     let profile = util::make_profile(w, h, Encoding::Rgb565);
@@ -607,18 +614,7 @@ fn decoded_clcl_synthetic_gradient_positive_variance() {
     // Given: synthetic 4×4 gradient
     let w = 4i32;
     let h = 4i32;
-    let n = (w * h) as usize;
-    let mut bgra = vec![0u8; n * 4];
-    for y in 0..h {
-        for x in 0..w {
-            let idx = ((y * w + x) * 4) as usize;
-            let t = (y * w + x) as u8;
-            bgra[idx] = t * 17; // B
-            bgra[idx + 1] = t * 7; // G
-            bgra[idx + 2] = 255 - t * 11; // R
-            bgra[idx + 3] = 255; // A
-        }
-    }
+    let bgra = make_synth_gradient_4x4();
     let profile = Profile {
         clcl_chroma: true,
         ..util::make_profile(w, h, Encoding::Yuv422)
@@ -685,18 +681,7 @@ fn decoded_cl_synthetic_gradient_positive_variance() {
     // Given: synthetic 4×4 gradient
     let w = 4i32;
     let h = 4i32;
-    let n = (w * h) as usize;
-    let mut bgra = vec![0u8; n * 4];
-    for y in 0..h {
-        for x in 0..w {
-            let idx = ((y * w + x) * 4) as usize;
-            let t = (y * w + x) as u8;
-            bgra[idx] = t * 17; // B
-            bgra[idx + 1] = t * 7; // G
-            bgra[idx + 2] = 255 - t * 11; // R
-            bgra[idx + 3] = 255; // A
-        }
-    }
+    let bgra = make_synth_gradient_4x4();
     let profile = Profile {
         cl_chroma: true,
         ..util::make_profile(w, h, Encoding::Yuv422)
@@ -726,18 +711,7 @@ fn decoded_swap_chroma_ycbcr420_synthetic_roundtrip() {
     // Given: synthetic 4×4 gradient
     let w = 4i32;
     let h = 4i32;
-    let n = (w * h) as usize;
-    let mut bgra = vec![0u8; n * 4];
-    for y in 0..h {
-        for x in 0..w {
-            let idx = ((y * w + x) * 4) as usize;
-            let t = (y * w + x) as u8;
-            bgra[idx] = t * 17; // B
-            bgra[idx + 1] = t * 7; // G
-            bgra[idx + 2] = 255 - t * 11; // R
-            bgra[idx + 3] = 255; // A
-        }
-    }
+    let bgra = make_synth_gradient_4x4();
     let profile = Profile {
         swap_chroma_planes: true,
         ..util::make_profile(w, h, Encoding::Ycbcr420)
