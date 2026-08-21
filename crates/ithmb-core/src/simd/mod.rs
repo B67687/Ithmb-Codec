@@ -44,7 +44,6 @@ pub(crate) use reordered::rgb555_pack_to_bgra;
 /// Used with `_mm_shuffle_epi8` (SSSE3) / `_mm256_shuffle_epi8` (AVX2) to
 /// expand packed CL/CLCL nibble chroma to full 8-bit values in a single
 /// instruction — replaces per-pixel shift+mask+multiply.
-#[allow(dead_code)]
 pub(crate) const CL_NIBBLE_TABLE: [u8; 16] = [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240];
 
 // ---------------------------------------------------------------------------
