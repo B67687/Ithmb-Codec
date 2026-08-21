@@ -61,18 +61,7 @@ pub(super) fn unpack_rgb565(pixel: u16) -> [u8; 4] {
     [msb_replicate_5(b5), msb_replicate_6(g6), msb_replicate_5(r5), 255]
 }
 
-#[inline]
-#[must_use]
-pub(super) fn msb_replicate_5(v: u32) -> u8 {
-    ((v << 3) | (v >> 2)) as u8
-}
-
-#[inline]
-#[must_use]
-#[allow(clippy::cast_possible_truncation)]
-pub(super) fn msb_replicate_6(v: u32) -> u8 {
-    ((v << 2) | (v >> 4)) as u8
-}
+use crate::pixel_utils::{msb_replicate_5, msb_replicate_6};
 
 #[inline]
 #[must_use]
