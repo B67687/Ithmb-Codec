@@ -182,20 +182,28 @@ fn main() {
     fn simd_rgb565_row_to_bgra(bencher: divan::Bencher) {
         let bgra = util::bgra_checkerboard(256, 256);
         let encoded = enc::encode_rgb565(&bgra, 256, 256, false);
+        let n_pix = encoded.len() / 2;
         bencher
             .counter(BytesCount::new((256 * 256 * 4) as u64))
-            .with_inputs(|| &encoded)
-            .bench_refs(|src| ithmb_core::simd::rgb565_row_to_bgra(src));
+            .with_inputs(|| {
+                let dst = vec![0u8; n_pix * 4];
+                (&encoded, dst)
+            })
+            .bench_refs(|(src, dst)| ithmb_core::simd::rgb565_apply_row_to_bgra(src, dst));
     }
 
     #[divan::bench]
     fn simd_rgb555_row_to_bgra(bencher: divan::Bencher) {
         let bgra = util::bgra_checkerboard(256, 256);
         let encoded = enc::encode_rgb555(&bgra, 256, 256, false, false);
+        let n_pix = encoded.len() / 2;
         bencher
             .counter(BytesCount::new((256 * 256 * 4) as u64))
-            .with_inputs(|| &encoded)
-            .bench_refs(|src| ithmb_core::simd::rgb555_row_to_bgra(src));
+            .with_inputs(|| {
+                let dst = vec![0u8; n_pix * 4];
+                (&encoded, dst)
+            })
+            .bench_refs(|(src, dst)| ithmb_core::simd::rgb555_apply_row_to_bgra(src, dst));
     }
     divan::main();
 }

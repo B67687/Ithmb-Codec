@@ -160,11 +160,15 @@ fn main() {
     fn decode_rgb565_simd(bencher: divan::Bencher) {
         let bgra = bgra_checkerboard(W, H);
         let enc = enc::encode_rgb565(&bgra, W as i32, H as i32, false);
+        let n_pix = enc.len() / 2;
         bencher
             .counter(BytesCount::new(OUTPUT_BYTES))
-            .with_inputs(|| enc.clone())
-            .bench_refs(|src| {
-                let _ = divan::black_box(simd::rgb565_row_to_bgra(src));
+            .with_inputs(|| {
+                let dst = vec![0u8; n_pix * 4];
+                (enc.clone(), dst)
+            })
+            .bench_refs(|(src, dst)| {
+                simd::rgb565_apply_row_to_bgra(src, dst);
             });
     }
 
@@ -187,11 +191,15 @@ fn main() {
     fn decode_rgb555_simd(bencher: divan::Bencher) {
         let bgra = bgra_checkerboard(W, H);
         let enc = enc::encode_rgb555(&bgra, W as i32, H as i32, false, false);
+        let n_pix = enc.len() / 2;
         bencher
             .counter(BytesCount::new(OUTPUT_BYTES))
-            .with_inputs(|| enc.clone())
-            .bench_refs(|src| {
-                let _ = divan::black_box(simd::rgb555_row_to_bgra(src));
+            .with_inputs(|| {
+                let dst = vec![0u8; n_pix * 4];
+                (enc.clone(), dst)
+            })
+            .bench_refs(|(src, dst)| {
+                simd::rgb555_apply_row_to_bgra(src, dst);
             });
     }
 

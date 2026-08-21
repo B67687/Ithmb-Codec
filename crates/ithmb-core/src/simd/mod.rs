@@ -362,7 +362,7 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
 /// 2. SSE2  (8 px/iter)  — `x86_64`/`x86` (guaranteed on these platforms)
 /// 3. Scalar fallback     — always available
 #[inline]
-pub(crate) fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
+pub fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
@@ -387,24 +387,6 @@ pub(crate) fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     scalar::rgb565_row_to_bgra_scalar(src, dst);
 }
 
-/// Convert one row of RGB565 pixels to BGRA8.
-///
-/// Input: 2 bytes per pixel, 4 pixels = 8 bytes minimum.
-/// Output: 4 bytes per pixel (BGRA).
-///
-/// # SIMD
-///
-/// On `x86_64` with SSE2 this processes 4 pixels at a time using packed
-/// 16-bit arithmetic with bit extraction and MSB replication.
-#[inline]
-#[must_use]
-pub fn rgb565_row_to_bgra(src: &[u8]) -> Vec<u8> {
-    let n_pixels = src.len() / 2;
-    let mut dst = vec![0u8; n_pixels * 4];
-    rgb565_apply_row_to_bgra(src, &mut dst);
-    dst
-}
-
 // ---------------------------------------------------------------------------
 // RGB555 row → BGRA
 // ---------------------------------------------------------------------------
@@ -415,7 +397,7 @@ pub fn rgb565_row_to_bgra(src: &[u8]) -> Vec<u8> {
 /// 2. SSE2  (8 px/iter)  — `x86_64`/`x86` (guaranteed on these platforms)
 /// 3. Scalar fallback     — always available
 #[inline]
-pub(crate) fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
+pub fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
@@ -439,19 +421,6 @@ pub(crate) fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
 
     #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
     scalar::rgb555_row_to_bgra_scalar(src, dst);
-}
-
-/// Convert one row of RGB555 pixels to BGRA8.
-///
-/// Input: 2 bytes per pixel, 4 pixels = 8 bytes minimum.
-/// Output: 4 bytes per pixel (BGRA).
-#[inline]
-#[must_use]
-pub fn rgb555_row_to_bgra(src: &[u8]) -> Vec<u8> {
-    let n_pixels = src.len() / 2;
-    let mut dst = vec![0u8; n_pixels * 4];
-    rgb555_apply_row_to_bgra(src, &mut dst);
-    dst
 }
 
 // ---------------------------------------------------------------------------
@@ -747,7 +716,8 @@ mod tests {
             src.push((p >> 8) as u8);
         }
 
-        let result = super::rgb565_row_to_bgra(&src);
+        let mut result = vec![0u8; 10_000 * 4];
+        super::rgb565_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 10_000 * 4];
         super::scalar::rgb565_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB565 SIMD/scalar mismatch for 10K random pixels");
@@ -772,7 +742,8 @@ mod tests {
                 let mut expected = vec![0u8; 16];
                 super::scalar::rgb565_row_to_bgra_scalar(&quad, &mut expected);
 
-                let result = super::rgb565_row_to_bgra(&quad);
+                let mut result = vec![0u8; 16];
+                super::rgb565_apply_row_to_bgra(&quad, &mut result);
                 assert_eq!(
                     &result[..16],
                     &expected[..],
@@ -793,7 +764,8 @@ mod tests {
             src.push((p >> 8) as u8);
         }
 
-        let result = super::rgb565_row_to_bgra(&src);
+        let mut result = vec![0u8; 20];
+        super::rgb565_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 20];
         super::scalar::rgb565_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB565 remainder handling mismatch");
@@ -802,7 +774,8 @@ mod tests {
     #[test]
     fn rgb565_row_single_pixel() {
         let src = [0x00, 0xF8]; // red
-        let result = super::rgb565_row_to_bgra(&src);
+        let mut result = vec![0u8; 4];
+        super::rgb565_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 4];
         super::scalar::rgb565_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB565 single pixel mismatch");
@@ -820,7 +793,8 @@ mod tests {
             src.push((p >> 8) as u8);
         }
 
-        let result = super::rgb555_row_to_bgra(&src);
+        let mut result = vec![0u8; 10_000 * 4];
+        super::rgb555_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 10_000 * 4];
         super::scalar::rgb555_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB555 SIMD/scalar mismatch for 10K random pixels");
@@ -845,7 +819,8 @@ mod tests {
                 let mut expected = vec![0u8; 16];
                 super::scalar::rgb555_row_to_bgra_scalar(&quad, &mut expected);
 
-                let result = super::rgb555_row_to_bgra(&quad);
+                let mut result = vec![0u8; 16];
+                super::rgb555_apply_row_to_bgra(&quad, &mut result);
                 assert_eq!(
                     &result[..16],
                     &expected[..],
@@ -865,7 +840,8 @@ mod tests {
             src.push((p >> 8) as u8);
         }
 
-        let result = super::rgb555_row_to_bgra(&src);
+        let mut result = vec![0u8; 20];
+        super::rgb555_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 20];
         super::scalar::rgb555_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB555 remainder handling mismatch");
@@ -874,7 +850,8 @@ mod tests {
     #[test]
     fn rgb555_row_single_pixel() {
         let src = [0x00, 0x7C]; // red (RGB555)
-        let result = super::rgb555_row_to_bgra(&src);
+        let mut result = vec![0u8; 4];
+        super::rgb555_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 4];
         super::scalar::rgb555_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB555 single pixel mismatch");
