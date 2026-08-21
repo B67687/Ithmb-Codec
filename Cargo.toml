@@ -4,7 +4,7 @@ members = ["crates/ithmb-core", "pymod", "crates/ithmb-cli", "crates/ithmb-gen",
 exclude = ["fuzz"]
 
 [workspace.package]
-version = "1.9.6"
+version = "1.9.9"
 edition = "2024"
 rust-version = "1.88.0"
 license = "MIT"
@@ -25,3 +25,24 @@ complexity = "deny"
 perf = "deny"
 style = "deny"
 pedantic = "deny"
+
+# CI/DEV PROFILE — strip DWARF from dependencies only. Dependencies are never
+# debugged (backtraces inside zune-jpeg/clap/pyo3 are useless), so their debug
+# info is pure waste in target/ and on every dev/CI compile. Own crates keep
+# full debug=2 so panic backtraces + gdb/lldb on the unsafe SIMD/C-API code
+# remain intact. See ADR-0008.
+#
+# NOTE: "*" also matches workspace members, so each own crate is explicitly
+# re-enabled below. profile.test inherits profile.dev automatically.
+[profile.dev.package."*"]
+debug = false
+[profile.dev.package.ithmb-core]
+debug = true
+[profile.dev.package.ithmb-cli]
+debug = true
+[profile.dev.package.ithmb-gen]
+debug = true
+[profile.dev.package.ithmb-wasm]
+debug = true
+[profile.dev.package.ithmb-python]
+debug = true

@@ -1,7 +1,9 @@
 # ADR-0004: Quarterly Adversarial Audit Protocol
 
-**Status**: Accepted (2026-07-01)
-**Context**: The v1.5.0 and v1.6.0 audits independently discovered 28 source bugs,
+**Status:** Accepted (2026-07-01)
+## Context
+
+The v1.5.0 and v1.6.0 audits independently discovered 28 source bugs,
 5 CI config issues, and 8 documentation errors. None of these were caught by CI
 gates or existing tests — they required a dedicated adversarial review by someone
 unfamiliar with the recent changes.

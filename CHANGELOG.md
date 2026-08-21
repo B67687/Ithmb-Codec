@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 
+## [1.9.9] / [1.9.5] - 2026-08-16
+
+### Changed
+
+- **JPEG decoding migrated from `jpeg-decoder` (maintenance mode) to `zune-jpeg` 0.5.15** (actively maintained, SIMD-accelerated, image-rs's default JPEG backend). Pixel output is equivalent (±1-3/255 IDCT rounding variance — standards-compliant; grayscale JPEGs now decode correctly as a side benefit). The CWE-400 oversized-frame guard (explicit w·h·11 pre-check via `decode_headers()` before any allocation) is preserved byte-for-byte; the old EOI-enforced output-buffer cap is replaced by zune-jpeg's SOF-time per-axis limit set to u16::MAX so the explicit budget remains the sole gate.
+
+### Security
+
+- **CWE-400 guard confirmed against crate source**: `decode_headers()` parses through SOS with zero pixel allocations; the 193-byte SOF2-65535×65535 regression fixture still rejects before allocation.
+
+### Fixed
+
+- **Stale `fuzz/Cargo.lock`**: regenerated — removed the deleted `jpeg-decoder` dependency and its closure, added `zune-jpeg`/`zune-core`, updated ithmb-core pin.
+- **ADR-0006 factual refresh**: dependency list and security-sensitive-dependency claim updated for the `zune-jpeg` migration.
+
 ## [1.9.6] / [1.9.5] - 2026-08-13
 
 ### Added
@@ -215,7 +230,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 - **Sample generator CLI** — ithmb-gen crate for generating test .ithmb files in all 7 formats
 - **C ABI** — cdylib exposing ImageGlass v10 plugin ABI for FFI integration
 - **STATS.md** — Canonical single-source-of-truth for test counts, suite breakdown, and project statistics (README now references STATS.md instead of hardcoding)
-- **ADR-0005: 8 MB file size guard** — Systematic research-driven limit with 10× margin on largest known frame (see docs/adr/0005-file-size-guard-limit.md)
+- **ADR-0005: 8 MB file size guard** — Systematic research-driven limit with 10× margin on largest known frame (see docs/adr/2026-07-07-file-size-guard-limit.md)
 - **GLOSSARY.md, GUIDE.md** — Plain-english explainer for newcomers and iPod extraction walkthrough
 - **ECOSYSTEM.md** — Documented original contributions to the .ithmb reverse-engineering space
 

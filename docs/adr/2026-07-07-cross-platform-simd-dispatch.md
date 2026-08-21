@@ -1,8 +1,10 @@
 # ADR-0001: Cross-platform SIMD Dispatch
 
-**Status**: Accepted (2026-07-07)
+**Status:** Accepted (2026-07-07)
 
-**Context**: The .ithmb codec spends most of its CPU time in YUV→BGRA color conversion for four decoders (UYVY, YCbCr 4:2:0, CLCL nibble-chroma, and CL per-pixel chroma). These conversions apply BT.601 matrix arithmetic per pixel — an ALU-bound workload that benefits from SIMD throughput of 4–8 pixels per iteration. The codec must run on x86_64 (Linux, macOS Intel, Windows), aarch64 (Linux ARM, macOS ARM), and 32-bit x86, with a scalar reference path as the correctness baseline.
+## Context
+
+The .ithmb codec spends most of its CPU time in YUV→BGRA color conversion for four decoders (UYVY, YCbCr 4:2:0, CLCL nibble-chroma, and CL per-pixel chroma). These conversions apply BT.601 matrix arithmetic per pixel — an ALU-bound workload that benefits from SIMD throughput of 4–8 pixels per iteration. The codec must run on x86_64 (Linux, macOS Intel, Windows), aarch64 (Linux ARM, macOS ARM), and 32-bit x86, with a scalar reference path as the correctness baseline.
 
 The C# prototype used a cascading dispatch ladder (`Avx512BW.IsSupported → Sse2.IsSupported → AdvSimd.IsSupported → scalar`) resolved at `JIT` compile time via `IsSupported` constants. Rust has no JIT; dispatch must happen either at compile time (cargo feature gates + `#[cfg]`) or at runtime (`is_x86_feature_detected!`).
 

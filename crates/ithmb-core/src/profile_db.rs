@@ -138,6 +138,10 @@ fn nano_alternate(prefix: i32, width: i32, height: i32) -> Profile {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
+// REVIEW 2.4 justification: unwrap/expect below are TEST-ONLY — this module only
+// compiles under cfg(test). load_builtin() is infallible (embedded static data,
+// never fails to parse), so unwrap is safe here; clippy::unwrap_used is allowed
+// for the tests module only. Production code paths (load/load_path) use Result.
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;

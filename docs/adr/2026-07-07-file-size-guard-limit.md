@@ -1,7 +1,9 @@
 # ADR-0005: File Size Guard Limit
 
-**Status**: Revised (2026-07-07)
-**Context**: The C# codebase defined a 32 MB `MaxDecodeFileSize` limit (see `IthmbCodecPlugin.Helpers.cs:29`). The Rust port initially omitted this guard entirely — the README documented it but the code never enforced it. We needed to implement the guard properly and determine the right limit for the Rust codec.
+**Status:** Revised (2026-07-07)
+## Context
+
+The C# codebase defined a 32 MB `MaxDecodeFileSize` limit (see `IthmbCodecPlugin.Helpers.cs:29`). The Rust port initially omitted this guard entirely — the README documented it but the code never enforced it. We needed to implement the guard properly and determine the right limit for the Rust codec.
 
 ## Decision
 

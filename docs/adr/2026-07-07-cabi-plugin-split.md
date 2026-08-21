@@ -1,8 +1,10 @@
 # ADR-0002: C ABI Plugin Split
 
-**Status**: Accepted (2026-07-07)
+**Status:** Accepted (2026-07-07)
 
-**Context**: The original Rust workspace included a `cabi` crate (`ithmb-core-cabi`) as a first-class workspace member alongside `ithmb-core`, `ithmb-cli`, `ithmb-gen`, and `pymod`. This crate produced a `cdylib` shared library implementing the ImageGlass v10 native plugin ABI — a single exported function `ig_plugin_get_api` callable by the ImageGlass image viewer on Windows and by any language with C FFI support.
+## Context
+
+The original Rust workspace included a `cabi` crate (`ithmb-core-cabi`) as a first-class workspace member alongside `ithmb-core`, `ithmb-cli`, `ithmb-gen`, and `pymod`. This crate produced a `cdylib` shared library implementing the ImageGlass v10 native plugin ABI — a single exported function `ig_plugin_get_api` callable by the ImageGlass image viewer on Windows and by any language with C FFI support.
 
 Co-locating the C ABI crate with the core library created several tensions:
 

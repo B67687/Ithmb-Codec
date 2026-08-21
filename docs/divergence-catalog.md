@@ -6,7 +6,7 @@
 
 **Method:** module-by-module behavior diff of both source trees (not text diff), cross-checked against
 prior session plans (`.omo/plans/rust-csharp-parity.md`, `rust-csharp-parity-fix.md`), ADRs
-(`docs/adr/0003`, `0005`, `adr/csharp/*`), embedded profile tables, and deviation comments in the Rust source.
+(`docs/adr/` ADR-0003, ADR-0005, `adr/csharp/*`), embedded profile tables, and deviation comments in the Rust source.
 
 **Classification legend**
 - **ALLOWLISTED-BUGFIX** — Rust intentionally fixes a C# bug/security hole (evidence cited).

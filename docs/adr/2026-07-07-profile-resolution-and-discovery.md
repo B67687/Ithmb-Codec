@@ -1,8 +1,10 @@
 # ADR-0003: Profile Resolution and Discovery
 
-**Status**: Accepted (2026-07-07)
+**Status:** Accepted (2026-07-07)
 
-**Context**: The `.ithmb` format has no central registry. Format IDs (4-byte big-endian prefixes) and their corresponding dimensions, pixel encodings, byte orders, and post-processing flags must be discovered from 20+ open-source implementations across 15 years of iPod reverse-engineering. A profile database encodes this knowledge so the codec can identify and decode any `.ithmb` file without network access.
+## Context
+
+The `.ithmb` format has no central registry. Format IDs (4-byte big-endian prefixes) and their corresponding dimensions, pixel encodings, byte orders, and post-processing flags must be discovered from 20+ open-source implementations across 15 years of iPod reverse-engineering. A profile database encodes this knowledge so the codec can identify and decode any `.ithmb` file without network access.
 
 The codec must handle:
 
