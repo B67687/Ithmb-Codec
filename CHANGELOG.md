@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 
+## [Unreleased]
+
+### Changed
+- **Pipeline module split**: `pipeline/mod.rs` (1286 LOC) refactored into focused submodules — `post_process.rs` (crop/rotation), `jpeg_scan.rs` (JPEG frame scanner), `pixel_utils.rs` (shared helpers). Public API re-exports unchanged.
+- **SIMD module reorganization**: format dispatch moved from `simd/mod.rs` (1243 LOC) into per-format submodules — `uyvy.rs`, `rgb565.rs`, `rgb555.rs`, `yuv.rs`, `cl.rs`. Module reduced to thin re-exports + tests.
+- **Dead code cleanup**: removed blanket `#[allow(dead_code)]` in encoder module, removed stale `unused_imports` allows, removed trivial `yuv::clamp` wrapper.
+- **Performance**: `encoding_name_for_prefix` now returns `&'static str` (zero allocation).
+
+### Fixed
+- **Python bindings**: `list_profiles` now propagates `dict.set_item` errors instead of silently discarding.
+
 ## [1.9.9] / [1.9.5] - 2026-08-16
 
 ### Changed
