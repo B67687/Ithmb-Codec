@@ -109,17 +109,17 @@ fn open_ithmb(py: Python<'_>, data: &[u8], canceled: Option<bool>) -> PyResult<V
 ///     A list of dicts, each with "name" (prefix string), "width", "height",
 ///     and "encoding" (e.g. `Rgb565`, `Rgb555`, `Yuv422`, etc.).
 #[pyfunction]
-fn list_profiles(py: Python<'_>) -> Vec<Py<PyAny>> {
+fn list_profiles(py: Python<'_>) -> PyResult<Vec<Py<PyAny>>> {
     let profiles = codec::profile::built_in_profiles();
     profiles
         .into_iter()
         .map(|p| {
             let dict = pyo3::types::PyDict::new(py);
-            let _ = dict.set_item("name", p.prefix.to_string());
-            let _ = dict.set_item("width", p.width);
-            let _ = dict.set_item("height", p.height);
-            let _ = dict.set_item("encoding", format!("{:?}", p.encoding));
-            dict.into()
+            dict.set_item("name", p.prefix.to_string())?;
+            dict.set_item("width", p.width)?;
+            dict.set_item("height", p.height)?;
+            dict.set_item("encoding", format!("{:?}", p.encoding))?;
+            Ok(dict.into())
         })
         .collect()
 }
