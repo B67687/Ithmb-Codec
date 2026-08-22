@@ -5,8 +5,6 @@
 // Each encoder mirrors the corresponding decoder's byte layout exactly
 // so that encode→decode is the identity (within quantization error).
 
-// Suppress dead_code in non-test builds (wired in T7 pipeline).
-#![cfg_attr(not(test), allow(dead_code))]
 #![allow(
     clippy::many_single_char_names,
     clippy::similar_names,

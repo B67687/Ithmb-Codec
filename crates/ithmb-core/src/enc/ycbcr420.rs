@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Encoder: YCbCr 4:2:0 — planar, 3 bytes per pixel effective
 
-#[allow(unused_imports)]
 use crate::enc::helpers::{bt601_cb, bt601_cr, bt601_y};
 use crate::pixel_utils::clamp_u8;
 

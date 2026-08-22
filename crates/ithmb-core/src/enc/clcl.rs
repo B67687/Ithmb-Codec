@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Encoder: CLCL — separate Cb/Cr nibble planes, 2 bytes per pixel
 
-#[allow(unused_imports)]
 use crate::enc::helpers::{bt601_cb, bt601_cr, bt601_y};
 use crate::pixel_utils::clamp_u8;
 
