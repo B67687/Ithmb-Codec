@@ -52,9 +52,9 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
 
     let mut out = [0u8; 16];
     for i in 0..4 {
-        out[i * 4] = crate::yuv::clamp(b_arr[i]);
-        out[i * 4 + 1] = crate::yuv::clamp(g_arr[i]);
-        out[i * 4 + 2] = crate::yuv::clamp(r_arr[i]);
+        out[i * 4] = crate::pixel_utils::clamp_u8(b_arr[i]);
+        out[i * 4 + 1] = crate::pixel_utils::clamp_u8(g_arr[i]);
+        out[i * 4 + 2] = crate::pixel_utils::clamp_u8(r_arr[i]);
         out[i * 4 + 3] = 255;
     }
     out
@@ -573,9 +573,9 @@ pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
 
     let mut out = [0u8; 16];
     for i in 0..4 {
-        out[i * 4] = crate::yuv::clamp(b_arr[i]);
-        out[i * 4 + 1] = crate::yuv::clamp(g_arr[i]);
-        out[i * 4 + 2] = crate::yuv::clamp(r_arr[i]);
+        out[i * 4] = crate::pixel_utils::clamp_u8(b_arr[i]);
+        out[i * 4 + 1] = crate::pixel_utils::clamp_u8(g_arr[i]);
+        out[i * 4 + 2] = crate::pixel_utils::clamp_u8(r_arr[i]);
         out[i * 4 + 3] = 255;
     }
     out
@@ -755,4 +755,83 @@ pub(crate) unsafe fn cl_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
         let o = j * 4;
         dst[o..o + 4].copy_from_slice(&px);
     }
+}
+// ---------------------------------------------------------------------------
+// Runtime dispatch
+// ---------------------------------------------------------------------------
+
+/// Convert 4 CL planar pixels to 16 BGRA bytes.
+///
+/// Input layout (8 bytes): `[Y0, Y1, Y2, Y3, CbCr0, CbCr1, CbCr2, CbCr3]`
+#[must_use]
+#[allow(clippy::trivially_copy_pass_by_ref)]
+pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    unsafe {
+        if is_x86_feature_detected!("sse4.1") {
+            return cl_quad_to_bgra_sse41(quad);
+        }
+        cl_quad_to_bgra_sse2(quad)
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return super::neon::cl_quad_to_bgra_neon(quad);
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    // Scalar fallback (not needed when SIMD covers all platforms)
+    super::scalar::cl_quad_to_bgra(*quad)
+}
+
+/// Convert one row of CL planar data to BGRA.
+///
+/// Input `src` layout (`w * 2` bytes):
+///   `src[0..w]` = Y bytes (one per pixel)
+///   `src[w..2*w]` = `CbCr` bytes (Cr in high nibble, Cb in low nibble)
+///
+/// Output `dst`: `w * 4` bytes BGRA.
+///
+/// # Panics
+///
+/// When `dst` is not exactly `src.len() * 2` bytes.
+#[inline]
+pub fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
+    debug_assert_eq!(dst.len(), src.len() * 2);
+
+    // AVX2 path (runtime-detected -- fastest 256-bit arithmetic)
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            return cl_row_to_bgra_avx2(src, dst);
+        }
+    }
+
+    // SSE4.1 packed YUV path (runtime-detected -- faster packed clamp + pack)
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    if is_x86_feature_detected!("sse4.1") {
+        unsafe {
+            return cl_row_to_bgra_sse41(src, dst);
+        }
+    }
+
+    // SSE2 path (compile-time guaranteed on x86_64/x86)
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    // SAFETY: x86_64/x86 guarantees SSE2.
+    unsafe {
+        cl_row_to_bgra_sse2(src, dst);
+    }
+
+    // NEON path (compile-time guaranteed on aarch64, gated on macOS -- known NEON edge case)
+    #[cfg(target_arch = "aarch64")]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return super::neon::cl_row_to_bgra_neon(src, dst);
+    }
+
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    super::scalar::cl_row_to_bgra_scalar(src, dst);
 }

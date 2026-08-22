@@ -143,3 +143,48 @@ pub(crate) fn rotate_pixels(src: &[u8], width: u32, height: u32, rotation: i32) 
         _ => (src.to_vec(), width, height),
     }
 }
+
+/// Convert every byte in a gray buffer to BGRA: `gray[n] -> [gray[n], gray[n], gray[n], 255]`.
+#[allow(unsafe_code, dead_code)]
+#[must_use]
+pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    // SAFETY: x86_64/x86 guarantees SSE2.
+    unsafe {
+        crate::simd::fill_gray_row_sse2(gray)
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return crate::simd::neon::fill_gray_row_neon(gray);
+    }
+
+    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    crate::simd::scalar::fill_gray_row(gray)
+}
+
+/// Convert luma bytes to BGRA using a single shared Cb/Cr pair.
+///
+/// Processes batches of 4 via `yuv420_quad_to_bgra` (SIMD when possible).
+#[allow(dead_code)]
+#[must_use]
+pub(crate) fn fill_yuv_row(luma: &[u8], cb: u8, cr: u8) -> Vec<u8> {
+    let n = luma.len();
+    let mut dst = vec![0u8; n * 4];
+    let mut i = 0;
+
+    while i + 4 <= n {
+        let quad = crate::simd::yuv420_quad_to_bgra(&[luma[i], luma[i + 1], luma[i + 2], luma[i + 3], cb, cr]);
+        let o = i * 4;
+        dst[o..o + 16].copy_from_slice(&quad);
+        i += 4;
+    }
+
+    for (j, &y) in luma.iter().enumerate().skip(i) {
+        let px = crate::yuv::yuv_to_bgra(y, cb, cr);
+        let o = j * 4;
+        dst[o..o + 4].copy_from_slice(&px);
+    }
+    dst
+}

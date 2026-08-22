@@ -146,3 +146,38 @@ pub(crate) unsafe fn rgb565_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
         super::scalar::rgb565_row_to_bgra_scalar(&src[i..], &mut dst[i * 2..]);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Runtime dispatch
+// ---------------------------------------------------------------------------
+
+/// In-place row conversion with runtime SIMD dispatch.
+///
+/// 1. AVX2  (16 px/iter) -- `x86_64`, runtime `is_x86_feature_detected!("avx2")`
+/// 2. SSE2  (8 px/iter)  -- `x86_64`/`x86` (guaranteed on these platforms)
+/// 3. Scalar fallback     -- always available
+#[inline]
+pub fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: checked by is_x86_feature_detected! below.
+    if is_x86_feature_detected!("avx2") {
+        unsafe {
+            return rgb565_row_to_bgra_avx2(src, dst);
+        }
+    }
+
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    // SAFETY: x86_64/x86 guarantees SSE2.
+    unsafe {
+        rgb565_row_to_bgra_sse2(src, dst);
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    #[allow(unreachable_code)]
+    // SAFETY: aarch64 guarantees NEON.
+    unsafe {
+        return super::neon::rgb565_row_to_bgra_neon(src, dst);
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
+    super::scalar::rgb565_row_to_bgra_scalar(src, dst);
+}

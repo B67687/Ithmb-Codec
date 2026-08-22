@@ -8,10 +8,8 @@
 #![allow(unsafe_code, unreachable_code, dead_code)]
 #![allow(clippy::cast_ptr_alignment, clippy::cast_possible_truncation, clippy::similar_names)]
 
-use crate::error::DecodeError;
-
 // ---------------------------------------------------------------------------
-// Sub-modules: per-format SIMD implementations
+// Sub-modules: per-format SIMD implementations + runtime dispatch
 // ---------------------------------------------------------------------------
 mod cl;
 mod clcl;
@@ -21,31 +19,44 @@ mod rgb565;
 mod uyvy;
 mod yuv;
 
-// Scalar fallbacks — always available (used when SIMD is off or for
+// Scalar fallbacks -- always available (used when SIMD is off or for
 // remainder handling in NEON routines).
 #[cfg_attr(
     any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"),
     allow(dead_code)
 )]
-mod scalar;
+pub(crate) mod scalar;
 
 #[cfg(target_arch = "aarch64")]
-mod neon;
+pub(crate) mod neon;
 
-// Re-export dispatch functions that live in sub-modules.
+// ---------------------------------------------------------------------------
+// Re-exports -- dispatch functions live in their per-format sub-modules.
+// ---------------------------------------------------------------------------
 #[allow(unused_imports)]
+pub use cl::{cl_quad_to_bgra, cl_row_to_bgra};
 pub(crate) use clcl::clcl_row_to_bgra;
 pub(crate) use reordered::rgb555_pack_to_bgra;
+#[allow(unused_imports)]
+pub use rgb555::rgb555_apply_row_to_bgra;
+#[allow(unused_imports)]
+pub use rgb565::rgb565_apply_row_to_bgra;
+#[allow(unused_imports)]
+pub use uyvy::{uyvy_double_quad_to_bgra, uyvy_quad_to_bgra, uyvy_row_to_bgra};
+#[allow(unused_imports)]
+pub use yuv::{yuv420_quad_to_bgra, yuv420_row_pair_to_bgra};
+
+// Re-export shared helpers from pixel_utils for backward compatibility.
+pub use crate::pixel_utils::fill_gray_row;
 
 // ---------------------------------------------------------------------------
-// Imports for test comparisons (SIMD/scalar cross-check).
+// Shared constants
 // ---------------------------------------------------------------------------
-// No import needed — use fully-qualified `crate::yuv::` in tests.
 
-/// Nibble-to-byte lookup table: maps each 4-bit value (0–15) to `nibble << 4 (= nibble * 16)`.
+/// Nibble-to-byte lookup table: maps each 4-bit value (0-15) to `nibble << 4 (= nibble * 16)`.
 /// Used with `_mm_shuffle_epi8` (SSSE3) / `_mm256_shuffle_epi8` (AVX2) to
 /// expand packed CL/CLCL nibble chroma to full 8-bit values in a single
-/// instruction — replaces per-pixel shift+mask+multiply.
+/// instruction -- replaces per-pixel shift+mask+multiply.
 pub(crate) const CL_NIBBLE_TABLE: [u8; 16] = [0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240];
 
 // ---------------------------------------------------------------------------
@@ -115,480 +126,6 @@ pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
         dst[o + 3] = 255;
     }
     dst
-}
-
-// ---------------------------------------------------------------------------
-// BT.601 YCbCr → BGRA  (2 pixels sharing Cb/Cr, as in UYVY / YCbCr 4:2:2)
-// ---------------------------------------------------------------------------
-
-/// Convert one UYVY quad (4 bytes) to two BGRA pixels (8 bytes).
-///
-/// Input layout: `[U (Cb), Y0, V (Cr), Y1]`
-/// Output layout: `[B0, G0, R0, A0, B1, G1, R1, A1]` (alpha = 255).
-///
-/// # SIMD
-///
-/// On `x86_64` with SSE2 this processes the quad with 16-bit fixed-point
-/// arithmetic in a single SSE register pass, retiring both pixels in ~10
-/// instructions (versus ~40 for two scalar calls).
-#[inline]
-#[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
-pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        uyvy::uyvy_quad_to_bgra_sse2(quad)
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::uyvy_quad_to_bgra_neon(quad);
-    }
-
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
-    scalar::uyvy_quad_to_bgra(quad)
-}
-
-/// Convert two UYVY quads (8 bytes) to four BGRA pixels (16 bytes).
-///
-/// Twice as wide as [`uyvy_quad_to_bgra`] — better amortises SSE register
-/// setup when callers have at least 8 bytes of input (the common case).
-#[inline]
-#[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref, clippy::missing_panics_doc)]
-pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        uyvy::uyvy_double_quad_to_bgra_sse2(quads).expect("UYVY double quad SSE2 conversion infallible")
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::uyvy_double_quad_to_bgra_neon(quads);
-    }
-
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
-    scalar::uyvy_double_quad_to_bgra(quads)
-}
-
-/// Convert a full row of UYVY data (4-byte quads) to BGRA.
-///
-/// Input: `src` contains `(w/2) * 4` bytes of UYVY quads (no odd-width trailing pixel).
-/// Output: `dst` contains `(w/2) * 8` bytes of BGRA pixels.
-///
-/// # Errors
-///
-/// Returns [`DecodeError::BufferTooShort`] when `src` does not contain a whole number of quads.
-#[inline]
-#[allow(clippy::too_many_lines)]
-pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), DecodeError> {
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("avx2") {
-        return {
-            unsafe { uyvy::uyvy_row_to_bgra_avx2(src, dst) };
-            Ok(())
-        };
-    }
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("sse4.1") {
-        return {
-            unsafe { uyvy::uyvy_row_to_bgra_sse41(src, dst) };
-            Ok(())
-        };
-    }
-    let n = src.len();
-    debug_assert_eq!(dst.len(), (n / 4) * 8);
-    let full_end = (n / 16) * 16;
-    let mut i = 0usize;
-
-    // Process 4 quads (8 pixels = 16 input bytes) per iteration.
-    while i < full_end {
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-        // SAFETY: x86_64/x86 guarantees SSE2.
-        unsafe {
-            let q0 = uyvy::uyvy_double_quad_to_bgra_sse2(&src[i..i + 8].try_into().map_err(|_| {
-                DecodeError::BufferTooShort {
-                    expected: 8,
-                    actual: src[i..i + 8].len(),
-                }
-            })?)?;
-            let q1 = uyvy::uyvy_double_quad_to_bgra_sse2(&src[i + 8..i + 16].try_into().map_err(|_| {
-                DecodeError::BufferTooShort {
-                    expected: 8,
-                    actual: src[i + 8..i + 16].len(),
-                }
-            })?)?;
-            let d_off = i * 2;
-            dst[d_off..d_off + 16].copy_from_slice(&q0);
-            dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
-        }
-
-        #[cfg(target_arch = "aarch64")]
-        // SAFETY: aarch64 guarantees NEON.
-        unsafe {
-            let arr0: [u8; 8] = src[i..i + 8].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 8,
-                actual: src[i..i + 8].len(),
-            })?;
-            let arr1: [u8; 8] = src[i + 8..i + 16].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 8,
-                actual: src[i + 8..i + 16].len(),
-            })?;
-            let q0 = neon::uyvy_double_quad_to_bgra_neon(&arr0);
-            let q1 = neon::uyvy_double_quad_to_bgra_neon(&arr1);
-            let d_off = i * 2;
-            dst[d_off..d_off + 16].copy_from_slice(&q0);
-            dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
-        }
-
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
-        {
-            let arr0: [u8; 8] = src[i..i + 8].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 8,
-                actual: src[i..i + 8].len(),
-            })?;
-            let arr1: [u8; 8] = src[i + 8..i + 16].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 8,
-                actual: src[i + 8..i + 16].len(),
-            })?;
-            let q0 = scalar::uyvy_double_quad_to_bgra(&arr0);
-            let q1 = scalar::uyvy_double_quad_to_bgra(&arr1);
-            let d_off = i * 2;
-            dst[d_off..d_off + 16].copy_from_slice(&q0);
-            dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
-        }
-
-        i += 16;
-    }
-
-    // Remainder: 0-3 quads processed individually.
-    while i < n {
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-        // SAFETY: x86_64/x86 guarantees SSE2.
-        unsafe {
-            let arr: [u8; 4] = src[i..i + 4].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 4,
-                actual: src[i..i + 4].len(),
-            })?;
-            let px = uyvy::uyvy_quad_to_bgra_sse2(&arr);
-            let d_off = i * 2;
-            dst[d_off..d_off + 8].copy_from_slice(&px);
-        }
-
-        #[cfg(target_arch = "aarch64")]
-        // SAFETY: aarch64 guarantees NEON.
-        unsafe {
-            let arr: [u8; 4] = src[i..i + 4].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 4,
-                actual: src[i..i + 4].len(),
-            })?;
-            let px = neon::uyvy_quad_to_bgra_neon(&arr);
-            let d_off = i * 2;
-            dst[d_off..d_off + 8].copy_from_slice(&px);
-        }
-
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
-        {
-            let arr: [u8; 4] = src[i..i + 4].try_into().map_err(|_| DecodeError::BufferTooShort {
-                expected: 4,
-                actual: src[i..i + 4].len(),
-            })?;
-            let px = scalar::uyvy_quad_to_bgra(&arr);
-            let d_off = i * 2;
-            dst[d_off..d_off + 8].copy_from_slice(&px);
-        }
-
-        i += 4;
-    }
-
-    Ok(())
-}
-
-// ---------------------------------------------------------------------------
-// YCbCr 4:2:0 → BGRA  (4 pixels sharing one Cb/Cr pair, as in YCbCr 4:2:0)
-// ---------------------------------------------------------------------------
-
-/// Convert 4 YCbCr 4:2:0 pixels sharing Cb/Cr to 4 BGRA pixels (16 bytes).
-///
-/// Input layout: `[Y0, Y1, Y2, Y3, Cb, Cr]` — 6 bytes
-/// Output layout: `[B0, G0, R0, A0, B1, G1, R1, A1, B2, G2, R2, A2, B3, G3, R3, A3]`
-///
-/// This is the core inner-loop primitive called by the YCbCr 4:2:0 decoder
-/// for each macroblock. On `x86_64` with SSE2 it processes all 4 pixels with
-/// packed `i32` arithmetic.
-#[inline]
-#[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
-pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
-    // SSE2 path (compile-time guaranteed on x86_64/x86)
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        yuv::yuv420_quad_to_bgra_sse2(quad)
-    }
-
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"),)))]
-    // Scalar fallback (used on all non-x86_64 platforms, including aarch64+simd)
-    scalar::yuv420_quad_to_bgra(quad)
-}
-
-/// Convert an entire row-pair of YCbCr 4:2:0 data (2 rows of Y, 1 row each of Cb/Cr
-///
-/// Each 4-pixel macroblock (2x2) is decoded via the platform-specific SIMD primitive,
-/// bypassing the per-macroblock dispatch overhead.
-///
-/// # Arguments
-///
-/// * `y_row` - Two rows of Y data (`2 * w` bytes)
-/// * `cb_row` - One row of Cb data (`cb_w` bytes)
-/// * `cr_row` - One row of Cr data (`cb_w` bytes)
-/// * `dst` - Output buffer (`2 * w * 4` bytes)
-/// * `w` - Width in pixels
-/// * `cb_w` - Chroma width (`w / 2`)
-#[inline]
-pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: &mut [u8], w: usize, cb_w: usize) {
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("avx2") {
-        return unsafe { yuv::yuv420_row_pair_to_bgra_avx2(y_row, cb_row, cr_row, dst, w, cb_w) };
-    }
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("sse4.1") {
-        return unsafe { yuv::yuv420_row_pair_to_bgra_sse41(y_row, cb_row, cr_row, dst, w, cb_w) };
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    #[allow(unreachable_code)]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::yuv420_row_pair_to_bgra_neon(y_row, cb_row, cr_row, dst, w, cb_w);
-    }
-    for cx in 0..cb_w {
-        let quad = [
-            y_row[cx * 2],
-            y_row[cx * 2 + 1],
-            y_row[w + cx * 2],
-            y_row[w + cx * 2 + 1],
-            cb_row[cx],
-            cr_row[cx],
-        ];
-        let out = yuv420_quad_to_bgra(&quad);
-
-        let off = cx * 8;
-        dst[off..off + 4].copy_from_slice(&out[0..4]);
-        dst[off + 4..off + 8].copy_from_slice(&out[4..8]);
-        let off2 = off + w * 4;
-        dst[off2..off2 + 4].copy_from_slice(&out[8..12]);
-        dst[off2 + 4..off2 + 8].copy_from_slice(&out[12..16]);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// RGB565 row → BGRA
-// ---------------------------------------------------------------------------
-
-/// In-place row conversion with runtime SIMD dispatch.
-///
-/// 1. AVX2  (16 px/iter) — `x86_64`, runtime `is_x86_feature_detected!("avx2")`
-/// 2. SSE2  (8 px/iter)  — `x86_64`/`x86` (guaranteed on these platforms)
-/// 3. Scalar fallback     — always available
-#[inline]
-pub fn rgb565_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("avx2") {
-        unsafe {
-            return rgb565::rgb565_row_to_bgra_avx2(src, dst);
-        }
-    }
-
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        rgb565::rgb565_row_to_bgra_sse2(src, dst);
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    #[allow(unreachable_code)]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::rgb565_row_to_bgra_neon(src, dst);
-    }
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
-    scalar::rgb565_row_to_bgra_scalar(src, dst);
-}
-
-// ---------------------------------------------------------------------------
-// RGB555 row → BGRA
-// ---------------------------------------------------------------------------
-
-/// In-place row conversion with runtime SIMD dispatch.
-///
-/// 1. AVX2  (16 px/iter) — `x86_64`, runtime `is_x86_feature_detected!("avx2")`
-/// 2. SSE2  (8 px/iter)  — `x86_64`/`x86` (guaranteed on these platforms)
-/// 3. Scalar fallback     — always available
-#[inline]
-pub fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("avx2") {
-        unsafe {
-            return rgb555::rgb555_row_to_bgra_avx2(src, dst);
-        }
-    }
-
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        rgb555::rgb555_row_to_bgra_sse2(src, dst);
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    #[allow(unreachable_code)]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::rgb555_row_to_bgra_neon(src, dst);
-    }
-
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
-    scalar::rgb555_row_to_bgra_scalar(src, dst);
-}
-
-// ---------------------------------------------------------------------------
-// Gray/monochrome row -> BGRA
-// ---------------------------------------------------------------------------
-
-/// Convert every byte in a gray buffer to BGRA: `gray[n] -> [gray[n], gray[n], gray[n], 255]`.
-#[must_use]
-pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        fill_gray_row_sse2(gray)
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::fill_gray_row_neon(gray);
-    }
-
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
-    scalar::fill_gray_row(gray)
-}
-
-// ---------------------------------------------------------------------------
-// Luma + shared chroma -> BGRA  (for CLCL)
-// ---------------------------------------------------------------------------
-
-/// Convert luma bytes to BGRA using a single shared Cb/Cr pair.
-///
-/// Processes batches of 4 via `yuv420_quad_to_bgra` (SIMD when possible).
-#[must_use]
-pub fn fill_yuv_row(luma: &[u8], cb: u8, cr: u8) -> Vec<u8> {
-    let n = luma.len();
-    let mut dst = vec![0u8; n * 4];
-    let mut i = 0;
-
-    while i + 4 <= n {
-        let quad = yuv420_quad_to_bgra(&[luma[i], luma[i + 1], luma[i + 2], luma[i + 3], cb, cr]);
-        let o = i * 4;
-        dst[o..o + 16].copy_from_slice(&quad);
-        i += 4;
-    }
-
-    for (j, &y) in luma.iter().enumerate().skip(i) {
-        let px = crate::yuv::yuv_to_bgra(y, cb, cr);
-        let o = j * 4;
-        dst[o..o + 4].copy_from_slice(&px);
-    }
-    dst
-}
-
-// ---------------------------------------------------------------------------
-// CL (per-pixel nibble chroma) quad -> BGRA
-// ---------------------------------------------------------------------------
-
-/// Convert 4 CL planar pixels to 16 BGRA bytes.
-///
-/// Input layout (8 bytes): `[Y0, Y1, Y2, Y3, CbCr0, CbCr1, CbCr2, CbCr3]`
-#[must_use]
-pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    unsafe {
-        if is_x86_feature_detected!("sse4.1") {
-            return cl::cl_quad_to_bgra_sse41(quad);
-        }
-        cl::cl_quad_to_bgra_sse2(quad)
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::cl_quad_to_bgra_neon(quad);
-    }
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
-    // Scalar fallback (not needed when SIMD covers all platforms)
-    scalar::cl_quad_to_bgra(*quad)
-}
-
-/// Convert one row of CL planar data to BGRA.
-///
-/// Input `src` layout (`w * 2` bytes):
-///   `src[0..w]` = Y bytes (one per pixel)
-///   `src[w..2*w]` = `CbCr` bytes (Cr in high nibble, Cb in low nibble)
-///
-/// Output `dst`: `w * 4` bytes BGRA.
-///
-/// # Panics
-///
-/// When `dst` is not exactly `src.len() * 2` bytes.
-#[inline]
-pub(crate) fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
-    debug_assert_eq!(dst.len(), src.len() * 2);
-
-    // AVX2 path (runtime-detected — fastest 256-bit arithmetic)
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("avx2") {
-        unsafe {
-            return cl::cl_row_to_bgra_avx2(src, dst);
-        }
-    }
-
-    // SSE4.1 packed YUV path (runtime-detected — faster packed clamp + pack)
-    #[cfg(target_arch = "x86_64")]
-    // SAFETY: checked by is_x86_feature_detected! below.
-    if is_x86_feature_detected!("sse4.1") {
-        unsafe {
-            return cl::cl_row_to_bgra_sse41(src, dst);
-        }
-    }
-
-    // SSE2 path (compile-time guaranteed on x86_64/x86)
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        cl::cl_row_to_bgra_sse2(src, dst);
-    }
-
-    // NEON path (compile-time guaranteed on aarch64, gated on macOS — known NEON edge case)
-    #[cfg(target_arch = "aarch64")]
-    // SAFETY: aarch64 guarantees NEON.
-    unsafe {
-        return neon::cl_row_to_bgra_neon(src, dst);
-    }
-
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
-    scalar::cl_row_to_bgra_scalar(src, dst);
 }
 
 // ---------------------------------------------------------------------------
@@ -755,7 +292,7 @@ mod tests {
         }
 
         let mut result = vec![0u8; 10_000 * 4];
-        super::rgb565_apply_row_to_bgra(&src, &mut result);
+        super::rgb565::rgb565_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 10_000 * 4];
         super::scalar::rgb565_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB565 SIMD/scalar mismatch for 10K random pixels");
@@ -781,7 +318,7 @@ mod tests {
                 super::scalar::rgb565_row_to_bgra_scalar(&quad, &mut expected);
 
                 let mut result = vec![0u8; 16];
-                super::rgb565_apply_row_to_bgra(&quad, &mut result);
+                super::rgb565::rgb565_apply_row_to_bgra(&quad, &mut result);
                 assert_eq!(
                     &result[..16],
                     &expected[..],
@@ -803,7 +340,7 @@ mod tests {
         }
 
         let mut result = vec![0u8; 20];
-        super::rgb565_apply_row_to_bgra(&src, &mut result);
+        super::rgb565::rgb565_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 20];
         super::scalar::rgb565_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB565 remainder handling mismatch");
@@ -813,7 +350,7 @@ mod tests {
     fn rgb565_row_single_pixel() {
         let src = [0x00, 0xF8]; // red
         let mut result = vec![0u8; 4];
-        super::rgb565_apply_row_to_bgra(&src, &mut result);
+        super::rgb565::rgb565_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 4];
         super::scalar::rgb565_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB565 single pixel mismatch");
@@ -832,7 +369,7 @@ mod tests {
         }
 
         let mut result = vec![0u8; 10_000 * 4];
-        super::rgb555_apply_row_to_bgra(&src, &mut result);
+        super::rgb555::rgb555_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 10_000 * 4];
         super::scalar::rgb555_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB555 SIMD/scalar mismatch for 10K random pixels");
@@ -858,7 +395,7 @@ mod tests {
                 super::scalar::rgb555_row_to_bgra_scalar(&quad, &mut expected);
 
                 let mut result = vec![0u8; 16];
-                super::rgb555_apply_row_to_bgra(&quad, &mut result);
+                super::rgb555::rgb555_apply_row_to_bgra(&quad, &mut result);
                 assert_eq!(
                     &result[..16],
                     &expected[..],
@@ -879,7 +416,7 @@ mod tests {
         }
 
         let mut result = vec![0u8; 20];
-        super::rgb555_apply_row_to_bgra(&src, &mut result);
+        super::rgb555::rgb555_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 20];
         super::scalar::rgb555_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB555 remainder handling mismatch");
@@ -889,7 +426,7 @@ mod tests {
     fn rgb555_row_single_pixel() {
         let src = [0x00, 0x7C]; // red (RGB555)
         let mut result = vec![0u8; 4];
-        super::rgb555_apply_row_to_bgra(&src, &mut result);
+        super::rgb555::rgb555_apply_row_to_bgra(&src, &mut result);
         let mut expected = vec![0u8; 4];
         super::scalar::rgb555_row_to_bgra_scalar(&src, &mut expected);
         assert_eq!(result, expected, "RGB555 single pixel mismatch");
@@ -909,7 +446,7 @@ mod tests {
                     state = state.wrapping_mul(1_103_515_245).wrapping_add(12_345);
                     gray.push((state >> 16) as u8);
                 }
-                let result = fill_gray_row(&gray);
+                let result = crate::pixel_utils::fill_gray_row(&gray);
                 let expected = super::scalar::fill_gray_row(&gray);
                 assert_eq!(result, expected, "fill_gray_row mismatch for len={len}");
             }
@@ -932,7 +469,7 @@ mod tests {
                 }
                 let cb = (state >> 8) as u8;
                 let cr = (state >> 16) as u8;
-                let result = fill_yuv_row(&luma, cb, cr);
+                let result = crate::pixel_utils::fill_yuv_row(&luma, cb, cr);
                 let mut expected = vec![0u8; len * 4];
                 for (j, &y) in luma.iter().enumerate() {
                     let px = crate::yuv::yuv_to_bgra(y, cb, cr);
@@ -957,7 +494,7 @@ mod tests {
                             for &cr_n in &n_vals {
                                 let chroma = (cr_n << 4) | cb_n;
                                 let quad = [y0, y1, y2, y3, chroma, chroma, chroma, chroma];
-                                let result = super::cl_quad_to_bgra(&quad);
+                                let result = super::cl::cl_quad_to_bgra(&quad);
                                 let expected = super::scalar::cl_quad_to_bgra(quad);
                                 assert_eq!(&result[..], &expected[..], "cl_quad mismatch");
                             }
@@ -978,7 +515,7 @@ mod tests {
                 for cr_n in 0..=15u8 {
                     let chroma = (cr_n << 4) | cb_n;
                     let quad = [128u8, 128, 128, 128, chroma, chroma, chroma, chroma];
-                    let result = unsafe { cl::cl_quad_to_bgra_ssse3(&quad) };
+                    let result = unsafe { super::cl::cl_quad_to_bgra_ssse3(&quad) };
                     let cb = cb_n << 4;
                     let cr = cr_n << 4;
                     let expected = crate::yuv::yuv_to_bgra(128, cb, cr);
@@ -1005,7 +542,7 @@ mod tests {
                 for cr_n in 0..=15u8 {
                     let chroma = (cr_n << 4) | cb_n;
                     let quad = [128u8, 128, 128, 128, chroma, chroma, chroma, chroma];
-                    let result = unsafe { cl::cl_quad_to_bgra_avx2(&quad) };
+                    let result = unsafe { super::cl::cl_quad_to_bgra_avx2(&quad) };
                     let cb = cb_n << 4;
                     let cr = cr_n << 4;
                     let expected = crate::yuv::yuv_to_bgra(128, cb, cr);
@@ -1031,7 +568,7 @@ mod tests {
                 state = state.wrapping_mul(1_103_515_245).wrapping_add(12_345);
                 *b = (state >> 16) as u8;
             }
-            let result = super::cl_quad_to_bgra(&quad);
+            let result = super::cl::cl_quad_to_bgra(&quad);
             let expected = super::scalar::cl_quad_to_bgra(quad);
             assert_eq!(&result[..], &expected[..], "cl_quad mismatch for random quad");
         }
@@ -1055,7 +592,7 @@ mod tests {
                     *b = (state >> 16) as u8;
                 }
                 let mut dst = vec![0u8; n * 4];
-                cl_row_to_bgra(&src, &mut dst);
+                super::cl::cl_row_to_bgra(&src, &mut dst);
                 let (y, chroma) = src.split_at(n);
                 let mut expected = vec![0u8; n * 4];
                 for i in 0..n {

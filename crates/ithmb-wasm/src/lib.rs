@@ -59,5 +59,5 @@ pub fn peek_prefix(bytes: &[u8]) -> u32 {
 #[allow(clippy::cast_possible_wrap)]
 #[wasm_bindgen]
 pub fn get_encoding_name(prefix: u32) -> String {
-    ithmb_core::encoding_name_for_prefix(prefix as i32)
+    ithmb_core::encoding_name_for_prefix(prefix as i32).to_owned()
 }

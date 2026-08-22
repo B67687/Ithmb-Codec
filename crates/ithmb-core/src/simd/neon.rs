@@ -78,9 +78,9 @@ pub(crate) unsafe fn cl_quad_to_bgra_neon(quad: &[u8; 8]) -> [u8; 16] {
 
     let mut out = [0u8; 16];
     for i in 0..4 {
-        out[i * 4] = crate::yuv::clamp(b_arr[i]);
-        out[i * 4 + 1] = crate::yuv::clamp(g_arr[i]);
-        out[i * 4 + 2] = crate::yuv::clamp(r_arr[i]);
+        out[i * 4] = crate::pixel_utils::clamp_u8(b_arr[i]);
+        out[i * 4 + 1] = crate::pixel_utils::clamp_u8(g_arr[i]);
+        out[i * 4 + 2] = crate::pixel_utils::clamp_u8(r_arr[i]);
         out[i * 4 + 3] = 255;
     }
     out
@@ -251,13 +251,13 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
     let y1 = vgetq_lane_u16(w, 3) as i32;
 
     // BT.601 with Q8 fixed-point.
-    let r0 = crate::yuv::clamp(y0 + (((v - 128) * 359) >> 8));
-    let g0 = crate::yuv::clamp(y0 - (((u - 128) * 88) >> 8) - (((v - 128) * 183) >> 8));
-    let b0 = crate::yuv::clamp(y0 + (((u - 128) * 454) >> 8));
+    let r0 = crate::pixel_utils::clamp_u8(y0 + (((v - 128) * 359) >> 8));
+    let g0 = crate::pixel_utils::clamp_u8(y0 - (((u - 128) * 88) >> 8) - (((v - 128) * 183) >> 8));
+    let b0 = crate::pixel_utils::clamp_u8(y0 + (((u - 128) * 454) >> 8));
 
-    let r1 = crate::yuv::clamp(y1 + (((v - 128) * 359) >> 8));
-    let g1 = crate::yuv::clamp(y1 - (((u - 128) * 88) >> 8) - (((v - 128) * 183) >> 8));
-    let b1 = crate::yuv::clamp(y1 + (((u - 128) * 454) >> 8));
+    let r1 = crate::pixel_utils::clamp_u8(y1 + (((v - 128) * 359) >> 8));
+    let g1 = crate::pixel_utils::clamp_u8(y1 - (((u - 128) * 88) >> 8) - (((v - 128) * 183) >> 8));
+    let b1 = crate::pixel_utils::clamp_u8(y1 + (((u - 128) * 454) >> 8));
 
     [b0, g0, r0, 255, b1, g1, r1, 255]
 }

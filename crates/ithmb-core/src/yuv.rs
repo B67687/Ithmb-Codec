@@ -29,18 +29,6 @@ pub const G_COEF_CR: i32 = 183;
 /// Cb → B coefficient: 1.772 × 256 = 454 (truncated).
 pub const B_COEF: i32 = 454;
 
-/// Clamp an [`i32`] to the inclusive `[0, 255]` range.
-///
-/// # Panics
-///
-/// Never panics.
-#[inline]
-#[must_use]
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-pub fn clamp(v: i32) -> u8 {
-    crate::pixel_utils::clamp_u8(v)
-}
-
 /// Convert a single BT.601 Y′CbCr triad to BGRA 8-bit.
 ///
 /// # Arguments
@@ -72,9 +60,9 @@ pub fn yuv_to_bgra(y: u8, cb: u8, cr: u8) -> [u8; 4] {
     let cb = i32::from(cb) - 128;
     let cr = i32::from(cr) - 128;
 
-    let r = clamp(y + ((cr * R_COEF) >> 8));
-    let g = clamp(y - ((cb * G_COEF_CB) >> 8) - ((cr * G_COEF_CR) >> 8));
-    let b = clamp(y + ((cb * B_COEF) >> 8));
+    let r = crate::pixel_utils::clamp_u8(y + ((cr * R_COEF) >> 8));
+    let g = crate::pixel_utils::clamp_u8(y - ((cb * G_COEF_CB) >> 8) - ((cr * G_COEF_CR) >> 8));
+    let b = crate::pixel_utils::clamp_u8(y + ((cb * B_COEF) >> 8));
 
     [b, g, r, 255]
 }
@@ -158,13 +146,13 @@ mod tests {
 
     #[test]
     fn clamp_single_values() {
-        assert_eq!(clamp(-1), 0);
-        assert_eq!(clamp(0), 0);
-        assert_eq!(clamp(128), 128);
-        assert_eq!(clamp(255), 255);
-        assert_eq!(clamp(256), 255);
-        assert_eq!(clamp(i32::MIN), 0);
-        assert_eq!(clamp(i32::MAX), 255);
+        assert_eq!(crate::pixel_utils::clamp_u8(-1), 0);
+        assert_eq!(crate::pixel_utils::clamp_u8(0), 0);
+        assert_eq!(crate::pixel_utils::clamp_u8(128), 128);
+        assert_eq!(crate::pixel_utils::clamp_u8(255), 255);
+        assert_eq!(crate::pixel_utils::clamp_u8(256), 255);
+        assert_eq!(crate::pixel_utils::clamp_u8(i32::MIN), 0);
+        assert_eq!(crate::pixel_utils::clamp_u8(i32::MAX), 255);
     }
 
     #[test]

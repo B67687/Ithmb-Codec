@@ -8,9 +8,21 @@
 //!
 //! * `profile_loader` - one-time initialization of the built-in profile DB
 //! * `open` - `PhotoDB` / `ArtworkDB` multi-frame container opening
+//! * `post_process` - dimension swap, crop, and rotation
+//! * `jpeg_scan` - embedded JPEG stream scanning and extraction
 
+mod jpeg_scan;
 mod open;
+mod post_process;
 mod profile_loader;
+
+#[allow(unused_imports)]
+pub(super) use jpeg_scan::{has_jpeg_marker, scan_for_embedded_jpeg};
+#[allow(unused_imports)]
+pub(super) use post_process::{
+    apply_crop, apply_crop_with, apply_post_process, apply_post_process_with_transform, apply_rotation,
+    apply_rotation_with,
+};
 
 pub use self::open::{open_ithmb, open_ithmb_with_config};
 
@@ -35,11 +47,11 @@ use std::sync::atomic::AtomicBool;
 /// Look up the human-readable encoding name for a given format prefix.
 /// Returns `"Unknown format"` if the prefix is not found in the built-in profiles.
 #[must_use]
-pub fn encoding_name_for_prefix(prefix: i32) -> String {
+pub fn encoding_name_for_prefix(prefix: i32) -> &'static str {
     let db = get_db();
     match db.get(prefix) {
-        Some(profile) => profile.encoding.to_display_string().to_string(),
-        None => "Unknown format".to_string(),
+        Some(profile) => profile.encoding.to_display_string(),
+        None => "Unknown format",
     }
 }
 
@@ -139,6 +151,12 @@ pub fn decode_with_profile_with_config(
 ///
 /// Like [`decode_with_profile_with_config`] but applies the caller-supplied
 /// transform overrides after profile selection.
+///
+/// This is a public API extension point for advanced callers who already have
+/// a resolved [`Profile`] (e.g. from `PhotoDB` metadata or a custom registry)
+/// and want to override rotation/crop at decode time without mutating the
+/// shared profile. It has no internal callers; prefer [`decode_ithmb_with_transform`]
+/// when prefix-based profile lookup is acceptable.
 ///
 /// # Errors
 ///
@@ -319,204 +337,8 @@ fn dispatch_decode(data: &[u8], profile: &Profile, canceled: &AtomicBool) -> Res
 }
 
 // ---------------------------------------------------------------------------
-// Post-processing
-// ---------------------------------------------------------------------------
-
-/// Applies dimension swap, crop, and rotation in that order.
-fn apply_post_process(mut img: DecodedImage, profile: &Profile) -> DecodedImage {
-    // 1. Swap display dimensions if the profile requests it.
-    if profile.swaps_dimensions {
-        std::mem::swap(&mut img.width, &mut img.height);
-    }
-
-    // 2. Crop to the visible region.
-    img = apply_crop(img, profile);
-
-    // 3. Rotate according to the profile's rotation field.
-    apply_rotation(img, profile)
-}
-
-/// Applies dimension swap, crop, and rotation in that order, with runtime
-/// overrides taking precedence over the profile's own fields.
-///
-/// For fields the caller does not override (`None`), the profile's value is used
-/// — an identity [`TransformConfig`](crate::config::TransformConfig) (default)
-/// produces output identical to [`apply_post_process`].
-fn apply_post_process_with_transform(
-    mut img: DecodedImage,
-    profile: &Profile,
-    transform: &config::TransformConfig,
-) -> DecodedImage {
-    // 1. Swap display dimensions if the profile requests it.
-    if profile.swaps_dimensions {
-        std::mem::swap(&mut img.width, &mut img.height);
-    }
-
-    // 2. Crop — runtime override wins over the profile's crop fields.
-    img = match transform.crop() {
-        Some(crop) => apply_crop_with(img, crop),
-        None => apply_crop(img, profile),
-    };
-
-    // 3. Rotate — runtime override wins over the profile's rotation field.
-    let rotation = transform.rotation().unwrap_or(profile.rotation);
-    apply_rotation_with(img, rotation)
-}
-
-/// Rotates by an explicit angle (degrees; 0/90/180/270, others no-op).
-///
-/// The `DecodedImage` is passed by value for pipeline symmetry with the other
-/// post-processing steps (crop, swap) — historic `rotate_90_cw`/`180`/`270_cw`
-/// carried the same allow.
-#[allow(clippy::needless_pass_by_value)]
-fn apply_rotation_with(img: DecodedImage, rotation: i32) -> DecodedImage {
-    let (data, width, height) = crate::pixel_utils::rotate_pixels(&img.data, img.width, img.height, rotation);
-    DecodedImage { data, width, height }
-}
-
-/// Crops the image to the region specified by the profile.
-///
-/// When `crop_width` or `crop_height` is 0 the remaining span from the
-/// corresponding offset is used. All values are clamped to the image bounds.
-fn apply_crop(img: DecodedImage, profile: &Profile) -> DecodedImage {
-    let needs_crop = profile.crop_x != 0 || profile.crop_y != 0 || profile.crop_width != 0 || profile.crop_height != 0;
-
-    if !needs_crop {
-        return img;
-    }
-    apply_crop_with(
-        img,
-        config::Crop {
-            x: profile.crop_x,
-            y: profile.crop_y,
-            width: profile.crop_width,
-            height: profile.crop_height,
-        },
-    )
-}
-
-/// Crops the image to the region specified by `crop` (0 width/height = remaining
-/// span from the corresponding offset; all values clamped to the image bounds).
-fn apply_crop_with(img: DecodedImage, crop: config::Crop) -> DecodedImage {
-    #[allow(clippy::cast_sign_loss)]
-    let cx = crop.x.max(0) as usize;
-    #[allow(clippy::cast_sign_loss)]
-    let cy = crop.y.max(0) as usize;
-    let iw = img.width as usize;
-    let ih = img.height as usize;
-
-    #[allow(clippy::cast_sign_loss)]
-    let cw = if crop.width > 0 {
-        crop.width as usize
-    } else {
-        iw.saturating_sub(cx)
-    };
-
-    #[allow(clippy::cast_sign_loss)]
-    let ch = if crop.height > 0 {
-        crop.height as usize
-    } else {
-        ih.saturating_sub(cy)
-    };
-
-    // Clamp to image bounds.
-    let cw = cw.min(iw.saturating_sub(cx));
-    let ch = ch.min(ih.saturating_sub(cy));
-
-    if cw == 0 || ch == 0 {
-        return img;
-    }
-
-    let cap = cw.checked_mul(ch).and_then(|v| v.checked_mul(4)).unwrap_or(0);
-    let mut cropped = Vec::with_capacity(cap);
-    for y in cy..cy + ch {
-        let row_start = (y * iw + cx) * 4;
-        cropped.extend_from_slice(&img.data[row_start..row_start + cw * 4]);
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    DecodedImage {
-        data: cropped,
-        width: cw as u32,
-        height: ch as u32,
-    }
-}
-
-/// Applies the rotation specified by the profile.
-///
-/// Supports 0°, 90°, 180°, and 270° clockwise rotation. Other values are
-/// silently ignored.
-fn apply_rotation(img: DecodedImage, profile: &Profile) -> DecodedImage {
-    if profile.rotation % 360 == 0 {
-        return img;
-    }
-    apply_rotation_with(img, profile.rotation)
-}
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Embedded JPEG scanning
-// ---------------------------------------------------------------------------
-
-/// JFIF marker bytes (including null terminator).
-const JFIF_MARKER: &[u8] = b"JFIF\x00";
-
-/// Exif marker bytes (including nulls).
-const EXIF_MARKER: &[u8] = b"Exif\x00\x00";
-
-/// Check if a valid JFIF or Exif marker exists within the scan window after SOI.
-fn has_jpeg_marker(src: &[u8], soi_pos: usize, jfif_exif_scan_window: usize) -> bool {
-    let end = (soi_pos + jfif_exif_scan_window).min(src.len());
-    let window = &src[soi_pos..end];
-
-    window.windows(JFIF_MARKER.len()).any(|w| w == JFIF_MARKER)
-        || window.windows(EXIF_MARKER.len()).any(|w| w == EXIF_MARKER)
-}
-
-/// Scan the buffer for an embedded JPEG stream (SOI to EOI) with marker validation.
-///
-/// Returns the JPEG data slice if found. Some .ithmb files have unregistered
-/// format prefixes but contain a complete JPEG stream within the pixel data.
-/// This function validates that a JFIF or Exif marker exists near the SOI to
-/// avoid false positives from random pixel data containing 0xFF 0xD8.
-fn scan_for_embedded_jpeg<'a>(
-    src: &'a [u8],
-    canceled: &AtomicBool,
-    jpeg_scan_limit: usize,
-    cancel_check_interval: usize,
-    jfif_exif_scan_window: usize,
-) -> Option<&'a [u8]> {
-    let scan_limit = src.len().min(jpeg_scan_limit);
-    let scan_src = &src[..scan_limit];
-    let mut search_start = 0;
-    let mut bytes_since_check: usize = 0;
-    loop {
-        let soi = scan_src[search_start..].windows(2).position(|w| w == b"\xff\xd8")?;
-        let soi_abs = search_start + soi;
-
-        if has_jpeg_marker(scan_src, soi_abs, jfif_exif_scan_window) {
-            let after_soi = &src[soi_abs + 2..];
-            if let Some(eoi) = after_soi.windows(2).position(|w| w == b"\xff\xd9") {
-                return Some(&src[soi_abs..=soi_abs + 2 + eoi + 1]);
-            }
-        }
-        // Skip past this SOI and continue scanning for the next one.
-        search_start = soi_abs + 2;
-
-        // Periodic cancellation check.
-        bytes_since_check += 2;
-        if bytes_since_check >= cancel_check_interval {
-            if canceled.load(std::sync::atomic::Ordering::Relaxed) {
-                return None;
-            }
-            bytes_since_check = 0;
-        }
-    }
-}
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
