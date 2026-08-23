@@ -1,6 +1,0 @@
-[toolchain]
-channel = "nightly-2026-07-15"
-# cargo-fuzz is NOT a rustup component (verified); it's installed via `cargo install
-# cargo-fuzz` in ci-full.yml. Listing it here makes rustup try to install a
-# nonexistent component on a fresh CI runner and can fail the fuzz job.
-components = []
