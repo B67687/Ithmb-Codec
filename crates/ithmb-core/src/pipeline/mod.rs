@@ -6,11 +6,13 @@
 //!
 //! The module is split into sub-modules:
 //!
+//! * `dispatch` - internal decode core (prefix parsing, profile lookup, decoder dispatch)
 //! * `profile_loader` - one-time initialization of the built-in profile DB
 //! * `open` - `PhotoDB` / `ArtworkDB` multi-frame container opening
 //! * `post_process` - dimension swap, crop, and rotation
 //! * `jpeg_scan` - embedded JPEG stream scanning and extraction
 
+mod dispatch;
 mod jpeg_scan;
 mod open;
 mod post_process;
@@ -26,22 +28,10 @@ pub(super) use post_process::{
 
 pub use self::open::{open_ithmb, open_ithmb_with_config};
 
-use self::profile_loader::fallback_jpeg_profile;
 pub(crate) use self::profile_loader::get_db;
-use crate::cl;
-use crate::clcl;
 use crate::config;
-use crate::decoder_helpers;
 use crate::error::{DecodeError, DecodedImage};
-use crate::jpeg;
-use crate::profile::{Encoding, Profile};
-use crate::reordered_rgb555;
-use crate::rgb555;
-use crate::rgb565;
-use crate::uyvy;
-use crate::ycbcr420;
-#[cfg(feature = "logging")]
-use log::{debug, info, warn};
+use crate::profile::Profile;
 use std::sync::atomic::AtomicBool;
 
 /// Look up the human-readable encoding name for a given format prefix.
@@ -95,7 +85,7 @@ pub fn decode_ithmb_with_config(
     canceled: &AtomicBool,
     config: &config::DecodeConfig,
 ) -> Result<DecodedImage, DecodeError> {
-    decode_ithmb_inner(src, canceled, config, None)
+    dispatch::decode_ithmb_inner(src, canceled, config, None)
 }
 
 /// Decode a complete `.ithmb` file with custom limits AND runtime decode-parameter
@@ -113,7 +103,7 @@ pub fn decode_ithmb_with_transform(
     config: &config::DecodeConfig,
     transform: &config::TransformConfig,
 ) -> Result<DecodedImage, DecodeError> {
-    decode_ithmb_inner(src, canceled, config, Some(transform))
+    dispatch::decode_ithmb_inner(src, canceled, config, Some(transform))
 }
 
 /// Decode an `.ithmb` file using an explicit profile, bypassing prefix-lookup.
@@ -143,7 +133,7 @@ pub fn decode_with_profile_with_config(
     canceled: &AtomicBool,
     config: &config::DecodeConfig,
 ) -> Result<DecodedImage, DecodeError> {
-    decode_inner(src, profile, canceled, config, None)
+    dispatch::decode_inner(src, profile, canceled, config, None)
 }
 
 /// Decode an `.ithmb` file using an explicit profile and custom [`DecodeConfig`](crate::config::DecodeConfig)
@@ -168,172 +158,7 @@ pub fn decode_with_profile_with_transform(
     config: &config::DecodeConfig,
     transform: &config::TransformConfig,
 ) -> Result<DecodedImage, DecodeError> {
-    decode_inner(src, profile, canceled, config, Some(transform))
-}
-
-// ---------------------------------------------------------------------------
-// Internal decode core — one implementation, thin public wrappers above
-// ---------------------------------------------------------------------------
-
-/// Shared entry core: prefix parsing, profile lookup, and embedded-JPEG fallback
-/// for the `decode_ithmb*` family. `transform == None` means "use the profile's
-/// own post-processing fields" — identical to the non-transform entry points.
-fn decode_ithmb_inner(
-    src: &[u8],
-    canceled: &AtomicBool,
-    config: &config::DecodeConfig,
-    transform: Option<&config::TransformConfig>,
-) -> Result<DecodedImage, DecodeError> {
-    if src.len() < 4 {
-        return Err(DecodeError::BufferTooShort {
-            expected: 4,
-            actual: src.len(),
-        });
-    }
-
-    if src.len() > config.max_raw_file_size() {
-        return Err(DecodeError::FileTooLarge {
-            size: src.len(),
-            limit: config.max_raw_file_size(),
-        });
-    }
-
-    let prefix = i32::from_be_bytes([src[0], src[1], src[2], src[3]]);
-    #[cfg(feature = "logging")]
-    debug!("decode: prefix={prefix:08X}, len={}", src.len());
-    let is_jpeg_stream = src[0] == 0xFF && src[1] == 0xD8;
-
-    let db = get_db();
-
-    let profile = if is_jpeg_stream {
-        db.get(prefix).cloned().unwrap_or_else(fallback_jpeg_profile)
-    } else if let Some(p) = db.resolve(prefix, src.len() - 4) {
-        p
-    } else {
-        // Tier 2: data-size heuristic.
-        let data_len = src.len() - 4;
-        let mut best: Option<Profile> = None;
-        let mut best_delta: usize = usize::MAX;
-        for p in db.all().values() {
-            #[allow(clippy::cast_sign_loss)]
-            let delta = data_len.abs_diff(p.frame_byte_length as usize);
-            if delta <= 256 && delta < best_delta {
-                best_delta = delta;
-                best = Some(p.clone());
-            }
-        }
-        if let Some(profile) = best {
-            profile
-        } else {
-            // Fallback: scan for embedded JPEG within the buffer.
-            #[cfg(feature = "logging")]
-            info!("decode: unknown prefix {prefix:08X}, scanning for embedded JPEG");
-            match scan_for_embedded_jpeg(
-                src,
-                canceled,
-                config.jpeg_scan_limit(),
-                config.cancel_check_interval(),
-                config.jfif_exif_scan_window(),
-            ) {
-                Some(jpeg_data) => {
-                    let jp = fallback_jpeg_profile();
-                    return decode_inner(jpeg_data, &jp, canceled, config, transform);
-                }
-                None => {
-                    return Err(DecodeError::Unsupported(format!("unknown format prefix {prefix}")));
-                }
-            }
-        }
-    };
-
-    decode_inner(src, &profile, canceled, config, transform)
-}
-
-/// Shared decode core: strips the 4-byte prefix (raw formats), dispatches to the
-/// format decoder, then applies post-processing. The trailing-padding tolerance
-/// from `config` is applied exactly once around the whole decode.
-fn decode_inner(
-    src: &[u8],
-    profile: &Profile,
-    canceled: &AtomicBool,
-    config: &config::DecodeConfig,
-    transform: Option<&config::TransformConfig>,
-) -> Result<DecodedImage, DecodeError> {
-    decoder_helpers::with_tolerance(config.trailing_padding_tolerance(), || {
-        let frame_data = if profile.encoding == Encoding::Jpeg {
-            src
-        } else {
-            if src.len() < 4 {
-                return Err(DecodeError::BufferTooShort {
-                    expected: 4,
-                    actual: src.len(),
-                });
-            }
-            &src[4..]
-        };
-
-        let img = dispatch_decode(frame_data, profile, canceled)?;
-        Ok(match transform {
-            Some(t) => apply_post_process_with_transform(img, profile, t),
-            None => apply_post_process(img, profile),
-        })
-    })
-}
-// ---------------------------------------------------------------------------
-// Decoder dispatch
-// ---------------------------------------------------------------------------
-
-/// Dispatches to the correct decoder based on the profile's encoding.
-///
-/// If the primary decoder fails and the profile specifies `fallback_encodings`,
-/// each fallback is tried in order. Returns the first successful result or the
-/// original error if no fallback succeeds.
-fn dispatch_decode(data: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-    /// Inner dispatch — routes to the correct decoder for a single encoding.
-    fn try_decode(data: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
-        match profile.encoding {
-            Encoding::Rgb565 => rgb565::decode(data, profile, canceled),
-            Encoding::Rgb555 => rgb555::decode(data, profile, canceled),
-            Encoding::ReorderedRgb555 => reordered_rgb555::decode(data, profile, canceled),
-            Encoding::Yuv422 => {
-                if profile.clcl_chroma {
-                    clcl::decode(data, profile, canceled)
-                } else if profile.cl_chroma {
-                    cl::decode(data, profile, canceled)
-                } else {
-                    uyvy::decode(data, profile, canceled)
-                }
-            }
-            Encoding::Ycbcr420 => ycbcr420::decode(data, profile, canceled),
-            Encoding::Jpeg => jpeg::decode(data, profile, canceled),
-        }
-    }
-
-    #[cfg(feature = "logging")]
-    debug!(
-        "dispatch_decode: encoding={:?}, dimensions={}x{}",
-        profile.encoding, profile.width, profile.height
-    );
-
-    try_decode(data, profile, canceled).or_else(|primary_err| {
-        if let Some(fallbacks) = &profile.fallback_encodings {
-            for &enc in fallbacks {
-                #[cfg(feature = "logging")]
-                warn!("dispatch_decode: primary failed, trying fallback encoding {enc:?}");
-                let fallback_profile = Profile {
-                    encoding: enc,
-                    // Prevent infinite recursion — fallbacks do not themselves
-                    // carry a fallback list.
-                    fallback_encodings: None,
-                    ..profile.clone()
-                };
-                if let Ok(img) = try_decode(data, &fallback_profile, canceled) {
-                    return Ok(img);
-                }
-            }
-        }
-        Err(primary_err)
-    })
+    dispatch::decode_inner(src, profile, canceled, config, Some(transform))
 }
 
 // ---------------------------------------------------------------------------
@@ -389,21 +214,18 @@ mod tests {
 
     #[test]
     fn test_unknown_prefix_returns_unsupported() {
-        // Prefix 9999 does not exist in the built-in profile DB.
         let buf = [0x00, 0x00, 0x27, 0x0F]; // 9999 in big-endian
         let result = decode_ithmb(&buf, &AtomicBool::new(false));
-        assert!(matches!(result, Err(DecodeError::Unsupported(ref msg)) if msg.contains("9999")));
+        assert!(matches!(
+            result,
+            Err(DecodeError::Unsupported(ref msg)) if msg.contains("9999")
+        ));
     }
 
     #[test]
     fn test_jpeg_fallback_profile_is_used() {
-        // Buffer starts with JPEG SOI (FF D8) but the prefix -1 does not
-        // necessarily exist in the DB. The fallback JPEG profile should be
-        // used, so we should NOT get Unsupported.
         let buf = [0xFF, 0xD8, 0x00, 0x00, 0x00];
         let result = decode_ithmb(&buf, &AtomicBool::new(false));
-        // The JPEG decoder will be called and should return a Jpeg error
-        // (the data is not a valid JPEG stream after the SOI).
         assert!(result.is_err());
         assert!(
             !matches!(result, Err(DecodeError::Unsupported(_))),
@@ -416,7 +238,6 @@ mod tests {
     #[test]
     fn test_rgb565_dispatch() {
         let profile = small_profile(2, 1, Encoding::Rgb565);
-        // 2 white RGB565 pixels: 0xFFFF LE
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[0xFF, 0xFF, 0xFF, 0xFF]);
@@ -430,7 +251,6 @@ mod tests {
     #[test]
     fn test_rgb555_dispatch() {
         let profile = small_profile(1, 1, Encoding::Rgb555);
-        // White RGB555 pixel: 0x7FFF LE
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[0xFF, 0x7F]);
@@ -444,8 +264,6 @@ mod tests {
     #[test]
     fn test_reordered_rgb555_dispatch() {
         let profile = small_profile(1, 1, Encoding::ReorderedRgb555);
-        // Reordered RGB555 uses little-endian (like all other RGB profiles).
-        // White pixel: 0x7FFF in little-endian = [0xFF, 0x7F]
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[0xFF, 0x7F]);
@@ -459,7 +277,6 @@ mod tests {
     #[test]
     fn test_uyvy_dispatch() {
         let profile = small_profile(2, 1, Encoding::Yuv422);
-        // UYVY: [U=128, Y0=128, V=128, Y1=128] = neutral gray
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[128, 128, 128, 128]);
@@ -481,7 +298,6 @@ mod tests {
             clcl_chroma: true,
             ..Default::default()
         };
-        // CLCL: Y=[128,128], Cb=[0x88], Cr=[0x88]
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[128, 128, 0x88, 0x88]);
@@ -503,7 +319,6 @@ mod tests {
             cl_chroma: true,
             ..Default::default()
         };
-        // CL: Y=[128,128], CbCr=[0x88, 0x88]
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[128, 128, 0x88, 0x88]);
@@ -521,10 +336,9 @@ mod tests {
             width: 2,
             height: 2,
             encoding: Encoding::Ycbcr420,
-            frame_byte_length: 6, // 4 + 1 + 1
+            frame_byte_length: 6,
             ..Default::default()
         };
-        // YCbCr 4:2:0: Y=[128,128,128,128], Cb=[128], Cr=[128]
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
         buf.extend_from_slice(&[128u8; 6]);
@@ -539,7 +353,6 @@ mod tests {
 
     #[test]
     fn test_jpeg_dispatch_with_decode_with_profile() {
-        // Using the built-in JPEG decoder with SOI marker.
         let profile = Profile {
             prefix: -1,
             width: 0,
@@ -548,10 +361,8 @@ mod tests {
             use_mhni_dimensions: true,
             ..Default::default()
         };
-        // Buffer is the full JPEG stream (no 4-byte prefix needed for JPEG).
         let buf = [0xFF, 0xD8, 0x00, 0x00];
         let result = decode_with_profile(&buf, &profile, &AtomicBool::new(false));
-        // The JPEG decoder should be reached; data is invalid so we get Jpeg error.
         assert!(result.is_err());
         assert!(matches!(result, Err(DecodeError::Jpeg(_))));
     }
@@ -586,7 +397,6 @@ mod tests {
         buf[4..].fill(0xFF);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // swaps_dimensions: width and height are swapped.
         assert_eq!(img.width, 3);
         assert_eq!(img.height, 2);
         assert_eq!(img.data.len(), 6 * 4);
@@ -596,7 +406,6 @@ mod tests {
 
     #[test]
     fn test_crop_2x2_to_1x1() {
-        // 2×2 RGB565 image: red, green, blue, white
         let profile = Profile {
             prefix: 9999,
             width: 2,
@@ -611,13 +420,11 @@ mod tests {
         };
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
-        // RGB565 LE: red=0xF800, green=0x07E0, blue=0x001F, white=0xFFFF
         buf.extend_from_slice(&[0x00, 0xF8, 0xE0, 0x07, 0x1F, 0x00, 0xFF, 0xFF]);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
         assert_eq!(img.width, 1);
         assert_eq!(img.height, 1);
-        // Pixel (0,0) = red in RGB565 → BGRA: B=0, G=0, R=255
         assert_eq!(img.data, vec![0, 0, 0xFF, 255]);
     }
 
@@ -642,7 +449,6 @@ mod tests {
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
         assert_eq!(img.width, 1);
         assert_eq!(img.height, 1);
-        // Pixel (1,0) = green in RGB565 → BGRA: B=0, G=255, R=0
         assert_eq!(img.data, vec![0, 0xFF, 0, 255]);
     }
 
@@ -656,8 +462,8 @@ mod tests {
             frame_byte_length: 12,
             crop_x: 1,
             crop_y: 0,
-            crop_width: 0,  // use remaining
-            crop_height: 0, // use remaining
+            crop_width: 0,
+            crop_height: 0,
             ..Default::default()
         };
         let mut buf = vec![0u8; 4 + 6 * 2];
@@ -665,7 +471,6 @@ mod tests {
         buf[4..].fill(0xFF);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // crop_x=1, so crop_width = 3-1 = 2, crop_height = 2-0 = 2
         assert_eq!(img.width, 2);
         assert_eq!(img.height, 2);
         assert_eq!(img.data.len(), 2 * 2 * 4);
@@ -699,7 +504,6 @@ mod tests {
 
     #[test]
     fn test_rotation_90_cw_on_2x3() {
-        // 2×3 RGB565 image with distinct color per pixel.
         let profile = Profile {
             prefix: 9999,
             width: 2,
@@ -711,9 +515,6 @@ mod tests {
         };
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
-        // Row 0: red (0xF800), green (0x07E0)
-        // Row 1: blue (0x001F), yellow (0xFFE0)
-        // Row 2: cyan (0x07FF), magenta (0xF81F)
         buf.extend_from_slice(&[
             0x00, 0xF8, 0xE0, 0x07, // row 0
             0x1F, 0x00, 0xE0, 0xFF, // row 1
@@ -721,31 +522,13 @@ mod tests {
         ]);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // 90° CW: dimensions swap → 3×2
         assert_eq!(img.width, 3);
         assert_eq!(img.height, 2);
-
-        // Verify a few pixels. After 90° CW:
-        // old(0,0)=red → new(2,0)
-        // old(1,0)=green → new(2,1)
-        // old(0,2)=cyan → new(0,0)
         assert_eq!(img.data.len(), 3 * 2 * 4);
 
-        // BGRA values for each color:
-        //   red:    [0, 0, 255, 255]
-        //   green:  [0, 255, 0, 255]
-        //   blue:   [255, 0, 0, 255]
-        //   yellow: [0, 255, 255, 255]
-        //   cyan:   [255, 255, 0, 255]
-        //   magenta:[255, 0, 255, 255]
-
-        // new(0,0) = old(0,2) = cyan
         assert_eq!(&img.data[0..4], &[255, 255, 0, 255]);
-        // new(2,0) = old(0,0) = red
         assert_eq!(&img.data[8..12], &[0, 0, 255, 255]);
-        // new(0,1) = old(1,2) = magenta
         assert_eq!(&img.data[12..16], &[255, 0, 255, 255]);
-        // new(2,1) = old(1,0) = green
         assert_eq!(&img.data[20..24], &[0, 255, 0, 255]);
     }
 
@@ -765,22 +548,12 @@ mod tests {
         buf.extend_from_slice(&[0x00, 0xF8, 0xE0, 0x07, 0x1F, 0x00, 0xFF, 0xFF]);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // 180°: pixel order reversed. Dimensions same (2×2).
         assert_eq!(img.width, 2);
         assert_eq!(img.height, 2);
 
-        // old(0,0)=red   → new(1,1)
-        // old(1,0)=green → new(0,1)
-        // old(0,1)=blue  → new(1,0)
-        // old(1,1)=white → new(0,0)
-
-        // new(0,0) = old(1,1) = white
         assert_eq!(&img.data[0..4], &[255, 255, 255, 255]);
-        // new(1,0) = old(0,1) = blue
         assert_eq!(&img.data[4..8], &[255, 0, 0, 255]);
-        // new(0,1) = old(1,0) = green
         assert_eq!(&img.data[8..12], &[0, 255, 0, 255]);
-        // new(1,1) = old(0,0) = red
         assert_eq!(&img.data[12..16], &[0, 0, 255, 255]);
     }
 
@@ -797,30 +570,15 @@ mod tests {
         };
         let mut buf = Vec::new();
         buf.extend_from_slice(&9999i32.to_be_bytes());
-        buf.extend_from_slice(&[
-            0x00, 0xF8, 0xE0, 0x07, // row 0: red, green
-            0x1F, 0x00, 0xE0, 0xFF, // row 1: blue, yellow
-            0xFF, 0x07, 0x1F, 0xF8, // row 2: cyan, magenta
-        ]);
+        buf.extend_from_slice(&[0x00, 0xF8, 0xE0, 0x07, 0x1F, 0x00, 0xE0, 0xFF, 0xFF, 0x07, 0x1F, 0xF8]);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // 270° CW = 90° CCW, dimensions swap: 3×2
         assert_eq!(img.width, 3);
         assert_eq!(img.height, 2);
 
-        // 270° CW: old(x,y) → new(y, w-1-x)
-        // old(0,0)=red   → new(0,1)
-        // old(1,0)=green → new(0,0)
-        // old(0,2)=cyan  → new(2,1)
-        // old(1,2)=magenta → new(2,0)
-
-        // new(0,0) = old(1,0) = green
         assert_eq!(&img.data[0..4], &[0, 255, 0, 255]);
-        // new(2,0) = old(1,2) = magenta
         assert_eq!(&img.data[8..12], &[255, 0, 255, 255]);
-        // new(0,1) = old(0,0) = red
         assert_eq!(&img.data[12..16], &[0, 0, 255, 255]);
-        // new(2,1) = old(0,2) = cyan
         assert_eq!(&img.data[20..24], &[255, 255, 0, 255]);
     }
 
@@ -832,7 +590,7 @@ mod tests {
             height: 1,
             encoding: Encoding::Rgb565,
             frame_byte_length: 4,
-            rotation: 45, // unsupported → no-op
+            rotation: 45,
             ..Default::default()
         };
         let mut buf = Vec::new();
@@ -867,15 +625,8 @@ mod tests {
         buf.extend_from_slice(&[0x00, 0xF8, 0xE0, 0x07, 0x1F, 0x00, 0xFF, 0xFF]);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // Step 1: crop to 1×2 (left column: red, blue)
-        // Step 2: rotate 90° CW → 2×1 (old column becomes new row)
         assert_eq!(img.width, 2);
         assert_eq!(img.height, 1);
-        // After crop: column 0 = [red at (0,0), blue at (0,1)]
-        // After 90° CW: old(x=0, y=0)=red → new(h-1-0, 0) = new(1,0)
-        //               old(x=0, y=1)=blue → new(h-1-1, 0) = new(0,0)
-        // new(0,0) = old(0,1) = blue → BGRA [255, 0, 0, 255]
-        // new(1,0) = old(0,0) = red  → BGRA [0, 0, 255, 255]
         assert_eq!(&img.data[0..4], &[255, 0, 0, 255]);
         assert_eq!(&img.data[4..8], &[0, 0, 255, 255]);
     }
@@ -884,8 +635,6 @@ mod tests {
 
     #[test]
     fn test_decode_ithmb_prefix_1007_dispatch() {
-        // Profile 1007 is 480×864 RGB565. Provide minimal valid pixel data
-        // so the decoder succeeds.
         let w = 480usize;
         let h = 864usize;
         let mut buf = vec![0u8; 4 + w * h * 2];
@@ -896,7 +645,6 @@ mod tests {
         assert_eq!(img.width, 480);
         assert_eq!(img.height, 864);
         assert_eq!(img.data.len(), w * h * 4);
-        // All pixels should be white (BGRA = [255, 255, 255, 255])
         for chunk in img.data.chunks_exact(4) {
             assert_eq!(chunk, &[255, 255, 255, 255]);
         }
@@ -912,8 +660,8 @@ mod tests {
             height: 2,
             encoding: Encoding::Rgb565,
             frame_byte_length: 8,
-            crop_x: 10, // far outside image
-            crop_y: 10, // far outside image
+            crop_x: 10,
+            crop_y: 10,
             crop_width: 5,
             crop_height: 5,
             ..Default::default()
@@ -923,7 +671,6 @@ mod tests {
         buf[4..].fill(0xFF);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // Clamped: no pixels visible → image unchanged
         assert_eq!(img.width, 2);
         assert_eq!(img.height, 2);
         assert_eq!(img.data.len(), 4 * 4);
@@ -931,7 +678,6 @@ mod tests {
 
     #[test]
     fn test_apply_crop_noop_when_not_needed() {
-        // Directly test apply_crop returns the same image when no crop is set.
         let profile = Profile::default();
         let img = DecodedImage {
             data: vec![128u8; 16],
@@ -960,9 +706,8 @@ mod tests {
 
     #[test]
     fn test_rotation_90_cw_identity() {
-        // 90° CW then 270° CW should return to original.
         let original = DecodedImage {
-            data: (0..16).collect(), // 2×2 image, every byte is its index
+            data: (0..16).collect(),
             width: 2,
             height: 2,
         };
@@ -975,7 +720,7 @@ mod tests {
     #[test]
     fn test_rotation_180_twice_is_identity() {
         let original = DecodedImage {
-            data: (0..24).collect(), // 2×3 image
+            data: (0..24).collect(),
             width: 2,
             height: 3,
         };
@@ -989,7 +734,6 @@ mod tests {
 
     #[test]
     fn test_decode_ithmb_prefix_1019_interlaced_uyvy() {
-        // Profile 1019: 720×480 interlaced UYVY. Just check dispatch.
         let w = 720usize;
         let h = 480usize;
         let mut buf = vec![0u8; 4 + w * h * 2];
@@ -1005,12 +749,9 @@ mod tests {
     #[allow(clippy::cast_possible_truncation)]
     #[test]
     fn test_decode_ithmb_prefix_2002_big_endian_rgb565() {
-        // Profile 2002: 50×50 big-endian RGB565 from built-in profiles.json.
         let w = 50usize;
         let h = 50usize;
         let mut buf = vec![0u8; 4 + w * h * 2];
-        buf[0..4].copy_from_slice(&2002i32.to_be_bytes());
-        buf[4..].fill(0xFF);
         buf[0..4].copy_from_slice(&2002i32.to_be_bytes());
         buf[4..].fill(0xFF);
 
@@ -1023,7 +764,6 @@ mod tests {
 
     #[test]
     fn test_swaps_dimensions_with_crop() {
-        // 3×2 image with swaps_dimensions=true (becomes 2×3), then crop.
         let profile = Profile {
             prefix: 9999,
             width: 3,
@@ -1042,13 +782,6 @@ mod tests {
         buf[4..].fill(0xFF);
 
         let img = decode_with_profile(&buf, &profile, &AtomicBool::new(false)).unwrap();
-        // After swaps_dimensions: 2×3 → width=2, height=3
-        // After crop: y=1, height=1 → one row extracted (row 1 of 2×3 image)
-        // But wait, swaps_dimensions happens on the decoded image metadata.
-        // The decoder produces w=3, h=2, then swap gives w=2, h=3.
-        // Then crop: cx=0, cy=1, cw=3, ch=1. But iw=2, ih=3.
-        // cw = min(3, 2-0) = 2, ch = min(1, 3-1) = 1
-        // Result: 2×1
         assert_eq!(img.width, 2);
         assert_eq!(img.height, 1);
         assert_eq!(img.data.len(), 2 * 4);
@@ -1056,7 +789,6 @@ mod tests {
 
     #[test]
     fn transform_override_rotation_applies_over_profile_zero() {
-        // Profile says no rotation (0); TransformConfig says 90 → 90 must win.
         let img = DecodedImage {
             data: vec![0u8; 2 * 3 * 4],
             width: 2,
@@ -1074,7 +806,6 @@ mod tests {
 
     #[test]
     fn transform_default_falls_back_to_profile_rotation() {
-        // Identity transform must NOT override: profile rotation 90 wins.
         let img = DecodedImage {
             data: vec![0u8; 2 * 3 * 4],
             width: 2,

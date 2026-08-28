@@ -702,6 +702,80 @@ For engineering deliverables, also verified:
 
 ---
 
+## 16. Requirements Traceability (FR → F-### → Tests)
+
+Every functional and non-functional requirement is numbered. Each maps to one or more FEATURES.md entries and their anchored tests.
+
+### Functional Requirements
+
+| ID | Requirement | Section | Feature(s) | Test File(s) |
+|----|-------------|---------|------------|--------------|
+| FR-01 | Wrong output at any speed is useless (correctness) | 0 | F-002..F-009, F-024 | roundtrip.rs, golden_comparison.rs |
+| FR-02 | No magic: explicit > implicit | 0 | F-001, F-012 | edge_cases.rs, profile_validation.rs |
+| FR-03 | Inward dependencies: core knows nothing about edges | 0 | F-017, F-018, F-019, F-020 | c_api_test.rs, wasm_runtime.rs, test_basic.py, cli.rs |
+| FR-04 | Test what matters: one behavior per test, edge cases first | 0 | F-001..F-024 | All test files |
+| FR-05 | Fail with context: every error includes values | 0 | F-001, F-009, F-010, F-014 | edge_cases.rs, alloc_contract.rs |
+| FR-06 | Tool-first: rustfmt, clippy, cargo-deny, cargo-fuzz, Miri | 0 | F-021 | simd_constants.rs, simd_tail.rs |
+| FR-07 | No new runtime dependency without Y-Statement | 0 | — | deny.toml (source: crates.io only) |
+| FR-08 | Memory safety: no unsafe outside SIMD kernels | 0 | F-021 | Miri (21 SSE2 tests) |
+| FR-09 | 570+ unit tests across 17+ suites pass | 1 | F-001..F-024 | All test files |
+| FR-10 | Known-profile decode matches C# golden vectors | 1 | F-024 | golden_comparison.rs (14 vectors) |
+| FR-11 | Fuzzing 1.2M+ iterations, 0 crashes | 1 | F-001, F-005..F-008, F-010 | fuzz_decode_ithmb, fuzz_decode_pipeline, fuzz_encode_roundtrip, fuzz_parse_photodb, fuzz_parse_profile |
+| FR-12 | CLI decode 480×864 RGB565 under 100 ms | 1 | F-002, F-020 | roundtrip.rs, cli.rs |
+| FR-13 | iPod Classic 6G BGR15 + MSB replication match reference | 1 | F-002, F-024 | golden_comparison.rs |
+| FR-14 | Pipelined dispatch (single entry point) | 2 | F-001, F-009, F-010 | edge_cases.rs, properties.rs |
+| FR-15 | Runtime SIMD dispatch with scalar fallback | 2 | F-021 | simd_constants.rs, simd_tail.rs, Miri |
+| FR-16 | C ABI plugin in separate repository | 2 | F-017 | c_api_test.rs |
+| FR-17 | 8 MB file size guard before allocation | 2 | F-014 | edge_cases.rs, alloc_contract.rs |
+| FR-18 | zune-jpeg for JPEG decode | 2 | F-009 | golden_comparison.rs, edge_cases.rs |
+| FR-19 | Feature-gated optional capabilities | 2 | F-023 | cache_concurrency.rs |
+| FR-20 | pr-checks.yml on every PR/commit | 4 | — | .github/workflows/pr-checks.yml |
+| FR-21 | ci-full.yml on main (3-OS matrix, fuzz, benchmarks) | 4 | — | .github/workflows/ci-full.yml |
+| FR-22 | release.yml on v* tags (cross-compile + wheels) | 4 | — | .github/workflows/release.yml |
+| FR-23 | Roundtrip + golden tests on decoder modification | 4 | F-002..F-009, F-024 | roundtrip.rs, golden_comparison.rs |
+| FR-24 | CLI decode produces PNG output | 6 | F-020 | cli.rs |
+| FR-25 | CLI --info prints size, prefix, profile, frame count | 6 | F-020 | cli.rs |
+| FR-26 | CLI --list-profiles prints 53-profile table | 6 | F-020 | cli.rs |
+| FR-27 | CLI --frame N extracts specific frame | 6 | F-020, F-022 | cli.rs, edge_cases.rs |
+| FR-28 | CLI --open parses PhotoDB container | 6 | F-011 | cli.rs, roundtrip.rs |
+| FR-29 | Library API returns BGRA data with metadata | 6 | F-001..F-009 | roundtrip.rs, edge_cases.rs |
+| FR-30 | 8 MB guard raises DecodeError::FileTooLarge | 6 | F-014 | edge_cases.rs |
+| FR-31 | Cancellation via AtomicBool returns Canceled | 6 | F-015 | cancellation.rs, concurrency.rs |
+| FR-32 | Per-format exhaustive roundtrip (RGB565 65K, RGB555 32K, CL 15K) | 8 | F-002, F-003, F-007 | roundtrip.rs |
+| FR-33 | Integration at module boundaries (pipeline, profile_db, photodb) | 8 | F-011, F-012, F-014 | roundtrip.rs, profile_validation.rs |
+| FR-34 | E2E coverage: CLI binary, WASM runtime, Python module | 8 | F-018, F-019, F-020 | cli.rs, wasm_runtime.rs, test_basic.py |
+| FR-35 | Fuzz + property tests (6 libfuzzer targets, proptest) | 8 | F-001, F-010, F-013, F-016 | fuzz targets, properties.rs, proptest.rs |
+| FR-36 | Tests anchor to features via F-### IDs | 8 | F-001..F-024 | All test files |
+| FR-37 | Typed DecodeError with structured fields | 9 | F-001, F-009, F-014, F-015 | edge_cases.rs, alloc_contract.rs |
+| FR-38 | Fallback: data-size heuristic → JPEG carving → Unsupported | 9 | F-010 | edge_cases.rs, properties.rs |
+| FR-39 | Pure stateless decode: no partial state on failure | 9 | F-015 | cancellation.rs, concurrency.rs |
+| FR-40 | Load handling: 8 MB guard + LRU cache + cancellation | 9 | F-014, F-015, F-023 | alloc_contract.rs, cancellation.rs, cache_concurrency.rs |
+| FR-41 | Interface Rule: no interface before 2nd consumer | 11 | F-017, F-018, F-019 | c_api_test.rs, wasm_runtime.rs, test_basic.py |
+| FR-42 | Test Rule: contract over implementation | 11 | F-024 | golden_comparison.rs, properties.rs |
+| FR-43 | Module Boundary: pipeline is single entry | 11 | F-001 | edge_cases.rs |
+| FR-44 | Size Rule: 250 LOC / 40 LOC limits enforced | 11 | — | check.sh (wc -l gate) |
+| FR-45 | Cycle Rule: shippable per cycle with green CI | 11 | — | .github/workflows/*.yml |
+| FR-46 | Appetite Rule: time before scope, deferral rules | 11 | — | ROADMAP.md |
+| FR-47 | AI Rule: same structural checks for AI-generated code | 11 | — | pr-checks.yml |
+| FR-48 | Rule of Three: extract on 3rd use | 11 | F-021 | simd/ modules |
+| FR-49 | Dependency Rule: core ≠ infra, feature-gated | 11 | F-023 | cache_concurrency.rs |
+| FR-50 | Clean Backlog: no perpetual items | 11 | — | ROADMAP.md |
+
+### Non-Functional Requirements
+
+| ID | Requirement | Section | Feature(s) | Verification |
+|----|-------------|---------|------------|--------------|
+| NFR-01 | Performance: decode under 100 ms for 480×864 | 1 | F-002, F-020 | benchmark regression gate (25% threshold) |
+| NFR-02 | Safety: no unsafe outside simd/ and c_api.rs | 0 | F-021 | Miri (21 tests, 0 UB), workspace unsafe_code=deny |
+| NFR-03 | Correctness: pixel-exact output vs C# reference | 0 | F-024 | golden_comparison.rs (14 vectors) |
+| NFR-04 | Portability: SSE2 + AVX2 + NEON + scalar fallback | 2 | F-021 | 3-OS CI matrix, simd_tail.rs |
+| NFR-05 | Maintainability: 250 LOC ceiling per module | 11 | — | check.sh (wc -l gate) |
+| NFR-06 | Testability: 570+ unit tests, 0.5x test/source ratio | 8 | F-001..F-024 | cargo test, STATS.md |
+| NFR-07 | Security: no panics in FFI, 8 MB guard, crate audit | 0, 2 | F-014, F-017 | cargo-audit, gitleaks, c_api_test.rs |
+| NFR-08 | Documentation: rustdoc + guides + standards | 12 | — | RUSTDOCFLAGS=-D warnings in CI |
+
+---
+
 ## Origin
 
 Completed August 2026 as part of the REVIEW gate (Godel Gate) governance backfill. Sections 0-10 record the realized contracts of the AS-BUILT codebase at HEAD aae56f4; sections 11-15 complete the 16-section schema. Grounded in the actual workspace: Cargo.toml, crates/, CI workflows, deny.toml, README, ARCHITECTURE, ROADMAP, and docs/STATS.md.

@@ -55,3 +55,22 @@
 | **C API** (`--features c`)  | Any language     | Ruby `ffi`, Go `cgo`, Zig, etc. — no PyO3 needed   |
 | **ImageGlass plugin**       | ImageGlass users | Separate repo for `ig_plugin_get_api()`            |
 | **`ithmb-gen`** (encoder)   | Devs/testers     | Generate synthetic `.ithmb` files for validation   |
+
+## Quality Gates
+
+| Gate | Enforcement | Tool |
+|------|-------------|------|
+| Lint | CI + local | `cargo clippy -- -D warnings` |
+| Tests | CI + local | `cargo test --workspace` |
+| Licenses/advisories | CI + local | `cargo-deny check`, `cargo audit` |
+| Secrets | CI + local | `gitleaks detect` |
+| 250 LOC ceiling | Review + `scripts/check.sh` | `wc -l` per module |
+| 40 LOC function ceiling | Review | Manual scan |
+| Coverage 80%+ | Local only (not CI-enforced) | `cargo llvm-cov` |
+| Fuzz 1.2M+ iterations | CI (ci-full.yml) | `cargo-fuzz` |
+| Benchmark regression <25% | CI (ci-full.yml) | `divan` + baseline.json |
+
+**Coverage measurement:** `cargo llvm-cov --workspace --fail-under-lines 80`
+  - Not enforced in CI (too slow for matrix builds)
+  - Enforced floor: per-module test tables (SPECIFICATION §8)
+  - Run locally before releases or major refactors

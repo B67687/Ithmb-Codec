@@ -45,6 +45,21 @@ Ithmb-Codec/
 └── .editorconfig         # editor style
 ```
 
+## SE Lifecycle Artifacts
+
+All design/spec artifacts live in-repo. Read these before making behavioral changes.
+
+| Artifact | Path | Purpose |
+| --- | --- | --- |
+| FEATURES.md | `docs/FEATURES.md` | F-### IDs, behavior contracts, test anchoring (lifecycle: proposed→approved→applied→archived per Dev-Protocol §1.1) |
+| SPECIFICATION.md | `SPECIFICATION.md` | FR-01..FR-50, NFR-01..08 with FR→F-###→test traceability |
+| ARCHITECTURE.md | `ARCHITECTURE.md` | C4 diagrams, module map, fitness functions |
+| TECH_DEBT_AUDIT.md | `docs/TECH_DEBT_AUDIT.md` | Severity×effort triage matrix, resolved vs open items |
+| ADRs | `docs/adr/` | Architecture Decision Records (8 total, incl. ADR-0008 SIMD, ADR-0007 zune-jpeg migration) |
+| local-ci.sh | `scripts/local-ci.sh` | Local CI gate: clippy, test, cargo-deny, gitleaks, F-### LOC check (note: named `local-ci.sh`, not `check-local.sh`) |
+
+Feature lifecycle follows [Development-Protocol engineering-plugin.md §1.1](https://github.com/user/Development-Protocol/blob/main/docs/engineering-plugin.md): proposed → approved → applied → archived.
+
 ## Decoder Pipeline Flow
 
 ```
