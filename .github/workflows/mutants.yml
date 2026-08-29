@@ -1,0 +1,46 @@
+# mutants.yml — Mutation testing via cargo-mutants (TARGETED HIGH, manual only).
+# Manual dispatch only — weekly removed per on-hold decision (2026-08-29).
+# ~179 HIGH mutants (simd 152 + pipeline 27) → ~20m per shard, ~1h total.
+name: mutants
+on:
+  workflow_dispatch:
+permissions: { contents: read }
+
+jobs:
+  mutants:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    strategy:
+      matrix:
+        shard: [0, 1, 2]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1
+        with:
+          cache: true
+          cache-key: "mutants-${{ hashFiles('rust-toolchain.toml') }}-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.shard }}"
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --version 27.1.0 --locked
+      - name: Run cargo mutants shard ${{ matrix.shard }}/3
+        run: |
+          cargo mutants \
+            --shard ${{ matrix.shard }}/3 \
+            --no-shuffle \
+            --timeout 60 \
+            --output mutants.out \
+            --file "crates/ithmb-core/src/simd/**/*.rs" \
+            --file "crates/ithmb-core/src/pipeline/open.rs" \
+            --file "crates/ithmb-core/src/pipeline/dispatch.rs" \
+            --file "crates/ithmb-core/src/pipeline/jpeg_scan.rs" \
+            2>&1 | tee mutants.log
+      - name: Upload mutants results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4
+        with:
+          name: mutants-results-${{ matrix.shard }}
+          path: |
+            mutants.out/
+            mutants.log
+            cargo-mutants.json
+          retention-days: 30
