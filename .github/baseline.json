@@ -1,236 +1,290 @@
 {
-  "decode_cl (64, 64)": {
-    "time_us": 14.33
+  "build_ithmb_file_256": {
+    "time_us": 404.8
+  },
+  "decode_cl": {
+    "time_us": 150.1
   },
   "decode_cl (256, 256)": {
-    "time_us": 223.5
+    "time_us": 35.33
   },
   "decode_cl (512, 512)": {
-    "time_us": 901.6
+    "time_us": 149.3
+  },
+  "decode_cl (64, 64)": {
+    "time_us": 2.25
   },
   "decode_cl (720, 480)": {
-    "time_us": 1199.0
+    "time_us": 197.4
   },
-  "decode_clcl (64, 64)": {
-    "time_us": 21.82
+  "decode_cl_scalar": {
+    "time_us": 85.14
+  },
+  "decode_cl_simd": {
+    "time_us": 283.9
+  },
+  "decode_clcl": {
+    "time_us": 163.6
   },
   "decode_clcl (256, 256)": {
-    "time_us": 335.9
+    "time_us": 39.11
   },
   "decode_clcl (512, 512)": {
-    "time_us": 1349.0
+    "time_us": 163.6
+  },
+  "decode_clcl (64, 64)": {
+    "time_us": 2.56
   },
   "decode_clcl (720, 480)": {
-    "time_us": 1770.0
+    "time_us": 215.7
+  },
+  "decode_clcl_scalar": {
+    "time_us": 266.6
+  },
+  "decode_clcl_simd": {
+    "time_us": 39.43
+  },
+  "decode_ithmb_256": {
+    "time_us": 16.12
+  },
+  "decode_ithmb_512": {
+    "time_us": 68.2
   },
   "decode_jpeg": {
-    "time_us": 72.79
+    "time_us": 29.81
   },
-  "decode_reordered_rgb555 (64, 64)": {
-    "time_us": 19.56
+  "decode_reordered_rgb555": {
+    "time_us": 920.3
   },
   "decode_reordered_rgb555 (256, 256)": {
-    "time_us": 320.1
+    "time_us": 225.5
   },
   "decode_reordered_rgb555 (512, 512)": {
-    "time_us": 1312.0
+    "time_us": 920.1
+  },
+  "decode_reordered_rgb555 (64, 64)": {
+    "time_us": 13.45
   },
   "decode_reordered_rgb555 (720, 480)": {
-    "time_us": 1699.0
+    "time_us": 1212.0
   },
-  "decode_rgb555 (64, 64)": {
-    "time_us": 2.06
+  "decode_rgb555": {
+    "time_us": 73.23
   },
   "decode_rgb555 (256, 256)": {
-    "time_us": 32.11
+    "time_us": 16.38
   },
   "decode_rgb555 (512, 512)": {
-    "time_us": 139.9
+    "time_us": 73.16
+  },
+  "decode_rgb555 (64, 64)": {
+    "time_us": 1.08
   },
   "decode_rgb555 (720, 480)": {
-    "time_us": 182.8
+    "time_us": 96.27
   },
-  "decode_rgb565 (64, 64)": {
-    "time_us": 2.0
+  "decode_rgb555_scalar": {
+    "time_us": 161.9
+  },
+  "decode_rgb555_simd": {
+    "time_us": 13.3
+  },
+  "decode_rgb565": {
+    "time_us": 70.89
   },
   "decode_rgb565 (256, 256)": {
-    "time_us": 32.34
+    "time_us": 15.91
   },
   "decode_rgb565 (512, 512)": {
-    "time_us": 134.3
+    "time_us": 71.41
+  },
+  "decode_rgb565 (64, 64)": {
+    "time_us": 1.05
   },
   "decode_rgb565 (720, 480)": {
-    "time_us": 176.4
+    "time_us": 94.06
   },
-  "decode_uyvy (64, 64)": {
-    "time_us": 13.94
+  "decode_rgb565_scalar": {
+    "time_us": 151.7
+  },
+  "decode_rgb565_simd": {
+    "time_us": 12.85
+  },
+  "decode_uyvy": {
+    "time_us": 114.6
   },
   "decode_uyvy (256, 256)": {
-    "time_us": 221.3
+    "time_us": 27.31
   },
   "decode_uyvy (512, 512)": {
-    "time_us": 890.4
+    "time_us": 116.5
+  },
+  "decode_uyvy (64, 64)": {
+    "time_us": 1.86
   },
   "decode_uyvy (720, 480)": {
-    "time_us": 1182.0
-  },
-  "decode_uyvy_interlaced (64, 64)": {
-    "time_us": 13.98
+    "time_us": 149.4
   },
   "decode_uyvy_interlaced (256, 256)": {
-    "time_us": 221.5
+    "time_us": 27.36
   },
   "decode_uyvy_interlaced (512, 512)": {
-    "time_us": 892.0
+    "time_us": 116.9
+  },
+  "decode_uyvy_interlaced (64, 64)": {
+    "time_us": 1.88
   },
   "decode_uyvy_interlaced (720, 480)": {
-    "time_us": 1183.0
+    "time_us": 152.6
   },
-  "decode_ycbcr420 (64, 64)": {
-    "time_us": 16.73
+  "decode_uyvy_scalar": {
+    "time_us": 212.9
+  },
+  "decode_uyvy_simd": {
+    "time_us": 24.04
+  },
+  "decode_ycbcr420": {
+    "time_us": 305.1
   },
   "decode_ycbcr420 (256, 256)": {
-    "time_us": 261.6
+    "time_us": 74.05
   },
   "decode_ycbcr420 (512, 512)": {
-    "time_us": 1052.0
+    "time_us": 304.9
+  },
+  "decode_ycbcr420 (64, 64)": {
+    "time_us": 4.8
   },
   "decode_ycbcr420 (720, 480)": {
-    "time_us": 1399.0
+    "time_us": 401.8
   },
-  "simd_rgb555_row_to_bgra": {
-    "time_us": 144.5
+  "decode_ycbcr420_scalar": {
+    "time_us": 257.8
   },
-  "simd_rgb565_row_to_bgra": {
-    "time_us": 144.5
-  },
-  "encode_cl (64, 64)": {
-    "time_us": 17.83
+  "decode_ycbcr420_simd": {
+    "time_us": 71.12
   },
   "encode_cl (256, 256)": {
-    "time_us": 284.5
+    "time_us": 244.0
   },
   "encode_cl (512, 512)": {
-    "time_us": 1153.0
+    "time_us": 982.4
   },
-  "encode_cl_be (64, 64)": {
-    "time_us": 17.85
+  "encode_cl (64, 64)": {
+    "time_us": 15.29
   },
   "encode_cl_be (256, 256)": {
-    "time_us": 284.9
+    "time_us": 244.4
   },
   "encode_cl_be (512, 512)": {
-    "time_us": 1157.0
+    "time_us": 980.4
   },
-  "encode_clcl (64, 64)": {
-    "time_us": 17.16
+  "encode_cl_be (64, 64)": {
+    "time_us": 15.31
   },
   "encode_clcl (256, 256)": {
-    "time_us": 273.7
+    "time_us": 290.9
   },
   "encode_clcl (512, 512)": {
-    "time_us": 1109.0
+    "time_us": 1176.0
   },
-  "encode_clcl_be (64, 64)": {
-    "time_us": 17.15
+  "encode_clcl (64, 64)": {
+    "time_us": 18.16
   },
   "encode_clcl_be (256, 256)": {
-    "time_us": 273.9
+    "time_us": 290.5
   },
   "encode_clcl_be (512, 512)": {
-    "time_us": 1110.0
+    "time_us": 1178.0
   },
-  "encode_reordered_rgb555 (64, 64)": {
-    "time_us": 41.22
+  "encode_clcl_be (64, 64)": {
+    "time_us": 18.53
   },
   "encode_reordered_rgb555 (256, 256)": {
-    "time_us": 807.0
+    "time_us": 834.0
   },
   "encode_reordered_rgb555 (512, 512)": {
-    "time_us": 3446.0
+    "time_us": 3529.0
   },
-  "encode_reordered_rgb555_be (64, 64)": {
-    "time_us": 41.21
+  "encode_reordered_rgb555 (64, 64)": {
+    "time_us": 42.42
   },
   "encode_reordered_rgb555_be (256, 256)": {
-    "time_us": 807.9
+    "time_us": 836.2
   },
   "encode_reordered_rgb555_be (512, 512)": {
-    "time_us": 3799.0
+    "time_us": 3914.0
   },
-  "encode_rgb555 (64, 64)": {
-    "time_us": 6.5
+  "encode_reordered_rgb555_be (64, 64)": {
+    "time_us": 42.41
   },
   "encode_rgb555 (256, 256)": {
-    "time_us": 103.1
+    "time_us": 103.0
   },
   "encode_rgb555 (512, 512)": {
-    "time_us": 415.0
+    "time_us": 415.5
   },
-  "encode_rgb555_be (64, 64)": {
+  "encode_rgb555 (64, 64)": {
     "time_us": 6.51
   },
   "encode_rgb555_be (256, 256)": {
     "time_us": 103.4
   },
   "encode_rgb555_be (512, 512)": {
-    "time_us": 416.1
+    "time_us": 416.3
   },
-  "encode_rgb565 (64, 64)": {
-    "time_us": 6.53
+  "encode_rgb555_be (64, 64)": {
+    "time_us": 6.51
   },
   "encode_rgb565 (256, 256)": {
     "time_us": 103.2
   },
   "encode_rgb565 (512, 512)": {
-    "time_us": 416.0
+    "time_us": 416.2
   },
-  "encode_rgb565_be (64, 64)": {
-    "time_us": 6.51
+  "encode_rgb565 (64, 64)": {
+    "time_us": 6.52
   },
   "encode_rgb565_be (256, 256)": {
-    "time_us": 103.9
+    "time_us": 103.7
   },
   "encode_rgb565_be (512, 512)": {
-    "time_us": 416.7
+    "time_us": 416.6
   },
-  "encode_uyvy (64, 64)": {
-    "time_us": 14.7
+  "encode_rgb565_be (64, 64)": {
+    "time_us": 6.52
   },
   "encode_uyvy (256, 256)": {
-    "time_us": 234.0
+    "time_us": 234.1
   },
   "encode_uyvy (512, 512)": {
-    "time_us": 940.0
+    "time_us": 939.7
+  },
+  "encode_uyvy (64, 64)": {
+    "time_us": 14.69
+  },
+  "encode_uyvy_be (256, 256)": {
+    "time_us": 234.6
+  },
+  "encode_uyvy_be (512, 512)": {
+    "time_us": 940.6
   },
   "encode_uyvy_be (64, 64)": {
     "time_us": 14.68
   },
-  "encode_uyvy_be (256, 256)": {
-    "time_us": 234.4
-  },
-  "encode_uyvy_be (512, 512)": {
-    "time_us": 940.5
-  },
-  "encode_ycbcr420 (64, 64)": {
-    "time_us": 17.73
-  },
   "encode_ycbcr420 (256, 256)": {
-    "time_us": 281.9
+    "time_us": 303.0
   },
   "encode_ycbcr420 (512, 512)": {
-    "time_us": 1139.0
+    "time_us": 1138.0
   },
-  "build_ithmb_file_256": {
-    "time_us": 405.0
+  "encode_ycbcr420 (64, 64)": {
+    "time_us": 17.71
   },
-  "decode_ithmb_256": {
-    "time_us": 32.19
+  "simd_rgb555_row_to_bgra": {
+    "time_us": 13.4
   },
-  "decode_ithmb_512": {
-    "time_us": 134.0
-  },
-  "open_ithmb_photodb": {
-    "time_us": 27.66
+  "simd_rgb565_row_to_bgra": {
+    "time_us": 12.91
   }
 }

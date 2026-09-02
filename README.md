@@ -27,7 +27,8 @@
 A pure Rust codec library, CLI tool, and C ABI shared library for decoding and encoding Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails.
 
 **Related projects**
-- 🌐 [ITHMB Codec Web](https://ithmb-codec.dev/ithmb-decoder/) — browser-based decoder, no install, works on any OS, 100% private
+
+- 🌐 [ITHMB Codec Web](https://ithmb-codec.dev/ithmb-decoder/) · [Repo](https://github.com/B67687/Ithmb-Codec-Web) — browser-based decoder, no install, works on any OS, 100% private
 - 🖼️ [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) — native .ithmb decoding inside ImageGlass
 
 **Key features**
@@ -59,9 +60,9 @@ A pure Rust codec library, CLI tool, and C ABI shared library for decoding and e
 
 > [!TIP]
 > New to `.ithmb` files? See [docs/what-is-this.md](docs/what-is-this.md) for a plain-english explainer.
-> 
+>
 > Confused by technical terms? See [docs/GLOSSARY.md](docs/GLOSSARY.md) for simple definitions.
-> 
+>
 > Want to extract photos from your iPod? See [docs/guides/GUIDE.md](docs/guides/GUIDE.md) for a walkthrough.
 
 ---
@@ -274,7 +275,7 @@ The core decoding library. All decoder logic lives here; wrappers for FFI, CLI u
 | Module                | Purpose                                                                                                                                                  |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pipeline/`           | Central dispatch — reads format prefix, dispatches to the correct decoder, applies crop/rotation post-processing; accepts `&AtomicBool` for cancellation |
-| `jpeg.rs`             | JPEG decoder wrapper (`zune-jpeg` crate), EXIF orientation parsing                                                                                     |
+| `jpeg.rs`             | JPEG decoder wrapper (`zune-jpeg` crate), EXIF orientation parsing                                                                                       |
 | `rgb565.rs`           | RGB565 decoder (16-bit RGB 5/6/5)                                                                                                                        |
 | `rgb555.rs`           | RGB555 decoder (15-bit RGB 5/5/5)                                                                                                                        |
 | `reordered_rgb555.rs` | Reordered RGB555 decoder (byte-swapped variant)                                                                                                          |
@@ -512,6 +513,7 @@ This codec has been systematically reviewed across multiple rounds:
 The C# reference implementation ([B67687/Ithmb-Codec-CSharp](https://github.com/B67687/Ithmb-Codec-CSharp)) underwent 5 review rounds of its own before being archived. The Rust port builds on that foundation with cross-platform distribution as its primary goal.
 
 ## License
+
 MIT — see [LICENSE](LICENSE).
 
 Commercial use? See the [Enterprise License](https://ithmb-codec.dev/enterprise/).
