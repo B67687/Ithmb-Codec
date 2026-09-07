@@ -6,7 +6,8 @@
     clippy::pedantic,
     clippy::unwrap_used,
     elided_lifetimes_in_paths,
-    unused_crate_dependencies
+    unused_crate_dependencies,
+    reason = "strict migration"
 )]
 
 mod util;

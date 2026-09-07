@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 //! Concurrency stress tests for the LRU [`CachedDecoder`].
 
-#![allow(clippy::pedantic, clippy::unwrap_used, unused_crate_dependencies)]
+#![allow(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    unused_crate_dependencies,
+    reason = "strict migration"
+)]
 
 use ithmb_core::cache::CachedDecoder;
 use ithmb_core::enc::encode_rgb565;

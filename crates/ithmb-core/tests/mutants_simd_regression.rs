@@ -29,7 +29,8 @@
     clippy::cast_sign_loss,
     clippy::borrow_interior_mutable_const,
     clippy::declare_interior_mutable_const,
-    clippy::needless_range_loop
+    clippy::needless_range_loop,
+    reason = "strict migration"
 )]
 
 use divan as _;

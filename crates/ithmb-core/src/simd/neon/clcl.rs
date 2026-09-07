@@ -17,8 +17,8 @@ use core::arch::aarch64::*;
 ///
 /// Uses NEON for nibble expansion and BT.601 YUV→RGB conversion in parallel.
 #[inline]
-#[allow(clippy::similar_names)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::similar_names, reason = "strict migration")]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn clcl_row_to_bgra_neon(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8]) {
     let full_batches = (width / 8) * 8;
     let mut i = 0usize;

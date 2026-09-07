@@ -8,7 +8,7 @@
 ///
 /// `big_endian` controls per-pixel byte order.
 #[must_use]
-#[allow(unreachable_code)]
+#[allow(unreachable_code, reason = "strict migration")]
 pub fn encode_rgb555(bgra: &[u8], w: i32, h: i32, big_endian: bool, swap_rgb: bool) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;

@@ -4,7 +4,8 @@
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::similar_names,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    reason = "strict migration"
 )]
 
 #[cfg(target_arch = "x86_64")]
@@ -28,7 +29,7 @@ mod sse41;
 /// instructions (versus ~40 for two scalar calls).
 #[inline]
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "strict migration")]
 pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: the kernel executes `_mm_extract_epi16` (SSE4.1); the runtime
@@ -57,7 +58,11 @@ pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 /// setup when callers have at least 8 bytes of input (the common case).
 #[inline]
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref, clippy::missing_panics_doc)]
+#[allow(
+    clippy::trivially_copy_pass_by_ref,
+    clippy::missing_panics_doc,
+    reason = "strict migration"
+)]
 pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: same SSE4.1 gate + scalar fallback as quad dispatch (F1).
@@ -88,7 +93,7 @@ pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
 ///
 /// Returns [`crate::error::DecodeError::BufferTooShort`] when `src` does not contain a whole number of quads.
 #[inline]
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, reason = "strict migration")]
 pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), crate::error::DecodeError> {
     // F2: reject partial quads up front — every kernel below assumes whole
     // quads, and the documented `BufferTooShort` contract now holds.

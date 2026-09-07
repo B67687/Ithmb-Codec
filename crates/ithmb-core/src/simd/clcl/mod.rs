@@ -27,9 +27,15 @@ mod avx2;
 ///   every `x86_64` CPU with no runtime feature check.
 /// - Requires the `x86_64` target.
 #[cfg(target_arch = "x86_64")]
-#[allow(clippy::many_single_char_names)]
-#[allow(clippy::cast_sign_loss)] // clamp(0,255) guarantees non-negative
-pub unsafe fn clcl_row_to_bgra_sse2(y_ptr: *const u8, cb_ptr: *const u8, cr_ptr: *const u8, width: u32, dst: *mut u8) {
+#[allow(clippy::many_single_char_names, reason = "strict migration")]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")] // clamp(0,255) guarantees non-negative
+pub(crate) unsafe fn clcl_row_to_bgra_sse2(
+    y_ptr: *const u8,
+    cb_ptr: *const u8,
+    cr_ptr: *const u8,
+    width: u32,
+    dst: *mut u8,
+) {
     unsafe {
         use core::arch::x86_64::{
             __m128i, _mm_and_si128, _mm_cvtsi32_si128, _mm_loadl_epi64, _mm_set1_epi8, _mm_slli_epi16, _mm_srli_epi16,
@@ -116,7 +122,7 @@ pub unsafe fn clcl_row_to_bgra_sse2(y_ptr: *const u8, cb_ptr: *const u8, cr_ptr:
 }
 
 /// Scalar fallback for CLCL row decode.
-#[allow(dead_code)]
+#[allow(dead_code, reason = "strict migration")]
 fn scalar_fallback(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8]) {
     for i in 0..width {
         let cb_byte = cb[i / 2];
@@ -134,7 +140,7 @@ fn scalar_fallback(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8])
 /// On `x86_64` uses AVX2 (16 px/iter, runtime-detected), SSE2 (8 px/iter), or scalar fallback.
 /// On other platforms uses the scalar fallback.
 #[inline]
-pub fn clcl_row_to_bgra(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8]) {
+pub(crate) fn clcl_row_to_bgra(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut [u8]) {
     #[cfg(target_arch = "x86_64")]
     {
         // SAFETY: checked by is_x86_feature_detected! below.
@@ -161,6 +167,6 @@ pub fn clcl_row_to_bgra(y: &[u8], cb: &[u8], cr: &[u8], width: usize, dst: &mut 
         return;
     }
     // Fallback (non-x86_64) — scalar
-    #[allow(unreachable_code)]
+    #[allow(unreachable_code, reason = "strict migration")]
     scalar_fallback(y, cb, cr, width, dst);
 }

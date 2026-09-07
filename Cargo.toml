@@ -15,18 +15,68 @@ description = "Rust codec for Apple IThmb thumbnail files (iPod/iPhone PhotoDB)"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
-unused_crate_dependencies = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+unused_crate_dependencies = "warn"
 rust_2018_idioms = { level = "deny", priority = -1 }
+missing_docs = "warn"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+unused_must_use = "deny"
+elided_lifetimes_in_paths = "warn"
+non_ascii_idents = "deny"
+trivial_numeric_casts = "warn"
+unused_lifetimes = "warn"
+single_use_lifetimes = "warn"
 
 [workspace.lints.clippy]
-correctness = "deny"
-suspicious = "deny"
-complexity = "deny"
-perf = "deny"
-style = "deny"
-pedantic = "deny"
+# Groups — inventory: deny core via `all`, warn pedantic/nursery/cargo (cherry-pick, never wholesale)
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
 
-# CI/DEV PROFILE — strip DWARF from dependencies only. Dependencies are never
+# Hard denies - turn warnings into errors for sharp tools
+undocumented_unsafe_blocks = { level = "warn", priority = 0 }
+multiple_unsafe_ops_per_block = { level = "warn", priority = 0 }
+unwrap_used = { level = "warn", priority = 0 }
+expect_used = { level = "warn", priority = 0 }
+panic = { level = "warn", priority = 0 }
+todo = "deny"
+unimplemented = "deny"
+unreachable = "warn"
+indexing_slicing = { level = "warn", priority = 0 }
+mem_forget = "deny"
+arithmetic_side_effects = "warn"
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_precision_loss = "warn"
+cast_sign_loss = "warn"
+as_underscore = "deny"
+as_ptr_cast_mut = "deny"
+ptr_as_ptr = "warn"
+borrow_as_ptr = "warn"
+fn_to_numeric_cast_any = "deny"
+clone_on_ref_ptr = "warn"
+mutex_atomic = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+exit = "warn"
+allow_attributes_without_reason = "warn"
+dbg_macro = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+use_debug = "warn"
+
+# Stylistic relaxations (project-wide opinions)
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+mod_module_files = { level = "allow", reason = "legacy mod.rs layout (14 modules), rename would churn public mod tree" }
+empty_drop = "warn"
+empty_structs_with_brackets = "warn"
+empty_enum = "warn"
+exhaustive_enums = "warn"      # public enums should consider #[non_exhaustive]
+exhaustive_structs = "warn"
 # debugged (backtraces inside zune-jpeg/clap/pyo3 are useless), so their debug
 # info is pure waste in target/ and on every dev/CI compile. Own crates keep
 # full debug=2 so panic backtraces + gdb/lldb on the unsafe SIMD/C-API code

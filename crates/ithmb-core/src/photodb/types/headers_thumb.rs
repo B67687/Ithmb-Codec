@@ -46,7 +46,12 @@ impl MhniHeader {
     /// Returns [`DecodeError::BufferTooShort`] if fewer than 28 bytes are
     /// available from `offset` (the minimum needed for variant detection), or
     /// if fewer bytes are available than the detected variant requires.
-    #[allow(clippy::cast_sign_loss, clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+    #[allow(
+        clippy::cast_sign_loss,
+        clippy::cast_possible_wrap,
+        clippy::cast_possible_truncation,
+        reason = "strict migration"
+    )]
     pub fn parse(data: &[u8], offset: &mut usize, little_endian: bool) -> Result<Self, DecodeError> {
         let start = *offset;
         let remaining = data.len().saturating_sub(start);

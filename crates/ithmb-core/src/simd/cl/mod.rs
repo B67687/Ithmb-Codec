@@ -4,7 +4,8 @@
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::similar_names,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    reason = "strict migration"
 )]
 
 #[cfg(target_arch = "x86_64")]
@@ -26,7 +27,7 @@ mod sse41;
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn cl_quad_to_bgra_ssse3(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_and_si128, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_set1_epi8, _mm_shuffle_epi8, _mm_srli_epi16,
@@ -73,7 +74,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_ssse3(quad: &[u8; 8]) -> [u8; 16] {
 #[cfg(target_arch = "x86_64")]
 #[inline]
 #[cfg(test)]
-#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names, reason = "strict migration")]
 pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_storeu_si128, _mm256_add_epi32, _mm256_and_si256,
@@ -160,7 +161,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_avx2(quad: &[u8; 8]) -> [u8; 16] {
 ///
 /// Input layout (8 bytes): `[Y0, Y1, Y2, Y3, CbCr0, CbCr1, CbCr2, CbCr3]`
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "strict migration")]
 pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.

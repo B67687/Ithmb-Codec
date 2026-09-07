@@ -11,11 +11,11 @@ pub(crate) struct Parser<'a> {
 impl Parser<'_> {
     // -- low-level helpers --
 
-    pub fn peek(&self) -> Option<u8> {
+    pub(super) fn peek(&self) -> Option<u8> {
         self.bytes.get(self.pos).copied()
     }
 
-    pub fn advance(&mut self) -> Result<u8, DecodeError> {
+    pub(super) fn advance(&mut self) -> Result<u8, DecodeError> {
         let b = self
             .bytes
             .get(self.pos)
@@ -25,7 +25,7 @@ impl Parser<'_> {
         Ok(b)
     }
 
-    pub fn expect(&mut self, want: u8) -> Result<(), DecodeError> {
+    pub(super) fn expect(&mut self, want: u8) -> Result<(), DecodeError> {
         let got = self.advance()?;
         if got != want {
             return Err(DecodeError::Profile(format!(
@@ -40,7 +40,7 @@ impl Parser<'_> {
         Ok(())
     }
 
-    pub fn skip_ws(&mut self) {
+    pub(super) fn skip_ws(&mut self) {
         while let Some(b) = self.peek() {
             if b != b' ' && b != b'\t' && b != b'\n' && b != b'\r' {
                 break;
@@ -51,7 +51,7 @@ impl Parser<'_> {
 
     // -- value parsers --
 
-    pub fn parse_string(&mut self) -> Result<String, DecodeError> {
+    pub(super) fn parse_string(&mut self) -> Result<String, DecodeError> {
         self.expect(b'"')?;
         let mut s = String::new();
         loop {
@@ -93,7 +93,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn parse_hex4(&mut self) -> Result<u32, DecodeError> {
+    pub(super) fn parse_hex4(&mut self) -> Result<u32, DecodeError> {
         let mut val: u32 = 0;
         for _ in 0..4 {
             let b = self.advance()?;
@@ -110,7 +110,7 @@ impl Parser<'_> {
         Ok(val)
     }
 
-    pub fn parse_number_i32(&mut self) -> Result<i32, DecodeError> {
+    pub(super) fn parse_number_i32(&mut self) -> Result<i32, DecodeError> {
         self.skip_ws();
         let start = self.pos;
         if self.pos >= self.bytes.len() {
@@ -131,7 +131,7 @@ impl Parser<'_> {
             .map_err(|e| DecodeError::Profile(format!("invalid number '{s}': {e}")))
     }
 
-    pub fn parse_bool(&mut self) -> Result<bool, DecodeError> {
+    pub(super) fn parse_bool(&mut self) -> Result<bool, DecodeError> {
         self.skip_ws();
         if self.pos >= self.bytes.len() {
             return Err(DecodeError::Profile(format!("expected bool at offset {}", self.pos)));
@@ -147,7 +147,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn skip_value(&mut self) -> Result<(), DecodeError> {
+    pub(super) fn skip_value(&mut self) -> Result<(), DecodeError> {
         self.skip_ws();
         match self.peek() {
             Some(b'"') => {
@@ -181,7 +181,7 @@ impl Parser<'_> {
         Ok(())
     }
 
-    pub fn parse_null(&mut self) -> Result<(), DecodeError> {
+    pub(super) fn parse_null(&mut self) -> Result<(), DecodeError> {
         self.skip_ws();
         if self.bytes[self.pos..].starts_with(b"null") {
             self.pos += 4;
@@ -191,7 +191,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn skip_array(&mut self) -> Result<(), DecodeError> {
+    pub(super) fn skip_array(&mut self) -> Result<(), DecodeError> {
         self.expect(b'[')?;
         loop {
             self.skip_ws();
@@ -207,7 +207,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn skip_object(&mut self) -> Result<(), DecodeError> {
+    pub(super) fn skip_object(&mut self) -> Result<(), DecodeError> {
         self.expect(b'{')?;
         loop {
             self.skip_ws();

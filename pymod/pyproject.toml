@@ -14,8 +14,37 @@ description = "Python bindings for Ithmb-Codec — decode Apple .ithmb thumbnail
 license = "MIT"
 authors = [{ name = "B67687" }]
 readme = "README.md"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff==0.15.20",
+    "basedpyright==1.39.9",
+]
 
 [tool.maturin]
 module-name = "ithmb_core"
 abi3 = true
 abi3-py312 = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I"]
+ignore = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.basedpyright]
+typeCheckingMode = "recommended"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v"

@@ -5,7 +5,7 @@ use ithmb_core::Profile;
 use ithmb_core::profile_db::ProfileDb;
 
 /// Parse the format id from an F-prefix filename such as `F1061_1.ithmb`.
-pub fn f_filename_format_id(path: &Path) -> Option<i32> {
+pub(super) fn f_filename_format_id(path: &Path) -> Option<i32> {
     let name = path.file_name()?.to_str()?;
     let after_f = name.strip_prefix('F')?;
     let digits: String = after_f.chars().take_while(char::is_ascii_digit).collect();
@@ -17,7 +17,7 @@ pub fn f_filename_format_id(path: &Path) -> Option<i32> {
 
 /// Frame layout of an `.ithmb` file.
 #[derive(Debug)]
-pub struct FrameLayout {
+pub(super) struct FrameLayout {
     /// Number of frames in the file.
     pub count: usize,
     /// Byte offset of the first frame payload within the file buffer.
@@ -30,13 +30,13 @@ pub struct FrameLayout {
 
 impl FrameLayout {
     /// Payload bytes of frame `index` within the file buffer.
-    pub fn frame_bytes<'a>(&self, data: &'a [u8], index: usize) -> &'a [u8] {
+    pub(super) fn frame_bytes<'a>(&self, data: &'a [u8], index: usize) -> &'a [u8] {
         let start = self.data_offset + index * self.frame_size;
         &data[start..start + self.frame_size]
     }
 
     /// Serialized bytes for extracted frame `index`.
-    pub fn extracted_bytes(&self, data: &[u8], index: usize) -> Vec<u8> {
+    pub(super) fn extracted_bytes(&self, data: &[u8], index: usize) -> Vec<u8> {
         let payload = self.frame_bytes(data, index);
         match self.prefix_bytes {
             Some(prefix) => {
@@ -51,7 +51,7 @@ impl FrameLayout {
 }
 
 /// Resolve how frames are laid out in `data` for the given input path.
-pub fn resolve_frame_layout(data: &[u8], input: &Path, db: &ProfileDb) -> Result<FrameLayout> {
+pub(super) fn resolve_frame_layout(data: &[u8], input: &Path, db: &ProfileDb) -> Result<FrameLayout> {
     if data.len() < 4 {
         bail!("file too short: expected at least 4 bytes");
     }
@@ -86,12 +86,12 @@ pub fn resolve_frame_layout(data: &[u8], input: &Path, db: &ProfileDb) -> Result
 
 /// Frame layout for a raw (non-JPEG) file.
 fn raw_layout(profile: &Profile, data: &[u8], data_offset: usize) -> Result<FrameLayout> {
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let declared_frame_size = profile.frame_size() as usize;
     if declared_frame_size == 0 {
         bail!("profile {} has no frame size", profile.prefix);
     }
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let prefix_bytes = (profile.prefix as u32).to_be_bytes();
 
     let payload_len = data.len() - data_offset;
@@ -118,7 +118,7 @@ mod tests {
         ProfileDb::load_builtin().expect("built-in profile database loads")
     }
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     fn prefixed_buffer(prefix: i32, frame_size: usize, frames: usize) -> Vec<u8> {
         let mut buf = (prefix as u32).to_be_bytes().to_vec();
         buf.resize(4 + frame_size * frames, 0);

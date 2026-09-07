@@ -8,7 +8,12 @@
 //!
 //! Sample files are referenced relative to `CARGO_MANIFEST_DIR`, which
 //! resolves to `crates/ithmb-cli/` during `cargo test`.
-#![allow(clippy::pedantic, clippy::unwrap_used, unused_crate_dependencies)]
+#![allow(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    unused_crate_dependencies,
+    reason = "strict migration"
+)]
 
 use std::path::PathBuf;
 use std::process::Command;

@@ -15,8 +15,8 @@
 /// vectors.  Final interleave uses `vzip_s16` + `vqmovun_s16` for saturated pack.
 #[inline]
 #[must_use]
-#[allow(clippy::similar_names)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::similar_names, reason = "strict migration")]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
     use core::arch::aarch64::{
         vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u8, vmovl_u16, vqmovn_s32,
@@ -94,8 +94,8 @@ pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
 /// pipeline, but the function is kept in the NEON module for symmetry.
 #[inline]
 #[must_use]
-#[allow(clippy::similar_names)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::similar_names, reason = "strict migration")]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
     use core::arch::aarch64::{vgetq_lane_u16, vld1_u8, vmovl_u8};
 
@@ -137,8 +137,8 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
 /// multiply-shift steps directly in NEON registers.
 #[inline]
 #[must_use]
-#[allow(clippy::similar_names)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::similar_names, reason = "strict migration")]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] {
     use core::arch::aarch64::{
         vaddq_s32, vcombine_s16, vdup_n_s16, vdupq_n_s32, vget_low_u16, vld1_u8, vmovl_u8, vmovl_u16, vmulq_s32,
@@ -226,7 +226,7 @@ pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] 
 /// Each chroma position covers 4 Y pixels (2×2 block). Delegates to
 /// [`yuv420_quad_to_bgra_neon`] which handles the NEON BT.601 arithmetic.
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn yuv420_row_pair_to_bgra_neon(
     y_row: &[u8],
     cb_row: &[u8],

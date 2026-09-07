@@ -66,7 +66,7 @@ impl CachedDecoder {
     /// Panics if the internal `RwLock` is poisoned (another thread panicked
     /// while holding the lock).
     #[must_use]
-    #[allow(clippy::missing_panics_doc)]
+    #[allow(clippy::missing_panics_doc, reason = "strict migration")]
     pub fn new() -> Self {
         Self {
             cache: RwLock::new(LruCache::new(NonZeroUsize::new(64).expect("64 is non-zero"))),
@@ -96,7 +96,7 @@ impl CachedDecoder {
     ///
     /// Panics if the internal `RwLock` is poisoned (another thread panicked
     /// while holding the lock).
-    #[allow(clippy::missing_panics_doc)]
+    #[allow(clippy::missing_panics_doc, reason = "strict migration")]
     pub fn decode_with_cache(
         &self,
         profile: &Profile,
@@ -136,7 +136,7 @@ impl CachedDecoder {
     /// # Panics
     ///
     /// Panics if the internal `RwLock` is poisoned.
-    #[allow(clippy::missing_panics_doc)]
+    #[allow(clippy::missing_panics_doc, reason = "strict migration")]
     pub fn clear(&self) {
         let mut cache = self.cache.write().expect("cache lock poisoned");
         cache.clear();
@@ -148,7 +148,7 @@ impl CachedDecoder {
     ///
     /// Panics if the internal `RwLock` is poisoned.
     #[must_use]
-    #[allow(clippy::missing_panics_doc)]
+    #[allow(clippy::missing_panics_doc, reason = "strict migration")]
     pub fn len(&self) -> usize {
         let cache = self.cache.read().expect("cache lock poisoned");
         cache.len()
@@ -235,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::unwrap_used, reason = "strict migration")]
     fn decode_with_cache_miss_then_hit_returns_identical_image() {
         let decoder = CachedDecoder::new();
         let canceled = AtomicBool::new(false);
@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::unwrap_used, reason = "strict migration")]
     fn distinct_inputs_are_distinct_entries() {
         let decoder = CachedDecoder::new();
         let canceled = AtomicBool::new(false);
@@ -277,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::unwrap_used, reason = "strict migration")]
     fn clear_evicts_all_entries_and_cache_stays_usable() {
         let decoder = CachedDecoder::new();
         let canceled = AtomicBool::new(false);
@@ -297,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::unwrap_used)]
+    #[allow(clippy::unwrap_used, reason = "strict migration")]
     fn lru_evicts_down_to_capacity() {
         let decoder = CachedDecoder::new();
         let canceled = AtomicBool::new(false);

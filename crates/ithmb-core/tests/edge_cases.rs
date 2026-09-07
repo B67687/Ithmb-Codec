@@ -19,7 +19,8 @@
     clippy::doc_markdown,
     clippy::declare_interior_mutable_const,
     clippy::pedantic,
-    clippy::unwrap_used
+    clippy::unwrap_used,
+    reason = "strict migration"
 )]
 // ---------------------------------------------------------------------------
 // Imports

@@ -10,7 +10,7 @@
 //! * U9 — reordered RGB555 encoder honors `little_endian`; byte-exact
 //!   roundtrip for both endiannesses.
 
-#![allow(clippy::pedantic, clippy::unwrap_used)]
+#![allow(clippy::pedantic, clippy::unwrap_used, reason = "strict migration")]
 
 use divan as _;
 use image as _;

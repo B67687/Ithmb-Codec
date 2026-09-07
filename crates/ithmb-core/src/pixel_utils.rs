@@ -10,7 +10,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 /// Replicates a 5-bit value to 8 bits: `(v << 3) | (v >> 2)`.
 #[inline]
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, reason = "strict migration")]
 pub(crate) fn msb_replicate_5(v: u32) -> u8 {
     ((v << 3) | (v >> 2)) as u8
 }
@@ -18,7 +18,7 @@ pub(crate) fn msb_replicate_5(v: u32) -> u8 {
 /// Replicates a 6-bit value to 8 bits: `(v << 2) | (v >> 4)`.
 #[inline]
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, reason = "strict migration")]
 pub(crate) fn msb_replicate_6(v: u32) -> u8 {
     ((v << 2) | (v >> 4)) as u8
 }
@@ -66,7 +66,7 @@ pub(crate) fn unpack_rgb555(pixel: u16, swap: bool) -> [u8; 4] {
 /// Clamp an `i32` to the 0..255 u8 range.
 #[inline]
 #[must_use]
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
 pub(crate) fn clamp_u8(v: i32) -> u8 {
     v.clamp(0, 255) as u8
 }
@@ -145,7 +145,7 @@ pub(crate) fn rotate_pixels(src: &[u8], width: u32, height: u32, rotation: i32) 
 }
 
 /// Convert every byte in a gray buffer to BGRA: `gray[n] -> [gray[n], gray[n], gray[n], 255]`.
-#[allow(unsafe_code, dead_code)]
+#[allow(unsafe_code, dead_code, reason = "strict migration")]
 #[must_use]
 pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
     #[cfg(target_arch = "x86_64")]
@@ -170,7 +170,7 @@ pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
 /// Convert luma bytes to BGRA using a single shared Cb/Cr pair.
 ///
 /// Processes batches of 4 via `yuv420_quad_to_bgra` (SIMD when possible).
-#[allow(dead_code)]
+#[allow(dead_code, reason = "strict migration")]
 #[must_use]
 pub(crate) fn fill_yuv_row(luma: &[u8], cb: u8, cr: u8) -> Vec<u8> {
     let n = luma.len();

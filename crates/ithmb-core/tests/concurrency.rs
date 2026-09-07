@@ -8,7 +8,8 @@
     unused_crate_dependencies,
     unused_extern_crates,
     clippy::pedantic,
-    clippy::unwrap_used
+    clippy::unwrap_used,
+    reason = "strict migration"
 )]
 
 use std::num::NonZero;

@@ -21,8 +21,14 @@
 /// - Requires `x86_64` target and AVX2 at runtime.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
-#[allow(clippy::many_single_char_names, clippy::too_many_lines)]
-pub unsafe fn clcl_row_to_bgra_avx2(y_ptr: *const u8, cb_ptr: *const u8, cr_ptr: *const u8, width: u32, dst: *mut u8) {
+#[allow(clippy::many_single_char_names, clippy::too_many_lines, reason = "strict migration")]
+pub(super) unsafe fn clcl_row_to_bgra_avx2(
+    y_ptr: *const u8,
+    cb_ptr: *const u8,
+    cr_ptr: *const u8,
+    width: u32,
+    dst: *mut u8,
+) {
     unsafe {
         use core::arch::x86_64::{
             __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_loadu_si128, _mm_set1_epi8, _mm_slli_epi16, _mm_srli_epi16,

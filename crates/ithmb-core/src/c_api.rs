@@ -10,7 +10,8 @@
     unsafe_op_in_unsafe_fn,
     clippy::cast_sign_loss,
     clippy::cast_possible_wrap,
-    clippy::manual_let_else
+    clippy::manual_let_else,
+    reason = "strict migration"
 )]
 
 use crate::error::DecodeError;

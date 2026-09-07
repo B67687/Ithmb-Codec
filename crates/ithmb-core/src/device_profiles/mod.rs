@@ -141,7 +141,7 @@ pub fn all_device_profiles() -> &'static [DeviceProfile] {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, reason = "strict migration")]
 mod tests {
     use super::*;
 

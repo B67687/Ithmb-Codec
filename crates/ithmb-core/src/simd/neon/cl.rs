@@ -10,7 +10,7 @@ use core::arch::aarch64::*;
 /// NEON mandatory on aarch64; aarch64-only caller.
 #[inline]
 #[must_use]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn cl_quad_to_bgra_neon(quad: &[u8; 8]) -> [u8; 16] {
     // ---- Pre-compute chroma contributions (scalar, one per pixel) ----
     // Matching SSE2 convention: low nibble = Cb, high nibble = Cr.
@@ -72,8 +72,8 @@ pub(crate) unsafe fn cl_quad_to_bgra_neon(quad: &[u8; 8]) -> [u8; 16] {
 /// `n_pixels * 4`. Remainder loops re-check bounds per quad/pixel.
 /// NEON mandatory on aarch64; aarch64-only caller.
 #[inline]
-#[allow(clippy::similar_names)]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(clippy::similar_names, reason = "strict migration")]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn cl_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
     let (y, chroma) = src.split_at(n_pixels);

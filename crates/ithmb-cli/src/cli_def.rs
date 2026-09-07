@@ -4,7 +4,7 @@ use clap::Parser;
 
 /// Output format selection.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
-pub enum OutputFormat {
+pub(super) enum OutputFormat {
     /// Auto-detect from output file extension
     Auto,
     /// Raw binary BGRA data
@@ -16,8 +16,8 @@ pub enum OutputFormat {
 /// .ithmb image decoder
 #[derive(Parser)]
 #[command(name = "ithmb", version, about)]
-#[allow(clippy::struct_excessive_bools)]
-pub struct Cli {
+#[allow(clippy::struct_excessive_bools, reason = "strict migration")]
+pub(super) struct Cli {
     /// Input .ithmb file path
     pub input: Option<PathBuf>,
 

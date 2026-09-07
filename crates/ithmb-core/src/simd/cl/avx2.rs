@@ -15,7 +15,7 @@
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines, reason = "strict migration")]
 pub(crate) unsafe fn cl_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, __m256i, _mm_add_epi32, _mm_and_si128, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_loadl_epi64,

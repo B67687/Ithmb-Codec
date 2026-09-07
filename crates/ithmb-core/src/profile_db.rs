@@ -89,7 +89,7 @@ impl ProfileDb {
     /// tolerance (C# `ProfileSystem` device-override cascade). Falls back to the
     /// main profile entry when no alternate matches.
     #[must_use]
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     pub fn resolve(&self, prefix: i32, data_len: usize) -> Option<Profile> {
         if let Some(alts) = self.alternates.get(&prefix)
             && let Some(a) = alts
@@ -142,7 +142,7 @@ fn nano_alternate(prefix: i32, width: i32, height: i32) -> Profile {
 // compiles under cfg(test). load_builtin() is infallible (embedded static data,
 // never fails to parse), so unwrap is safe here; clippy::unwrap_used is allowed
 // for the tests module only. Production code paths (load/load_path) use Result.
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, reason = "strict migration")]
 mod tests {
     use super::*;
 

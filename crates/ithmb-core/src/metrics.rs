@@ -104,7 +104,7 @@ pub struct DecodeMetrics {
 
 impl DecodeMetrics {
     /// Create a new `DecodeMetrics` with all counters initialised to zero.
-    #[allow(clippy::new_without_default)]
+    #[allow(clippy::new_without_default, reason = "strict migration")]
     #[must_use]
     pub fn new() -> Self {
         Self {

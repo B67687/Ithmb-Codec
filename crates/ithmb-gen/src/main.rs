@@ -54,7 +54,11 @@ struct Args {
 ///
 /// Without a seed: vertical gradient (B = y-gradient, G = x-gradient, R = contrast).
 /// With a seed: deterministic pseudo-random via a simple LCG.
-#[allow(clippy::many_single_char_names, clippy::cast_possible_truncation)]
+#[allow(
+    clippy::many_single_char_names,
+    clippy::cast_possible_truncation,
+    reason = "strict migration"
+)]
 fn generate_pixels(w: u32, h: u32, seed: Option<u64>) -> Vec<u8> {
     let n = (w as usize) * (h as usize);
     let mut pixels = Vec::with_capacity(n * 4);
@@ -102,7 +106,7 @@ fn generate_pixels(w: u32, h: u32, seed: Option<u64>) -> Vec<u8> {
 // ---------------------------------------------------------------------------
 
 /// Encode BGRA pixels using the selected format.
-#[allow(clippy::cast_possible_wrap)]
+#[allow(clippy::cast_possible_wrap, reason = "strict migration")]
 fn encode(format: Format, bgra: &[u8], w: u32, h: u32) -> Vec<u8> {
     let w_i32 = w as i32;
     let h_i32 = h as i32;

@@ -13,7 +13,11 @@ use crate::error::DecodeError;
 /// (gate quad dispatch on `sse4.1` or declare an x86-64-v2 baseline).
 #[cfg(target_arch = "x86_64")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
+#[allow(
+    unsafe_op_in_unsafe_fn,
+    clippy::trivially_copy_pass_by_ref,
+    reason = "strict migration"
+)]
 pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
     use core::arch::x86_64::{_mm_cvtsi32_si128, _mm_extract_epi16, _mm_setzero_si128, _mm_unpacklo_epi8};
 
@@ -47,7 +51,11 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
 /// `BufferTooShort` arms are defensive-only and unreachable.
 #[cfg(target_arch = "x86_64")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
+#[allow(
+    unsafe_op_in_unsafe_fn,
+    clippy::trivially_copy_pass_by_ref,
+    reason = "strict migration"
+)]
 pub(crate) unsafe fn uyvy_double_quad_to_bgra_sse2(quads: &[u8; 8]) -> Result<[u8; 16], DecodeError> {
     let left_arr: [u8; 4] = quads[..4].try_into().map_err(|_| DecodeError::BufferTooShort {
         expected: 4,

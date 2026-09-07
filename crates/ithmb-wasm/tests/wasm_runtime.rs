@@ -1,5 +1,5 @@
 #![cfg(target_arch = "wasm32")] // these tests only run under wasm-pack (node/browser)
-#![allow(unused_crate_dependencies)] // deps used under wasm only; native builds skip this file's bodies
+#![allow(unused_crate_dependencies, reason = "strict migration")] // deps used under wasm only; native builds skip this file's bodies
 
 //! Runtime smoke tests for the WASM bindings.
 //!

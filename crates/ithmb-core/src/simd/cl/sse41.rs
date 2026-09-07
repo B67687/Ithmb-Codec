@@ -16,7 +16,7 @@
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse4.1,ssse3")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines, reason = "strict migration")]
 pub(crate) unsafe fn cl_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi32, _mm_and_si128, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_loadu_si128, _mm_max_epi32,

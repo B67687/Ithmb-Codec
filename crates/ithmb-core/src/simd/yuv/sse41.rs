@@ -18,7 +18,12 @@ use core::arch::x86_64::__m128i;
 #[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "sse4.1")]
-#[allow(clippy::too_many_arguments, clippy::cast_sign_loss, unsafe_op_in_unsafe_fn)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::cast_sign_loss,
+    unsafe_op_in_unsafe_fn,
+    reason = "strict migration"
+)]
 pub(crate) unsafe fn store_sse41_quad(
     y_row: &[u8],
     w: usize,
@@ -92,7 +97,7 @@ pub(crate) unsafe fn store_sse41_quad(
 #[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "sse4.1")]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn yuv420_row_pair_to_bgra_sse41(
     y_row: &[u8],
     cb_row: &[u8],

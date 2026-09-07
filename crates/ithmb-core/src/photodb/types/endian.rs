@@ -24,7 +24,7 @@ pub fn read_u32(data: &[u8], offset: usize, little_endian: bool) -> u32 {
 /// Panics if `offset + 4 > data.len()`.
 #[must_use]
 #[inline]
-#[allow(clippy::cast_possible_wrap)]
+#[allow(clippy::cast_possible_wrap, reason = "strict migration")]
 pub fn read_i32(data: &[u8], offset: usize, little_endian: bool) -> i32 {
     read_u32(data, offset, little_endian) as i32
 }

@@ -11,7 +11,7 @@ use crate::pixel_utils::clamp_u8;
 ///
 /// When `swap_chroma` is true the output order is Y, Cr, Cb.
 #[must_use]
-#[allow(unreachable_code)]
+#[allow(unreachable_code, reason = "strict migration")]
 pub fn encode_ycbcr420(bgra: &[u8], w: i32, h: i32, swap_chroma: bool) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;

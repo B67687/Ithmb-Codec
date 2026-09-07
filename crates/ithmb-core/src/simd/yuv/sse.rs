@@ -15,7 +15,12 @@ use core::arch::x86_64::__m128i;
 ///   never overflow and the scalar tail stores stay in `out[0..16]`.
 #[cfg(target_arch = "x86_64")]
 #[inline]
-#[allow(clippy::similar_names, unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
+#[allow(
+    clippy::similar_names,
+    unsafe_op_in_unsafe_fn,
+    clippy::trivially_copy_pass_by_ref,
+    reason = "strict migration"
+)]
 pub(crate) unsafe fn yuv420_quad_to_bgra_sse2(quad: &[u8; 6]) -> [u8; 16] {
     use core::arch::x86_64::{
         _mm_add_epi32, _mm_cvtsi32_si128, _mm_set1_epi32, _mm_setzero_si128, _mm_storeu_si128, _mm_sub_epi32,

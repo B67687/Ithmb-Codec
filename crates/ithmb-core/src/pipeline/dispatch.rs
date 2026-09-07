@@ -60,7 +60,7 @@ pub(super) fn decode_ithmb_inner(
         let mut best: Option<Profile> = None;
         let mut best_delta: usize = usize::MAX;
         for p in db.all().values() {
-            #[allow(clippy::cast_sign_loss)]
+            #[allow(clippy::cast_sign_loss, reason = "strict migration")]
             let delta = data_len.abs_diff(p.frame_byte_length as usize);
             if delta <= 256 && delta < best_delta {
                 best_delta = delta;

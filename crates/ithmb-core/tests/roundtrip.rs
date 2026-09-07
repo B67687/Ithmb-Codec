@@ -7,7 +7,7 @@
 //! 4. Decodes using [`decode_with_profile`] (the same pipeline real files go through)
 //! 5. Asserts the decoded pixels match the originals (within quantization tolerance
 //!    for lossy YUV / nibble-chroma formats).
-#![allow(clippy::pedantic, clippy::unwrap_used)]
+#![allow(clippy::pedantic, clippy::unwrap_used, reason = "strict migration")]
 
 use divan as _;
 use image as _;
@@ -324,7 +324,7 @@ fn exhaustive_rgb565_roundtrip() {
         let g6 = u32::from((rgb565_value >> 5) & 0x3F);
         let b5 = u32::from(rgb565_value & 0x1F);
 
-        #[allow(clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
         let (r8, g8, b8) = (
             ((r5 << 3) | (r5 >> 2)) as u8,
             ((g6 << 2) | (g6 >> 4)) as u8,

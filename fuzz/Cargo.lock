@@ -45,7 +45,7 @@ dependencies = [
 
 [[package]]
 name = "ithmb-core"
-version = "1.9.6"
+version = "1.9.9"
 dependencies = [
  "thiserror",
  "zune-jpeg",

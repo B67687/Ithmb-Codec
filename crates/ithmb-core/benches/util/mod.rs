@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 //! Shared helper functions and fixtures for ithmb-core benchmarks.
 
-#![allow(clippy::pedantic, elided_lifetimes_in_paths, dead_code)]
+#![allow(clippy::pedantic, elided_lifetimes_in_paths, dead_code, reason = "strict migration")]
 
 use ithmb_core::profile::{Encoding, Profile};
 use std::sync::atomic::AtomicBool;
@@ -14,7 +14,7 @@ mod rng;
 
 /// Generate a checkerboard BGRA image of given dimensions.
 #[must_use]
-pub fn bgra_checkerboard(w: usize, h: usize) -> Vec<u8> {
+pub(super) fn bgra_checkerboard(w: usize, h: usize) -> Vec<u8> {
     let mut pixels = Vec::with_capacity(w * h * 4);
     for y in 0..h {
         for x in 0..w {
@@ -30,7 +30,7 @@ pub fn bgra_checkerboard(w: usize, h: usize) -> Vec<u8> {
 
 /// Generate a pseudo-random BGRA image (seeded splitmix64, deterministic).
 #[must_use]
-pub fn bgra_random(w: usize, h: usize) -> Vec<u8> {
+pub(super) fn bgra_random(w: usize, h: usize) -> Vec<u8> {
     let mut pixels = vec![0u8; w * h * 4];
     let mut rng = rng::SeededRng::new(0x1234_5678_9ABC_DEF0);
     rng.fill_bgra(&mut pixels);
@@ -39,7 +39,7 @@ pub fn bgra_random(w: usize, h: usize) -> Vec<u8> {
 
 /// Generate a horizontal+vertical gradient BGRA image.
 #[must_use]
-pub fn bgra_gradient(w: usize, h: usize) -> Vec<u8> {
+pub(super) fn bgra_gradient(w: usize, h: usize) -> Vec<u8> {
     let mut pixels = Vec::with_capacity(w * h * 4);
     let wf = if w > 1 { w - 1 } else { 1 };
     let hf = if h > 1 { h - 1 } else { 1 };
@@ -56,13 +56,13 @@ pub fn bgra_gradient(w: usize, h: usize) -> Vec<u8> {
 
 /// Generate a solid white BGRA image.
 #[must_use]
-pub fn bgra_solid(w: usize, h: usize) -> Vec<u8> {
+pub(super) fn bgra_solid(w: usize, h: usize) -> Vec<u8> {
     vec![255u8; w * h * 4]
 }
 
 /// Return all input patterns as `(name, pixels)` pairs.
 #[must_use]
-pub fn all_inputs(w: usize, h: usize) -> Vec<(&'static str, Vec<u8>)> {
+pub(super) fn all_inputs(w: usize, h: usize) -> Vec<(&'static str, Vec<u8>)> {
     vec![
         ("checkerboard", bgra_checkerboard(w, h)),
         ("random", bgra_random(w, h)),
@@ -77,7 +77,7 @@ pub fn all_inputs(w: usize, h: usize) -> Vec<(&'static str, Vec<u8>)> {
 
 /// Checkerboard 64×64 JPEG (produced by ffmpeg).
 /// Size: 1040 bytes. Passes through `jpeg::decode` and yields a valid 64×64 BGRA image.
-pub const CHECKERBOARD_JPEG_64: &[u8] = &[
+pub(super) const CHECKERBOARD_JPEG_64: &[u8] = &[
     0xFF, 0xD8, 0xFF, 0xFE, 0x00, 0x0F, 0x4C, 0x61, 0x76, 0x63, 0x36, 0x31, 0x2E, 0x33, 0x2E, 0x31, 0x30, 0x30, 0x00,
     0xFF, 0xDB, 0x00, 0x43, 0x00, 0x08, 0x0A, 0x0A, 0x0B, 0x0A, 0x0B, 0x0D, 0x0D, 0x0D, 0x0D, 0x0D, 0x0D, 0x10, 0x0F,
     0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x12, 0x12, 0x12, 0x15, 0x15, 0x15, 0x12, 0x12,
@@ -134,7 +134,7 @@ pub const CHECKERBOARD_JPEG_64: &[u8] = &[
 /// All optional flags (interlace, crop, rotation, etc.) are left at defaults
 /// (usually `false`/`0`).
 #[must_use]
-pub fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
+pub(super) fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
     let frame_byte_length = match encoding {
         Encoding::Rgb565 | Encoding::Rgb555 | Encoding::ReorderedRgb555 | Encoding::Yuv422 => w * h * 2,
         Encoding::Ycbcr420 => {
@@ -156,6 +156,6 @@ pub fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
 
 /// Convenience: a cancelled-flag for benchmarks that never cancel.
 #[must_use]
-pub fn never_canceled() -> AtomicBool {
+pub(super) fn never_canceled() -> AtomicBool {
     AtomicBool::new(false)
 }

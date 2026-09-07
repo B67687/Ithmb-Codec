@@ -16,7 +16,8 @@
     clippy::similar_names,
     clippy::unnecessary_cast,
     clippy::pedantic,
-    clippy::unwrap_used
+    clippy::unwrap_used,
+    reason = "strict migration"
 )]
 
 use divan as _;
@@ -431,7 +432,7 @@ fn decoded_white_histogram_peak_at_255_rgb565() {
     // When: decoding
     let img = decode_golden(enc, &profile);
     // Then: every channel's histogram is concentrated at 255
-    let num_pixels = (img.data.len() / 4) as usize;
+    let num_pixels = img.data.len() / 4;
     for ch in 0..NUM_CHANNELS {
         let hist = histogram_channel(&img.data, ch);
         // Alpha is always 255; color channels for solid white too.
@@ -774,7 +775,7 @@ fn decoded_swap_chroma_ycbcr420_deterministic() {
 // Test 11 — Multi-format fuzz range check
 // ---------------------------------------------------------------------------
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, reason = "strict migration")]
 #[test]
 fn decoded_fuzz_multi_format_range_check() {
     // Given: deterministic pseudo-random BGRA images across multiple formats

@@ -77,7 +77,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         }
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     Ok(DecodedImage {
         data: dst,
         width: w as u32,

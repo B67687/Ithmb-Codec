@@ -5,7 +5,7 @@ use anyhow::{Context, Result};
 use ithmb_core::profile_db::ProfileDb;
 
 /// Read and print file metadata without decoding pixel data.
-pub fn print_info(input: &Path) -> Result<()> {
+pub(super) fn print_info(input: &Path) -> Result<()> {
     let metadata = fs::metadata(input).with_context(|| format!("failed to read metadata for '{}'", input.display()))?;
     let file_size = metadata.len();
 
@@ -39,7 +39,7 @@ pub fn print_info(input: &Path) -> Result<()> {
                 profile.prefix, profile.width, profile.height, profile.encoding, profile.frame_byte_length
             );
 
-            #[allow(clippy::cast_sign_loss)]
+            #[allow(clippy::cast_sign_loss, reason = "strict migration")]
             let frame_size = profile.frame_size() as usize;
             let pixel_data_len = data.len().saturating_sub(4);
             let num_frames = pixel_data_len.checked_div(frame_size).unwrap_or(1);

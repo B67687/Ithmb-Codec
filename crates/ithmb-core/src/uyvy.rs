@@ -46,7 +46,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         decode_progressive(src, w, h, &mut dst, canceled)?;
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     Ok(DecodedImage {
         data: dst,
         width: w as u32,
@@ -103,7 +103,7 @@ fn decode_interlaced(src: &[u8], w: usize, h: usize, dst: &mut [u8], canceled: &
 ///
 /// Processes pixels in groups of 2 using the 4-byte UYVY group format.
 /// For odd widths the last pixel reads its Y and U from the trailing
-#[allow(clippy::similar_names)]
+#[allow(clippy::similar_names, reason = "strict migration")]
 fn decode_row(row_src: &[u8], w: usize, row_dst: &mut [u8]) -> Result<(), DecodeError> {
     let groups = w / 2;
 
@@ -296,7 +296,12 @@ mod tests {
         assert_eq!(img.data[16..32], [px10, px11, px12, px13].concat());
     }
 
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_possible_wrap)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_wrap,
+        reason = "strict migration"
+    )]
     #[test]
     fn interlaced_matches_manual_weave() {
         // 6×4 interlaced: 2 fields of 2 rows each.
@@ -351,7 +356,11 @@ mod tests {
     // BGRA output alignment — each pixel is exactly 4 bytes
     // -----------------------------------------------------------------------
 
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "strict migration"
+    )]
     #[test]
     fn bgra_output_alpha_is_always_255() {
         let mut src: Vec<u8> = Vec::new();

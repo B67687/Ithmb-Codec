@@ -10,13 +10,11 @@ Requires the module to be built and installed into pymod/.venv:
     # or: maturin develop --uv (with maturin installed)
 """
 
-import os
 import sys
 from pathlib import Path
 
-import pytest
-
 import ithmb_core
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_ITHMB = REPO_ROOT / "samples" / "synthetic" / "sample.ithmb"

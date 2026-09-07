@@ -18,7 +18,8 @@
     unsafe_op_in_unsafe_fn,
     clippy::similar_names,
     clippy::cast_possible_truncation,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+    reason = "strict migration"
 )]
 pub(crate) unsafe fn uyvy_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{

@@ -4,7 +4,8 @@
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::similar_names,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    reason = "strict migration"
 )]
 
 #[cfg(target_arch = "x86_64")]
@@ -28,7 +29,7 @@ mod sse41;
 /// packed `i32` arithmetic.
 #[inline]
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "strict migration")]
 pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
     // SSE2 path (compile-time guaranteed on x86_64/x86)
     #[cfg(target_arch = "x86_64")]
@@ -69,7 +70,7 @@ pub fn yuv420_row_pair_to_bgra(y_row: &[u8], cb_row: &[u8], cr_row: &[u8], dst: 
     }
 
     #[cfg(target_arch = "aarch64")]
-    #[allow(unreachable_code)]
+    #[allow(unreachable_code, reason = "strict migration")]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return super::neon::yuv420_row_pair_to_bgra_neon(y_row, cb_row, cr_row, dst, w, cb_w);

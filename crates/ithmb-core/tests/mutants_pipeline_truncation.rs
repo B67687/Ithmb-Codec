@@ -18,7 +18,8 @@
     clippy::declare_interior_mutable_const,
     clippy::useless_vec,
     dead_code,
-    clippy::needless_range_loop
+    clippy::needless_range_loop,
+    reason = "strict migration"
 )]
 
 use divan as _;

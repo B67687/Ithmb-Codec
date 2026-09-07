@@ -4,7 +4,8 @@
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::similar_names,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    reason = "strict migration"
 )]
 
 /// # Safety
@@ -15,7 +16,7 @@
 ///   Loop reads 16 B per iter (`i + 16 <= n`) and writes 32 B at `dst + i*2`; the
 ///   bound above makes the final store end exactly at `dst.len()` (`2n` bytes).
 #[cfg(target_arch = "x86_64")]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, reason = "strict migration")]
 pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, _mm_and_si128, _mm_loadu_si128, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi8, _mm_set1_epi16,
@@ -79,7 +80,12 @@ pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
 ///   bound above makes the final store end exactly at `dst.len()` (`2n` bytes).
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, clippy::similar_names)]
+#[allow(
+    unsafe_op_in_unsafe_fn,
+    clippy::cast_ptr_alignment,
+    clippy::similar_names,
+    reason = "strict migration"
+)]
 pub(crate) unsafe fn rgb555_row_to_bgra_avx2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, __m256i, _mm_set1_epi8, _mm_storeu_si128, _mm_unpackhi_epi8, _mm_unpacklo_epi8, _mm256_and_si256,
@@ -177,7 +183,7 @@ pub fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     #[cfg(target_arch = "aarch64")]
-    #[allow(unreachable_code)]
+    #[allow(unreachable_code, reason = "strict migration")]
     // SAFETY: aarch64 guarantees NEON.
     unsafe {
         return super::neon::rgb555_row_to_bgra_neon(src, dst);

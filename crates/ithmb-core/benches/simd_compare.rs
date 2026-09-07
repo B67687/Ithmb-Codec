@@ -24,7 +24,8 @@
     clippy::cast_lossless,
     clippy::cast_sign_loss,
     clippy::similar_names,
-    unused_crate_dependencies
+    unused_crate_dependencies,
+    reason = "strict migration"
 )]
 
 mod util;

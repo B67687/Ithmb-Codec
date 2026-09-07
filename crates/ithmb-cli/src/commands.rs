@@ -7,7 +7,7 @@ use ithmb_core::profile_db::ProfileDb;
 use crate::layout::resolve_frame_layout;
 
 /// Print the number of frames (images) in an `.ithmb` file.
-pub fn print_frame_count(input: &Path) -> Result<()> {
+pub(super) fn print_frame_count(input: &Path) -> Result<()> {
     let data = fs::read(input).with_context(|| format!("failed to read '{}'", input.display()))?;
     let db = ProfileDb::load_builtin().context("failed to load built-in profile database")?;
     let layout = resolve_frame_layout(&data, input, &db)?;
@@ -16,7 +16,7 @@ pub fn print_frame_count(input: &Path) -> Result<()> {
 }
 
 /// Extract every frame of an `.ithmb` file to its own `.ithmb` file.
-pub fn extract_all(input: &Path) -> Result<()> {
+pub(super) fn extract_all(input: &Path) -> Result<()> {
     let data = fs::read(input).with_context(|| format!("failed to read '{}'", input.display()))?;
     let db = ProfileDb::load_builtin().context("failed to load built-in profile database")?;
     let layout = resolve_frame_layout(&data, input, &db)?;
@@ -43,7 +43,7 @@ pub fn extract_all(input: &Path) -> Result<()> {
 }
 
 /// Print the known profile database as a formatted table.
-pub fn list_profiles() -> Result<()> {
+pub(super) fn list_profiles() -> Result<()> {
     let db = ProfileDb::load_builtin().context("failed to load built-in profile database")?;
 
     println!(

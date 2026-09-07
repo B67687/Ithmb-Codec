@@ -10,7 +10,7 @@
 //! * `headers_album` - MHBA, MHIA, MHIF, MHOD header structs
 //! * `headers_thumb` - MHNI, MhodString header structs
 
-#![allow(missing_docs)]
+#![allow(missing_docs, reason = "strict migration")]
 
 pub mod endian;
 pub mod headers_album;

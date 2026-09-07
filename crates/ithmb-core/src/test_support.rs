@@ -7,7 +7,7 @@
 //! ones). Module-specific tests (endianness, Morton order, golden vectors)
 //! stay in their own modules.
 
-#![allow(clippy::pedantic, clippy::unwrap_used)]
+#![allow(clippy::pedantic, clippy::unwrap_used, reason = "strict migration")]
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;

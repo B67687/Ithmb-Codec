@@ -5,17 +5,17 @@ It is based on authoritative external sources (linked below) and our own experie
 
 ## Authorities
 
-| Source | Reference |
-|--------|-----------|
-| [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/) | Library API design — ~60 `C-*` checklists |
-| [Microsoft Rust Guidelines](https://microsoft.github.io/rust-guidelines/) | Must/should rules for libraries, FFI, performance, AI |
-| [ANSSI Rust Security Guide](https://anssi-fr.github.io/rust-guide/) | Unsafe code policy, fuzzing, supply chain |
-| [Rust Style Guide](https://doc.rust-lang.org/style-guide/) | rustfmt defaults, `style_edition = "2024"` |
-| [Clippy Lint Docs](https://doc.rust-lang.org/stable/clippy/lints.html) | Tiers: `all = "deny"`, `pedantic = "deny"` |
-| [Rust Design Patterns](https://rust-unofficial.github.io/patterns/) | Idioms, patterns, anti-patterns reference |
-| [Arm Rust SIMD](https://learn.arm.com/learning-paths/cross-platform/simd-on-rust/) | Cross-platform SIMD best practices |
-| [Rustonomicon](https://doc.rust-lang.org/nomicon/) | Unsafe code — required reading before writing `unsafe` |
-| [Apollo Handbook](https://github.com/apollographql/rust-best-practices) | Error handling, testing, dispatch |
+| Source                                                                             | Reference                                                |
+| ---------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/)                 | Library API design — ~60 `C-*` checklists                |
+| [Microsoft Rust Guidelines](https://microsoft.github.io/rust-guidelines/)          | Must/should rules for libraries, FFI, performance, AI    |
+| [ANSSI Rust Security Guide](https://anssi-fr.github.io/rust-guide/)                | Unsafe code policy, fuzzing, supply chain                |
+| [Rust Style Guide](https://doc.rust-lang.org/style-guide/)                         | rustfmt defaults, `style_edition = "2024"`               |
+| [Clippy Lint Docs](https://doc.rust-lang.org/stable/clippy/lints.html)             | Tiers: cherry-pick `pedantic`/`nursery`, never wholesale |
+| [Rust Design Patterns](https://rust-unofficial.github.io/patterns/)                | Idioms, patterns, anti-patterns reference                |
+| [Arm Rust SIMD](https://learn.arm.com/learning-paths/cross-platform/simd-on-rust/) | Cross-platform SIMD best practices                       |
+| [Rustonomicon](https://doc.rust-lang.org/nomicon/)                                 | Unsafe code — required reading before writing `unsafe`   |
+| [Apollo Handbook](https://github.com/apollographql/rust-best-practices)            | Error handling, testing, dispatch                        |
 
 ## Lint Configuration
 
@@ -23,8 +23,11 @@ It is based on authoritative external sources (linked below) and our own experie
 
 ```toml
 [lints.clippy]
-all = "deny"
-pedantic = "deny"
+all = "deny"  # correctness/suspicious/complexity/perf/style
+pedantic = "warn"
+nursery = "warn"
+cargo = "warn"
+# hard deny cherry-picked lints + targeted allow() see Cargo.toml
 ```
 
 Individual modules may `#[allow(unsafe_code)]` with justification.
@@ -58,12 +61,12 @@ Individual modules may `#[allow(unsafe_code)]` with justification.
 
 ## Error Handling
 
-| Context | Tool | Rule |
-|---------|------|------|
-| Library crate | `thiserror` | Typed error enum per crate. Never `Box<dyn Error>`. |
-| Application binary | `anyhow` | `Result<T, anyhow::Error>` in `fn main()`. |
-| Tests | `unwrap()` | Acceptable inside `#[cfg(test)]` and `#[test]` functions. |
-| Production | `?` | Never `unwrap()` or `expect()` in production code. |
+| Context            | Tool        | Rule                                                      |
+| ------------------ | ----------- | --------------------------------------------------------- |
+| Library crate      | `thiserror` | Typed error enum per crate. Never `Box<dyn Error>`.       |
+| Application binary | `anyhow`    | `Result<T, anyhow::Error>` in `fn main()`.                |
+| Tests              | `unwrap()`  | Acceptable inside `#[cfg(test)]` and `#[test]` functions. |
+| Production         | `?`         | Never `unwrap()` or `expect()` in production code.        |
 
 ## Formatting
 
@@ -74,23 +77,28 @@ Individual modules may `#[allow(unsafe_code)]` with justification.
 
 ## Testing
 
-| Type | Requirement |
-|------|-------------|
-| Doc tests | Every public API. Runs in `cargo test`. |
-| Unit tests | Per-module `#[cfg(test)]`. Covers happy + error paths. |
-| Golden tests | Reference decode outputs for every format. |
-| Fuzz targets | `cargo-fuzz` for all decode entry points. |
-| Miri | `cargo +nightly miri test` for all `unsafe` code paths. |
-| CI | All of the above + `cargo clippy -- -D warnings`. |
+| Type         | Requirement                                             |
+| ------------ | ------------------------------------------------------- |
+| Doc tests    | Every public API. Runs in `cargo test`.                 |
+| Unit tests   | Per-module `#[cfg(test)]`. Covers happy + error paths.  |
+| Golden tests | Reference decode outputs for every format.              |
+| Fuzz targets | `cargo-fuzz` for all decode entry points.               |
+| Miri         | `cargo +nightly miri test` for all `unsafe` code paths. |
+| CI           | All of the above + `cargo clippy -- -D warnings`.       |
 
 ## SIMD
 
 See [`STANDARDS.md`](STANDARDS.md) → Cross-Platform SIMD section for:
+
 - Dispatch architecture (3-layer)
 - Platform coverage table
 - cfg gate patterns
 - Lessons learned from cross-platform fixes
 - CI matrix
+
+## Async Runtime
+
+Tokio: **waived**. Engine is synchronous I/O (file/memory decode/encode, SIMD kernels, no network/async tasks). No async runtime present or needed.
 
 ## References
 

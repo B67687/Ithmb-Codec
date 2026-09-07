@@ -7,6 +7,14 @@ set -euo pipefail
 COMMIT_MSG_FILE="$1"
 COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
 
+# NO attribution ever: reject AI provenance trailers (repo owner is sole author).
+# Reject, don't strip — silent stripping hides agent non-compliance.
+if echo "$COMMIT_MSG" | grep -qiE "Co-Authored-by|Signed-off-by|Ultraworked with|@agentic\.workflows"; then
+    echo "ERROR: Commit message contains forbidden attribution trailer." >&2
+    echo "Forbidden: Co-Authored-by, Signed-off-by, Ultraworked with, *@agentic.workflows" >&2
+    exit 1
+fi
+
 # Conventional Commit pattern: type(scope)!: description
 PATTERN='^(feat|fix|docs|refactor|test|chore|cleanup|perf)(\([a-z0-9_-]+\))?!?:\s.+$'
 

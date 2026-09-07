@@ -9,7 +9,7 @@ use ithmb_core::profile_db::ProfileDb;
 use crate::cli_def::OutputFormat;
 
 /// Decode a specific frame from a multi-frame file.
-pub fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<DecodedImage> {
+pub(super) fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<DecodedImage> {
     if data.len() < 4 {
         bail!("buffer too short: expected at least 4 bytes");
     }
@@ -26,7 +26,7 @@ pub fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<Decoded
         .ok_or_else(|| anyhow::anyhow!("unknown format prefix {prefix}"))?
         .clone();
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let frame_size = profile.frame_size() as usize;
     let offset = 4 + frame * frame_size;
     let end = offset + frame_size;
@@ -45,7 +45,7 @@ pub fn decode_frame(data: &[u8], frame: usize, db: &ProfileDb) -> Result<Decoded
 
 /// Open a PhotoDB/ArtworkDB container and extract all entries as numbered PNG files.
 #[cfg(feature = "png-output")]
-pub fn open_container(input: &Path) -> Result<()> {
+pub(super) fn open_container(input: &Path) -> Result<()> {
     let data = fs::read(input).with_context(|| format!("failed to read '{}'", input.display()))?;
     let images = pipeline::open_ithmb(&data, &std::sync::atomic::AtomicBool::new(false), None)?;
 
@@ -80,7 +80,7 @@ pub fn open_container(_input: &Path) -> Result<()> {
 }
 
 /// Determine the output file path based on CLI settings.
-pub fn resolve_output_path(input: &Path, output: Option<&PathBuf>, format: OutputFormat, raw: bool) -> PathBuf {
+pub(super) fn resolve_output_path(input: &Path, output: Option<&PathBuf>, format: OutputFormat, raw: bool) -> PathBuf {
     if let Some(output) = output {
         return output.clone();
     }
@@ -92,7 +92,7 @@ pub fn resolve_output_path(input: &Path, output: Option<&PathBuf>, format: Outpu
 }
 
 /// Decide whether PNG encoding should be used for the output.
-pub fn should_use_png(output: Option<&Path>, format: OutputFormat, raw: bool) -> bool {
+pub(super) fn should_use_png(output: Option<&Path>, format: OutputFormat, raw: bool) -> bool {
     if raw {
         return false;
     }
@@ -114,13 +114,13 @@ pub fn should_use_png(output: Option<&Path>, format: OutputFormat, raw: bool) ->
 }
 
 /// Write decoded pixel data as raw binary BGRA.
-pub fn write_raw(img: &DecodedImage, path: &Path) -> io::Result<()> {
+pub(super) fn write_raw(img: &DecodedImage, path: &Path) -> io::Result<()> {
     fs::write(path, &img.data)
 }
 
 /// Write decoded pixel data as a PNG image (requires `png-output` feature).
 #[cfg(feature = "png-output")]
-pub fn write_png(img: &DecodedImage, path: &Path) -> Result<()> {
+pub(super) fn write_png(img: &DecodedImage, path: &Path) -> Result<()> {
     use std::io::BufWriter;
 
     let file = fs::File::create(path).with_context(|| format!("failed to create '{}'", path.display()))?;

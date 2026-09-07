@@ -11,7 +11,8 @@
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
     clippy::doc_markdown,
-    clippy::cast_precision_loss
+    clippy::cast_precision_loss,
+    reason = "strict migration"
 )]
 
 use self::helpers::interlace_fields;

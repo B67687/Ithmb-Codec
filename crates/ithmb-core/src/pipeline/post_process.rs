@@ -50,7 +50,7 @@ pub(crate) fn apply_post_process_with_transform(
 /// The `DecodedImage` is passed by value for pipeline symmetry with the other
 /// post-processing steps (crop, swap) -- historic `rotate_90_cw`/`180`/`270_cw`
 /// carried the same allow.
-#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value, reason = "strict migration")]
 pub(crate) fn apply_rotation_with(img: DecodedImage, rotation: i32) -> DecodedImage {
     let (data, width, height) = crate::pixel_utils::rotate_pixels(&img.data, img.width, img.height, rotation);
     DecodedImage { data, width, height }
@@ -80,21 +80,21 @@ pub(crate) fn apply_crop(img: DecodedImage, profile: &Profile) -> DecodedImage {
 /// Crops the image to the region specified by `crop` (0 width/height = remaining
 /// span from the corresponding offset; all values clamped to the image bounds).
 pub(crate) fn apply_crop_with(img: DecodedImage, crop: config::Crop) -> DecodedImage {
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let cx = crop.x.max(0) as usize;
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let cy = crop.y.max(0) as usize;
     let iw = img.width as usize;
     let ih = img.height as usize;
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let cw = if crop.width > 0 {
         crop.width as usize
     } else {
         iw.saturating_sub(cx)
     };
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     let ch = if crop.height > 0 {
         crop.height as usize
     } else {
@@ -116,7 +116,7 @@ pub(crate) fn apply_crop_with(img: DecodedImage, crop: config::Crop) -> DecodedI
         cropped.extend_from_slice(&img.data[row_start..row_start + cw * 4]);
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     DecodedImage {
         data: cropped,
         width: cw as u32,

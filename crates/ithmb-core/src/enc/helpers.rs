@@ -3,7 +3,7 @@
 // Ported from C# `IthmbCodecPlugin.EncoderHelpers.cs`.
 //! Shared encoder utilities: BT.601 forward transform, field interlace, clamp.
 
-#![allow(clippy::similar_names)]
+#![allow(clippy::similar_names, reason = "strict migration")]
 
 use crate::profile::Encoding;
 
@@ -14,7 +14,7 @@ use crate::profile::Encoding;
 /// Y = 0.299R + 0.587G + 0.114B  (fixed-point: 77/256, 150/256, 29/256).
 #[inline]
 #[must_use]
-pub(crate) fn bt601_y(r: i32, g: i32, b: i32) -> i32 {
+pub(super) fn bt601_y(r: i32, g: i32, b: i32) -> i32 {
     (77 * r + 150 * g + 29 * b) >> 8
 }
 
@@ -24,7 +24,7 @@ pub(crate) fn bt601_y(r: i32, g: i32, b: i32) -> i32 {
 ///      (fixed-point: -43/256, -85/256, 128/256).
 #[inline]
 #[must_use]
-pub(crate) fn bt601_cb(r: i32, g: i32, b: i32) -> i32 {
+pub(super) fn bt601_cb(r: i32, g: i32, b: i32) -> i32 {
     ((-43 * r - 85 * g + 128 * b) >> 8) + 128
 }
 
@@ -34,7 +34,7 @@ pub(crate) fn bt601_cb(r: i32, g: i32, b: i32) -> i32 {
 ///      (fixed-point: 128/256, -107/256, -21/256).
 #[inline]
 #[must_use]
-pub(crate) fn bt601_cr(r: i32, g: i32, b: i32) -> i32 {
+pub(super) fn bt601_cr(r: i32, g: i32, b: i32) -> i32 {
     ((128 * r - 107 * g - 21 * b) >> 8) + 128
 }
 
@@ -46,8 +46,8 @@ pub(crate) fn bt601_cr(r: i32, g: i32, b: i32) -> i32 {
 /// For YCbCr 4:2:0 planar, each of the three planes (Y, Cb, Cr) is interlaced
 /// separately using its own row stride.
 #[must_use]
-#[allow(clippy::cast_sign_loss)]
-pub(crate) fn interlace_fields(planar: &[u8], w: i32, h: i32, enc: Encoding) -> Vec<u8> {
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
+pub(super) fn interlace_fields(planar: &[u8], w: i32, h: i32, enc: Encoding) -> Vec<u8> {
     let w = w as usize;
     let h = h as usize;
 

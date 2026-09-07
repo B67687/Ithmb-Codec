@@ -7,7 +7,7 @@ use super::parser::Parser;
 impl Parser<'_> {
     // -- profile-specific parsers --
 
-    pub fn parse_array(&mut self) -> Result<Vec<Profile>, DecodeError> {
+    pub(super) fn parse_array(&mut self) -> Result<Vec<Profile>, DecodeError> {
         self.expect(b'[')?;
         let mut profiles: Vec<Profile> = Vec::new();
         loop {
@@ -29,7 +29,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn parse_object(&mut self) -> Result<Profile, DecodeError> {
+    pub(super) fn parse_object(&mut self) -> Result<Profile, DecodeError> {
         self.expect(b'{')?;
         let mut profile = Profile::default();
         loop {
@@ -54,7 +54,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn set_field(&mut self, key: &str, p: &mut Profile) -> Result<(), DecodeError> {
+    pub(super) fn set_field(&mut self, key: &str, p: &mut Profile) -> Result<(), DecodeError> {
         match key {
             "prefix" => p.prefix = self.parse_number_i32()?,
             "width" => p.width = self.parse_number_i32()?,
@@ -90,7 +90,7 @@ impl Parser<'_> {
         Ok(())
     }
 
-    pub fn parse_encoding(&mut self) -> Result<Encoding, DecodeError> {
+    pub(super) fn parse_encoding(&mut self) -> Result<Encoding, DecodeError> {
         let s = self.parse_string()?;
         match s.to_lowercase().as_str() {
             "rgb565" => Ok(Encoding::Rgb565),
@@ -103,7 +103,7 @@ impl Parser<'_> {
         }
     }
 
-    pub fn parse_encoding_array(&mut self) -> Result<Vec<Encoding>, DecodeError> {
+    pub(super) fn parse_encoding_array(&mut self) -> Result<Vec<Encoding>, DecodeError> {
         self.expect(b'[')?;
         let mut encodings: Vec<Encoding> = Vec::new();
         loop {

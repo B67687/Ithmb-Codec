@@ -22,7 +22,8 @@
     clippy::cast_sign_loss,
     clippy::cast_precision_loss,
     clippy::pedantic,
-    clippy::unwrap_used
+    clippy::unwrap_used,
+    reason = "strict migration"
 )]
 
 use ithmb_core::enc::*;

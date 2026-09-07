@@ -13,7 +13,7 @@ use crate::pixel_utils::clamp_u8;
 ///
 /// Each chroma nibble is `(value >> 4)` — the top 4 bits.
 #[must_use]
-#[allow(unreachable_code)]
+#[allow(unreachable_code, reason = "strict migration")]
 pub fn encode_clcl(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;

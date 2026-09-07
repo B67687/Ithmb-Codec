@@ -56,7 +56,7 @@ pub fn peek_prefix(bytes: &[u8]) -> u32 {
 ///
 /// Returns `"Unknown format"` if the prefix is not recognized.
 #[must_use]
-#[allow(clippy::cast_possible_wrap)]
+#[allow(clippy::cast_possible_wrap, reason = "strict migration")]
 #[wasm_bindgen]
 pub fn get_encoding_name(prefix: u32) -> String {
     ithmb_core::encoding_name_for_prefix(prefix as i32).to_owned()

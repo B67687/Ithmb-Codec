@@ -21,7 +21,7 @@
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 use crate::yuv;
 use std::sync::atomic::AtomicBool;
 
@@ -98,7 +98,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         );
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     Ok(DecodedImage {
         data: dst,
         width: w as u32,
@@ -216,7 +216,7 @@ mod tests {
     // 4×4 known pattern — verify BGRA output, chroma grid, and plane order
     // -----------------------------------------------------------------------
 
-    #[allow(clippy::similar_names, clippy::cast_possible_truncation)]
+    #[allow(clippy::similar_names, clippy::cast_possible_truncation, reason = "strict migration")]
     #[test]
     fn four_by_four_default_order() {
         // 4×4 image with distinct chroma per 2×2 block.
@@ -250,7 +250,7 @@ mod tests {
         assert_eq!(img.data, expected);
     }
 
-    #[allow(clippy::similar_names, clippy::cast_possible_truncation)]
+    #[allow(clippy::similar_names, clippy::cast_possible_truncation, reason = "strict migration")]
     #[test]
     fn four_by_four_swap_chroma_planes() {
         // Same as above but with Cr before Cb in the payload and
@@ -324,7 +324,8 @@ mod tests {
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
         clippy::cast_sign_loss,
-        clippy::similar_names
+        clippy::similar_names,
+        reason = "strict migration"
     )]
     fn simd_matches_scalar_1000_random() {
         /// Minimal PRNG for reproducible test data.
@@ -335,7 +336,7 @@ mod tests {
                 Self(seed)
             }
 
-            #[allow(clippy::cast_possible_truncation)]
+            #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
             fn next_u8(&mut self) -> u8 {
                 self.0 = self
                     .0

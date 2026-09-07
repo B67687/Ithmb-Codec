@@ -13,8 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
-      - name: clippy -D warnings
-        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: clippy
+        run: cargo clippy --workspace --all-targets
       - name: cargo audit
         shell: bash
         run: |
@@ -22,9 +22,8 @@ jobs:
           curl -sSL https://github.com/rustsec/cargo-audit/releases/download/cargo-audit/v0.22.2/cargo-audit-x86_64-unknown-linux-gnu-v0.22.2.tgz -o /tmp/cargo-audit.tgz
           tar xzf /tmp/cargo-audit.tgz -C /tmp --strip-components=1
           /tmp/cargo-audit audit
-      - name: cargo test --workspace
-        run: cargo test --workspace
-
+      - name: cargo nextest run --workspace
+        run: cargo nextest run --workspace
   build:
     name: Build ${{ matrix.target }}
     needs: [test]

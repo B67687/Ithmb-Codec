@@ -1,4 +1,9 @@
-#![allow(clippy::pedantic, clippy::unwrap_used, clippy::missing_panics_doc)]
+#![allow(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    clippy::missing_panics_doc,
+    reason = "strict migration"
+)]
 //! Property-based tests for the full encode → file → decode pipeline and the
 //! profile/cache serialization roundtrips.
 //!

@@ -15,7 +15,7 @@ use std::arch::x86_64::__m128i;
 #[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "avx2")]
-#[allow(clippy::too_many_arguments, unsafe_op_in_unsafe_fn)]
+#[allow(clippy::too_many_arguments, unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn store_avx2_chroma_pair(
     y_row: &[u8],
     w: usize,
@@ -131,7 +131,7 @@ pub(crate) unsafe fn store_avx2_chroma_pair(
 ///   below `cb_w`, so all helper preconditions hold on every call.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
-#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names, reason = "strict migration")]
 pub(crate) unsafe fn yuv420_row_pair_to_bgra_avx2(
     y_row: &[u8],
     cb_row: &[u8],

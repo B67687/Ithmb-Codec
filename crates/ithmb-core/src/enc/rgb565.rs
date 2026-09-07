@@ -6,7 +6,7 @@
 /// Each pixel packs R(5) | G(6) | B(5) into a 16-bit word.
 /// `big_endian` controls byte order within each 16-bit word.
 #[must_use]
-#[allow(unreachable_code)]
+#[allow(unreachable_code, reason = "strict migration")]
 pub fn encode_rgb565(bgra: &[u8], w: i32, h: i32, big_endian: bool) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;

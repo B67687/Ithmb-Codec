@@ -4,7 +4,8 @@
     clippy::borrow_interior_mutable_const,
     clippy::declare_interior_mutable_const,
     clippy::pedantic,
-    clippy::unwrap_used
+    clippy::unwrap_used,
+    reason = "strict migration"
 )]
 //! Cancellation tests for decoder operations.
 //!
@@ -54,7 +55,7 @@ fn prefix_buf(profile: &Profile, encoded: &[u8]) -> Vec<u8> {
 }
 
 /// Build a valid RGB565 fixture of size `w × h` with neutral gray pixels.
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
 fn make_rgb565_fixture(w: i32, h: i32) -> (Profile, Vec<u8>) {
     let (wu, hu) = (w as usize, h as usize);
     let bgra = vec![128u8; wu * hu * 4];

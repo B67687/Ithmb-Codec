@@ -75,9 +75,9 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         }
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     let out_w = w as u32;
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     let out_h = h as u32;
 
     Ok(DecodedImage {
@@ -174,7 +174,7 @@ mod tests {
         assert_eq!(img.data[last + 3], 0xFF);
     }
 
-    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_sign_loss, reason = "strict migration")]
     #[test]
     fn row_stride_is_data_driven() {
         // 55×55 padded format: rowStride = src.len / h

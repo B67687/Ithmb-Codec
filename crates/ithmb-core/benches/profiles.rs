@@ -10,7 +10,8 @@
     clippy::pedantic,
     clippy::unwrap_used,
     elided_lifetimes_in_paths,
-    unused_crate_dependencies
+    unused_crate_dependencies,
+    reason = "strict migration"
 )]
 
 mod util;
@@ -115,7 +116,7 @@ macro_rules! profile_bench_group {
         }
 
         #[divan::bench(args = $args_fn())]
-        #[allow(non_snake_case)]
+        #[allow(non_snake_case, reason = "strict migration")]
         fn $bench_fn(bencher: divan::Bencher, arg: &ProfileBenchArg) {
             let canceled = AtomicBool::new(false);
             bencher

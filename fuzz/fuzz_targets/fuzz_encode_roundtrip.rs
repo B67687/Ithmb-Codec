@@ -85,7 +85,7 @@ fuzz_target!(|data: &[u8]| {
         let _ = img.height;
         if !img.data.is_empty() {
             // Alpha should always be 255 for all decoders
-            #[allow(clippy::cast_possible_truncation)]
+            #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
             let alpha_valid = img.data.chunks(4).all(|pix| pix[3] == 255);
             let _ = alpha_valid;
         }

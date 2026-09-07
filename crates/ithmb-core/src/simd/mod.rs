@@ -5,8 +5,13 @@
 //! on all architectures.
 //!
 //! SIMD targets are selected at compile time with appropriate runtime dispatch.
-#![allow(unsafe_code, unreachable_code, dead_code)]
-#![allow(clippy::cast_ptr_alignment, clippy::cast_possible_truncation, clippy::similar_names)]
+#![allow(unsafe_code, unreachable_code, dead_code, reason = "strict migration")]
+#![allow(
+    clippy::cast_ptr_alignment,
+    clippy::cast_possible_truncation,
+    clippy::similar_names,
+    reason = "strict migration"
+)]
 
 // ---------------------------------------------------------------------------
 // Sub-modules: per-format SIMD implementations + runtime dispatch
@@ -30,17 +35,17 @@ pub(crate) mod neon;
 // ---------------------------------------------------------------------------
 // Re-exports -- dispatch functions live in their per-format sub-modules.
 // ---------------------------------------------------------------------------
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub use cl::{cl_quad_to_bgra, cl_row_to_bgra};
 pub(crate) use clcl::clcl_row_to_bgra;
 pub(crate) use reordered::rgb555_pack_to_bgra;
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub use rgb555::rgb555_apply_row_to_bgra;
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub use rgb565::rgb565_apply_row_to_bgra;
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub use uyvy::{uyvy_double_quad_to_bgra, uyvy_quad_to_bgra, uyvy_row_to_bgra};
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub use yuv::{yuv420_quad_to_bgra, yuv420_row_pair_to_bgra};
 
 // Re-export shared helpers from pixel_utils for backward compatibility.
@@ -92,9 +97,9 @@ pub(super) fn unpack_rgb555(pixel: u16) -> [u8; 4] {
 /// `_mm_loadl_epi64` read; the two 16-byte stores at `dst + i * 4` and `+ 16`
 /// end at `i * 4 + 32 <= 4 * n == dst.len()`. The scalar remainder is checked
 /// indexing. Covers the implicit unsafe ops under the
-/// `#[allow(unsafe_op_in_unsafe_fn)]` below (raw adds/loads/stores).
+/// `#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]` below (raw adds/loads/stores).
 #[cfg(target_arch = "x86_64")]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, reason = "strict migration")]
 pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
     use core::arch::x86_64::{
         __m128i, _mm_loadl_epi64, _mm_or_si128, _mm_set1_epi32, _mm_setzero_si128, _mm_slli_epi32, _mm_storeu_si128,
@@ -139,7 +144,7 @@ pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, reason = "strict migration")]
 mod tests {
     use super::*;
 
@@ -441,7 +446,7 @@ mod tests {
     // ---- fill_gray_row cross-validation ----
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn fill_gray_row_matches_scalar_1000_random() {
         let mut state: u32 = 0x1234_5678;
         let lengths = [1usize, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 64, 128, 256];
@@ -462,7 +467,7 @@ mod tests {
     // ---- fill_yuv_row cross-validation ----
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn fill_yuv_row_matches_scalar_1000_random() {
         let mut state: u32 = 0x9ABC_DEF0;
         let lengths = [1usize, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 64, 128, 256];
@@ -567,7 +572,7 @@ mod tests {
         }
     }
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn cl_quad_matches_scalar_varying_chroma() {
         let mut state: u32 = 0xDEAD_BEEF;
         for _ in 0..1000 {
@@ -585,7 +590,7 @@ mod tests {
     // ---- cl_row_to_bgra cross-validation ----
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn cl_row_matches_scalar_at_various_widths() {
         // Test that cl_row_to_bgra matches per-pixel yuv_to_bgra at widths
         // that exercise the SIMD batch loop AND the odd-pixel remainder path.
@@ -693,7 +698,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn rgb555_pack_1000_random_cross_check() {
         // Deterministic PCG-style RNG.
         let mut state: u64 = 42;

@@ -20,8 +20,8 @@ run() {
 }
 
 run cargo fmt --check
-run cargo clippy --workspace --all-targets -- -D warnings
-run cargo test --workspace --tests
+run cargo clippy --workspace --all-targets
+run cargo nextest run --workspace --tests
 run cargo build --workspace
 run cargo build --features logging -p ithmb-core
 
@@ -54,15 +54,15 @@ fi
 
 # C API: build the cdylib with the c feature and run its test (fast, local-runnable)
 run cargo build -p ithmb-core --features c
-run cargo test -p ithmb-core --features c --test c_api_test
+run cargo nextest run -p ithmb-core --features c --test c_api_test
 
 # Typos (pinned like CI)
 if require_tool typos 'install: cargo install typos-cli --locked --version 1.42.3'; then
   run typos -- ./README.md ./AGENTS.md ./ARCHITECTURE.md ./crates/ ./docs/
 fi
 
-# Rustdoc -D warnings (matches pr-checks doc_check)
-run env RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --workspace
+# Rustdoc -W warnings (B adoption, matches pr-checks doc_check)
+run env RUSTDOCFLAGS="-W warnings" cargo doc --no-deps --workspace
 
 # CI pin enforcement (matches pr-checks check_ci_pins)
 run bash scripts/check-ci-pins.sh
@@ -72,6 +72,10 @@ if require_tool gitleaks 'see https://github.com/gitleaks/gitleaks'; then
   run gitleaks detect --source .
 fi
 
+# Unused deps (matches pr-checks machete)
+if require_tool cargo-machete 'install: cargo install cargo-machete --version 0.9.2'; then
+  run cargo machete
+fi
 # Dependency updates — dev-first alternative to dependabot: run this, then
 # commit upgrades on dev and ship them like any other change. Informational only.
 if command -v cargo-outdated >/dev/null 2>&1; then

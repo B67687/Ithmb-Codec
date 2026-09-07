@@ -1,4 +1,9 @@
-#![allow(clippy::pedantic, clippy::unwrap_used, clippy::missing_panics_doc)]
+#![allow(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    clippy::missing_panics_doc,
+    reason = "strict migration"
+)]
 //! Property-based tests for encode/decode roundtrip invariants.
 //!
 //! Uses `proptest` to generate random BGRA images across all 8 formats and
@@ -47,7 +52,7 @@ enum TestFormat {
     Ycbcr420,
     Clcl,
     Cl,
-    #[allow(dead_code)]
+    #[allow(dead_code, reason = "strict migration")]
     Jpeg,
     // JPEG excluded: no encoder exists for roundtrip testing
 }

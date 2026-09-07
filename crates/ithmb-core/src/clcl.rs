@@ -31,7 +31,7 @@
 
 use crate::error::{DecodeError, DecodedImage};
 use crate::profile::Profile;
-#[allow(unused_imports)] // yuv is used by SIMD dispatch, unused in scalar-only builds
+#[allow(unused_imports, reason = "strict migration")] // yuv is used by SIMD dispatch, unused in scalar-only builds
 use crate::yuv;
 use std::sync::atomic::AtomicBool;
 
@@ -55,7 +55,7 @@ use std::sync::atomic::AtomicBool;
 /// # Panics
 ///
 /// Never panics.
-#[allow(clippy::similar_names)]
+#[allow(clippy::similar_names, reason = "strict migration")]
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
     let (data, w, h) =
         crate::decoder_helpers::validate_dimensions(src, profile, "CLCL dimensions must be positive", 2)?;
@@ -90,7 +90,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         crate::simd::clcl_row_to_bgra(y_row, cb_row, cr_row, w, dst_row);
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     let (out_w, out_h) = (w as u32, h as u32);
 
     Ok(DecodedImage {

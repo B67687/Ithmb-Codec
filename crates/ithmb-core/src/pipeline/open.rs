@@ -38,7 +38,7 @@ use std::sync::atomic::AtomicBool;
 /// | `BufferTooShort` | Input is smaller than 4 bytes. |
 /// | `InvalidFormat` | PhotoDB parsing failed. |
 /// | Decoder errors | Propagated from the underlying decoder. |
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
 pub fn open_ithmb(
     src: &[u8],
     canceled: &AtomicBool,
@@ -55,7 +55,7 @@ pub fn open_ithmb(
 /// # Errors
 ///
 /// Same as [`open_ithmb`].
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
 pub fn open_ithmb_with_config(
     src: &[u8],
     canceled: &AtomicBool,

@@ -10,7 +10,7 @@
 ///   unlike the CLCL `[u8; 8]` bug (F3); `out` is `[u8; 16]`, filled by scalar loop.
 /// - No loads/stores touch caller memory; `clamp_u8` is scalar.
 #[cfg(target_arch = "x86_64")]
-#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names, reason = "strict migration")]
 pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi32, _mm_cvtsi32_si128, _mm_set_epi32, _mm_setzero_si128, _mm_storeu_si128, _mm_sub_epi32,
@@ -73,7 +73,7 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
 ///   a short `dst` panics, never corrupts. The `unsafe` covers only the quad kernels.
 #[cfg(target_arch = "x86_64")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     let n_pixels = src.len() / 2;
     let (y, chroma) = src.split_at(n_pixels);
@@ -148,7 +148,7 @@ pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse4.1")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::similar_names, reason = "strict migration")]
 pub(crate) unsafe fn cl_quad_to_bgra_sse41(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi32, _mm_cvtepu8_epi32, _mm_cvtsi32_si128, _mm_max_epi32, _mm_min_epi32, _mm_packus_epi16,

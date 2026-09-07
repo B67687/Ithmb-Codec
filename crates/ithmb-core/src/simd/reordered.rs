@@ -4,7 +4,8 @@
     clippy::cast_lossless,
     clippy::cast_possible_truncation,
     clippy::similar_names,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    reason = "strict migration"
 )]
 
 // ---- RGB555 pack to BGRA (SSE2, 4 px) ----
@@ -17,7 +18,7 @@
 /// `_mm_loadl_epi64`, 16-byte store to `[u8; 16]` via `_mm_storeu_si128`.
 #[cfg(target_arch = "x86_64")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, reason = "strict migration")]
 pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_and_si128, _mm_loadl_epi64, _mm_or_si128, _mm_packus_epi16, _mm_set1_epi8, _mm_set1_epi16,
@@ -80,7 +81,7 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_sse2(pixels: &[[u8; 2]; 4], swap: bool)
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, reason = "strict migration")]
 pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8,
@@ -161,7 +162,7 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_ssse3(pixels: &[[u8; 2]; 4], swap: bool
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
+#[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, reason = "strict migration")]
 pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool) -> [u8; 16] {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi8, _mm_and_si128, _mm_cmpeq_epi8, _mm_loadl_epi64, _mm_packus_epi16, _mm_set1_epi8,
@@ -240,7 +241,7 @@ pub(crate) unsafe fn rgb555_pack_to_bgra_avx2(pixels: &[[u8; 2]; 4], swap: bool)
 // ---- RGB555 pack to BGRA dispatch ----
 
 #[must_use]
-pub fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] {
+pub(crate) fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] {
     #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {

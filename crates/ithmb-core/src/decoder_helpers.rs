@@ -83,7 +83,7 @@ where
 /// |---|---|
 /// | `InvalidFormat` | Width or height ≤ 0 |
 /// | `BufferTooShort` | `bpp > 0` and deficit > tolerance |
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
 pub(crate) fn validate_dimensions<'a>(
     src: &'a [u8],
     profile: &Profile,
@@ -96,7 +96,7 @@ pub(crate) fn validate_dimensions<'a>(
 /// Same as [`validate_dimensions`], but with the trailing-padding tolerance passed
 /// explicitly instead of read from the thread-local override. Prefer this at
 /// call sites that already hold a concrete tolerance value.
-#[allow(clippy::cast_sign_loss)]
+#[allow(clippy::cast_sign_loss, reason = "strict migration")]
 pub(crate) fn validate_dimensions_with_tolerance<'a>(
     src: &'a [u8],
     profile: &Profile,

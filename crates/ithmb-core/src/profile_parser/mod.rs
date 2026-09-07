@@ -37,7 +37,7 @@ pub fn parse_profiles_json(input: &str) -> Result<Vec<Profile>, DecodeError> {
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, reason = "strict migration")]
 mod tests {
     use super::*;
 

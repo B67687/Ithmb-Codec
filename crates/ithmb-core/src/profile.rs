@@ -49,7 +49,7 @@ impl std::fmt::Display for Encoding {
 /// defaults to `false`/`0`/`None` can be omitted — the decoder uses the
 /// standard behaviour unless overridden.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[allow(clippy::struct_excessive_bools)]
+#[allow(clippy::struct_excessive_bools, reason = "strict migration")]
 pub struct Profile {
     /// Big-endian 4-byte prefix identifying this format.
     pub prefix: i32,

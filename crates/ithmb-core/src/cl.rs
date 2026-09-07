@@ -60,7 +60,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
     crate::pixel_utils::check_canceled(canceled, "cl decode canceled")?;
     crate::simd::cl_row_to_bgra(&src[..expected], &mut dst);
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     let (out_w, out_h) = (w as u32, h as u32);
 
     Ok(DecodedImage {
@@ -262,7 +262,7 @@ mod tests {
     // ---- Odd-width decode (exercises SIMD remainder path) ----
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn odd_width_3x3_decode_correct() {
         // 3×3 = 9 pixels. Both dimensions are odd — anything not a multiple
         // of 4 hits the remainder path in cl_row_to_bgra_sse41/sse2.
@@ -291,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     fn odd_width_7x3_decode_correct() {
         // 7×3 = 21 pixels. The SSE2 path processes 8 pixels per batch loop
         // iteration, so 21 = 2×8 + 5 remainder pixels — exercises both the

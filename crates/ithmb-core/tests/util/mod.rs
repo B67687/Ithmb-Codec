@@ -1,4 +1,4 @@
-#![allow(dead_code, clippy::pedantic, clippy::unwrap_used)]
+#![allow(dead_code, clippy::pedantic, clippy::unwrap_used, reason = "strict migration")]
 //! Shared test utilities for ithmb-core integration tests.
 //!
 //! Provides profile builders, roundtrip helpers, pattern generators, and
@@ -6,7 +6,7 @@
 //!
 //! Import via `mod util;` and use as `util::make_profile(...)`, etc.
 
-pub mod rng;
+pub(crate) mod rng;
 
 use ithmb_core::DecodedImage;
 use ithmb_core::enc::encode_bgra;
@@ -34,7 +34,7 @@ use std::sync::atomic::AtomicBool;
 /// Fields such as `little_endian`, `clcl_chroma`, `cl_chroma`, etc. are left
 /// at [`Profile`] defaults -- override them on the returned value when needed.
 #[must_use]
-pub fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
+pub(crate) fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
     let wu = w.unsigned_abs() as usize;
     let hu = h.unsigned_abs() as usize;
     let frame_byte_length = match encoding {
@@ -78,7 +78,7 @@ pub fn make_profile(w: i32, h: i32, encoding: Encoding) -> Profile {
 ///
 /// Panics if encoding or decoding fails.
 #[must_use]
-pub fn roundtrip_encode_decode(bgra: &[u8], w: i32, h: i32, encoding: Encoding) -> DecodedImage {
+pub(crate) fn roundtrip_encode_decode(bgra: &[u8], w: i32, h: i32, encoding: Encoding) -> DecodedImage {
     let profile = make_profile(w, h, encoding);
     let encoded = encode_bgra(bgra, w, h, &profile);
     let prefix_bytes = profile.prefix.unsigned_abs().to_be_bytes();
@@ -98,7 +98,7 @@ pub fn roundtrip_encode_decode(bgra: &[u8], w: i32, h: i32, encoding: Encoding) 
 /// Each cell is 1x1 pixel, alternating between black ([0, 0, 0, 255]) and
 /// white ([255, 255, 255, 255]).
 #[must_use]
-pub fn make_bgra_checkerboard(w: u32, h: u32) -> Vec<u8> {
+pub(crate) fn make_bgra_checkerboard(w: u32, h: u32) -> Vec<u8> {
     let mut pixels = Vec::with_capacity((w * h * 4) as usize);
     for y in 0..h {
         for x in 0..w {
@@ -124,7 +124,7 @@ pub fn make_bgra_checkerboard(w: u32, h: u32) -> Vec<u8> {
 /// - The buffers have different lengths
 /// - Any channel delta exceeds `tolerance`
 /// - Any alpha value is not 255
-pub fn assert_bgra_tolerant(actual: &[u8], expected: &[u8], tolerance: u8) {
+pub(crate) fn assert_bgra_tolerant(actual: &[u8], expected: &[u8], tolerance: u8) {
     assert_eq!(
         actual.len(),
         expected.len(),

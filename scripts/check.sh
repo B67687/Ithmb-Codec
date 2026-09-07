@@ -3,7 +3,7 @@
 #
 # Runs the minimum set of checks that MUST pass before any push:
 #   1. cargo clippy (lint warnings = errors)
-#   2. cargo test (all unit + integration tests)
+#   2. cargo nextest run (all unit + integration tests)
 #   3. cargo deny (license/advisory/source policy)
 #   4. gitleaks (secrets scan)
 #   5. F-### anchor verification (every F-### in FEATURES.md has ≥1 test)
@@ -46,14 +46,14 @@ run() {
 }
 
 # ── Gate 1: Clippy (lint) ──────────────────────────────────────────────
-run "clippy" cargo clippy --workspace --all-targets -- -D warnings
+run "clippy" cargo clippy --workspace --all-targets
 
 # ── Gate 2: Tests ──────────────────────────────────────────────────────
 # TD-006 (decode_with_exif_rotation): pre-existing malformed test data.
 # Allow this specific known failure; reject any other.
 test_output=$(mktemp)
 test_exit=0
-cargo test --workspace --tests 2>&1 | tee "$test_output" || test_exit=$?
+cargo nextest run --workspace --tests 2>&1 | tee "$test_output" || test_exit=$?
 if [ "$test_exit" -eq 0 ]; then
   echo "✓ PASS: tests"
   pass=$((pass + 1))

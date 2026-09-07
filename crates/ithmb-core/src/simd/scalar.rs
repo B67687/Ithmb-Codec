@@ -6,8 +6,8 @@ use crate::yuv;
 
 #[inline]
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
-#[allow(dead_code)]
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "strict migration")]
+#[allow(dead_code, reason = "strict migration")]
 pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
     let u = quad[0];
     let y0 = quad[1];
@@ -20,8 +20,8 @@ pub(crate) fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 
 #[inline]
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
-#[allow(dead_code)]
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "strict migration")]
+#[allow(dead_code, reason = "strict migration")]
 pub(crate) fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
     let left = uyvy_quad_to_bgra(&[quads[0], quads[1], quads[2], quads[3]]);
     let right = uyvy_quad_to_bgra(&[quads[4], quads[5], quads[6], quads[7]]);
@@ -33,7 +33,7 @@ pub(crate) fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
 
 #[inline]
 #[must_use]
-#[allow(clippy::trivially_copy_pass_by_ref)]
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "strict migration")]
 pub(crate) fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
     let [y0, y1, y2, y3, cb, cr] = *quad;
     let mut out = [0u8; 16];
@@ -74,7 +74,7 @@ pub(crate) fn rgb555_row_to_bgra_scalar(src: &[u8], dst: &mut [u8]) {
 
 #[inline]
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, reason = "strict migration")]
 pub(crate) fn rgb555_pack_to_bgra(pixels: [[u8; 2]; 4], swap: bool) -> [u8; 16] {
     let mut out = [0u8; 16];
     for i in 0..4 {
@@ -92,7 +92,7 @@ pub(crate) fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
 
 #[inline]
 #[must_use]
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, reason = "strict migration")]
 pub(crate) fn cl_quad_to_bgra(quad: [u8; 8]) -> [u8; 16] {
     let y0 = u32::from(quad[0]);
     let y1 = u32::from(quad[1]);

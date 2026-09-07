@@ -48,7 +48,7 @@ pub(super) fn has_child_chunks(data: &[u8], start: usize, end: usize, little_end
 /// Returns [`DecodeError::BufferTooShort`] if a chunk header declares a size
 /// that extends beyond the data buffer, or if a required header cannot be
 /// parsed.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, reason = "strict migration")]
 pub(super) fn walk_entries(
     data: &[u8],
     start: usize,
@@ -244,7 +244,7 @@ pub(super) fn walk_entries(
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, reason = "strict migration")]
 mod tests {
     use super::*;
 

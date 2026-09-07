@@ -10,7 +10,7 @@ use crate::pixel_utils::clamp_u8;
 ///   Y plane: `w × h` bytes (full 8-bit luma)
 ///   CbCr plane: `w × h` bytes (Cr in high nibble, Cb in low nibble)
 #[must_use]
-#[allow(unreachable_code)]
+#[allow(unreachable_code, reason = "strict migration")]
 pub fn encode_cl(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let wu = w as usize;
     let hu = h as usize;

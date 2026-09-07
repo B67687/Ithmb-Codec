@@ -8,7 +8,8 @@
     clippy::uninlined_format_args,
     clippy::unnecessary_debug_formatting,
     clippy::pedantic,
-    clippy::unwrap_used
+    clippy::unwrap_used,
+    reason = "strict migration"
 )]
 
 #[cfg(feature = "c")]

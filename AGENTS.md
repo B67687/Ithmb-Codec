@@ -49,14 +49,14 @@ Ithmb-Codec/
 
 All design/spec artifacts live in-repo. Read these before making behavioral changes.
 
-| Artifact | Path | Purpose |
-| --- | --- | --- |
-| FEATURES.md | `docs/FEATURES.md` | F-### IDs, behavior contracts, test anchoring (lifecycle: proposed→approved→applied→archived per Dev-Protocol §1.1) |
-| SPECIFICATION.md | `SPECIFICATION.md` | FR-01..FR-50, NFR-01..08 with FR→F-###→test traceability |
-| ARCHITECTURE.md | `ARCHITECTURE.md` | C4 diagrams, module map, fitness functions |
-| TECH_DEBT_AUDIT.md | `docs/TECH_DEBT_AUDIT.md` | Severity×effort triage matrix, resolved vs open items |
-| ADRs | `docs/adr/` | Architecture Decision Records (8 total, incl. ADR-0008 SIMD, ADR-0007 zune-jpeg migration) |
-| local-ci.sh | `scripts/local-ci.sh` | Local CI gate: clippy, test, cargo-deny, gitleaks, F-### LOC check (note: named `local-ci.sh`, not `check-local.sh`) |
+| Artifact           | Path                      | Purpose                                                                                                              |
+| ------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| FEATURES.md        | `docs/FEATURES.md`        | F-### IDs, behavior contracts, test anchoring (lifecycle: proposed→approved→applied→archived per Dev-Protocol §1.1)  |
+| SPECIFICATION.md   | `SPECIFICATION.md`        | FR-01..FR-50, NFR-01..08 with FR→F-###→test traceability                                                             |
+| ARCHITECTURE.md    | `ARCHITECTURE.md`         | C4 diagrams, module map, fitness functions                                                                           |
+| TECH_DEBT_AUDIT.md | `docs/TECH_DEBT_AUDIT.md` | Severity×effort triage matrix, resolved vs open items                                                                |
+| ADRs               | `docs/adr/`               | Architecture Decision Records (8 total, incl. ADR-0008 SIMD, ADR-0007 zune-jpeg migration)                           |
+| local-ci.sh        | `scripts/local-ci.sh`     | Local CI gate: clippy, test, cargo-deny, gitleaks, F-### LOC check (note: named `local-ci.sh`, not `check-local.sh`) |
 
 Feature lifecycle follows [Development-Protocol engineering-plugin.md §1.1](https://github.com/user/Development-Protocol/blob/main/docs/engineering-plugin.md): proposed → approved → applied → archived.
 
@@ -75,7 +75,7 @@ Feature lifecycle follows [Development-Protocol engineering-plugin.md §1.1](htt
 
 ## Code Conventions
 
-- **Strictness**: `#![deny(clippy::pedantic)]` across workspace, every pedantic lint is an error
+- **Strictness**: `cargo-strict.md` inventory — `all = deny (priority -1)` + `pedantic/nursery/cargo = warn (priority -1)` cherry-pick, hard denies `unwrap_used`/`expect_used`/`undocumented_unsafe_blocks` etc., never wholesale `pedantic = deny`
 - **Unsafe**: `unsafe_code = "deny"` at workspace level; individual unsafe blocks use `#[allow(unsafe_code)]` (SIMD + c_api only)
 - **No `unwrap()`**: Use `?` or `.expect("reason")`, never bare `.unwrap()`
 - **250 LOC ceiling**: Files over 250 lines of pure logic need a `// SIZE_OK` comment or splitting (`scripts/check-file-sizes.sh` verifies)
@@ -88,7 +88,7 @@ Run in this order:
 ```bash
 cargo check                     # Catches 90% of errors (~5s)
 cargo clippy --fix --allow-dirty  # Auto-fix mechanical lints
-cargo test --workspace          # Full suite (~40-60s)
+cargo nextest run --workspace          # Full suite (~40-60s, nextest 0.9.143)
 ```
 
 Key test categories (see docs/STATS.md for live counts):
@@ -105,15 +105,16 @@ Key test categories (see docs/STATS.md for live counts):
 
 Checks are triaged by **fast-and-runnable vs slow/platform-specific**:
 
-| Layer | What runs | When | Speed |
-|---|---|---|---|
-| **1. Pre-commit hook** (`.githooks/pre-commit`) | fmt --check always; clippy + `cargo test --workspace --tests` when `.rs` files staged | every commit, auto | ~10-60s |
-| **2. `./scripts/local-ci.sh`** | fmt, clippy, tests, builds (workspace/logging/wasm/C-API), cargo-deny, cargo-audit; `--fuzz` opt-in | before pushing, on demand | ~30s+ |
-| **3. GitHub CI** | `pr-checks.yml` (fast: fmt/clippy/typos/links/deny/audit/doc/CI-pins/secrets) on PR+push; `ci-full.yml` (3-OS matrix, fuzz, benchmark, wasm, C-API) on main push; `release.yml` tag-gated | every push, auto | 2-6min |
+| Layer                                           | What runs                                                                                                                                                                                 | When                      | Speed   |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ------- |
+| **1. Pre-commit hook** (`.githooks/pre-commit`) | fmt --check always; clippy + `cargo test --workspace --tests` when `.rs` files staged                                                                                                     | every commit, auto        | ~10-60s |
+| **2. `./scripts/local-ci.sh`**                  | fmt, clippy, tests, builds (workspace/logging/wasm/C-API), cargo-deny, cargo-audit; `--fuzz` opt-in                                                                                       | before pushing, on demand | ~30s+   |
+| **3. GitHub CI**                                | `pr-checks.yml` (fast: fmt/clippy/typos/links/deny/audit/doc/CI-pins/secrets) on PR+push; `ci-full.yml` (3-OS matrix, fuzz, benchmark, wasm, C-API) on main push; `release.yml` tag-gated | every push, auto          | 2-6min  |
 
 **Activate the pre-commit hook once per clone:** `git config core.hooksPath .githooks` (full install in docs/SETUP.md).
 
 Rules:
+
 - Run `./scripts/local-ci.sh` before pushing. The pre-commit hook is the floor; local-ci.sh is the full Linux-runnable set.
 - Fuzz is slow, opt in via `./scripts/local-ci.sh --fuzz`.
 - Miri is a **local pre-release gate** (GitHub-hosted runners block its jailed child, see ADR-0008); benchmark regression and the macOS/Windows legs stay on GitHub.

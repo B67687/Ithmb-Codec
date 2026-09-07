@@ -10,7 +10,7 @@ use core::arch::aarch64::*;
 /// indexing. `dst` is owned (`vec![0u8; n * 4]`) — no caller size contract.
 /// NEON mandatory on aarch64; aarch64-only caller.
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn fill_gray_row_neon(gray: &[u8]) -> Vec<u8> {
     let n = gray.len();
     let mut dst = vec![0u8; n * 4];
@@ -50,7 +50,7 @@ pub(crate) unsafe fn fill_gray_row_neon(gray: &[u8]) -> Vec<u8> {
 /// Processes 8 pixels per iteration: loads 16 bytes, extracts R5/G6/B5,
 /// MSB-replicates to 8-bit, and stores 32 bytes of interleaved BGRA.
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n = src.len();
     debug_assert_eq!(dst.len(), (n / 2) * 4);
@@ -108,7 +108,7 @@ pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
 /// Processes 8 pixels per iteration: loads 16 bytes, extracts R5/G5/B5,
 /// MSB-replicates to 8-bit, and stores 32 bytes of interleaved BGRA.
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn)]
+#[allow(unsafe_op_in_unsafe_fn, reason = "strict migration")]
 pub(crate) unsafe fn rgb555_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     let n = src.len();
     debug_assert_eq!(dst.len(), (n / 2) * 4);

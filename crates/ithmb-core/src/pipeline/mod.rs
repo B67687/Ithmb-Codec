@@ -18,9 +18,9 @@ mod open;
 mod post_process;
 mod profile_loader;
 
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub(super) use jpeg_scan::{has_jpeg_marker, scan_for_embedded_jpeg};
-#[allow(unused_imports)]
+#[allow(unused_imports, reason = "strict migration")]
 pub(super) use post_process::{
     apply_crop, apply_crop_with, apply_post_process, apply_post_process_with_transform, apply_rotation,
     apply_rotation_with,
@@ -165,7 +165,7 @@ pub fn decode_with_profile_with_transform(
 // Tests
 // ---------------------------------------------------------------------------
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, reason = "strict migration")]
 mod tests {
     use super::*;
     use crate::profile::Encoding;
@@ -746,7 +746,7 @@ mod tests {
         assert_eq!(img.data.len(), w * h * 4);
     }
 
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_possible_truncation, reason = "strict migration")]
     #[test]
     fn test_decode_ithmb_prefix_2002_big_endian_rgb565() {
         let w = 50usize;

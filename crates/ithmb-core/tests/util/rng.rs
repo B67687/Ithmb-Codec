@@ -3,15 +3,15 @@
 //! Uses the **splitmix64** algorithm (higher quality than LCG) to produce
 //! reproducible pseudo-random byte sequences from a 64-bit seed.  All tests
 //! and benchmarks that need random pixel data share this one implementation.
-#![allow(clippy::pedantic, clippy::unwrap_used)]
+#![allow(clippy::pedantic, clippy::unwrap_used, reason = "strict migration")]
 
 /// Minimal deterministic splitmix64 RNG.
-pub struct SeededRng(u64);
+pub(crate) struct SeededRng(u64);
 
 impl SeededRng {
     /// Create a new RNG from a 64-bit seed.
     #[must_use]
-    pub fn new(seed: u64) -> Self {
+    pub(crate) fn new(seed: u64) -> Self {
         Self(seed)
     }
 
@@ -26,7 +26,7 @@ impl SeededRng {
 
     /// Generate the next 32-bit pseudo-random value.
     #[must_use]
-    pub fn next_u32(&mut self) -> u32 {
+    pub(crate) fn next_u32(&mut self) -> u32 {
         (self.next_u64() & 0xFFFF_FFFF) as u32
     }
 
@@ -37,7 +37,7 @@ impl SeededRng {
     ///
     /// # Panics
     /// Panics if `buf.len()` is not a multiple of 4.
-    pub fn fill_bgra(&mut self, buf: &mut [u8]) {
+    pub(crate) fn fill_bgra(&mut self, buf: &mut [u8]) {
         assert!(
             buf.len() % 4 == 0,
             "fill_bgra: buffer length ({}) must be a multiple of 4",

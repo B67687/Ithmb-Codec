@@ -12,7 +12,7 @@
 //! | 3     | all remainder  | all remainder   |
 //! | 7     | all remainder  | all remainder   |
 //! | 15    | 1 iter + 7 rem | all remainder  |
-#![allow(clippy::pedantic, clippy::unwrap_used)]
+#![allow(clippy::pedantic, clippy::unwrap_used, reason = "strict migration")]
 //! | 16    | 2 iters, 0 rem | 1 iter, 0 rem  |
 //! | 17    | 2 iters + 1 rem| 1 iter + 1 rem |
 //!
@@ -23,7 +23,11 @@
 //! Gated to `x86_64` and aarch64 — SIMD dispatch is meaningful only on these arches.
 
 #![cfg(any(target_arch = "x86_64", target_arch = "aarch64"))]
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "strict migration"
+)]
 
 use divan as _;
 use image as _;
@@ -118,7 +122,7 @@ fn pick_decoder(
         Encoding::ReorderedRgb555 => ithmb_core::reordered_rgb555::decode,
         Encoding::Yuv422 => ithmb_core::uyvy::decode,
         Encoding::Ycbcr420 => ithmb_core::ycbcr420::decode,
-        #[allow(clippy::match_same_arms)]
+        #[allow(clippy::match_same_arms, reason = "strict migration")]
         _ => unreachable!(), // JPEG not tested here; CL/CLCL handled via field dispatch
     }
 }

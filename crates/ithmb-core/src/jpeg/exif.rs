@@ -47,7 +47,7 @@ pub(crate) fn extract_exif_orientation(src: &[u8]) -> u8 {
         // Skip over any other marker segment. Marker types FFE0–FFEF and
         // FFC0–FFDF are segment markers with a length field; standalone
         // markers (FFD0–FFD7, FFD8, FFD9, FF01) have no length.
-        #[allow(clippy::match_same_arms)]
+        #[allow(clippy::match_same_arms, reason = "strict migration")]
         match marker {
             // Standalone markers (no segment data).
             0x00 | 0xD0..=0xD7 | 0xD8 | 0xD9 | 0x01 => {

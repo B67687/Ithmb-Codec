@@ -9,7 +9,7 @@ use crate::pixel_utils::clamp_u8;
 /// Layout per 2-pixel pair: `[Cb_avg, Y0, Cr_avg, Y1]`.
 /// Chroma values are averaged across the pair. Uses BT.601 colour conversion.
 #[must_use]
-#[allow(unreachable_code)]
+#[allow(unreachable_code, reason = "strict migration")]
 pub fn encode_uyvy(bgra: &[u8], w: i32, h: i32) -> Vec<u8> {
     let wu = w as usize;
     let mm = h as usize;

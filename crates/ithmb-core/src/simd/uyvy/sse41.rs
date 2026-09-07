@@ -3,7 +3,12 @@
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "ssse3")]
 #[inline]
-#[allow(unsafe_op_in_unsafe_fn, clippy::cast_possible_truncation, clippy::similar_names)]
+#[allow(
+    unsafe_op_in_unsafe_fn,
+    clippy::cast_possible_truncation,
+    clippy::similar_names,
+    reason = "strict migration"
+)]
 /// # Safety
 ///
 /// The caller must guarantee:

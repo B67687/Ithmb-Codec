@@ -37,7 +37,11 @@ use std::sync::atomic::AtomicBool;
 /// # Errors
 ///
 /// Returns [`DecodeError::BufferTooShort`] if `src` is smaller than `w * h * 2`.
-#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "strict migration"
+)]
 pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<DecodedImage, DecodeError> {
     let (data, w, h) =
         crate::decoder_helpers::validate_dimensions(src, profile, "width and height must be positive", 2)?;

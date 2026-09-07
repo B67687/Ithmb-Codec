@@ -1,4 +1,9 @@
-#![allow(clippy::pedantic, clippy::unwrap_used, clippy::missing_panics_doc)]
+#![allow(
+    clippy::pedantic,
+    clippy::unwrap_used,
+    clippy::missing_panics_doc,
+    reason = "strict migration"
+)]
 //! Allocation-contract tests — pin that absurd sizes derived from untrusted
 //! input are rejected **before** any large allocation (the CWE-400 class).
 //!

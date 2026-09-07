@@ -22,7 +22,8 @@
     clippy::unwrap_used,
     elided_lifetimes_in_paths,
     unsafe_code,
-    unused_crate_dependencies
+    unused_crate_dependencies,
+    reason = "strict migration"
 )]
 
 mod util;

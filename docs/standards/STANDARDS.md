@@ -8,28 +8,28 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 
 ## Automation
 
-| Tier | Item                              | Status                                                                                                                            |
-| ---- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 0    | CI build + test                   | ✅ `cargo build --workspace`, `cargo test --workspace` on push/PR to main                                                         |
-| 0    | Static analysis (lints-as-errors) | ✅ `[workspace.lints.clippy]` — `all = "deny"`, `pedantic = "deny"` in root Cargo.toml; `cargo clippy -- -D warnings` in CI       |
-| 0    | Signed commits                    | ✅ All commits signed with SSH (`commit.gpgsign=true`). Verified via `git log --show-signature`.                                  |
-| 0    | Reproducible builds               | ✅ Cargo.lock committed; workspace version `0.3.0`                                                                                |
-| 0    | CHANGELOG                         | ✅ Keep a Changelog format, `[Unreleased]` header present                                                                         |
-| 1    | Conventional commits              | ✅ Manually enforced (not CI-gated)                                                                                               |
-| 1    | Formatter enforcement             | ✅ `cargo fmt --check` in CI                                                                                                      |
-| 1    | EditorConfig                      | ✅ `.editorconfig` with LF, UTF-8, 4-space indent                                                                                 |
-| 1    | Toolchain pinning                 | ✅ `rust-toolchain.toml` with stable channel, clippy + rustfmt components                                                         |
-| 1    | Concurrency-safe state            | ✅ `RwLock<LruCache>` for cache, `AtomicBool` for cancellation                                                                    |
-| 2    | Benchmarks                        | ✅ `ithmb-core/benches/` — 4 Divan benchmarks (decoders, encoders, pipeline)                                                      |
-| 2    | Fuzz testing                      | ✅ `fuzz/` — 2 libfuzzer targets, CI fuzz build check, 1.2M+ iterations, 0 crashes                                                |
-| 2    | Golden test vectors               | ✅ 14+ reference files across 7 encoding formats                                                                                  |
-| 2    | SIMD CI                           | ✅ CI tests SIMD code paths on all platforms                                                                                      |
-| 2    | Python bindings CI                | ✅ `pymod/` built via maturin/abi3-py312                                                                                          |
-| 2    | File size gate (250 LOC)          | 🟡 Script at `tools/check-file-sizes.sh`, not yet wired into CI                                                                   |
-| 2    | C ABI release integrity           | ✅ Built in the [plugin repo](https://github.com/B67687/ImageGlass-Ithmb-Plugin); `nm` verifies `ig_plugin_get_api` symbol export |
-| 2    | Cancellation polling              | ✅ `AtomicBool` parameter in all decoder functions                                                                                |
-| 2    | C# cross-verification             | ✅ All 7 formats verified pixel-for-pixel against C# oracle during development                                                    |
-| 2    | Miri unsafety check               | ✅ `cargo +nightly miri test --all-features` — 21 SSE2 tests verified, 0 UB                                                       |
+| Tier | Item                              | Status                                                                                                                                             |
+| ---- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | CI build + test                   | ✅ `cargo build --workspace`, `cargo nextest run --workspace` on push/PR to main                                                                   |
+| 0    | Static analysis (lints-as-errors) | ✅ `[workspace.lints.clippy]` — `all = "deny"`, `pedantic/nursery/cargo = "warn"` + cherry-picked hard denies; `cargo clippy -- -D warnings` in CI |
+| 0    | Signed commits                    | ✅ All commits signed with SSH (`commit.gpgsign=true`). Verified via `git log --show-signature`.                                                   |
+| 0    | Reproducible builds               | ✅ Cargo.lock committed; workspace version `0.3.0`                                                                                                 |
+| 0    | CHANGELOG                         | ✅ Keep a Changelog format, `[Unreleased]` header present                                                                                          |
+| 1    | Conventional commits              | ✅ Manually enforced (not CI-gated)                                                                                                                |
+| 1    | Formatter enforcement             | ✅ `cargo fmt --check` in CI                                                                                                                       |
+| 1    | EditorConfig                      | ✅ `.editorconfig` with LF, UTF-8, 4-space indent                                                                                                  |
+| 1    | Toolchain pinning                 | ✅ `rust-toolchain.toml` with stable channel, clippy + rustfmt components                                                                          |
+| 1    | Concurrency-safe state            | ✅ `RwLock<LruCache>` for cache, `AtomicBool` for cancellation                                                                                     |
+| 2    | Benchmarks                        | ✅ `ithmb-core/benches/` — 4 Divan benchmarks (decoders, encoders, pipeline)                                                                       |
+| 2    | Fuzz testing                      | ✅ `fuzz/` — 2 libfuzzer targets, CI fuzz build check, 1.2M+ iterations, 0 crashes                                                                 |
+| 2    | Golden test vectors               | ✅ 14+ reference files across 7 encoding formats                                                                                                   |
+| 2    | SIMD CI                           | ✅ CI tests SIMD code paths on all platforms                                                                                                       |
+| 2    | Python bindings CI                | ✅ `pymod/` built via maturin/abi3-py312                                                                                                           |
+| 2    | File size gate (250 LOC)          | 🟡 Script at `tools/check-file-sizes.sh`, not yet wired into CI                                                                                    |
+| 2    | C ABI release integrity           | ✅ Built in the [plugin repo](https://github.com/B67687/ImageGlass-Ithmb-Plugin); `nm` verifies `ig_plugin_get_api` symbol export                  |
+| 2    | Cancellation polling              | ✅ `AtomicBool` parameter in all decoder functions                                                                                                 |
+| 2    | C# cross-verification             | ✅ All 7 formats verified pixel-for-pixel against C# oracle during development                                                                     |
+| 2    | Miri unsafety check               | ✅ `cargo +nightly miri test --all-features` — 21 SSE2 tests verified, 0 UB                                                                        |
 
 ## Design
 
