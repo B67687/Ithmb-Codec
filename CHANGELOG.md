@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 ### Changed
 
 #### SE Retrofit (2026-08-27)
+
 - **God-module splits**: All 13 files exceeding 250 LOC pure (excl. tests/headers) split into focused submodules — SIMD (`neon/`, `uyvy/`, `cl/`, `yuv/`, `clcl/`), core (`photodb/types/`, `config/`, `jpeg/`, `device_profiles/`, `profile_parser/`), pipeline (`dispatch.rs`), CLI (6 files). Every `.rs` file now ≤250 LOC pure.
 - **Requirements traceability**: SPECIFICATION.md §16 adds 50 FRs (FR-01..FR-50) + 8 NFRs (NFR-01..NFR-08) with FR→Feature→Test mapping. FEATURES.md updated with backfill note.
 - **Local CI parity**: `scripts/check.sh` provides 7 T1 gates (clippy, test, deny, gitleaks, F-### anchors, LOC fitness, coverage docs) matching GitHub CI.
@@ -16,14 +17,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 - **Pipeline module split**: `pipeline/mod.rs` (1286 LOC) refactored into focused submodules — `post_process.rs` (crop/rotation), `jpeg_scan.rs` (JPEG frame scanner), `pixel_utils.rs` (shared helpers). Public API re-exports unchanged.
 - **SIMD module reorganization**: format dispatch moved from `simd/mod.rs` (1243 LOC) into per-format submodules. Module reduced to thin re-exports + tests.
 - **Performance**: `encoding_name_for_prefix` now returns `&'static str` (zero allocation).
+- **SIMD cfg narrowing (Q1)**: dead x86 (non-64) cfgs removed across 16 files; x86_64 targets explicit.
+- **Test runner**: `cargo test` → `cargo nextest run --workspace` (0.9.143) in CI and local docs.
+- **Unused-dependency gate**: machete 0.9.2 in CI.
+- **Python toolchain**: pymod managed by uv (`uv.lock`); ruff (E,F,UP,B,SIM,I) + basedpyright (recommended) + pytest 11/11 — local-only for now (see TECH_DEBT PYM-01).
+- **RUSTFLAGS contract**: explicit top-level `RUSTFLAGS: ""` in workflows so Cargo.toml lints govern, not action-injected `-D warnings` (ADR-0009).
+- **Clippy cherry-pick**: `all = deny`, pedantic/nursery/cargo = warn, plus hard denies (`unwrap_used`, `expect_used`, `undocumented_unsafe_blocks`, …).
+- **Visibility least-privilege**: `pub` → `pub(super)`/private across the workspace (`unreachable_pub` 59 → 0).
 
 ### Fixed
+
 - **Python bindings**: `list_profiles` now propagates `dict.set_item` errors instead of silently discarding.
+- **CLCL stack overflow (F3)**: `[u8;8]` → `[u8;16]` in the hot-row write — genuine UB, caught by SAFETY review, never by tests.
+- **UYVY illegal instruction (F1)**: quad dispatch now gated on runtime sse4.1; partial quads rejected (F2: `n%4` short rows → `BufferTooShort`).
 
 ### Added
 
 - **`docs/TECH_DEBT_AUDIT.md`**: Systematic tech debt audit across 9 dimensions. 5 resolved items (god modules, traceability, coverage, CI parity), 3 open informational items.
 - **`scripts/check.sh`**: Local CI parity script with 7 T1 gates (clippy, test, deny, gitleaks, F-### anchors, LOC fitness, coverage docs).
+- **Per-block SAFETY contracts**: every unsafe site in Codec (24 files, ~86 sites) documented with `# Safety` / `// SAFETY:` (ADR-0010).
 
 ## [1.9.9] / [1.9.5] - 2026-08-16
 
@@ -124,7 +136,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 
 ### Security
 
-- **Cap embedded-JPEG dimensions before decode (CWE-400)**: `jpeg.rs` decoded untrusted JPEGs with no size limits. `jpeg-decoder` 0.3.2 allocates the progressive-JPEG coefficient buffer at the first SOS from the frame dimensions alone — *before* its only size-limit check — so a 166-byte SOF2-65535×65535 stream triggered an ~8 GiB allocation and SIGABRT in the CLI/python bindings (and a heap overflow in C consumers, whose buffers are sized from the profile). `set_max_decoding_buffer_size` alone does not cover the coefficient buffer, and `set_max_dimensions` does not exist in 0.3.2, so the fix is a `read_info()` pre-check (parses SOF, zero pixel allocations) rejecting frames over a 256 MiB w·h·3 budget, plus the buffer limit as belt-and-braces. Regression test ships a 193-byte progressive-JPEG fixture asserting an `Err` with zero allocation.
+- **Cap embedded-JPEG dimensions before decode (CWE-400)**: `jpeg.rs` decoded untrusted JPEGs with no size limits. `jpeg-decoder` 0.3.2 allocates the progressive-JPEG coefficient buffer at the first SOS from the frame dimensions alone — _before_ its only size-limit check — so a 166-byte SOF2-65535×65535 stream triggered an ~8 GiB allocation and SIGABRT in the CLI/python bindings (and a heap overflow in C consumers, whose buffers are sized from the profile). `set_max_decoding_buffer_size` alone does not cover the coefficient buffer, and `set_max_dimensions` does not exist in 0.3.2, so the fix is a `read_info()` pre-check (parses SOF, zero pixel allocations) rejecting frames over a 256 MiB w·h·3 budget, plus the buffer limit as belt-and-braces. Regression test ships a 193-byte progressive-JPEG fixture asserting an `Err` with zero allocation.
 
 ## [1.10.0] - 2026-08-02
 

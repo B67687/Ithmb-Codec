@@ -12,6 +12,8 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 | ---- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0    | CI build + test                   | ✅ `cargo build --workspace`, `cargo nextest run --workspace` on push/PR to main                                                                   |
 | 0    | Static analysis (lints-as-errors) | ✅ `[workspace.lints.clippy]` — `all = "deny"`, `pedantic/nursery/cargo = "warn"` + cherry-picked hard denies; `cargo clippy -- -D warnings` in CI |
+| 1    | Unused deps (machete)             | ✅ machete 0.9.2 gate in CI                                                                                                                        |
+| 1    | RUSTFLAGS contract                | ✅ explicit top-level `RUSTFLAGS: ""` in workflows — Cargo.toml lints govern, not action injection (ADR-0009)                                      |
 | 0    | Signed commits                    | ✅ All commits signed with SSH (`commit.gpgsign=true`). Verified via `git log --show-signature`.                                                   |
 | 0    | Reproducible builds               | ✅ Cargo.lock committed; workspace version `0.3.0`                                                                                                 |
 | 0    | CHANGELOG                         | ✅ Keep a Changelog format, `[Unreleased]` header present                                                                                          |
@@ -38,6 +40,7 @@ lint configuration, unsafe code policy, error handling, and SIMD architecture.
 | **Modularity**           | 21 modules in ithmb-core. Each decoder in its own file. PhotoDB in its own submodule. Pipeline owns dispatch only. SIMD split into 7 per-format files. |
 | **Data Flow**            | Unidirectional: pipeline detect → prefix match → per-format decoder → DecodedImage. No back-edges.                                                     |
 | **Fail-Fast**            | Buffer-too-small guards in every decoder. Cancellation polled at macroblock boundaries.                                                                |
+| **Least Privilege**      | Visibility narrowed to minimum (`pub` → `pub(super)`/private, `unreachable_pub` 59→0); every `unsafe` block carries its contract.                      |
 | **Parse-Don't-Validate** | 53 built-in profiles parsed at compile-time into `ProfileDb`.                                                                                          |
 | **Layered Dependencies** | `ithmb-core` → `ithmb-cli`, `pymod`. No cycles.                                                                                                        |
 

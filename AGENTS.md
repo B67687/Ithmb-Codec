@@ -165,6 +165,7 @@ cargo build --release             # SIMD always compiled for x86_64 and aarch64
 cargo build -p ithmb-core --features c   # C ABI cdylib
 wasm-pack build crates/ithmb-wasm # WASM target (requires wasm-pack)
 maturin develop --release -m pymod/Cargo.toml  # Python bindings
+(cd pymod && uv run --frozen pytest && uv run --frozen ruff check . && uv run --frozen basedpyright)  # Python bindings (uv-managed, local-only)
 ```
 
 ## Release Process

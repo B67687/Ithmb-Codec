@@ -42,3 +42,14 @@ for p in profiles:
 - `decode_ithmb(data, canceled=None)` — Decode a single `.ithmb` file from bytes. Returns a dict with `width`, `height`, `data` (BGRA `bytes`), `format`, `rotation`.
 - `open_ithmb(data, canceled=None)` — Decode a PhotoDB/ArtworkDB container or bare `.ithmb`. Returns a list of dicts (same shape as `decode_ithmb`).
 - `list_profiles()` — List all 54 known decoding profiles.
+
+## Testing
+
+```bash
+cd pymod/
+uv run --frozen pytest          # 11 tests
+uv run --frozen ruff check .    # E,F,UP,B,SIM,I (line-length 100, py312)
+uv run --frozen basedpyright    # recommended mode
+```
+
+Local-only for now (not CI-gated) — see TECH_DEBT_AUDIT.md PYM-01.
