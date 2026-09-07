@@ -1,7 +1,15 @@
 //! CL SSE2 quad-level + row conversions.
 
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// Quad kernel: SSE2-only op set (`cvtsi32`, `unpacklo`, `add/sub_epi32`, `storeu`).
+///
+/// # Safety
+/// - Call only where SSE2 is available (x86-64 baseline; the `cfg` allows 32-bit x86
+///   where SSE2 is also baseline).
+/// - `quad: &[u8; 8]` is exact-size by type: 4 Y bytes + 4 chroma bytes.
+/// - The three `_mm_storeu_si128` targets are `[i32; 4]` (16 bytes) — exact-size,
+///   unlike the CLCL `[u8; 8]` bug (F3); `out` is `[u8; 16]`, filled by scalar loop.
+/// - No loads/stores touch caller memory; `clamp_u8` is scalar.
+#[cfg(target_arch = "x86_64")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]
 pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
     use core::arch::x86_64::{
@@ -53,8 +61,17 @@ pub(crate) unsafe fn cl_quad_to_bgra_sse2(quad: &[u8; 8]) -> [u8; 16] {
     out
 }
 
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// Row wrapper: batch loop (2 quads/iter) + 4-px remainder + 0-3 px scalar tail.
+///
+/// # Safety
+/// - Call only where SSE2 is available (see quad section above).
+/// - Caller must pass `dst.len() >= (src.len() / 2) * 4`. Bounds: batch stores
+///   `d_off..d_off+32` with `d_off = i*4`, `i+8 <= full_end <= n_pixels`, so max end
+///   `full_end*4 <= n*4`; remainder `d_off+16`, `i+4 <= n` gives `(i+4)*4 <= n*4`;
+///   scalar tail `o+4`, `o = j*4`, `j < n` gives `<= n*4`.
+/// - All `y[i]`/`chroma[i]` reads and `copy_from_slice` writes are *checked* indexing:
+///   a short `dst` panics, never corrupts. The `unsafe` covers only the quad kernels.
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
@@ -120,7 +137,14 @@ pub(crate) unsafe fn cl_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     }
 }
 
-/// SAFETY: must only be called on `x86_64` where SSE4.1 is guaranteed.
+/// SSE4.1 quad kernel: `cvtepu8_epi32` + `min/max_epi32` need SSE4.1; the pack/unpack,
+/// set, cvtsi32 and store ops are SSE2.
+///
+/// # Safety
+/// - Call only on x86-64 with SSE4.1 (enforced by `cfg` + `target_feature`).
+/// - `quad: &[u8; 8]` exact by type; `_mm_storeu_si128` target `out` is `[u8; 16]` exact.
+/// - Clamp-then-pack order keeps every lane in `[0, 255]`, so `packus` saturation is a
+///   no-op by construction; BGRA interleave indices are compile-time constants.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse4.1")]
 #[inline]

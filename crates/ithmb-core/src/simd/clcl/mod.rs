@@ -5,15 +5,27 @@ mod avx2;
 
 /// Process one row of CLCL data via SSE2.
 ///
-/// Reads `width` Y bytes, `width/2` Cb bytes (nibble-packed, 2 pixels/byte),
-/// `width/2` Cr bytes (same) and writes `width*4` BGRA bytes.
+/// Reads `width` Y bytes, `width/2` Cb/Cr bytes (nibble-packed, 2 pixels
+/// per byte: pixel `2k` in the low nibble, pixel `2k+1` in the high nibble)
+/// and writes `width*4` BGRA bytes.
 ///
 /// # Safety
 ///
-/// - `y_ptr` must point to `width` valid bytes.
-/// - `cb_ptr` must point to `width / 2` valid bytes.
-/// - `cr_ptr` must point to `width / 2` valid bytes.
-/// - Requires `x86_64` target.
+/// - `y_ptr` must point to `width` readable bytes.
+/// - `cb_ptr`/`cr_ptr` must each point to at least `width/2` readable
+///   bytes (covers every `i/2` access below, including odd `width`: the
+///   highest index read is `(width-1)/2 < width/2`).
+/// - `dst` must point to `width*4` writable bytes.
+/// - Batched loop covers `(width/8)*8` pixels: Y reads stay in
+///   `[i, i+8)`, Cb/Cr 4-byte reads stay in `[i/2, i/2+4)` (max
+///   `(width-8)/2+4 <= width/2` for `width >= 8`); the scalar tail
+///   re-checks the contracts pixel by pixel.
+/// - Scratch arrays are `[u8; 16]`: every `_mm_storeu_si128` writes
+///   exactly 16 bytes (a former `[u8; 8]` here overflowed the stack;
+///   fixed during the SAFETY review).
+/// - All SIMD ops are `SSE2`, the guaranteed `x86_64` baseline: safe on
+///   every `x86_64` CPU with no runtime feature check.
+/// - Requires the `x86_64` target.
 #[cfg(target_arch = "x86_64")]
 #[allow(clippy::many_single_char_names)]
 #[allow(clippy::cast_sign_loss)] // clamp(0,255) guarantees non-negative
@@ -54,9 +66,9 @@ pub unsafe fn clcl_row_to_bgra_sse2(y_ptr: *const u8, cb_ptr: *const u8, cr_ptr:
             let cr_exp = _mm_slli_epi16(cr_unpacked, 4);
 
             // ---- Store to stack arrays for per-pixel YUV→BGRA ----
-            let mut y_arr: [u8; 8] = [0u8; 8];
-            let mut cb_arr: [u8; 8] = [0u8; 8];
-            let mut cr_arr: [u8; 8] = [0u8; 8];
+            let mut y_arr: [u8; 16] = [0u8; 16];
+            let mut cb_arr: [u8; 16] = [0u8; 16];
+            let mut cr_arr: [u8; 16] = [0u8; 16];
             _mm_storeu_si128(y_arr.as_mut_ptr().cast::<__m128i>(), y_val);
             _mm_storeu_si128(cb_arr.as_mut_ptr().cast::<__m128i>(), cb_exp);
             _mm_storeu_si128(cr_arr.as_mut_ptr().cast::<__m128i>(), cr_exp);

@@ -9,7 +9,7 @@
 
 #[cfg(target_arch = "x86_64")]
 mod avx2;
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 mod sse;
 #[cfg(target_arch = "x86_64")]
 mod sse41;
@@ -31,13 +31,13 @@ mod sse41;
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub fn yuv420_quad_to_bgra(quad: &[u8; 6]) -> [u8; 16] {
     // SSE2 path (compile-time guaranteed on x86_64/x86)
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         sse::yuv420_quad_to_bgra_sse2(quad)
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"),)))]
+    #[cfg(not(any(target_arch = "x86_64",)))]
     // Scalar fallback (used on all non-x86_64 platforms, including aarch64+simd)
     super::scalar::yuv420_quad_to_bgra(quad)
 }

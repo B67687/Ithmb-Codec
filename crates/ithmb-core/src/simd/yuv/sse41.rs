@@ -1,6 +1,6 @@
 //! YCbCr 4:2:0 row pair -> BGRA via SSE4.1.
 
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::__m128i;
 
 // ---- SSE4.1 quad helper (used by sse41 and avx2 row functions) ----
@@ -8,10 +8,14 @@ use core::arch::x86_64::__m128i;
 /// stored to `dst` at offset `c*8` (top row) and `c*8 + w*4` (bottom row).
 ///
 /// # Safety
-/// - Must be called on `x86`/`x86_64` with SSE4.1 enabled.
-/// - `dst` must have sufficient capacity for the writes.
-/// - `y_row`, `cb_row`, `cr_row` must have valid indices at position `c`.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+///
+/// - Call only with SSE4.1 enabled (`cvtepu8`, `min/max_epi32`,
+///   `packus` need it; `#[target_feature]` on every caller enforces this).
+/// - Caller must uphold: `w` even, `c < cb_w`, `y_row.len() >= 2*w`,
+///   `cb_row`/`cr_row` valid at `c`, `dst.len() >= 2*w*4`. Then every
+///   access is in bounds: Y reads stay below `2*w`, chroma reads at `c`,
+///   and both 8-byte stores land inside `dst`.
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "sse4.1")]
 #[allow(clippy::too_many_arguments, clippy::cast_sign_loss, unsafe_op_in_unsafe_fn)]
@@ -76,8 +80,16 @@ pub(crate) unsafe fn store_sse41_quad(
 }
 
 // ---- YCbCr 4:2:0 row pair -> BGRA (SSE4.1) ----
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE4.1 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// YCbCr 4:2:0 row pair -> BGRA via SSE4.1 (4 chroma positions per iter).
+///
+/// # Safety
+///
+/// - Call only with SSE4.1 enabled (delegates to `store_sse41_quad`).
+/// - Caller must uphold `y_row.len() >= 2*w`, `cb_row.len() >= cb_w`,
+///   `cr_row.len() >= cb_w`, `dst.len() >= 2*w*4`, `cb_w == w/2`. The main
+///   loop (`cx + 3 < cb_w`, step 4) and both remainders keep every `c`
+///   below `cb_w`, so all helper preconditions hold on every call.
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "sse4.1")]
 #[allow(unsafe_op_in_unsafe_fn)]

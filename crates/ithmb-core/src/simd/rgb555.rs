@@ -7,8 +7,14 @@
     clippy::cast_sign_loss
 )]
 
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// # Safety
+///
+/// Caller must ensure ALL of:
+/// - SSE2 available: only call on `x86_64` (baseline) or `x86` with SSE2 (i686 baseline).
+/// - `dst.len() == (src.len() / 2) * 4` (only `debug_assert`ed; release relies on caller).
+///   Loop reads 16 B per iter (`i + 16 <= n`) and writes 32 B at `dst + i*2`; the
+///   bound above makes the final store end exactly at `dst.len()` (`2n` bytes).
+#[cfg(target_arch = "x86_64")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
@@ -64,8 +70,13 @@ pub(crate) unsafe fn rgb555_row_to_bgra_sse2(src: &[u8], dst: &mut [u8]) {
     }
 }
 
-/// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed
-/// (caller must check `is_x86_feature_detected!("avx2")`).
+/// # Safety
+///
+/// Caller must ensure ALL of:
+/// - AVX2 available: check `is_x86_feature_detected!(\"avx2\")` before calling.
+/// - `dst.len() == (src.len() / 2) * 4` (only `debug_assert`ed; release relies on caller).
+///   Loop reads 32 B per iter (`i + 32 <= n`) and writes 4x16 B at `dst + i*2`; the
+///   bound above makes the final store end exactly at `dst.len()` (`2n` bytes).
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment, clippy::similar_names)]
@@ -159,7 +170,7 @@ pub fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         }
     }
 
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         rgb555_row_to_bgra_sse2(src, dst);
@@ -172,6 +183,6 @@ pub fn rgb555_apply_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         return super::neon::rgb555_row_to_bgra_neon(src, dst);
     }
 
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86")))]
+    #[cfg(not(target_arch = "x86_64"))]
     super::scalar::rgb555_row_to_bgra_scalar(src, dst);
 }

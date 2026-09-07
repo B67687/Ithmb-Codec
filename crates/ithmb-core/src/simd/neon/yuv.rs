@@ -1,5 +1,13 @@
 //! AArch64 NEON implementations for YCbCr (4:2:0 and UYVY) pixel conversions.
 
+/// # Safety
+/// Exact-size-by-type: `quad: &[u8; 6]` guarantees all six index reads.
+/// The padded `y_arr` load reads exactly 8 bytes from an 8-byte stack array
+/// (upper 4 are zero padding, never uninitialised); both `vst1_u8` stores
+/// write 8 bytes each into the 16-byte `out` at offsets 0 and 8 — exact.
+/// NEON/ASIMD is mandatory on aarch64: no runtime feature check needed
+/// (unlike x86 SSE levels); caller must only reach this fn on aarch64.
+///
 /// Convert 4 YCbCr 4:2:0 pixels sharing Cb/Cr to 4 BGRA pixels (16 bytes)
 /// using AArch64 NEON intrinsics.
 ///
@@ -73,6 +81,12 @@ pub(crate) unsafe fn yuv420_quad_to_bgra_neon(quad: &[u8; 6]) -> [u8; 16] {
     out
 }
 
+/// # Safety
+/// Exact-size-by-type: `quad: &[u8; 4]`. The padded 8-byte load reads exactly
+/// 8 bytes from an 8-byte stack array (zero padding, never uninitialised).
+/// `vgetq_lane_u16` lanes 0-3 are all valid lanes of the u16x8 vector.
+/// NEON is mandatory on aarch64 — no runtime check needed; aarch64-only caller.
+///
 /// Convert one UYVY quad (4 bytes) to two BGRA pixels (8 bytes).
 ///
 /// Uses NEON for the load + zero-extend, then scalar BT.601 (same algorithm as
@@ -109,6 +123,13 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_neon(quad: &[u8; 4]) -> [u8; 8] {
     [b0, g0, r0, 255, b1, g1, r1, 255]
 }
 
+/// # Safety
+/// Exact-size-by-type: `quads: &[u8; 8]`; the `vld1_u8` load reads exactly 8.
+/// Each `idx` table is an 8-byte array loaded exactly once (8 bytes), and all
+/// `vtbl1_u8` indices (1/3/5/7, 0/0/4/4, 2/2/6/6) are < 8 — in-table.
+/// Both output stores write 8 bytes each into 16-byte `out` — exact.
+/// NEON mandatory on aarch64; aarch64-only caller.
+///
 /// Convert two UYVY quads (8 bytes) to four BGRA pixels (16 bytes).
 ///
 /// Processes all 4 pixels in parallel with 32-bit NEON arithmetic.
@@ -193,6 +214,13 @@ pub(crate) unsafe fn uyvy_double_quad_to_bgra_neon(quads: &[u8; 8]) -> [u8; 16] 
     out
 }
 
+/// # Safety
+/// Caller contract: `y_row.len() >= 2 * w` (two rows of `w`), `cb_row`/`cr_row`
+/// `.len() >= cb_w`, `dst.len() >= 2 * w * 4` (two BGRA rows). All indexing is
+/// checked (`[]` panics, never corrupts); max write end is
+/// `(cb_w - 1) * 8 + w * 4 + 8 == 8 * w` when `cb_w == w / 2`.
+/// NEON mandatory on aarch64; aarch64-only caller.
+///
 /// Convert a 2-row YCbCr 4:2:0 macroblock to BGRA using AArch64 NEON.
 ///
 /// Each chroma position covers 4 Y pixels (2×2 block). Delegates to

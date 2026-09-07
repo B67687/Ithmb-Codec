@@ -2,7 +2,12 @@
 
 use core::arch::aarch64::*;
 
-/// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
+/// # Safety
+/// Exact-size-by-type: `quad: &[u8; 8]` bounds the Y load (exactly 8 bytes)
+/// and all `quad[4 + i]` chroma reads (`i < 4`). The `[i32; 4]` scratch arrays
+/// are exactly 16 bytes for each `vld1q_s32` load / `vst1q_s32` store.
+/// Output is assembled by scalar stores into `[0u8; 16]` — in-bounds by type.
+/// NEON mandatory on aarch64; aarch64-only caller.
 #[inline]
 #[must_use]
 #[allow(unsafe_op_in_unsafe_fn)]
@@ -59,7 +64,13 @@ pub(crate) unsafe fn cl_quad_to_bgra_neon(quad: &[u8; 8]) -> [u8; 16] {
     out
 }
 
-/// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
+/// # Safety
+/// Caller contract: `src.len() >= 2 * n_pixels` (Y + chroma halves),
+/// `dst.len() >= n_pixels * 4`. All indexing is checked (panics, never
+/// corrupts): the main loop reads `y`/`chroma` at `i + 7` max with
+/// `i + 8 <= n_pixels`, and writes `d_off + 32` max with `i * 4 + 32 <=
+/// `n_pixels * 4`. Remainder loops re-check bounds per quad/pixel.
+/// NEON mandatory on aarch64; aarch64-only caller.
 #[inline]
 #[allow(clippy::similar_names)]
 #[allow(unsafe_op_in_unsafe_fn)]

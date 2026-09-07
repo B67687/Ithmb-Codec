@@ -1,10 +1,21 @@
 //! UYVY row -> BGRA via SSE4.1/SSSE3 (8 pixels per iteration).
 
 #[cfg(target_arch = "x86_64")]
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
 #[target_feature(enable = "ssse3")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_possible_truncation, clippy::similar_names)]
+/// # Safety
+///
+/// The caller must guarantee:
+/// - SSSE3 is available: `_mm_shuffle_epi8` is the only non-SSE2 intrinsic
+///   used here; everything else is SSE2. The dispatcher upholds this via
+///   `is_x86_feature_detected!("sse4.1")`, which implies SSSE3 (and the macro
+///   also checks OS support).
+/// - `dst.len() >= 2 * src.len()`: raw 16-byte stores reach `d_off + 32` with
+///   `d_off = i * 2`, at most `2 * full_end <= 2 * src.len()` by loop arithmetic.
+/// - Whole-quad input (`src.len() % 4 == 0`) for panic-free operation: raw loads
+///   are bounded by `full_end`, while the scalar tail uses checked indexing and
+///   panics (never corrupts memory) on a partial trailing quad.
 pub(crate) unsafe fn uyvy_row_to_bgra_sse41(src: &[u8], dst: &mut [u8]) {
     use core::arch::x86_64::{
         __m128i, _mm_add_epi16, _mm_cmpeq_epi8, _mm_loadu_si128, _mm_madd_epi16, _mm_max_epi16, _mm_min_epi16,

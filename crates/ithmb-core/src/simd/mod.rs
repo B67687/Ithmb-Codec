@@ -21,10 +21,7 @@ mod yuv;
 
 // Scalar fallbacks -- always available (used when SIMD is off or for
 // remainder handling in NEON routines).
-#[cfg_attr(
-    any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64"),
-    allow(dead_code)
-)]
+#[cfg_attr(any(target_arch = "x86_64", target_arch = "aarch64"), allow(dead_code))]
 pub(crate) mod scalar;
 
 #[cfg(target_arch = "aarch64")]
@@ -86,8 +83,17 @@ pub(super) fn unpack_rgb555(pixel: u16) -> [u8; 4] {
 
 // ---- Fill gray row (SSE2) ----
 
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// # Safety
+///
+/// SSE2 baseline only (guaranteed on `x86`/`x86_64` — this fn is
+/// `cfg`-gated to those arches, so every caller satisfies it at compile time).
+/// `gray: &[u8]` is valid by type. `dst` is locally owned (`vec![0u8; n * 4]`)
+/// — no caller size contract. Loop proof: `i + 8 <= n` bounds the 8-byte
+/// `_mm_loadl_epi64` read; the two 16-byte stores at `dst + i * 4` and `+ 16`
+/// end at `i * 4 + 32 <= 4 * n == dst.len()`. The scalar remainder is checked
+/// indexing. Covers the implicit unsafe ops under the
+/// `#[allow(unsafe_op_in_unsafe_fn)]` below (raw adds/loads/stores).
+#[cfg(target_arch = "x86_64")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::cast_ptr_alignment)]
 pub(crate) unsafe fn fill_gray_row_sse2(gray: &[u8]) -> Vec<u8> {
     use core::arch::x86_64::{
@@ -509,12 +515,13 @@ mod tests {
     #[cfg_attr(miri, ignore)]
     fn cl_quad_ssse3_exhaustive_nibble_pair() {
         // Validate SSSE3 pshufb path against mathematical *17 expansion.
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+        #[cfg(target_arch = "x86_64")]
         if is_x86_feature_detected!("ssse3") {
             for cb_n in 0..=15u8 {
                 for cr_n in 0..=15u8 {
                     let chroma = (cr_n << 4) | cb_n;
                     let quad = [128u8, 128, 128, 128, chroma, chroma, chroma, chroma];
+                    // SAFETY: SSSE3 gate checked above; quad is a fixed 8-byte array.
                     let result = unsafe { super::cl::cl_quad_to_bgra_ssse3(&quad) };
                     let cb = cb_n << 4;
                     let cr = cr_n << 4;
@@ -542,6 +549,7 @@ mod tests {
                 for cr_n in 0..=15u8 {
                     let chroma = (cr_n << 4) | cb_n;
                     let quad = [128u8, 128, 128, 128, chroma, chroma, chroma, chroma];
+                    // SAFETY: AVX2 gate checked above; quad is a fixed 8-byte array.
                     let result = unsafe { super::cl::cl_quad_to_bgra_avx2(&quad) };
                     let cb = cb_n << 4;
                     let cr = cr_n << 4;
@@ -728,7 +736,7 @@ mod tests {
     // ---- SSSE3/AVX2 rgb555_pack random cross-checks ----
 
     #[test]
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    #[cfg(target_arch = "x86_64")]
     #[cfg_attr(miri, ignore)]
     fn rgb555_pack_10k_random_ssse3() {
         use super::scalar;

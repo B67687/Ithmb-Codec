@@ -148,19 +148,22 @@ pub(crate) fn rotate_pixels(src: &[u8], width: u32, height: u32, rotation: i32) 
 #[allow(unsafe_code, dead_code)]
 #[must_use]
 pub fn fill_gray_row(gray: &[u8]) -> Vec<u8> {
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: fill_gray_row_sse2's contract needs only the SSE2 baseline,
+    // guaranteed on x86/x86_64 (this call is cfg-gated to those arches);
+    // gray: &[u8] is valid by type.
     unsafe {
         crate::simd::fill_gray_row_sse2(gray)
     }
 
     #[cfg(target_arch = "aarch64")]
-    // SAFETY: aarch64 guarantees NEON.
+    // SAFETY: fill_gray_row_neon's contract needs only mandatory-NEON aarch64
+    // (this call is cfg-gated to aarch64); gray: &[u8] is valid by type.
     unsafe {
         return crate::simd::neon::fill_gray_row_neon(gray);
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64",)))]
     crate::simd::scalar::fill_gray_row(gray)
 }
 

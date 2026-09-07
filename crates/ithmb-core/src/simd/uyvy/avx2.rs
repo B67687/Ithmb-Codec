@@ -1,6 +1,17 @@
 //! UYVY row -> BGRA via AVX2 (16 pixels per iteration).
 
-/// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
+/// # Safety
+///
+/// The caller must guarantee:
+/// - AVX2 is available *with OS support*: the dispatcher upholds this via
+///   `is_x86_feature_detected!("avx2")`, which checks CPUID and OSXSAVE state.
+///   (The 128-bit `_mm_unpack*`/`_mm_storeu_si128` lane helpers are SSE2, which
+///   AVX2 implies.)
+/// - `dst.len() >= 2 * src.len()`: raw 16-byte stores reach `d_off + 64` with
+///   `d_off = i * 2`, at most `2 * full_end <= 2 * src.len()` by loop arithmetic.
+/// - Whole-quad input (`src.len() % 4 == 0`) for panic-free operation: raw loads
+///   are bounded by `full_end`, while the scalar tail uses checked indexing and
+///   panics (never corrupts memory) on a partial trailing quad.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(

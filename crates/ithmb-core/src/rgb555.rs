@@ -52,7 +52,7 @@ pub fn decode(src: &[u8], profile: &Profile, canceled: &AtomicBool) -> Result<De
         let row_dst = &mut dst[dst_start..dst_start + w * 4];
 
         // SIMD fast path (LE + x86 with SSE2/AVX2 runtime dispatch)
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+        #[cfg(target_arch = "x86_64")]
         if le {
             crate::simd::rgb555_apply_row_to_bgra(&src[row_start..row_start + w * 2], row_dst);
             if swap {

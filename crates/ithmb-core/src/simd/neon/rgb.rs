@@ -2,7 +2,13 @@
 
 use core::arch::aarch64::*;
 
-/// SAFETY: must only be called on `aarch64` where NEON is guaranteed.
+/// # Safety
+/// Loop-guard proof: `i + 16 <= n` bounds every iteration — the 16-byte
+/// `vld1q_u8` read ends at `i + 16 <= n == gray.len()`, and the 64-byte
+/// `vst4q_u8` write at `i * 4` ends at `i * 4 + 64 <= 4 * n == dst.len()`.
+/// `vld1q`/`vst4q` accept unaligned addresses; the scalar remainder is checked
+/// indexing. `dst` is owned (`vec![0u8; n * 4]`) — no caller size contract.
+/// NEON mandatory on aarch64; aarch64-only caller.
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn)]
 pub(crate) unsafe fn fill_gray_row_neon(gray: &[u8]) -> Vec<u8> {
@@ -29,6 +35,16 @@ pub(crate) unsafe fn fill_gray_row_neon(gray: &[u8]) -> Vec<u8> {
     dst
 }
 
+/// # Safety
+/// Caller contract: `dst.len() == (n / 2) * 4` where `n = src.len()` (debug
+/// assertion only — release relies on the caller, same as the SSE2 variant).
+/// Loop proof: `i + 16 <= n` bounds the 16-byte load; the 32-byte store at
+/// `i * 2` ends at `2 * i + 32 <= 2 * n == dst.len()`. The `cast::<u16>()`
+/// load needs no alignment (ARM permits unaligned; `vld1q` has no align
+/// requirement). The scalar remainder re-slices exactly (`src[i..]` = n-i
+/// bytes, `dst[i * 2..]` = 2*(n-i) bytes) for the matching scalar contract.
+/// NEON mandatory on aarch64; aarch64-only caller.
+///
 /// Convert one row of RGB565 pixels to BGRA8 using AArch64 NEON.
 ///
 /// Processes 8 pixels per iteration: loads 16 bytes, extracts R5/G6/B5,
@@ -78,6 +94,15 @@ pub(crate) unsafe fn rgb565_row_to_bgra_neon(src: &[u8], dst: &mut [u8]) {
     }
 }
 
+/// # Safety
+/// Caller contract: `dst.len() == (n / 2) * 4` where `n = src.len()` (debug
+/// assertion only — release relies on the caller, same as the SSE2 variant).
+/// Loop proof: `i + 16 <= n` bounds the 16-byte load; the 32-byte store at
+/// `i * 2` ends at `2 * i + 32 <= 2 * n == dst.len()`. The `cast::<u16>()`
+/// load needs no alignment (ARM permits unaligned; `vld1q` has no align
+/// requirement). The scalar remainder re-slices exactly for the matching
+/// scalar contract. NEON mandatory on aarch64; aarch64-only caller.
+///
 /// Convert one row of RGB555 pixels to BGRA8 using AArch64 NEON.
 ///
 /// Processes 8 pixels per iteration: loads 16 bytes, extracts R5/G5/B5,

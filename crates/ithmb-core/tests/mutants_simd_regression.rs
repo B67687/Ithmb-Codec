@@ -38,6 +38,7 @@ use proptest as _;
 use thiserror as _;
 use zune_jpeg as _;
 
+use ithmb_core::error::DecodeError;
 use ithmb_core::profile::{Encoding, Profile};
 use ithmb_core::yuv::yuv_to_bgra;
 use std::sync::atomic::AtomicBool;
@@ -433,5 +434,24 @@ fn simd_ycbcr420_full_decode_eq_scalar() {
         }
 
         assert_eq!(decoded.data, expected, "YCbCr420 full decode mismatch at w={w}");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// F2: UYVY row rejects partial quads up front
+// ---------------------------------------------------------------------------
+
+#[test]
+fn uyvy_row_rejects_partial_quad() {
+    // Partial-quad inputs used to fall through to kernels that assume whole
+    // quads (panic downstream); now rejected as BufferTooShort at the top.
+    for bad_len in [1, 2, 3, 5, 6, 7, 9, 13] {
+        let src = vec![128u8; bad_len];
+        let mut dst = vec![0u8; 64];
+        let err = ithmb_core::simd::uyvy_row_to_bgra(&src, &mut dst).unwrap_err();
+        assert!(
+            matches!(err, DecodeError::BufferTooShort { .. }),
+            "expected BufferTooShort for len={bad_len}, got {err:?}"
+        );
     }
 }

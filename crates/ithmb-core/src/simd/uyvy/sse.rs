@@ -1,10 +1,17 @@
 //! UYVY SSE2 quad-level conversions.
 
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 use crate::error::DecodeError;
 
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// # Safety
+///
+/// No raw pointers: the input is a fixed-size reference and all arithmetic
+/// is on register values, so memory safety needs no length contract.
+/// Instruction set: despite this file's SSE2 name, `_mm_extract_epi16` is an
+/// SSE4.1 instruction, so the true requirement is SSE4.1. The dispatcher
+/// currently assumes the x86-64 baseline covers it — recorded as a follow-up
+/// (gate quad dispatch on `sse4.1` or declare an x86-64-v2 baseline).
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
 pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
@@ -33,8 +40,12 @@ pub(crate) unsafe fn uyvy_quad_to_bgra_sse2(quad: &[u8; 4]) -> [u8; 8] {
     [b0, g0, r0, 255, b1, g1, r1, 255]
 }
 
-/// SAFETY: see [`uyvy_quad_to_bgra_sse2`].
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// # Safety
+///
+/// Same contract as [`uyvy_quad_to_bgra_sse2`] (requires SSE4.1, no raw
+/// pointers). The 4-of-8 slice splits are exact by construction, so the
+/// `BufferTooShort` arms are defensive-only and unreachable.
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
 pub(crate) unsafe fn uyvy_double_quad_to_bgra_sse2(quads: &[u8; 8]) -> Result<[u8; 16], DecodeError> {

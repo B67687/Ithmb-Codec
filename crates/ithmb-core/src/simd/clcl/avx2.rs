@@ -2,16 +2,22 @@
 
 /// Process one row of CLCL data via AVX2.
 ///
-/// Reads `width` Y bytes, `width/2` Cb bytes (nibble-packed, 2 pixels/byte),
-/// `width/2` Cr bytes (same) and writes `width*4` BGRA bytes.
+/// Reads `width` Y bytes, `width/2` Cb/Cr bytes (nibble-packed, 2 pixels
+/// per byte: pixel `2k` in the low nibble, pixel `2k+1` in the high nibble)
+/// and writes `width*4` BGRA bytes.
 /// Processes 16 pixels per iteration using 256-bit arithmetic.
 ///
 /// # Safety
 ///
-/// - `y_ptr` must point to `width` valid bytes.
-/// - `cb_ptr` must point to `width / 2` valid bytes.
-/// - `cr_ptr` must point to `width / 2` valid bytes.
-/// - `dst` must point to `width * 4` valid bytes.
+/// - `y_ptr` must point to `width` readable bytes.
+/// - `cb_ptr`/`cr_ptr` must each point to at least `width/2` readable
+///   bytes (highest index read is `(width-1)/2`, same as the SSE2 row).
+/// - `dst` must point to `width*4` writable bytes: each iteration stores
+///   4x16 bytes at `off..off+64` with `off+64 <= width*4`.
+/// - Every SIMD op is SSE2 or AVX/AVX2 (`_mm256_extracti128_si256` is
+///   AVX, covered by the AVX2 gate since AVX2 implies AVX).
+/// - The 0-15 pixel remainder delegates to the SSE2 row fn, whose own
+///   contract covers the narrowed pointers.
 /// - Requires `x86_64` target and AVX2 at runtime.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]

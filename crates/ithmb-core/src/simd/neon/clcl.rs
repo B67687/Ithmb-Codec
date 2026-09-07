@@ -2,6 +2,17 @@
 
 use core::arch::aarch64::*;
 
+/// # Safety
+/// Caller contract: `y.len() >= width`, `cb`/`cr` `.len() >= width / 2`,
+/// `dst.len() >= width * 4`. Batch proof: `i + 8 <= width` per iteration —
+/// the 8-byte Y load ends at `i + 8`; chroma reads `cb[i / 2..i / 2 + 4]` end
+/// at `(full_batches - 8) / 2 + 4 = full_batches / 2 <= width / 2`; stores end
+/// at `off + 32 = i * 4 + 32 <= full_batches * 4 <= width * 4`. The `cb_tmp` /
+/// `cr_tmp` padding pattern copies 4 live bytes into zeroed 8-byte arrays, so
+/// the 8-byte `vld1_u8` never reads uninitialised memory. The scalar remainder
+/// is checked indexing (panics, never corrupts).
+/// NEON mandatory on aarch64; aarch64-only caller.
+///
 /// Convert one CLCL row (separate Y/Cb/Cr nibble planes) to BGRA.
 ///
 /// Uses NEON for nibble expansion and BT.601 YUV→RGB conversion in parallel.

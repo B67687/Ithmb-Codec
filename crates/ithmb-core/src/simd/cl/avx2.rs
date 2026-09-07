@@ -1,6 +1,17 @@
 //! CL row -> BGRA via AVX2 (8 pixels per iteration, 256-bit arithmetic throughout).
 
-/// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
+/// 8-px/iter row kernel. Op-set cover: AVX2 implies every older op used here —
+/// `loadl_epi64` (SSE2), `cvtepu8_epi32` (SSE4.1), `shuffle_epi8` (SSSE3),
+/// `extracti128` (AVX) — same AVX2-superset argument as `yuv/avx2.rs`.
+/// `_mm256_castsi256_si128` is a zero-cost lane reinterpret, not a memory access.
+///
+/// # Safety
+/// - Call only on x86-64 with AVX2 (`cfg` + `target_feature`; dispatcher must
+///   `is_x86_feature_detected!("avx2")`, which implies OS support for YMM state).
+/// - Caller must pass `dst.len() >= (src.len() / 2) * 4`. Fast loop loads 8 B from
+///   `y`/`chroma` (`i+8 <= full_end_8 <= n`) and stores `d_off..d_off+32`
+///   (`d_off = i*4`, max end `full_end_8*4 <= n*4`). Remainder `cvtsi32` blocks read
+///   `[i..i+4]` (`i+4 <= n`) and store `d_off+16 <= n*4`. Scalar tail is checked.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[inline]

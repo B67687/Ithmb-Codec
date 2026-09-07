@@ -6,8 +6,12 @@ use std::arch::x86_64::__m128i;
 /// stored to `dst` at offsets `c*8`, `c*8 + w*4`, `(c+1)*8`, `(c+1)*8 + w*4`.
 ///
 /// # Safety
-/// - Must be called on `x86_64` with AVX2 enabled.
-/// - `dst` must have sufficient capacity for the writes.
+///
+/// - Call only with AVX2 enabled (`cvtepu8_epi32`, `extracti128` need it).
+/// - Caller must uphold: `w` even, `c + 1 < cb_w + 1` (i.e. both `c` and
+///   `c + 1` below `cb_w`), `y_row.len() >= 2*w`, chroma rows valid at
+///   `c`/`c + 1`, `dst.len() >= 2*w*4`. All four 8-byte stores then land
+///   inside `dst`.
 #[cfg(target_arch = "x86_64")]
 #[inline]
 #[target_feature(enable = "avx2")]
@@ -115,7 +119,16 @@ pub(crate) unsafe fn store_avx2_chroma_pair(
 }
 
 // ---- YCbCr 4:2:0 row pair -> BGRA (AVX2, 16 px/iter) ----
-/// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
+/// YCbCr 4:2:0 row pair -> BGRA via AVX2 (8 chroma positions per iter).
+///
+/// # Safety
+///
+/// - Call only with AVX2 enabled. The SSE4.1-helper remainder path is
+///   covered because AVX2 hardware always supports SSE4.1.
+/// - Caller must uphold `y_row.len() >= 2*w`, `cb_row.len() >= cb_w`,
+///   `cr_row.len() >= cb_w`, `dst.len() >= 2*w*4`, `cb_w == w/2`. The main
+///   loop (pairs, step 8) and both remainders keep every `c`/`c + 1`
+///   below `cb_w`, so all helper preconditions hold on every call.
 #[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "avx2")]
 #[allow(unsafe_op_in_unsafe_fn, clippy::similar_names)]

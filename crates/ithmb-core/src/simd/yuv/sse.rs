@@ -1,11 +1,19 @@
 //! YCbCr 4:2:0 -> BGRA SSE2 quad conversion.
 
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::__m128i;
 
 // ---- SSE2 quad (4× Y + 1× Cb + 1× Cr -> 16× BGRA) ----
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE2 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// Process one 6-byte chroma quad into 16 bytes BGRA using SSE2 only
+/// (`cvtsi32`, `unpacklo`, add/sub, `set1`, `storeu` — no SSE4.1 op).
+///
+/// # Safety
+///
+/// - Call only on `x86`/`x86_64` (SSE2 is baseline there).
+/// - `quad` is a fixed `[u8; 6]` array: indices 0..6 always in bounds.
+/// - `clamp_u8` keeps every lane in 0..=255, so the `i32` temporaries
+///   never overflow and the scalar tail stores stay in `out[0..16]`.
+#[cfg(target_arch = "x86_64")]
 #[inline]
 #[allow(clippy::similar_names, unsafe_op_in_unsafe_fn, clippy::trivially_copy_pass_by_ref)]
 pub(crate) unsafe fn yuv420_quad_to_bgra_sse2(quad: &[u8; 6]) -> [u8; 16] {

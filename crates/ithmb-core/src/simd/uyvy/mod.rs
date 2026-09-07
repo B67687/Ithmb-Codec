@@ -9,7 +9,7 @@
 
 #[cfg(target_arch = "x86_64")]
 mod avx2;
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 mod sse;
 #[cfg(target_arch = "x86_64")]
 mod sse41;
@@ -30,11 +30,16 @@ mod sse41;
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref)]
 pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        sse::uyvy_quad_to_bgra_sse2(quad)
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: the kernel executes `_mm_extract_epi16` (SSE4.1); the runtime
+    // gate guarantees SSE4.1, otherwise the scalar fallback below runs (F1).
+    if is_x86_feature_detected!("sse4.1") {
+        unsafe {
+            return sse::uyvy_quad_to_bgra_sse2(quad);
+        }
     }
+    #[cfg(target_arch = "x86_64")]
+    return super::scalar::uyvy_quad_to_bgra(quad);
 
     #[cfg(target_arch = "aarch64")]
     // SAFETY: aarch64 guarantees NEON.
@@ -42,7 +47,7 @@ pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
         return super::neon::uyvy_quad_to_bgra_neon(quad);
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64",)))]
     super::scalar::uyvy_quad_to_bgra(quad)
 }
 
@@ -54,11 +59,15 @@ pub fn uyvy_quad_to_bgra(quad: &[u8; 4]) -> [u8; 8] {
 #[must_use]
 #[allow(clippy::trivially_copy_pass_by_ref, clippy::missing_panics_doc)]
 pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-    // SAFETY: x86_64/x86 guarantees SSE2.
-    unsafe {
-        sse::uyvy_double_quad_to_bgra_sse2(quads).expect("UYVY double quad SSE2 conversion infallible")
+    #[cfg(target_arch = "x86_64")]
+    // SAFETY: same SSE4.1 gate + scalar fallback as quad dispatch (F1).
+    if is_x86_feature_detected!("sse4.1") {
+        unsafe {
+            return sse::uyvy_double_quad_to_bgra_sse2(quads).expect("UYVY double quad SSE2 conversion infallible");
+        }
     }
+    #[cfg(target_arch = "x86_64")]
+    return super::scalar::uyvy_double_quad_to_bgra(quads);
 
     #[cfg(target_arch = "aarch64")]
     // SAFETY: aarch64 guarantees NEON.
@@ -66,7 +75,7 @@ pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
         return super::neon::uyvy_double_quad_to_bgra_neon(quads);
     }
 
-    #[cfg(not(any(any(target_arch = "x86_64", target_arch = "x86"), target_arch = "aarch64",)))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64",)))]
     super::scalar::uyvy_double_quad_to_bgra(quads)
 }
 
@@ -81,6 +90,14 @@ pub fn uyvy_double_quad_to_bgra(quads: &[u8; 8]) -> [u8; 16] {
 #[inline]
 #[allow(clippy::too_many_lines)]
 pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), crate::error::DecodeError> {
+    // F2: reject partial quads up front — every kernel below assumes whole
+    // quads, and the documented `BufferTooShort` contract now holds.
+    if src.len() % 4 != 0 {
+        return Err(crate::error::DecodeError::BufferTooShort {
+            expected: src.len() + (4 - src.len() % 4),
+            actual: src.len(),
+        });
+    }
     #[cfg(target_arch = "x86_64")]
     // SAFETY: checked by is_x86_feature_detected! below.
     if is_x86_feature_detected!("avx2") {
@@ -101,27 +118,56 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), crate::error::
     debug_assert_eq!(dst.len(), (n / 4) * 8);
     let full_end = (n / 16) * 16;
     let mut i = 0usize;
+    #[cfg(target_arch = "x86_64")]
+    // F1: hoisted out of the hot loop (std caches the CPUID result).
+    let use_sse41_quad = is_x86_feature_detected!("sse4.1");
 
     // Process 4 quads (8 pixels = 16 input bytes) per iteration.
     while i < full_end {
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-        // SAFETY: x86_64/x86 guarantees SSE2.
-        unsafe {
-            let q0 = sse::uyvy_double_quad_to_bgra_sse2(&src[i..i + 8].try_into().map_err(|_| {
-                crate::error::DecodeError::BufferTooShort {
-                    expected: 8,
-                    actual: src[i..i + 8].len(),
-                }
-            })?)?;
-            let q1 = sse::uyvy_double_quad_to_bgra_sse2(&src[i + 8..i + 16].try_into().map_err(|_| {
-                crate::error::DecodeError::BufferTooShort {
-                    expected: 8,
-                    actual: src[i + 8..i + 16].len(),
-                }
-            })?)?;
-            let d_off = i * 2;
-            dst[d_off..d_off + 16].copy_from_slice(&q0);
-            dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
+        #[cfg(target_arch = "x86_64")]
+        // SAFETY: kernel needs SSE4.1 — guaranteed by use_sse41_quad (F1);
+        // the else branch is pure-safe scalar.
+        if use_sse41_quad {
+            unsafe {
+                let q0 = sse::uyvy_double_quad_to_bgra_sse2(&src[i..i + 8].try_into().map_err(|_| {
+                    crate::error::DecodeError::BufferTooShort {
+                        expected: 8,
+                        actual: src[i..i + 8].len(),
+                    }
+                })?)?;
+                let q1 = sse::uyvy_double_quad_to_bgra_sse2(&src[i + 8..i + 16].try_into().map_err(|_| {
+                    crate::error::DecodeError::BufferTooShort {
+                        expected: 8,
+                        actual: src[i + 8..i + 16].len(),
+                    }
+                })?)?;
+                let d_off = i * 2;
+                dst[d_off..d_off + 16].copy_from_slice(&q0);
+                dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
+            }
+        } else {
+            #[cfg(target_arch = "x86_64")]
+            {
+                let arr0: [u8; 8] =
+                    src[i..i + 8]
+                        .try_into()
+                        .map_err(|_| crate::error::DecodeError::BufferTooShort {
+                            expected: 8,
+                            actual: src[i..i + 8].len(),
+                        })?;
+                let arr1: [u8; 8] =
+                    src[i + 8..i + 16]
+                        .try_into()
+                        .map_err(|_| crate::error::DecodeError::BufferTooShort {
+                            expected: 8,
+                            actual: src[i + 8..i + 16].len(),
+                        })?;
+                let q0 = super::scalar::uyvy_double_quad_to_bgra(&arr0);
+                let q1 = super::scalar::uyvy_double_quad_to_bgra(&arr1);
+                let d_off = i * 2;
+                dst[d_off..d_off + 16].copy_from_slice(&q0);
+                dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
+            }
         }
 
         #[cfg(target_arch = "aarch64")]
@@ -147,7 +193,7 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), crate::error::
             dst[d_off + 16..d_off + 32].copy_from_slice(&q1);
         }
 
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
             let arr0: [u8; 8] = src[i..i + 8]
                 .try_into()
@@ -174,18 +220,33 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), crate::error::
 
     // Remainder: 0-3 quads processed individually.
     while i < n {
-        #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
-        // SAFETY: x86_64/x86 guarantees SSE2.
-        unsafe {
-            let arr: [u8; 4] = src[i..i + 4]
-                .try_into()
-                .map_err(|_| crate::error::DecodeError::BufferTooShort {
-                    expected: 4,
-                    actual: src[i..i + 4].len(),
-                })?;
-            let px = sse::uyvy_quad_to_bgra_sse2(&arr);
-            let d_off = i * 2;
-            dst[d_off..d_off + 8].copy_from_slice(&px);
+        #[cfg(target_arch = "x86_64")]
+        // SAFETY: same SSE4.1 gate as the main loop (F1); else is scalar.
+        if use_sse41_quad {
+            unsafe {
+                let arr: [u8; 4] = src[i..i + 4]
+                    .try_into()
+                    .map_err(|_| crate::error::DecodeError::BufferTooShort {
+                        expected: 4,
+                        actual: src[i..i + 4].len(),
+                    })?;
+                let px = sse::uyvy_quad_to_bgra_sse2(&arr);
+                let d_off = i * 2;
+                dst[d_off..d_off + 8].copy_from_slice(&px);
+            }
+        } else {
+            #[cfg(target_arch = "x86_64")]
+            {
+                let arr: [u8; 4] = src[i..i + 4]
+                    .try_into()
+                    .map_err(|_| crate::error::DecodeError::BufferTooShort {
+                        expected: 4,
+                        actual: src[i..i + 4].len(),
+                    })?;
+                let px = super::scalar::uyvy_quad_to_bgra(&arr);
+                let d_off = i * 2;
+                dst[d_off..d_off + 8].copy_from_slice(&px);
+            }
         }
 
         #[cfg(target_arch = "aarch64")]
@@ -202,7 +263,7 @@ pub fn uyvy_row_to_bgra(src: &[u8], dst: &mut [u8]) -> Result<(), crate::error::
             dst[d_off..d_off + 8].copy_from_slice(&px);
         }
 
-        #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
         {
             let arr: [u8; 4] = src[i..i + 4]
                 .try_into()

@@ -1,7 +1,19 @@
 //! CL row -> BGRA via SSE4.1+SSSE3 (16 pixels per iteration).
 
-/// SAFETY: must only be called on `x86`/`x86_64` where SSE4.1+SSSE3 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+/// 16-px/iter row kernel. Op set and its cover: `loadu/srli/srai/pack/unpack` = SSE2;
+/// `cvtepu8/mullo`/`min/max_epi32` = SSE4.1; `shuffle_epi8` = SSSE3 — all covered by
+/// `target_feature(sse4.1, ssse3)` (SSE4.1 implies SSSE3 on every x86 CPU).
+///
+/// # Safety
+/// - Call only where `SSE4.1`+`SSSE3` are available (`target_feature`; the dispatcher must
+///   `is_x86_feature_detected!` both — same pattern as `uyvy/sse41.rs`).
+/// - Caller must pass `dst.len() >= (src.len() / 2) * 4`. Fast loop loads
+///   `y/chroma[i..i+16]` and stores `d_off..d_off+64` with `i+16 <= full_end_16
+///   <= n_pixels`: max store end `full_end_16*4 <= n*4`. Remainder blocks read
+///   `y/chroma[i..i+4]` (`i+4 <= n`) and store `d_off+16 = (i+4)*4 <= n*4`.
+/// - `n_pixels = src.len() / 2` truncates: an odd trailing byte is ignored, never read.
+/// - Scalar tail (`0-3` px) is checked indexing: short `dst` panics, never corrupts.
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "sse4.1,ssse3")]
 #[inline]
 #[allow(unsafe_op_in_unsafe_fn, clippy::too_many_lines)]

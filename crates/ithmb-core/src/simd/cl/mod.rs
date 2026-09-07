@@ -9,7 +9,7 @@
 
 #[cfg(target_arch = "x86_64")]
 mod avx2;
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 mod sse;
 #[cfg(target_arch = "x86_64")]
 mod sse41;
@@ -23,7 +23,7 @@ mod sse41;
 /// # Safety
 ///
 /// Must only be called on `x86`/`x86_64` where SSSE3 is guaranteed.
-#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+#[cfg(target_arch = "x86_64")]
 #[target_feature(enable = "ssse3")]
 #[cfg(test)]
 #[allow(unsafe_op_in_unsafe_fn)]
@@ -62,7 +62,14 @@ pub(crate) unsafe fn cl_quad_to_bgra_ssse3(quad: &[u8; 8]) -> [u8; 16] {
     out
 }
 
-/// SAFETY: must only be called on `x86_64` where AVX2 is guaranteed.
+/// # Safety
+///
+/// Caller must ensure AVX2 is available (`is_x86_feature_detected!(\"avx2\")`).
+/// The shuffle used is `_mm256_shuffle_epi8` (AVX2-native `vpshufb`), so no separate
+/// SSSE3 gate is needed. All memory is type-bounded: 16 B table load from
+/// `CL_NIBBLE_TABLE`, stores to `[u8; 16]` / `[i32; 4]` locals, `quad: &[u8; 8]`
+/// indexed at 0..8 only. (Test-only kernel: `#[cfg(test)]`, validated by the
+/// exhaustive nibble-pair test in `simd/mod.rs`.)
 #[cfg(target_arch = "x86_64")]
 #[inline]
 #[cfg(test)]
@@ -169,7 +176,7 @@ pub fn cl_quad_to_bgra(quad: &[u8; 8]) -> [u8; 16] {
     unsafe {
         return super::neon::cl_quad_to_bgra_neon(quad);
     }
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
     super::scalar::cl_quad_to_bgra(*quad)
 }
 
@@ -207,7 +214,7 @@ pub fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
     }
 
     // SSE2 path (compile-time guaranteed on x86_64/x86)
-    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+    #[cfg(target_arch = "x86_64")]
     // SAFETY: x86_64/x86 guarantees SSE2.
     unsafe {
         sse::cl_row_to_bgra_sse2(src, dst);
@@ -220,6 +227,6 @@ pub fn cl_row_to_bgra(src: &[u8], dst: &mut [u8]) {
         return super::neon::cl_row_to_bgra_neon(src, dst);
     }
 
-    #[cfg(not(any(target_arch = "x86_64", target_arch = "x86", target_arch = "aarch64")))]
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
     super::scalar::cl_row_to_bgra_scalar(src, dst);
 }

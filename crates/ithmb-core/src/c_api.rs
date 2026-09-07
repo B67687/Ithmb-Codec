@@ -58,7 +58,7 @@ pub const ITHMB_ERROR_CANCELED: i32 = -3;
 /// `width * height * 4` bytes and pass the struct to [`ithmb_decode`].
 ///
 /// # Safety
-/// * `out` must be a valid, non-null pointer to an `IthmbImage`.
+/// * `out` must be a valid, non-null pointer to an `IthmbImage`, valid for writes.
 ///
 /// # Returns
 /// * `ITHMB_OK` (0) on success.
@@ -89,7 +89,8 @@ pub unsafe extern "C" fn ithmb_prefix_to_profile(prefix: u32, out: *mut IthmbIma
 /// * `out` must be a valid, non-null pointer to an `IthmbImage` with
 ///   `out->data` pointing to a buffer of at least
 ///   `out->width * out->height * 4` bytes.
-/// * `cancel_flag` must be a valid pointer to an `AtomicBool`, or `NULL`.
+/// * `cancel_flag` must be a valid pointer to an `AtomicBool`, or `NULL` —
+///   and must remain valid for the duration of the call.
 ///
 /// # Returns
 /// * `ITHMB_OK` (0) on success.
@@ -137,8 +138,9 @@ pub unsafe extern "C" fn ithmb_decode(
         return ITHMB_ERROR_INVALID;
     }
     let nbytes = (img.width as usize) * (img.height as usize) * 4;
-    // SAFETY: out_ref.data is valid for nbytes — the check above guarantees
-    // nbytes fits the profile-sized caller buffer.
+    // SAFETY: out_ref.data is valid for nbytes — the area check above (in u64,
+    // so the multiply cannot overflow) proves nbytes fits the profile-sized
+    // caller buffer, and out_ref itself is valid per the # Safety contract.
     unsafe {
         std::ptr::copy_nonoverlapping(img.data.as_ptr(), out_ref.data, nbytes);
     }
