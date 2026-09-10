@@ -126,9 +126,9 @@ jobs:
       - name: Create RELEASE_NOTES.md
         run: |
           cat > RELEASE_NOTES.md << 'EOF'
-          # Ithmb-Codec Enterprise Release
+          # Ithmb-Codec Release
 
-          This is an **Enterprise** cross-compiled release of Ithmb-Codec.
+          Cross-compiled release of Ithmb-Codec.
 
           Built for:
           - Linux x86_64
@@ -137,7 +137,8 @@ jobs:
           - macOS ARM64 (Apple Silicon)
           - Windows x86_64
 
-          Plus **Python wheels** for all platforms (`pip install ithmb-python`).
+          Plus **Python wheels** for all platforms — manual install (not on PyPI):
+          download the `.whl` for your platform below and run `pip install <file>.whl`.
 
           All binaries are built with SIMD acceleration enabled.
 
