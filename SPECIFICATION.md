@@ -216,7 +216,7 @@ Every project MUST document its whole-project state machine at `docs/PROJECT_MOD
 
 ```
 Ithmb-Codec/: Rust workspace, 5 members, fuzz/ excluded from the workspace
-+-- Cargo.toml: workspace manifest: version 1.9.9, edition 2024, rust-version 1.88.0, MIT
++-- Cargo.toml: workspace manifest: version 1.9.10, edition 2024, rust-version 1.88.0, MIT
 +-- crates/ithmb-core/: the codec library (lib + cdylib), all decoder logic
 +-- crates/ithmb-cli/: the ithmb CLI binary (clap, png output)
 +-- crates/ithmb-gen/: sample generator binary for synthetic test vectors
@@ -570,7 +570,7 @@ Load handling: the 8 MB file size guard prevents OOM from pathological input;
 ### MACRO: Release Strategy
 
 ```
-Versioning scheme: Semantic Versioning (workspace version 1.9.9; crates share the workspace version)
+Versioning scheme: Semantic Versioning (workspace version 1.9.10; crates share the workspace version)
 Release cadence: tag-based (v* tags trigger release.yml), milestone-driven
 Changelog: git-cliff generated from conventional commits (cliff.toml), committed as CHANGELOG.md
 ```

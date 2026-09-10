@@ -19,7 +19,7 @@ IDEA -> SPEC'D -> PROTOTYPED -> IMPLEMENTED -> POLISHED -> SHIPPED -> MAINTAINED
 | `PROTOTYPED` | C# Native AOT plugin prototype for ImageGlass v10 (B67687/Ithmb-Codec-CSharp, archived) |
 | `IMPLEMENTED` | Rust workspace port: 8 decoders, 53 profiles, PhotoDB parser, 7 encoders, CLI, WASM, Python, C ABI |
 | `POLISHED` | Hardening: 5 review rounds (~47 findings fixed), fuzz, Miri, benchmark regression baseline, CI pipeline complete |
-| `SHIPPED` | Release pipeline live: workspace version 1.9.9, signed v* tags, 5-target cross-compile, maturin wheels |
+| `SHIPPED` | Release pipeline live: workspace version 1.9.10, signed v* tags, 5-target cross-compile, maturin wheels |
 | `MAINTAINED` | Bugfix-only cycles: no new features, releases gated on the full CI set |
 | `EVOLVED` | New features via ROADMAP (v1.10, v2.0, v2.1): NEON row functions, encoding SIMD, PyPI publishing, HEIC/AVIF |
 

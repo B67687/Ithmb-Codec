@@ -51,7 +51,7 @@ The protocol is a routing system, not a fixed pipeline. At bootstrap, run this d
             └── Route: MAINTENANCE: PERFECT -> DISTRIBUTE only (no new features)
 ```
 
-**This project (Ithmb-Codec):** routed as PORT at bootstrap (a clean-room Rust rewrite of the archived C# reference, B67687/Ithmb-Codec-CSharp). The port is complete: the codebase is a working, tested, shipped codec at workspace version 1.9.9 with a live release pipeline. Current routing is MAINTENANCE/EVOLUTION: new sessions enter PERFECT (hardening, fuzz, audit) or DISTRIBUTE (release) by default, and EVOLUTION (new features) only via the ROADMAP (v1.10, v2.0, v2.1) with an explicit learning shift.
+**This project (Ithmb-Codec):** routed as PORT at bootstrap (a clean-room Rust rewrite of the archived C# reference, B67687/Ithmb-Codec-CSharp). The port is complete: the codebase is a working, tested, shipped codec at workspace version 1.9.10 with a live release pipeline. Current routing is MAINTENANCE/EVOLUTION: new sessions enter PERFECT (hardening, fuzz, audit) or DISTRIBUTE (release) by default, and EVOLUTION (new features) only via the ROADMAP (v1.10, v2.0, v2.1) with an explicit learning shift.
 
 ### Sub-Cycle Routing (Recursive Protocol)
 

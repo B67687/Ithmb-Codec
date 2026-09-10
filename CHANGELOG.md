@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/),
 
 ## [Unreleased]
 
+## [1.9.10] - 2026-09-10
+
 ### Changed
 
 #### SE Retrofit (2026-08-27)
