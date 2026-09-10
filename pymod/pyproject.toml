@@ -4,7 +4,6 @@ build-backend = "maturin"
 
 [project]
 name = "ithmb-python"
-version = "1.9.9"
 requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Rust",
