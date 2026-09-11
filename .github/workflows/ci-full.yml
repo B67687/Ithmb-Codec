@@ -4,7 +4,12 @@
 # Keeps CI minutes low on PRs while main is always fully verified.
 name: ci-full
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
+    paths-ignore: # doc-only pushes skip the EXPENSIVE suite (pr-checks still
+      # runs: it owns typos + lychee, i.e. it lints the docs themselves).
+      - "docs/**"
+      - "*.md"
 permissions: { contents: read }
 env:
   # setup-rust-toolchain injects RUSTFLAGS=-D warnings when the var is UNSET
@@ -15,6 +20,29 @@ env:
   RUSTFLAGS: ""
 
 jobs:
+  # Rust-paths gate: bench + fuzz only run when Rust code (or their own harness /
+  # workflow config) changed in the push. Docs/workflow-only pushes skip them;
+  # pr-checks still lints every push. before/sha (not HEAD~1) so multi-commit
+  # pushes are covered; all-zero before (new branch) defaults to run (safe).
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.diff.outputs.rust }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - id: diff
+        shell: bash
+        run: |
+          before="${{ github.event.before }}";
+          if [[ "$before" =~ ^0+$ ]]; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$before" "${{ github.sha }}" -- 'crates/**' 'Cargo.toml' 'Cargo.lock' 'fuzz/**' 'rust-toolchain.toml' 'tools/check-benchmark-regression.sh' '.github/**' | grep -q .; then
+            echo "rust=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rust=false" >> "$GITHUB_OUTPUT"
+          fi
   build:
     strategy:
       fail-fast: false
@@ -51,6 +79,8 @@ jobs:
           cargo nextest run --workspace $exclude
 
   benchmark_regression:
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -72,6 +102,8 @@ jobs:
           path: /tmp/ci-benchmark-output.txt
           retention-days: 7
   fuzz:
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
