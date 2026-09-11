@@ -1,4 +1,4 @@
-# release.yml — Cross-compile enterprise release pipeline
+# release.yml — Cross-compile release pipeline (GitHub Release assets; no Enterprise product, no PyPI)
 name: release
 on:
   push:

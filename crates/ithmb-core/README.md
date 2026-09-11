@@ -2,7 +2,7 @@
 
 Pure Rust decoder and encoder for Apple `.ithmb` thumbnail-cache files — the format used by iPod Classic/Nano/Photo/Video, iPhone 2G, and iPod Touch to store photo and album art thumbnails.
 
-**Part of the [Ithmb-Codec](https://github.com/B67687/Ithmb-Codec) workspace.** See the root README for full documentation, CLI tooling, Python bindings, and architecture overview.
+**Part of the [ithmb-codec](https://github.com/B67687/ithmb-codec) workspace.** See the root README for full documentation, CLI tooling, Python bindings, and architecture overview.
 
 ## Features
 
@@ -19,7 +19,7 @@ Pure Rust decoder and encoder for Apple `.ithmb` thumbnail-cache files — the f
 
 ```toml
 [dependencies]
-ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec", branch = "main" }
+ithmb-core = { git = "https://github.com/B67687/ithmb-codec", branch = "main" }
 
 # Or from crates.io:
 # ithmb-core = "1.9.10"

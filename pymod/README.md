@@ -1,6 +1,6 @@
 # ithmb-core Python Bindings
 
-Python bindings for [Ithmb-Codec](https://github.com/B67687/Ithmb-Codec), a pure Rust decoder for Apple `.ithmb` thumbnail cache files.
+Python bindings for [ithmb-codec](https://github.com/B67687/ithmb-codec), a pure Rust decoder for Apple `.ithmb` thumbnail cache files.
 
 ## Build
 

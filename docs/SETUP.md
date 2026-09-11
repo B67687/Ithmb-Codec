@@ -1,4 +1,4 @@
-# Ithmb-Codec Development Setup
+# ithmb-codec Development Setup
 
 ## Prerequisites
 
@@ -11,8 +11,8 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/B67687/Ithmb-Codec.git
-cd Ithmb-Codec
+git clone https://github.com/B67687/ithmb-codec.git
+cd ithmb-codec
 cargo build --workspace
 cargo test --workspace
 ```

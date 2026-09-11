@@ -2,7 +2,7 @@
 
 CLI tool for decoding Apple `.ithmb` thumbnail cache files from iPods and iPhones.
 
-Part of the [Ithmb-Codec](https://github.com/B67687/Ithmb-Codec) workspace — the authoritative Rust codec for `.ithmb` files.
+Part of the [ithmb-codec](https://github.com/B67687/ithmb-codec) workspace — the authoritative Rust codec for `.ithmb` files.
 
 ## Install
 
@@ -50,12 +50,12 @@ ithmb my_photo.ithmb --format bin -o - | ffmpeg -f rawvideo -pix_fmt bgra -s 320
 ## Build from source
 
 ```bash
-git clone https://github.com/B67687/Ithmb-Codec.git
-cd Ithmb-Codec
+git clone https://github.com/B67687/ithmb-codec.git
+cd ithmb-codec
 cargo build -p ithmb-cli --release
 ./target/release/ithmb --help
 ```
 
 ## License
 
-MIT — see [LICENSE](https://github.com/B67687/Ithmb-Codec/blob/main/LICENSE) in the repository root.
+MIT — see [LICENSE](https://github.com/B67687/ithmb-codec/blob/main/LICENSE) in the repository root.

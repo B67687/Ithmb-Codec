@@ -1,15 +1,15 @@
-# AGENTS.md, AI Agent Guide for Ithmb-Codec
+# AGENTS.md, AI Agent Guide for ithmb-codec
 
 This file tells AI coding agents (Claude Code, Copilot, Cursor, Codex, OpenCode) how to work with this repository effectively. Read this first before editing any code.
 
 ## Repository Purpose
 
-Pure Rust codec for Apple `.ithmb` thumbnail-cache files (iPod/iPhone photo thumbnails). Decodes 8 raw pixel formats, encodes 7, parses PhotoDB/ArtworkDB containers. Published on crates.io as `ithmb-core`. Also the source of the WebAssembly decoder used by the sibling web repo `B67687/Ithmb-Codec-Web`.
+Pure Rust codec for Apple `.ithmb` thumbnail-cache files (iPod/iPhone photo thumbnails). Decodes 8 raw pixel formats, encodes 7, parses PhotoDB/ArtworkDB containers. Published on crates.io as `ithmb-core`. Also the source of the WebAssembly decoder used by the sibling web repo `B67687/ithmb-codec-web`.
 
 ## Repository Layout
 
 ```
-Ithmb-Codec/
+ithmb-codec/
 ├── crates/
 │   ├── ithmb-core/       # Core library (lib + cdylib), published to crates.io
 │   │   └── src/
@@ -25,7 +25,7 @@ Ithmb-Codec/
 │   │       └── error.rs       # DecodeError enum
 │   ├── ithmb-cli/        # CLI binary (cargo install ithmb-cli)
 │   ├── ithmb-gen/        # Synthetic sample generator binary
-│   └── ithmb-wasm/       # WASM target (wasm-pack), consumed by Ithmb-Codec-Web
+│   └── ithmb-wasm/       # WASM target (wasm-pack), consumed by ithmb-codec-web
 ├── pymod/                # Python bindings (PyO3/maturin), crate name ithmb-python
 ├── fuzz/                 # libfuzzer targets (6 targets, nightly pinned in fuzz/rust-toolchain.toml)
 ├── scripts/
@@ -118,7 +118,7 @@ Rules:
 - Run `./scripts/local-ci.sh` before pushing. The pre-commit hook is the floor; local-ci.sh is the full Linux-runnable set.
 - Fuzz is slow, opt in via `./scripts/local-ci.sh --fuzz`.
 - Miri is a **local pre-release gate** (GitHub-hosted runners block its jailed child, see ADR-0008); benchmark regression and the macOS/Windows legs stay on GitHub.
-- **Public CI is the gate.** The dev repo (`origin` = `Ithmb-Codec-Dev`, PRIVATE) has its Actions blocked by the account's paid-minute billing state; the PUBLIC repo (`public` = `Ithmb-Codec`) runs the same workflows free. A red dev CI is cosmetic, check the public repo's runs.
+- **Public CI is the gate.** The dev repo (`origin` = `ithmb-codec-dev`, PRIVATE) has its Actions blocked by the account's paid-minute billing state; the PUBLIC repo (`public` = `ithmb-codec`) runs the same workflows free. A red dev CI is cosmetic, check the public repo's runs.
 - All Actions are SHA-pinned; `scripts/check-ci-pins.sh` (wired into pr-checks) fails on any future unpinned ref or install.
 - CI commit-message types allowed: `feat, fix, docs, refactor, test, chore, cleanup, perf` (not `ci`).
 
@@ -127,8 +127,8 @@ Rules:
 **Canonical standard: `docs/standards/RELEASE_WORKFLOW.md`**; this section is a summary, the standard is the source of truth.
 
 ```
-origin  → https://github.com/B67687/Ithmb-Codec-Dev   (PRIVATE, editing repo, CI billing-blocked)
-public  → https://github.com/B67687/Ithmb-Codec       (PUBLIC, shipped repo, FREE CI)
+origin  → https://github.com/B67687/ithmb-codec-dev   (PRIVATE, editing repo, CI billing-blocked)
+public  → https://github.com/B67687/ithmb-codec       (PUBLIC, shipped repo, FREE CI)
 ```
 
 - All work lands on dev `main` → push `origin/main`.
@@ -136,7 +136,7 @@ public  → https://github.com/B67687/Ithmb-Codec       (PUBLIC, shipped repo, F
 - Version bumps + CHANGELOG entries go on dev and ride the ship.
 - Release tags live on the PUBLIC repo (`vX.Y.Z`); see `docs/RELEASING.md`.
 
-## WASM Regeneration → Ithmb-Codec-Web
+## WASM Regeneration → ithmb-codec-web
 
 The browser decoder consumes this crate. Shipping a core change to the web:
 
@@ -144,7 +144,7 @@ The browser decoder consumes this crate. Shipping a core change to the web:
 cd crates/ithmb-wasm
 cargo check -p ithmb-wasm --target wasm32-unknown-unknown
 wasm-pack build --target web --release
-cp pkg/ithmb_wasm_bg.wasm ../../../Ithmb-Codec-Web/ithmb-decoder/ithmb_wasm_bg.wasm
+cp pkg/ithmb_wasm_bg.wasm ../../../ithmb-codec-web/ithmb-decoder/ithmb_wasm_bg.wasm
 ```
 
 **Copy ONLY `ithmb_wasm_bg.wasm`**: the web repo's `ithmb_wasm.js` loader and `ithmb_wasm_bg.js` glue are hand-adapted and must not be replaced. A rebuild that adds a wasm import the glue doesn't define breaks the decoder at runtime; the web repo's `scripts/check-wasm-drift.sh` detects this. Do NOT add `console_error_panic_hook` (its `js_sys::Error` glue import breaks the loader), the decoder is panic-free by design.

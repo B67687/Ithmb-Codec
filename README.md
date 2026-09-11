@@ -4,20 +4,20 @@
 
 # Ithmb Image Codec
 
-[![License: MIT](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/license.svg)](LICENSE)
-[![Rust](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/rust.svg)](https://rust-lang.org)
-[![CI](https://github.com/B67687/Ithmb-Codec/actions/workflows/ci-full.yml/badge.svg)](https://github.com/B67687/Ithmb-Codec/actions/workflows/ci-full.yml)
+[![License: MIT](https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/badges/license.svg)](LICENSE)
+[![Rust](https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/badges/rust.svg)](https://rust-lang.org)
+[![CI](https://github.com/B67687/ithmb-codec/actions/workflows/ci-full.yml/badge.svg)](https://github.com/B67687/ithmb-codec/actions/workflows/ci-full.yml)
 
-[![Platform](https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/platform.svg)](README.md#build-from-source)
+[![Platform](https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/badges/platform.svg)](README.md#build-from-source)
 
-<a href="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/showcase.svg"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
+<a href="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/showcase.svg"><img src="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/showcase.svg" alt="Concept render" width="100%" max-width="720"></a>
 <i>Concept render — not an actual screenshot.</i>
 <hr style="max-width: 360px;">
 <sub>Built with AI assistance — see <a href="./docs/CREDITS.md">CREDITS.md</a></sub>
 <br>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/deepseek.svg?v=2" alt="DeepSeek"></a>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/opencode.svg" alt="OpenCode"></a>
-<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/badges/deepseek.svg?v=2" alt="DeepSeek"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/badges/opencode.svg" alt="OpenCode"></a>
+<a href="./docs/CREDITS.md"><img src="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/badges/omo.svg" alt="Oh My OpenAgent"></a>
 
 <br>
 
@@ -28,7 +28,7 @@ A pure Rust codec library, CLI tool, and C ABI shared library for decoding and e
 
 **Related projects**
 
-- 🌐 [ITHMB Codec Web](https://ithmb-codec.dev/ithmb-decoder/) · [Repo](https://github.com/B67687/Ithmb-Codec-Web) — browser-based decoder, no install, works on any OS, 100% private
+- 🌐 [ITHMB Codec Web](https://ithmb-codec.dev/ithmb-decoder/) · [Repo](https://github.com/B67687/ithmb-codec-web) — browser-based decoder, no install, works on any OS, 100% private
 - 🖼️ [ImageGlass-Ithmb-Plugin](https://github.com/B67687/ImageGlass-Ithmb-Plugin) — native .ithmb decoding inside ImageGlass
 
 **Key features**
@@ -155,10 +155,10 @@ Add the `ithmb-core` crate to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ithmb-core = { git = "https://github.com/B67687/Ithmb-Codec", branch = "main" }
+ithmb-core = { git = "https://github.com/B67687/ithmb-codec", branch = "main" }
 ```
 
-Or use the CLI binary directly (see [releases](https://github.com/B67687/Ithmb-Codec/releases)).
+Or use the CLI binary directly (see [releases](https://github.com/B67687/ithmb-codec/releases)).
 
 ### CLI binary
 
@@ -176,8 +176,8 @@ Full usage: see the [CLI tool](#cli-tool) section.
 
 ```bash
 # Clone the repository
-git clone https://github.com/B67687/Ithmb-Codec.git
-cd Ithmb-Codec
+git clone https://github.com/B67687/ithmb-codec.git
+cd ithmb-codec
 
 # Build everything in release mode
 cargo build --release
@@ -341,7 +341,7 @@ A `cdylib` exposing ithmb-core to Python 3.12+ via PyO3 (abi3-py312). Built with
 
 A CLI tool for generating synthetic `.ithmb` test vectors and reference PNG files used during development.
 
-<div align="center"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
+<div align="center"><img src="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/diagrams/architecture.svg" alt="Architecture diagram" width="100%"></div>
 
 ---
 
@@ -416,7 +416,7 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 > [!WARNING]
 > **T-prefix (JPEG-embedded) validated on 1,183 real files (956 iPhone 5 + 227 Jakarade); F-prefix raw decoders validated on iPod Classic 6G samples (F1061/F1055/F1060).** Raw decoders exist for 53 known profiles and pass roundtrip tests (see [STATS.md](docs/STATS.md) for current count).
 >
-> **F-prefix decoder coverage is broad but not exhaustive.** 53 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/Ithmb-Codec/issues) if you encounter one.
+> **F-prefix decoder coverage is broad but not exhaustive.** 53 profiles cover known iPod/iPhone formats through iPod Nano 7G and iPhone 2G. Unknown formats from obscure firmware versions may still exist. [Open an issue](https://github.com/B67687/ithmb-codec/issues) if you encounter one.
 >
 > **JPEG SOI must be within the first 4 MB** of the file (covers all known real files). For unknown raw files, the codec falls back to byte-level JPEG carving.
 >
@@ -430,12 +430,12 @@ Each profile defines the pixel encoding, dimensions, byte length per frame, and 
 
 | Symptom                      | Likely cause / What to do                                                                                               |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample.    |
-| Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/Ithmb-Codec/issues). |
+| File won't open              | May use an unknown format variant. [Open a codec issue](https://github.com/B67687/ithmb-codec/issues) with a sample.    |
+| Garbled image / wrong colors | JPEG false positive or raw decoder mismatch (rare). [Open a codec issue](https://github.com/B67687/ithmb-codec/issues). |
 | "File too large" error       | File exceeds the **8 MB** guard — should never happen for normal iPhone photos. Open an issue if it does.               |
 
 > [!TIP]
-> If a file doesn't decode correctly, [open an issue](https://github.com/B67687/Ithmb-Codec/issues) with a sample link. You can also try the official [web decoder](https://ithmb-codec.dev/ithmb-decoder/) or [ithmb.org](https://ithmb.org) — browser-based .ithmb decoders (offline, no upload) — to compare results.
+> If a file doesn't decode correctly, [open an issue](https://github.com/B67687/ithmb-codec/issues) with a sample link. You can also try the official [web decoder](https://ithmb-codec.dev/ithmb-decoder/) or [ithmb.org](https://ithmb.org) — browser-based .ithmb decoders (offline, no upload) — to compare results.
 
 ---
 
@@ -450,7 +450,7 @@ The library was developed through iterative research, implementation, review, an
 5. **Review cycles** — 5 rounds of multi-agent review: ~47 findings fixed covering memory safety, threading, ABI compatibility, buffer overflow, integer overflow, and defense-in-depth
 6. **Release** — Published via GitHub Releases
 
-<div align="center"><img src="https://cdn.jsdelivr.net/gh/B67687/Ithmb-Codec@main/docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
+<div align="center"><img src="https://cdn.jsdelivr.net/gh/B67687/ithmb-codec@main/docs/diagrams/pipeline.svg" alt="Development pipeline diagram" width="100%"></div>
 
 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
